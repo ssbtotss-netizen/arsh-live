@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://arshlive.com/sitemap.xml
