@@ -1,0 +1,8 @@
+{
+  "version": "2.3.0",
+  "notes": "تحديث 2.3.0: تحديثات جديدة في المنصة والتحديث التلقائي",
+  "files": {
+    "index.html": "912825b83778484665b5803c856e23b9a25a2e7ab024fcc1d4e9b3bcddff4a8d",
+    "server.js": "df59f6f0dc59503e55ece4d37fc4de8f2988671c77d2a22ddd10ba1aeef4d003"
+  }
+}
