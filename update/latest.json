@@ -1,8 +1,8 @@
 {
-  "version": "2.4.20",
-  "notes": "تحديث 2.4.20: زر التحديث يطبّق الملفات بعد إعادة التشغيل، وتحسين الاتصال باللايف.",
+  "version": "2.4.21",
+  "notes": "تحديث 2.4.21: رجوع نظام الروابط للنسخة 2.4.18.",
   "files": {
     "index.html": "e10af180ebd4cd0c9fecdb94f0d13660eb1ece7da6d6e90a0ac3e7346da83bd5",
-    "server.js": "05d2304a1ec69fa52a229cbf4bcef02ba4c9609e8d2dc3ea8d7783d031e4afe2"
+    "server.js": "e0521de7a06d130299bdfb703df5fd05994d7cbf2c5ad79fd5660a7edcc1f86b"
   }
 }
