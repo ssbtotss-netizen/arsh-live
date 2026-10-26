@@ -4339,7 +4339,9 @@ function drawItems(){
     if(p){selItem=p.dataset.pick;drawItems();remountAll()}
     if(r){SET.items=SET.items.filter(i=>i.id!==r.dataset.rm);if(selItem===r.dataset.rm)selItem=null;saveSet(true);drawItems()}};
   l.onchange=e=>{const o=e.target.closest('[data-on]');if(o){item(o.dataset.on).on=o.checked;saveSet(true)}};
-  $('#linkList').innerHTML=SET.items.map(it=>'<div><span class="hint">'+esc(W[it.w].name)+'</span>'+copyBtn(BASE+'/item/'+it.id)+'</div>').join('');
+  $('#linkList')&&($('#linkList').insertAdjacentHTML('afterend','<div class="row" style="margin-top:10px"><button class="btn gold" type="button" id="copyAllLinks">نسخ كل روابط TikTok دفعة وحدة</button></div>'));
+  const cal=$('#copyAllLinks');if(cal)cal.onclick=()=>{const t=SET.items.filter(i=>i.on!==false).map(it=>W[it.w].name+': '+(TUNNEL||BASE)+'/item/'+it.id).join('\n');try{navigator.clipboard.writeText(t);cal.textContent='تم النسخ ✓'}catch(_){cal.textContent='انسخ يدوياً'}};
+  $('#linkList').innerHTML=SET.items.map(it=>'<div><span class="hint">'+esc(W[it.w].name)+'</span>'+copyBtn((TUNNEL||BASE)+'/item/'+it.id)+'</div>').join('');
   const f=$('#itemForm'),it=item(selItem);
   if(!it){f.innerHTML='<p class="hint">اختر أداة من القائمة أو اضغطها في المعاينة.</p>';return}
   const d=W[it.w];f.innerHTML='<h3>'+esc(d.name)+'</h3><div id="ifBase"></div><div id="ifOpt"></div>';
