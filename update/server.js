@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.18';
+const APP_VER = '2.4.19';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -653,7 +653,7 @@ async function makeConnection(username) {
   try {
     const mod = await import('tiktok-live-connector-v2');
     const C = mod.TikTokLiveConnection || (mod.default && mod.default.TikTokLiveConnection);
-    if (C) { const E = Object.assign({}, mod.ControlEvent || {}, mod.WebcastEvent || {}); return { conn: new C(username, { enableExtendedGiftInfo: false }), ver: 2, E }; }
+    if (C) { const E = Object.assign({}, mod.ControlEvent || {}, mod.WebcastEvent || {}); const so = (secret && secret.apiKey) ? { signApiKey: secret.apiKey } : {}; return { conn: new C(username, Object.assign({ enableExtendedGiftInfo: false }, so)), ver: 2, E }; }
   } catch (e) { logErr('v2-load', e); }
   // 2) احتياط: المكتبة القديمة
   return { conn: new WebcastPushConnection(username, { enableExtendedGiftInfo: false }), ver: 1, E: {} };
