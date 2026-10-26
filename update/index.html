@@ -4114,13 +4114,11 @@ function buildTab0(){
     const addDon=(w,o)=>{const d=W[w];const it=Object.assign({id:'i'+uid(),w,on:true,o:Object.assign(clone(d.o),o)},clone(d.def));SET.items.push(it);selItem=it.id;saveSet(true);drawItems()};
     const gPrev=k=>{try{return W.goal.render({o:{goal:gIdx,gstyle:k}})||''}catch(_){return ''}};
     const dPrev=k=>{const bk=S.lastDon;S.lastDon={name:'أبو فهد',pic:'',color:'#ff4fd8',amount:50,cur:'$',msg:'كفو عليك',ts:0};try{return W.lastdon.render({o:{style:k}})||''}catch(_){return ''}finally{S.lastDon=bk}};
-    const sel=[['','بطاقة عادية']].concat(SCENES.map(([k,n])=>[k,n])).map(([k,n])=>'<option value="'+k+'"'+((A.scene.donation||'')===k?' selected':'')+'>'+esc(n)+'</option>').join('');
     c.innerHTML=
-      card('أليرت الدونيشن','<p class="hint">الشكل اللي يطلع لما أحد يدعم بالدونيشن، ومدته الخاصة فيه.</p><div class="form"><label class="field">الشكل<select id="dnScene">'+sel+'</select></label><label class="field">مدة الأليرت: <b id="dnDurV" dir="ltr">'+durFor('donation')+'</b> ثانية<input type="range" id="dnDur" min="2.5" max="60" step=".5" value="'+durFor('donation')+'"></label></div>')+
+      card('أليرت الدونيشن','<p class="hint">اختار شكل أليرت الدونيشن، ومدته، وانسخ رابطه لـ TikTok LIVE Studio. نفس مكتبة الأليرتات، بس لحدث الدونيشن.</p><div id="dnLib"></div>')+
       card('شريط الدونيشن','<p class="hint">كل شكل بمعاينة صغيرة. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه لـ TikTok LIVE Studio.</p><div class="dgr">'+GOAL_STYLES.map(([k,n])=>'<div class="dpv"><div class="stage mini">'+gPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dgoal="'+k+'">إضافة</button>'+lnkBtn(wLink('goal',{goal:gIdx,gstyle:k}))+'</div></div>').join('')+'</div>')+
       card('آخر داعم دونيشن','<p class="hint">كل شكل بمعاينة فيها اسم داعم تجريبي. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه.</p><div class="dgr">'+BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).map(([k,n])=>'<div class="dpv"><div class="stage mini">'+dPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dlast="'+k+'">إضافة</button>'+lnkBtn(wLink('lastdon',{style:k}))+'</div></div>').join('')+'</div>');
-    $('#dnScene').onchange=e=>{A.scene.donation=e.target.value;saveSet(true)};
-    $('#dnDur').oninput=e=>{A.durBy=A.durBy||{};A.durBy.donation=+e.target.value;$('#dnDurV').textContent=A.durBy.donation;saveSet()};
+    scEv='donation';drawSceneLib('dnLib');
     $$('[data-dgoal]',c).forEach(b=>b.onclick=()=>addDon('goal',{goal:dg(),gstyle:b.dataset.dgoal}));
     $$('[data-dlast]',c).forEach(b=>b.onclick=()=>addDon('lastdon',{style:b.dataset.dlast}));
     c.insertAdjacentHTML('beforeend','');
