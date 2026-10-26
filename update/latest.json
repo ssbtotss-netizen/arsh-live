@@ -1,8 +1,8 @@
 {
-  "version": "2.4.17",
-  "notes": "تحديث 2.4.17: كل إعدادات الدونيشن صارت في صفحة الدونيشن، وأُزيلت من التنبيهات.",
+  "version": "2.4.18",
+  "notes": "تحديث 2.4.18: أوامر تخطي وإيقاف وتشغيل الأغاني تشتغل من أي أحد، وإذا تعلقت أغنية ينتقل للي بعدها تلقائياً.",
   "files": {
-    "index.html": "202dd1f098e401d0978f6d731e90a58d2babc9a474961f68b38e6a0af8c0179f",
-    "server.js": "751396436155ca68d54eb687774824bde91d6e862cf3560eba1bc01ee18bd981"
+    "index.html": "e10af180ebd4cd0c9fecdb94f0d13660eb1ece7da6d6e90a0ac3e7346da83bd5",
+    "server.js": "7dce0bdd3a8dc5cd59fc3fb6d5f8dbc582fa36b6e96625a98e7dad1a2c5e1be6"
   }
 }

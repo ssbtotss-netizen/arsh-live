@@ -3295,7 +3295,7 @@ function speak(text,force){
 let yt=null,simEnd=null,YTDLP=false;
 /* local audio player: the platform downloads the song's audio itself (yt-dlp), so YouTube embed errors don't stop the music.
    The YouTube iframe stays only as a fallback. */
-const AU=new Audio();AU.preload='auto';
+const AU=new Audio();AU.preload='auto';let auWd=null;AU.addEventListener('playing',()=>{clearTimeout(auWd);auWd=null});
 AU.onended=()=>musicNext();
 AU.onerror=()=>{const n=STATE.music.now;if(!n||!AU.getAttribute('src'))return;if(yt&&yt.loadVideoById&&n.id){logEv('تشغيل احتياطي من يوتيوب: '+esc(n.title));yt.loadVideoById(n.id);yt.setVolume(+SET.music.volume)}else{logEv('تعذر تشغيل: '+esc(n.title)+' — ننتقل للي بعدها');setTimeout(musicNext,800)}};
 const usingAU=()=>IS_SERVER&&YTDLP;
@@ -3317,7 +3317,8 @@ async function musicCommand(u,txt,ev){
   // طلب أغنية: أمر الطلب، أو "!شغل" ومعها اسم أغنية (قبل كانت تنفهم "كمّل" وتضيع)
   const reqQ=(M.cmd&&low.startsWith(M.cmd.toLowerCase()+' '))?t.slice(M.cmd.length).trim():(is('play')&&arg?arg:'');
   // moderators control the player
-  if(reqQ){}else if(M.modCtrl!==false&&mod){
+  if(reqQ){}else if(M.modCtrl!==false&&(mod||is('skip')||is('pause')||is('play'))){
+    if(!mod&&['vol','clear','remove'].some(is))return;
     if(is('skip')){musicSay('⏭ '+u.name+' تخطى الأغنية');return musicNext()}
     if(is('pause')){musicPlayer('pause');return musicSay('⏸ '+u.name+' وقف الأغنية')}
     if(is('play')){musicPlayer('play');return musicSay('▶ '+u.name+' شغّل الأغنية')}
@@ -3345,7 +3346,7 @@ function musicNext(){
   if(yt&&yt.stopVideo)try{yt.stopVideo()}catch(_){}
   AU.pause();
   if(st.now){
-    if(usingAU()&&st.now.id){AU.src='/api/yt/audio?id='+encodeURIComponent(st.now.id);AU.volume=(+SET.music.volume||60)/100;AU.play().catch(()=>{});SET.music.paused=false}
+    if(usingAU()&&st.now.id){AU.src='/api/yt/audio?id='+encodeURIComponent(st.now.id);AU.volume=(+SET.music.volume||60)/100;AU.play().catch(()=>{});SET.music.paused=false;clearTimeout(auWd);auWd=setTimeout(()=>{if(STATE.music.now&&AU.currentTime<0.2&&!SET.music.paused){logEv('تعذر تحميل الأغنية، ننتقل للي بعدها');musicNext()}},25000)}
     else if(yt&&st.now.id&&yt.loadVideoById){yt.loadVideoById(st.now.id);yt.setVolume(+SET.music.volume)}
     else if(!IS_SERVER)simEnd=setTimeout(musicNext,25000)}
   else AU.removeAttribute('src');
