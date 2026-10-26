@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.5';
+const APP_VER = '2.4.6';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });

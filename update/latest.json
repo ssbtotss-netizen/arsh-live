@@ -1,8 +1,8 @@
 {
-  "version": "2.4.5",
-  "notes": "تحديث 2.4.5: عرض عدد ثواني الأليرت بجانب السلايدر.",
+  "version": "2.4.6",
+  "notes": "تحديث 2.4.6: مدة الأليرت تقدر توصل لـ 60 ثانية، والفيديو يطلع كامل طوله.",
   "files": {
-    "index.html": "ba952743263bb8cedf023971e7e46c50dbeb675d161e153bc28e673fe3bac0a1",
-    "server.js": "c2cb81d934d07fc57168c9da7c47f622cfeb44f31c1c93f15cda87b8b55be74d"
+    "index.html": "18b43cc22aa40e6a33c22993975d0365961034481656f7296b622c469c5cb2cf",
+    "server.js": "00c577bcf76ca85bb3e07fd54b928020ef5272ff015290cec407f18972b45b5d"
   }
 }
