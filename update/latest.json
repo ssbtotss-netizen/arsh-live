@@ -1,8 +1,8 @@
 {
-  "version": "2.4.7",
-  "notes": "تحديث 2.4.7: هدف جديد يتعبّى من الدونيشن بالدولار، وقائمة أدوات منفصلة للدونيشن فيها آخر داعم.",
+  "version": "2.4.8",
+  "notes": "تحديث 2.4.8: توضيح أي رابط تلصقه في تيك توك وأيهم لـ OBS.",
   "files": {
-    "index.html": "1481dbbfcd2ce741cec5ba55b64e9fa8dd0529a58f305d89cb52f91f5e009a7e",
-    "server.js": "36331ec3701a5dc54d4af6340b606feabe1ec118fd7e4781cbee14fe7bfce46d"
+    "index.html": "9a5792731e3ad4f86562da08e22a85574b65d1d00acea5f1fd00751f101f3d06",
+    "server.js": "1274d9f5ec9adec50cd2f73820e697c370cedcdcd795e277d047cc8a99936d2e"
   }
 }
