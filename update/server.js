@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.21';
+const APP_VER = '2.4.22';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -658,7 +658,9 @@ const giftInfo = d => {
   };
 };
 
+let forceV1 = false;
 async function makeConnection(username) {
+  if (forceV1) { forceV1 = false; return { conn: new WebcastPushConnection(username, { enableExtendedGiftInfo: false }), ver: 1, E: {} }; }
   // 1) الواجهة الأساسية للنسخة 2: WebSocket موقّع مجاناً. (جلب قائمة الهدايا enableExtendedGiftInfo يطلب باقة مدفوعة من Euler، فنطفيه — اسم الهدية وقيمتها يجون مع الحدث نفسه)
   try {
     const mod = await import('tiktok-live-connector-v2');
@@ -769,6 +771,7 @@ async function connect(username, isRetry) {
     if (store.settings && store.settings.telegram && store.settings.telegram.enabled) telegram(username);
   } catch (err) {
     const why = logErr('connect v' + made.ver, err);
+    if (made.ver === 2 && /room ?id/i.test(why) && !made.fb && tiktok === me) { made.fb = 1; forceV1 = true; setStatus('تيك توك رفض النسخة الأولى — نجرّب طريقة ثانية…', false); setTimeout(() => { if (gen === connGen) connect(username, true); }, 1500); return; }
     let hint = 'تأكد إن @' + username + ' فاتح لايف والحساب عام';
     if (/offline|not live|LIVE has ended|isn't online/i.test(why)) hint = 'تيك توك يقول إن @' + username + ' مو لايف — تأكد من اسم الحساب';
     else if (/rate|429|limit/i.test(why)) hint = 'محاولات كثيرة، انتظر دقيقة وجرّب';

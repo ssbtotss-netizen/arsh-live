@@ -1,8 +1,8 @@
 {
-  "version": "2.4.21",
-  "notes": "تحديث 2.4.21: رجوع نظام الروابط للنسخة 2.4.18.",
+  "version": "2.4.22",
+  "notes": "تحديث 2.4.22: إذا تيك توك رفض الطريقة الأولى للاتصال باللايف، المنصة تجرب طريقة ثانية تلقائياً.",
   "files": {
     "index.html": "e10af180ebd4cd0c9fecdb94f0d13660eb1ece7da6d6e90a0ac3e7346da83bd5",
-    "server.js": "e0521de7a06d130299bdfb703df5fd05994d7cbf2c5ad79fd5660a7edcc1f86b"
+    "server.js": "9a612eeb25019ab50b86bbc847e7c79a7b49d923eb1d7c07eb7211c95519e785"
   }
 }
