@@ -963,6 +963,24 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .scn-trophy .tr{position:relative!important;font-size:5em;line-height:1;animation:trr .8s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 .2em #ffd166)}
 @keyframes trr{from{transform:translateY(3em) scale(.3)}}
 .scn-cash{--sc:#3dd68c}
+.scn-adhkar{--sc:#f5c96a}.scn-prayerfull{--sc:#f5c96a}
+.adh{position:relative;width:100%;height:100%;min-height:2.8em;display:grid;place-items:center;font-weight:800;color:#fff;text-shadow:0 0 .4em rgba(245,201,106,.8);text-align:center}
+.adh .r{position:absolute;inset:0;display:grid;place-items:center;opacity:0;animation:adhk 56s linear infinite;animation-delay:calc(var(--i)*-4s)}
+@keyframes adhk{0%{opacity:0}.5%{opacity:1}6.6%{opacity:1}7.1%,100%{opacity:0}}
+.adh .pt-cur{position:absolute;inset:0;display:grid;place-items:center;color:#f5c96a}
+.adh .pt-cur:empty{display:none}
+.adh:has(.pt-cur:not(:empty)) .r{display:none}
+.pfull{position:relative;width:100%;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(#1b1e4a,#3a2a5c 55%,#f0a868);border-radius:inherit}
+.pfull svg{position:absolute;left:0;bottom:0;width:100%;height:55%}
+.pf-t{position:relative;z-index:2;height:100%;display:grid;align-content:center;justify-items:center;text-align:center;padding:0 6%}
+.pf-t h2{margin:0;font-size:clamp(14px,6vw,40px);font-weight:900;color:#fff;text-shadow:0 0 .4em rgba(245,201,106,.8)}
+.pf-n{color:#f5c96a;font-size:clamp(9px,3vw,18px);font-weight:700;margin-top:.3em}
+.pf-c{font-family:ui-monospace,monospace;font-size:clamp(9px,3.4vw,22px);direction:ltr;color:#fff}
+.scn-linkblue{--sc:#1f6bff}.scn-linkgold{--sc:#ffc83d}.scn-linkpink{--sc:#ff4fd8}.scn-linkgreen{--sc:#3dd68c}
+.scn .lkp{display:inline-flex;align-items:center;justify-content:center;padding:.6em 1.4em;border-radius:999px;background:var(--sc);color:#fff;border:.12em solid #fff;box-shadow:0 0 .7em var(--sc),inset 0 0 .4em rgba(255,255,255,.35);animation:lkp 1.2s ease-in-out infinite alternate}
+.scn .lkp b{font-size:1em;white-space:nowrap;text-shadow:0 .05em .15em rgba(0,0,0,.35)}
+.scn-linkgold .lkp{color:#1a1200}
+@keyframes lkp{from{transform:scale(1)}to{transform:scale(1.07)}}
 .scn-cash .p{top:-3em;font-size:2em;animation:cfa 3s linear var(--d) both}
 .scn-neon{--sc:#ff4fd8;background:rgba(5,4,18,.55)}
 .scn-neon .nb{left:6%;right:6%;top:26%;bottom:26%;border:.25em solid #22e6ff;border-radius:1.5em;box-shadow:0 0 1em #22e6ff,inset 0 0 1em #22e6ff;animation:non 1.2s steps(1) both}
@@ -3619,17 +3637,27 @@ function nextEnt(el){
 const SCENES=[['speedlines','خطوط سرعة','anime'],['impact','إطار صدمة','anime'],['sparkle','بريق كيوت','anime'],['powerup','باور أب','anime'],['katana','ضربة سيف','anime'],['manga','لوحة مانغا','anime'],['chibi','ستيكر واو','anime'],
   ['levelup','ليفل أب','game'],['glitch','قليتش','game'],['portal','بوابة','game'],['fireworks','ألعاب نارية','party'],['confetti','قصاصات','party'],['balloons','بالونات','party'],['hearts','انفجار قلوب','party'],
   ['royal','دخلة ملكية','lux'],['trophy','كأس الفوز','lux'],['cash','مطر فلوس','lux'],['neon','لوحة نيون','lux'],['lightning','برق','power'],['warp','سفر فضائي','power'],['rocket','صاروخ','power'],['boom','بووم كرتوني','power'],
-  ['bow','فيونكة','girl'],['butterfly','فراشات','girl'],['mirror','مرآة المكياج','girl'],['princess','أميرة','girl'],['kisses','بوسات','girl'],['candy','حلويات','girl'],['flowers','باقة ورد','girl'],['glitter','جليتر لامع','girl'],['unicorn','يونيكورن','girl'],['perfume','عطر فخم','girl'],
+  ['bow','فيونكة','girl'],['butterfly','فراشات','girl'],['mirror','مرآة المكياج','girl'],['princess','أميرة','girl'],['linkblue','رابط الدعم أزرق','link'],['linkgold','رابط الدعم ذهبي','link'],['linkpink','رابط الدعم وردي','link'],['linkgreen','رابط الدعم أخضر','link'],['adhkar','أذكار متغيرة','pray'],['prayerfull','رايح أصلي وبجي','pray'],['kisses','بوسات','girl'],['candy','حلويات','girl'],['flowers','باقة ورد','girl'],['glitter','جليتر لامع','girl'],['unicorn','يونيكورن','girl'],['perfume','عطر فخم','girl'],
   ['gacha','سحب جاتشا','anime'],['samurai','ساموراي','anime'],['sakura','ساكورا','anime'],
   ['giftzoom','الهدية العملاقة','sup'],['giftrain','مطر الهدية','sup'],['flipcard','بطاقة نادرة','sup'],['casino','جاكبوت','sup'],['scroll','مرسوم ملكي','sup'],['approved','ختم الاعتماد','sup'],
   ['cinema','سينمائي','cine'],['ticker','خبر عاجل','cine'],['spotlight','أضواء المسرح','cine'],['hologram','هولوقرام','cine'],['typewriter','شاشة هكر','cine'],['fighter','دخول الحلبة','cine'],['dragon','تنين','cine'],['phoenix','عنقاء','cine'],['meteor','نيزك','cine']];
-const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة']];
+const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة'],['link','🔗 روابط الدعم'],['pray','🕌 صلاة وذكر']];
 const SC_EV=[['follow','➕ متابعة'],['share','↗️ مشاركة'],['giftS','🎁 هدية صغيرة'],['giftM','🎀 هدية متوسطة'],['giftB','💎 هدية كبيرة'],['first','🥇 أول دعم من شخص'],['throne','👑 انتزاع العرش']];
 const scEvOf=a=>a.kind==='donation'?'donation':a.kind==='gift'?(a.d>=(+SET.alerts.bigAt||1000)?'giftB':a.d>=(+SET.sfx.midAt||100)?'giftM':'giftS'):a.kind;
 const randScene=()=>pick(SCENES)[0];
 function alertOut(a){const sc=SET.alerts.scene||{};const ev=a.throne?'throne':(a.first&&sc.first?'first':scEvOf(a));let k=sc[ev]||'';if(k==='rand')k=randScene();if(k&&k!=='custom'&&!SCENES.some(x=>x[0]===k))k='';
   FX('scene',Object.assign({},a,{sk:k,ev}));if(a.throne)return;FX('alert',Object.assign({},a,{_sk:k}))}
 const durFor=ev=>+((SET.alerts.durBy||{})[ev])||+SET.alerts.sceneDur||4.5;
+const ADHKAR=['لا تنسى تصلي على النبي ﷺ','اللهم صلِّ وسلّم على نبينا محمد ﷺ','أكثروا الصلاة عليّ ﷺ','من صلّى عليّ صلاة صلّى الله عليه عشراً','سبحان الله وبحمده، سبحان الله العظيم','لا إله إلا الله وحده لا شريك له، له الملك وله الحمد','الحمد لله رب العالمين','الله أكبر، ولا حول ولا قوة إلا بالله','أستغفر الله العظيم وأتوب إليه','لا حول ولا قوة إلا بالله العلي العظيم','اللهم اغفر لي ولوالدي وللمسلمين','حسبي الله ونعم الوكيل','اللهم إنك عفوٌّ تحب العفو فاعفُ عني','ذكر الله تطمئن به القلوب'];
+const PT_NAMES={Fajr:'الفجر',Dhuhr:'الظهر',Asr:'العصر',Maghrib:'المغرب',Isha:'العشاء'};
+const MOSQUE_SVG='<svg viewBox="0 0 800 300" preserveAspectRatio="none" aria-hidden="true"><path fill="#1b1234" opacity=".9" d="M0 300V190h60v-30h40v-40h30v-20h20v20h30v40h40v30h40v-60h50v-30c0-70 40-110 100-110s100 40 100 110v30h50v60h40v-30h30v-40h40v40h40v-40h30v40h40v30h40v-30h30v30h40v30h40v-100h10v100h40v-30h40v30h40v30h40V300z"/><rect x="150" y="30" width="6" height="170" fill="#1b1234"/><rect x="640" y="20" width="6" height="180" fill="#1b1234"/></svg>';
+let PT=null,PT_KEY='';
+function ptLoad(){const P=SET.prayer||{};const city=P.city||'Riyadh',ctry=P.country||'Saudi Arabia';const key=city+'|'+ctry+'|'+new Date().toISOString().slice(0,10);if(PT_KEY===key)return;PT_KEY=key;PT=null;
+  try{const c=localStorage.getItem('arsh-pt-'+key);if(c){PT=JSON.parse(c);return}}catch(_){}
+  fetch('https://api.aladhan.com/v1/timingsByCity?city='+encodeURIComponent(city)+'&country='+encodeURIComponent(ctry)+'&method=4').then(r=>r.json()).then(j=>{PT=j.data.timings;try{localStorage.setItem('arsh-pt-'+key,JSON.stringify(PT))}catch(_){}}).catch(()=>{PT=null;PT_KEY=''})}
+function ptNow(){if(!PT)return null;const d=new Date(),mins=d.getHours()*60+d.getMinutes();const list=Object.keys(PT_NAMES).map(k=>{const[h,m]=PT[k].split(':').map(Number);return{k,t:h*60+m,s:PT[k]}});let nx=list.find(x=>x.t>mins),diff;if(!nx){nx=list[0];diff=1440-mins+nx.t}else diff=nx.t-mins;const cur=list.filter(x=>x.t<=mins&&mins-x.t<3).pop();return{nx,cur,left:diff*60-d.getSeconds()}}
+function ptTick(){const v=ptNow();document.querySelectorAll('.pt-next').forEach(el=>{el.textContent=v?'الصلاة الجاية: '+PT_NAMES[v.nx.k]+' · '+v.nx.s:'جاري جلب أوقات الصلاة…'});document.querySelectorAll('.pt-cd').forEach(el=>{if(!v){el.textContent='';return}const t=Math.max(0,v.left);el.textContent=[Math.floor(t/3600),Math.floor(t%3600/60),t%60].map(n=>String(n).padStart(2,'0')).join(':')});document.querySelectorAll('.pt-cur').forEach(el=>{el.textContent=v&&v.cur?'حان وقت صلاة '+PT_NAMES[v.cur.k]+'، حيّ على الصلاة':''})}
+setInterval(ptTick,1000);
 function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R=Math.random,P=(n,f)=>Array.from({length:n},(_,i)=>f(i)).join(''),C6=['#ff4f7b','#ffd166','#4fd8ff','#7dff8a','#c58bff','#ffffff'],f2=x=>(+x).toFixed(2),A=SET.alerts;
   const pic=u.pic?'<img src="'+esc(u.pic)+'" alt="" onerror="this.remove()">':esc(String(u.name).slice(0,1));
   const head=d.ev==='follow'?'متابع جديد!':d.ev==='share'?'شارك البث!':d.ev==='giftB'?'دعم أسطوري!':d.ev==='first'?'أول دعم! حيّاك':d.ev==='throne'?'انتزع العرش!':d.ev==='donation'?'دونيشن! شكراً لك':'شكراً على الدعم!';
@@ -3643,6 +3671,12 @@ function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R
     W2=x=>'<div class="scn scn-'+k+(loop?' loop':'')+'" style="--dur:'+f2(durFor(d.ev))+'s;--rc:'+rc+'">'+x+'</div>';
   const gyc=()=>'<div class="gy"><small>'+head+'</small>'+av+'<b>'+nm+'</b>'+sb+'</div>';
   const CU={
+    linkblue:()=>'<div class="lkp"><b>رابط الدعم بالبايو</b></div>',
+    linkgold:()=>'<div class="lkp"><b>رابط الدعم بالبايو</b></div>',
+    linkpink:()=>'<div class="lkp"><b>رابط الدعم بالبايو</b></div>',
+    linkgreen:()=>'<div class="lkp"><b>رابط الدعم بالبايو</b></div>',
+    adhkar:()=>{ptLoad();return '<div class="adh"><b class="pt-cur"></b>'+ADHKAR.map((t,i)=>'<span class="r" style="--i:'+i+'">'+esc(t)+'</span>').join('')+'</div>'},
+    prayerfull:()=>{ptLoad();return '<div class="pfull">'+MOSQUE_SVG+'<div class="pf-t"><h2>رايح أصلي وبجي</h2><div class="pt-next pf-n"></div><div class="pt-cd pf-c"></div></div></div>'},
     bow:()=>P(14,()=>pt(5+R()*90,5+R()*90,'--s:'+f2(1+R()*1.4)+'em;--d:'+f2(R()*1.2)+'s','✦'))+'<div class="gy"><small>'+head+'</small><div class="bw"><s class="a"></s><s class="b"></s><i class="l"></i><i class="r"></i><em></em></div>'+av+'<b>'+nm+'</b>'+sb+'</div>',
     butterfly:()=>P(12,()=>{const a=R()*Math.PI*2,r=9+R()*7;return pt(50,46,'--x:'+f2(Math.cos(a)*r)+'em;--y:'+f2(Math.sin(a)*r)+'em;--s:'+f2(1.6+R()*1.6)+'em;--d:'+f2(R()*.8)+'s','🦋')})+gyc(),
     mirror:()=>'<div class="gy"><small>'+head+'</small><div class="mr">'+P(13,i=>{const a=Math.PI+i/12*Math.PI;return '<i class="bulb" style="left:calc('+f2(50+47*Math.cos(a))+'% - .5em);top:calc('+f2(40+38*Math.sin(a))+'% - .5em);--d:'+f2(i*.08)+'s"></i>'})+av+'<b>'+nm+'</b>'+sb+'</div></div>'+P(5,i=>'<i class="kiss" style="left:'+[10,78,14,80,46][i]+'%;top:'+[22,30,70,72,86][i]+'%;--d:'+f2(1+i*.25)+'s">💋</i>'),
@@ -4075,7 +4109,7 @@ function buildTab0(){
       card('🔔 تنبيهات المنصات','<p class="hint">فولو كيك، سب تويتش، سوبر تشات وأعضاء يوتيوب، البتس والرِيد. اختر وش يطلع لك:</p><div class="chips" id="malEls"></div><div class="row" style="margin-top:10px">'+[['kick','follow','فولو كيك'],['youtube','ytsub','مشترك يوتيوب'],['twitch','sub','سب تويتش'],['youtube','super','سوبر تشات'],['twitch','raid','رِيد'],['chat','','تعليقات']].map(([p,k,l])=>'<button class="btn sm" type="button" data-mtest="'+p+'|'+k+'">جرّب: '+l+'</button>').join('')+'</div><div class="bsg" id="lgMal" style="margin-top:12px"></div>'),
       follow:card('شكل تنبيه المتابعة والمشاركة','<p class="hint">يطلع لما أحد يتابعك أو يشارك اللايف. اضغط أي شكل وتشوفه يطلع في المعاينة.</p><div class="bsg" id="lgFol"></div><div id="fFt" style="margin-top:12px"></div>')+card('🔊 صوت المتابعة والمشاركة','<div id="qsFol"></div>'),
       gift:card('شكل تنبيه الهدايا','<p class="hint">يطلع لما أحد يرسل هدية. اضغط أي شكل وتشوفه في المعاينة.</p><div class="bsg" id="lgGift"></div><div class="row" style="margin-top:10px"><button class="btn" id="tGift" type="button">جرّب هدية كبيرة</button></div>')+card('🔊 صوت كل هدية','<p class="hint">اختر الصوت تحت أي هدية ويشتغل لك على طول عشان تسمعه. مثلاً الوردة صوت، والأسد صوت ثاني.</p><div id="qsGift"></div>'),
-      scenes:card('⚡ وضع الأداء','<div id="fPerf"></div><p class="hint">مفعّل تلقائياً: يخفف رسم الأليرتات في البث عشان ما يصير تقطيع أو دروبات، خصوصاً على الأجهزة المتوسطة. الشكل يبقى نفسه تقريباً.</p>')+card('🎬 مكتبة الأليرتات','<p class="hint">'+SCENES.length+' أليرت كاملة الشاشة، كل وحدة بتصميم مختلف. اختر الحدث من فوق (متابعة، مشاركة، هدية…)، وبعدها اضغط الأليرت اللي يعجبك ويطلع لك في المعاينة على طول. تقدر بعد ترفع فيديو أو GIF من جهازك.</p><div id="scLib"></div>'),
+      scenes:card('🕌 أوقات الصلاة','<p class="hint">المدينة تحدد أوقات الصلاة في شكل "رايح أصلي وبجي" و"حان وقت الصلاة". اكتبها بالإنجليزي.</p><div id="fPt"></div>')+card('⚡ وضع الأداء','<div id="fPerf"></div><p class="hint">مفعّل تلقائياً: يخفف رسم الأليرتات في البث عشان ما يصير تقطيع أو دروبات، خصوصاً على الأجهزة المتوسطة. الشكل يبقى نفسه تقريباً.</p>')+card('🎬 مكتبة الأليرتات','<p class="hint">'+SCENES.length+' أليرت كاملة الشاشة، كل وحدة بتصميم مختلف. اختر الحدث من فوق (متابعة، مشاركة، هدية…)، وبعدها اضغط الأليرت اللي يعجبك ويطلع لك في المعاينة على طول. تقدر بعد ترفع فيديو أو GIF من جهازك.</p><div id="scLib"></div>'),
       sounds:card('🔊 أصوات الدعم والمتابعة','<p class="hint">كل شي من مكان واحد: اختر الصوت من القائمة تحت الحدث أو الهدية، ويشتغل لك على طول عشان تسمعه. تبي ميمز أكثر؟ من قسم "مكتبة الأصوات" تقدر تضيف أي صوت.</p><div id="qsAll"></div>'),
       theme:card('ألوان البث','<p class="hint">يغيّر ألوان كل الأدوات في البث بضغطة.</p><div class="themes">'+THEMES.map(([k,l,cs])=>'<button class="th" data-th="'+k+'" aria-pressed="'+(SET.theme===k)+'"><span class="sw3">'+cs.map(x=>'<i style="background:'+x+'"></i>').join('')+'</span>'+l+'</button>').join('')+'</div>'+(occKey()&&SET.occ.theme?'<p class="hint">ملاحظة: اليوم '+OCC[occKey()].name+' فألوان المناسبة هي اللي ظاهرة.</p>':''))}[lookSub];
     c.innerHTML='<div class="seg" role="tablist">'+SUB.map(([k,l])=>'<button type="button" role="tab" data-lsub="'+k+'" aria-selected="'+(k===lookSub)+'">'+l+'</button>').join('')+'</div>'+body;
@@ -4083,7 +4117,7 @@ function buildTab0(){
     if(lookSub==='taps'){drawTapGallery('lgTap');drawColorPicker('lcTap','tap',()=>drawTapGallery('lgTap'))}else if(lookSub==='tappers'){drawBoardGallery('lgBoard','taps');drawColorPicker('lcBoard','taps',()=>drawBoardGallery('lgBoard','taps'))}else if(lookSub==='sup'){drawBoardGallery('lgSup','sup');drawColorPicker('lcSup','sup',()=>drawBoardGallery('lgSup','sup'))}else if(lookSub==='mplat')drawMplat();else if(lookSub==='soc'){drawSocEditor('soEd');drawSocOpts('soOp');drawSocGallery('lgSoc');drawSocFx('lgSfx')}else if(lookSub==='fol')drawWLooks('fol');else if(lookSub==='tmr'){drawWLooks('tmr');drawSubathon()}
     else if(lookSub==='follow'){drawAlertGallery('lgFol','follow');drawQuickSounds('qsFol',['follow','share','join']);form($('#fFt'),SET.alerts,[['follow','تنبيه المتابعة شغال','bool'],['share','تنبيه المشاركة شغال','bool'],['followText','نص المتابعة','text'],['shareText','نص المشاركة','text']],'ft',()=>{saveSet(true);drawAlertGallery('lgFol','follow')})}
     else if(lookSub==='sounds')drawQuickSounds('qsAll');
-    else if(lookSub==='scenes'){drawSceneLib('scLib');SET.perf=SET.perf||{lite:true};form($('#fPerf'),SET.perf,[['lite','وضع الأداء (موصى به)','bool']],'pf',()=>saveSet(true))}
+    else if(lookSub==='scenes'){drawSceneLib('scLib');SET.perf=SET.perf||{lite:true};form($('#fPerf'),SET.perf,[['lite','وضع الأداء (موصى به)','bool']],'pf',()=>saveSet(true));SET.prayer=SET.prayer||{city:'Riyadh',country:'Saudi Arabia'};form($('#fPt'),SET.prayer,[['city','المدينة (مثال: Riyadh)','text'],['country','الدولة (مثال: Saudi Arabia)','text']],'pt',()=>{PT_KEY='';ptLoad()});ptLoad()}
     else if(lookSub==='gift'){drawAlertGallery('lgGift','gift');drawQuickSounds('qsGift');$('#tGift').onclick=()=>simulate('lion')}
     else $$('.th[data-th]',c).forEach(b=>b.onclick=()=>{SET.theme=b.dataset.th;$$('.th[data-th]',c).forEach(x=>x.setAttribute('aria-pressed',x===b));saveSet(true)});
   }
