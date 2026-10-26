@@ -1894,6 +1894,12 @@ body.ov #ovStage{display:block;position:fixed;inset:0;width:100vw;height:100vh;a
 .ld .nbs{animation:none}
 .dnlk{position:absolute;left:50%;bottom:.6em;transform:translateX(-50%);z-index:5;max-width:90%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:.3em .9em;border-radius:99em;background:rgba(0,0,0,.7);color:#fff;font-size:.9em;text-decoration:none;direction:ltr;border:1px solid #ffffff55}
 
+.dgr{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.dpv{border:1px solid #ffffff22;border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dpv .stage{height:84px;overflow:hidden;position:relative;display:grid;place-items:center}
+.dpv .stage>*{transform:scale(.5);transform-origin:center;max-width:none}
+.dpv b{font-size:12px}
+.dpv .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3616,7 +3622,7 @@ const SCENES=[['speedlines','خطوط سرعة','anime'],['impact','إطار ص�
   ['giftzoom','الهدية العملاقة','sup'],['giftrain','مطر الهدية','sup'],['flipcard','بطاقة نادرة','sup'],['casino','جاكبوت','sup'],['scroll','مرسوم ملكي','sup'],['approved','ختم الاعتماد','sup'],
   ['cinema','سينمائي','cine'],['ticker','خبر عاجل','cine'],['spotlight','أضواء المسرح','cine'],['hologram','هولوقرام','cine'],['typewriter','شاشة هكر','cine'],['fighter','دخول الحلبة','cine'],['dragon','تنين','cine'],['phoenix','عنقاء','cine'],['meteor','نيزك','cine']];
 const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة']];
-const SC_EV=[['follow','➕ متابعة'],['share','↗️ مشاركة'],['giftS','🎁 هدية صغيرة'],['giftM','🎀 هدية متوسطة'],['giftB','💎 هدية كبيرة'],['first','🥇 أول دعم من شخص'],['throne','👑 انتزاع العرش'],['donation','💸 دونيشن']];
+const SC_EV=[['follow','➕ متابعة'],['share','↗️ مشاركة'],['giftS','🎁 هدية صغيرة'],['giftM','🎀 هدية متوسطة'],['giftB','💎 هدية كبيرة'],['first','🥇 أول دعم من شخص'],['throne','👑 انتزاع العرش']];
 const scEvOf=a=>a.kind==='donation'?'donation':a.kind==='gift'?(a.d>=(+SET.alerts.bigAt||1000)?'giftB':a.d>=(+SET.sfx.midAt||100)?'giftM':'giftS'):a.kind;
 const randScene=()=>pick(SCENES)[0];
 function alertOut(a){const sc=SET.alerts.scene||{};const ev=a.throne?'throne':(a.first&&sc.first?'first':scEvOf(a));let k=sc[ev]||'';if(k==='rand')k=randScene();if(k&&k!=='custom'&&!SCENES.some(x=>x[0]===k))k='';
@@ -4112,12 +4118,23 @@ function buildTab0(){
     form($('#fF'),SET.fireworks,[['onGoal','تنطلق عند اكتمال أي هدف','bool'],['onDiamonds','تنطلق عند هدية قيمتها (عملة) أو أكثر — 0 للإيقاف','num'],['amount','عدد الصواريخ','num']],'fw');
   }
   else if(tab==='donate'){
-    const dg=()=>{let g=SET.goals.find(x=>x.type==='donations');if(!g){g={id:'g'+uid(),title:'هدف الدونيشن',type:'donations',target:1000,mult:'1.5',color:'#ffd166',adj:0};SET.goals.push(g);saveSet(true)}return g};
+    const A=SET.alerts;A.scene=A.scene||{};
+    const gIdx=Math.max(0,SET.goals.findIndex(x=>x.type==='donations'));
+    const dg=()=>{let g=SET.goals.find(x=>x.type==='donations');if(!g){g={id:'g'+uid(),title:'هدف الدونيشن',type:'donations',target:1000,mult:'1.5',color:'#ffd166',adj:0};SET.goals.push(g);saveSet(true)}return SET.goals.indexOf(g)};
     const addDon=(w,o)=>{const d=W[w];const it=Object.assign({id:'i'+uid(),w,on:true,o:Object.assign(clone(d.o),o)},clone(d.def));SET.items.push(it);selItem=it.id;saveSet(true);drawItems()};
-    c.innerHTML=card('شريط الدونيشن','<p class="hint">اختار الشكل، ينضاف مباشرة للمعاينة، ويتعبّى من مبالغ الدونيشن. التعديل اليدوي للهدف في "الأهداف والتكبيس".</p><div class="scg">'+GOAL_STYLES.map(([k,n])=>'<button class="bst" type="button" data-dgoal="'+k+'">'+n+'</button>').join('')+'</div>')+
-      card('آخر داعم دونيشن','<p class="hint">اختار شكل البطاقة، ينضاف مباشرة للمعاينة، وتطلع فيه بيانات آخر داعم.</p><div class="scg">'+BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).map(([k,n])=>'<button class="bst" type="button" data-dlast="'+k+'">'+n+'</button>').join('')+'</div>');
-    $$('[data-dgoal]',c).forEach(b=>b.onclick=()=>{const g=dg();addDon('goal',{goal:SET.goals.indexOf(g),gstyle:b.dataset.dgoal})});
+    const gPrev=k=>{try{return W.goal.render({o:{goal:gIdx,gstyle:k}})||''}catch(_){return ''}};
+    const dPrev=k=>{const bk=S.lastDon;S.lastDon={name:'أبو فهد',pic:'',color:'#ff4fd8',amount:50,cur:'$',msg:'كفو عليك',ts:0};try{return W.lastdon.render({o:{style:k}})||''}catch(_){return ''}finally{S.lastDon=bk}};
+    const sel=[['','بطاقة عادية']].concat(SCENES.map(([k,n])=>[k,n])).map(([k,n])=>'<option value="'+k+'"'+((A.scene.donation||'')===k?' selected':'')+'>'+esc(n)+'</option>').join('');
+    c.innerHTML=
+      card('أليرت الدونيشن','<p class="hint">الشكل اللي يطلع لما أحد يدعم بالدونيشن، ومدته الخاصة فيه.</p><div class="form"><label class="field">الشكل<select id="dnScene">'+sel+'</select></label><label class="field">مدة الأليرت: <b id="dnDurV" dir="ltr">'+durFor('donation')+'</b> ثانية<input type="range" id="dnDur" min="2.5" max="60" step=".5" value="'+durFor('donation')+'"></label></div>')+
+      card('شريط الدونيشن','<p class="hint">كل شكل بمعاينة صغيرة. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه لـ TikTok LIVE Studio.</p><div class="dgr">'+GOAL_STYLES.map(([k,n])=>'<div class="dpv"><div class="stage mini">'+gPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dgoal="'+k+'">إضافة</button>'+lnkBtn(wLink('goal',{goal:gIdx,gstyle:k}))+'</div></div>').join('')+'</div>')+
+      card('آخر داعم دونيشن','<p class="hint">كل شكل بمعاينة فيها اسم داعم تجريبي. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه.</p><div class="dgr">'+BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).map(([k,n])=>'<div class="dpv"><div class="stage mini">'+dPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dlast="'+k+'">إضافة</button>'+lnkBtn(wLink('lastdon',{style:k}))+'</div></div>').join('')+'</div>')+
+      card('مبالغ الدونيشن والأصوات','<p class="hint">المبالغ والأصوات والمقاطع لكل مبلغ.</p><div id="dnTiers"></div>');
+    $('#dnScene').onchange=e=>{A.scene.donation=e.target.value;saveSet(true)};
+    $('#dnDur').oninput=e=>{A.durBy=A.durBy||{};A.durBy.donation=+e.target.value;$('#dnDurV').textContent=A.durBy.donation;saveSet()};
+    $$('[data-dgoal]',c).forEach(b=>b.onclick=()=>addDon('goal',{goal:dg(),gstyle:b.dataset.dgoal}));
     $$('[data-dlast]',c).forEach(b=>b.onclick=()=>addDon('lastdon',{style:b.dataset.dlast}));
+    drawDonTiers();
   }
   else if(tab==='goals'){
     c.innerHTML=card('الأشكال','<p class="hint">اختيار الأشكال كله صار في مكان واحد.</p><div class="row"><button class="btn gold" type="button" data-golooks="taps">شكل التكبيس</button><button class="btn" type="button" data-golooks="tappers">شكل قائمة المكبسين</button></div>')+card('هدف الحب','<p class="hint">قلب يتعبّى مع اللايكات، ويكبر هدفه كل ما اكتمل. شغّل أداة "هدف الحب" من المظهر والمشهد.</p><div id="fLv"></div>')+card('نظام التكبيس','<p class="hint">التكبيس يحسب لايكات الشاشة. كل ما اكتمل الهدف ينتقل لمرحلة جديدة بهدف أكبر.</p><div id="fT"></div><div id="fAR"></div><div class="row"><button class="btn bad" id="tapReset" type="button">تصفير التكبيس والعدادات الحين</button></div>')+card('أهداف البث','<p class="hint">كل هدف يظهر كشريط في المشهد عن طريق أداة "شريط هدف".</p><div id="fG"></div>');
