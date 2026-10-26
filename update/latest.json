@@ -1,8 +1,8 @@
 {
-  "version": "2.4.9",
-  "notes": "تحديث 2.4.9: مدة مستقلة لكل نوع أليرت، وأصوات الأحداث ما تتداخل مع بعض.",
+  "version": "2.4.10",
+  "notes": "تحديث 2.4.10: صفحة الدونيشن في القائمة الجانبية، فيها أشكال شريط الدونيشن وأشكال آخر داعم.",
   "files": {
-    "index.html": "9ec1ced69fff62988dedfa9ab423b60e63f31b6c3627d4faf0cd6cd568b37746",
-    "server.js": "1223042b9a9fc4f6d80ccaf8dfdd86c63b92212211bca4b5fe5dbd639613a726"
+    "index.html": "75c979fa75569c6c6a8e2d6be2f251cff6b412acf111756794aa6eb46972ad4b",
+    "server.js": "17fc2636896adde93e065e7bc11d18af5f7b2dd9630b530a01dd14405eb240a3"
   }
 }
