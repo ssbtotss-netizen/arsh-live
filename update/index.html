@@ -3191,7 +3191,7 @@ function aqNext(){
 function aqClear(){AQ.list=[];LIVE_AUDIO.forEach(a=>{try{a.pause()}catch(_){}});LIVE_AUDIO.clear();try{speechSynthesis.cancel()}catch(_){}AQ.busy=false;duck(false)}
 function playSfx(id,force){
   if(!IS_DASH||!id)return;
-  if(force){if(!IS_LEAD()&&IS_SERVER){bus.send({type:'lead',a:'sfx',v:id});return}const e=resolveSfx(id);if(e)playNow({kind:'sfx',e});return}
+  if(force){if(!IS_LEAD()&&IS_SERVER){bus.send({type:'lead',a:'sfx',v:id});return}const e=resolveSfx(id);if(e){if((SET.sfx.mode||'queue')==='overlap')playNow({kind:'sfx',e});else aq({kind:'sfx',id,pri:9,key:'sfxf:'+id})}return}
   const X=SET.sfx,now=Date.now();if(now-sfxLast<(+X.cd||0)*1000)return;sfxLast=now;
   aq({kind:'sfx',id,pri:arguments[2]||2,key:'sfx:'+id});
 }
@@ -3621,6 +3621,7 @@ const scEvOf=a=>a.kind==='donation'?'donation':a.kind==='gift'?(a.d>=(+SET.alert
 const randScene=()=>pick(SCENES)[0];
 function alertOut(a){const sc=SET.alerts.scene||{};const ev=a.throne?'throne':(a.first&&sc.first?'first':scEvOf(a));let k=sc[ev]||'';if(k==='rand')k=randScene();if(k&&k!=='custom'&&!SCENES.some(x=>x[0]===k))k='';
   FX('scene',Object.assign({},a,{sk:k,ev}));if(a.throne)return;FX('alert',Object.assign({},a,{_sk:k}))}
+const durFor=ev=>+((SET.alerts.durBy||{})[ev])||+SET.alerts.sceneDur||4.5;
 function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R=Math.random,P=(n,f)=>Array.from({length:n},(_,i)=>f(i)).join(''),C6=['#ff4f7b','#ffd166','#4fd8ff','#7dff8a','#c58bff','#ffffff'],f2=x=>(+x).toFixed(2),A=SET.alerts;
   const pic=u.pic?'<img src="'+esc(u.pic)+'" alt="" onerror="this.remove()">':esc(String(u.name).slice(0,1));
   const head=d.ev==='follow'?'متابع جديد!':d.ev==='share'?'شارك البث!':d.ev==='giftB'?'دعم أسطوري!':d.ev==='first'?'أول دعم! حيّاك':d.ev==='throne'?'انتزع العرش!':d.ev==='donation'?'دونيشن! شكراً لك':'شكراً على الدعم!';
@@ -3631,7 +3632,7 @@ function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R
   const nm=esc(u.name),av='<span class="av2" style="background:'+u.color+'">'+pic+'</span>',gi='<span class="gim">'+(d.img?'<img src="'+esc(d.img)+'" alt="">':(d.kind==='donation'?'💸':d.kind==='follow'?'➕':d.kind==='share'?'↗️':'🎁'))+'</span>',
     st=(d.kind==='donation'?esc(d.cur||'$')+d.amount+(d.msg?' · '+esc(d.msg):''):d.kind==='gift'?esc(giftAr(d.gift))+' ×'+d.count:esc(d.kind==='share'?(A.shareText||'شارك اللايف'):(A.followText||'تابع الحساب، حيّاك'))),sb='<span>'+gi+st+'</span>',
     rc={giftB:'#ffd166',giftM:'#c58bff',giftS:'#4fd8ff',follow:'#3dff8b',share:'#ff7ac3',first:'#7dff8a',throne:'#ffd166',donation:'#3dd68c'}[d.ev]||'#ffd166',rar={giftB:'أسطوري',giftM:'نادر',giftS:'مميز',follow:'متابع',share:'مشارك',first:'أول دعم',throne:'ملك البث',donation:'دونيشن'}[d.ev]||'مميز',
-    W2=x=>'<div class="scn scn-'+k+(loop?' loop':'')+'" style="--dur:'+f2(+A.sceneDur||4.5)+'s;--rc:'+rc+'">'+x+'</div>';
+    W2=x=>'<div class="scn scn-'+k+(loop?' loop':'')+'" style="--dur:'+f2(durFor(d.ev))+'s;--rc:'+rc+'">'+x+'</div>';
   const gyc=()=>'<div class="gy"><small>'+head+'</small>'+av+'<b>'+nm+'</b>'+sb+'</div>';
   const CU={
     bow:()=>P(14,()=>pt(5+R()*90,5+R()*90,'--s:'+f2(1+R()*1.4)+'em;--d:'+f2(R()*1.2)+'s','✦'))+'<div class="gy"><small>'+head+'</small><div class="bw"><s class="a"></s><s class="b"></s><i class="l"></i><i class="r"></i><em></em></div>'+av+'<b>'+nm+'</b>'+sb+'</div>',
@@ -3690,10 +3691,10 @@ function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R
     case 'custom':{const m=d.media||(A.sceneMedia||{})[d.ev]||'',vid=/\.(mp4|webm|mov|m4v)(\?|$)/i.test(m)||mediaKind[m]==='video';
       L=m?'<div class="cm">'+(vid?'<video src="'+esc(m)+'" playsinline'+(loop?' muted loop autoplay':'')+'></video>':'<img src="'+esc(m)+'" alt="">')+'</div>':'';break}
   }
-  return '<div class="scn scn-'+k+(loop?' loop':'')+'" style="--dur:'+f2(+A.sceneDur||4.5)+'s">'+L+'<div class="sc-c">'+top+(k==='custom'?'':'<div class="sc-h">'+head+'</div>')+'<div class="sc-av" style="background:'+u.color+'">'+pic+'</div><div class="sc-n">'+esc(u.name)+'</div><div class="sc-s">'+sub+'</div>'+bot+(d.link?'<span class="dnlk">🔗 '+esc(d.link)+'</span>':'')+'</div></div>'}
+  return '<div class="scn scn-'+k+(loop?' loop':'')+'" style="--dur:'+f2(durFor(d.ev))+'s">'+L+'<div class="sc-c">'+top+(k==='custom'?'':'<div class="sc-h">'+head+'</div>')+'<div class="sc-av" style="background:'+u.color+'">'+pic+'</div><div class="sc-n">'+esc(u.name)+'</div><div class="sc-s">'+sub+'</div>'+bot+(d.link?'<span class="dnlk">🔗 '+esc(d.link)+'</span>':'')+'</div></div>'}
 function nextScene(el){if(el._busy&&Date.now()-(el._bt||0)>30000)el._busy=false;if(el._busy||!el._q.length)return;el._busy=true;el._bt=Date.now();const d=el._q.shift(),q=$('.scq',el);
   try{q.innerHTML=sceneHTML(d)}catch(e){console.error('scene',e);q.innerHTML='';el._busy=false;const al=document.querySelector('.wi[data-w="alerts"]');if(al&&al._q){al._q.push(Object.assign({},d,{_sk:''}));nextAlert(al)}setTimeout(()=>nextScene(el),50);return}
-  let ms=((+SET.alerts.sceneDur||4.5)+.7)*1000;const v=$('video',q),done=()=>{if(!el._busy)return;q.innerHTML='';el._busy=false;nextScene(el)};
+  let ms=(durFor(d.ev)+.7)*1000;const v=$('video',q),done=()=>{if(!el._busy)return;q.innerHTML='';el._busy=false;nextScene(el)};
   if(v){v.volume=1;v.play().catch(()=>{v.muted=true;v.play().catch(()=>{})});v.addEventListener('loadedmetadata',()=>{if(isFinite(v.duration)){clearTimeout(el._st);el._st=setTimeout(done,Math.max(ms,v.duration*1000+300))}})}
   clearTimeout(el._st);el._st=setTimeout(done,ms)}
 function ensureSceneWidget(){if(!SET.items.some(i=>i.w==='scenefx')){SET.items.push(Object.assign({id:'i'+uid(),w:'scenefx',on:true,o:{}},clone(W.scenefx.def)))}else SET.items.filter(i=>i.w==='scenefx').forEach(i=>i.on=true)}
@@ -3702,13 +3703,13 @@ function drawSceneLib(hostId){const h=$('#'+hostId);if(!h)return;const A=SET.ale
   const sample=ev=>ev==='donation'?{kind:'donation',u:{name:'أبو فهد',color:palette[1],pic:pvAvatar(palette[1])},amount:10,cur:'$',msg:'كفو عليك استمر'}:(ev.startsWith('gift')||ev==='first'||ev==='throne')?{kind:'gift',u:{name:'أبو فهد',color:palette[1],pic:pvAvatar(palette[1])},gift:'Lion',count:1,d:ev==='giftB'?29999:ev==='giftM'?500:5}:{kind:ev,u:{name:'نورة',color:palette[0],pic:pvAvatar(palette[0])}};
   const nm=k=>k===''?'بطاقة عادية':k==='custom'?'فيديو/GIF':k==='rand'?'عشوائي':(SCENES.find(s=>s[0]===k)||[,''])[1];
   let html='<div class="sc-ev">'+SC_EV.map(([k,l])=>'<button type="button" data-scev="'+k+'" aria-pressed="'+(k===scEv)+'">'+l+'<i>'+esc(nm(A.scene[k]||''))+'</i></button>').join('')+'</div>'+
-    '<div class="form"><label class="field" for="'+hostId+'-dur">مدة الأليرت: <b id="'+hostId+'-durv" dir="ltr" style="color:var(--gold,#e8c77a)">'+(+A.sceneDur||4.5)+'</b> ثانية<input type="range" id="'+hostId+'-dur" min="2.5" max="60" step=".5" value="'+(+A.sceneDur||4.5)+'"></label></div>'+
+    '<div class="form"><label class="field" for="'+hostId+'-dur">مدة الأليرت: <b id="'+hostId+'-durv" dir="ltr" style="color:var(--gold,#e8c77a)">'+durFor(scEv)+'</b> ثانية<input type="range" id="'+hostId+'-dur" min="2.5" max="60" step=".5" value="'+durFor(scEv)+'"></label></div>'+
     '<div class="qsec">لما يصير هالحدث، وش يطلع؟</div><div class="scg"><button class="bst" type="button" data-sck="" aria-pressed="'+(cur==='')+'"><div class="stage mini" data-th="'+th+'" style="display:grid;place-items:center;font-size:12px!important"><div class="alq" style="width:92%">'+alertHTML(sample(scEv),'fade')+'</div></div>بطاقة عادية<small>شكل التنبيه اللي اخترته</small></button>'+
     '<button class="bst rnd" type="button" data-sck="rand" aria-pressed="'+(cur==='rand')+'"><div class="stage mini" data-th="'+th+'">🎲</div>عشوائي<small>كل مرة أليرت مختلف من الـ'+SCENES.length+'</small>'+lnkBtn(wLink('scenefx',{k:'rand',ev:scEv}))+'</button>'+'<button class="bst" type="button" data-sck="custom" aria-pressed="'+(cur==='custom')+'"><div class="stage mini" data-th="'+th+'">'+(A.sceneMedia[scEv]?sceneHTML(Object.assign({sk:'custom',ev:scEv},sample(scEv)),true):'<div style="display:grid;place-items:center;height:100%;font-size:26px">📤</div>')+'</div>فيديو أو GIF من جهازك<small>'+(A.sceneMedia[scEv]?'اضغط لتغييره':'ارفع ملفك')+'</small></button></div>';
   SCENE_CATS.forEach(([c,l])=>{html+='<div class="qsec">'+l+'</div><div class="scg">'+SCENES.filter(x=>x[2]===c).map(([k,n])=>'<button class="bst" type="button" data-sck="'+k+'" aria-pressed="'+(cur===k)+'"><div class="stage mini" data-th="'+th+'">'+sceneHTML(Object.assign({sk:k,ev:scEv},sample(scEv)),true)+'</div>'+n+lnkBtn(wLink('scenefx',{k,ev:scEv}))+'</button>').join('')+'</div>'});
   html+='<p class="hint" style="margin-top:14px">🔗 <b>الروابط:</b> كل أليرت تحته رابط خاص، تنسخه وتضيفه مصدر "رابط" مستقل في TikTok LIVE Studio، ويطلع بس لما يصير '+esc((SC_EV.find(x=>x[0]===scEv)||[,''])[1])+'. تقدر تكرر هالشي لكل حدث بأليرت مختلف.</p>';
   h.innerHTML=html;
-  $('#'+hostId+'-dur').oninput=e=>{A.sceneDur=+e.target.value;const dv=$('#'+hostId+'-durv');if(dv)dv.textContent=A.sceneDur;saveSet()};
+  $('#'+hostId+'-dur').oninput=e=>{A.durBy=A.durBy||{};A.durBy[scEv]=+e.target.value;const dv=$('#'+hostId+'-durv');if(dv)dv.textContent=A.durBy[scEv];saveSet()};
   h.onclick=e=>{const ev=e.target.closest('[data-scev]');if(ev){scEv=ev.dataset.scev;drawSceneLib(hostId);return}
     const b=e.target.closest('[data-sck]');if(!b)return;const k=b.dataset.sck;
     const apply=()=>{A.scene[scEv]=k;if(k)ensureSceneWidget();saveSet(true);drawSceneLib(hostId);setTimeout(()=>{const s=sample(scEv);alertOut(s)},150)};

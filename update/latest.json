@@ -1,8 +1,8 @@
 {
-  "version": "2.4.8",
-  "notes": "تحديث 2.4.8: توضيح أي رابط تلصقه في تيك توك وأيهم لـ OBS.",
+  "version": "2.4.9",
+  "notes": "تحديث 2.4.9: مدة مستقلة لكل نوع أليرت، وأصوات الأحداث ما تتداخل مع بعض.",
   "files": {
-    "index.html": "9a5792731e3ad4f86562da08e22a85574b65d1d00acea5f1fd00751f101f3d06",
-    "server.js": "1274d9f5ec9adec50cd2f73820e697c370cedcdcd795e277d047cc8a99936d2e"
+    "index.html": "9ec1ced69fff62988dedfa9ab423b60e63f31b6c3627d4faf0cd6cd568b37746",
+    "server.js": "1223042b9a9fc4f6d80ccaf8dfdd86c63b92212211bca4b5fe5dbd639613a726"
   }
 }
