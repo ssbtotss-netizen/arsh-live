@@ -1,8 +1,8 @@
 {
-  "version": "2.4.12",
-  "notes": "تحديث 2.4.12: روابط الأدوات تطلع بالرابط اللي يشتغل مع TikTok LIVE Studio (مو localhost)، وزر نسخ كل الروابط بضغطة وحدة.",
+  "version": "2.4.13",
+  "notes": "تحديث 2.4.13: رابط ثابت على دومينك لـ TikTok LIVE Studio (ما يتغير كل تشغيل)، من حقل الدومين والتوكن في صفحة الروابط.",
   "files": {
-    "index.html": "ff2fb9a2f755094ec6c25c7c8709bb00cde9ea8729763ef09197fcc290d7fb98",
-    "server.js": "e4bd5b409465080e65570bd2010d4780fe5693c2b63e6a34c364aa3b7fcc2833"
+    "index.html": "80367a95994ee0e34f9046b0eaa0caeda4c44d396e696792b3fdae0a151c2fd1",
+    "server.js": "589484ebb66e887ed6fb94eec824c3f65e10e4cd3d6f8d22a88d65fc8bacdb3c"
   }
 }

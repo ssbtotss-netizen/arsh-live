@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.12';
+const APP_VER = '2.4.13';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -169,7 +169,9 @@ const page = () => fs.readFileSync(path.join(__dirname, 'index.html'), 'utf8');
 // الرابط العام يفتح الأوفرلاي بس (قراءة فقط) — لوحة التحكم والرفع والإعدادات محمية وتشتغل من جهازك فقط
 const isRemote = req => !!(req.headers['cf-ray'] || req.headers['cf-connecting-ip']) || /trycloudflare\.com$/i.test(String(req.headers.host || '').split(':')[0]);
 let tunnelUrl = '';
+function namedTunnel() { const t = store.settings && store.settings.tunnel; return t && t.token && t.host ? t : null; }
 function readTunnel() {
+  if (namedTunnel()) return;
   try {
     const t = fs.readFileSync(path.join(HOME, 'tunnel.log'), 'utf8');
     const all = t.match(/https:\/\/[a-z0-9-]+\.trycloudflare\.com/gi); const u = all ? all[all.length - 1] : '';
@@ -546,7 +548,15 @@ async function startTunnel() {
       if (process.platform !== 'win32') fs.chmodSync(CF, 0o755);
     }
     const log = path.join(HOME, 'tunnel.log'); try { fs.unlinkSync(log); } catch (_) {}
-    cfProc = spawn(CF, ['tunnel', '--no-autoupdate', '--url', 'http://127.0.0.1:' + PORT], { windowsHide: true });
+    const nt = namedTunnel();
+    if (nt) {
+      // رابط ثابت على الدومين الخاص بك (named tunnel)
+      tunnelUrl = 'https://' + String(nt.host).replace(/^https?:\/\//, '').replace(/\/+$/, '');
+      broadcast({ type: 'tunnel', url: tunnelUrl });
+      cfProc = spawn(CF, ['tunnel', '--no-autoupdate', 'run', '--token', nt.token], { windowsHide: true });
+    } else {
+      cfProc = spawn(CF, ['tunnel', '--no-autoupdate', '--url', 'http://127.0.0.1:' + PORT], { windowsHide: true });
+    }
     const w = d => { try { fs.appendFileSync(log, d); } catch (_) {} };
     cfProc.stdout.on('data', w); cfProc.stderr.on('data', w);
     cfProc.on('exit', () => { cfProc = null; tunnelUrl = ''; setTimeout(startTunnel, 5000); });
