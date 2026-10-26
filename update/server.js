@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.3';
+const APP_VER = '2.4.4';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -445,7 +445,24 @@ async function checkUpdate(manual) {
   } catch (e) { logErr('update', e); if (manual) broadcast({ type: 'upd', state: 'error', ver: APP_VER, text: String(e.message || e).slice(0, 120) }); }
 }
 if (IS_APP) { setTimeout(() => checkUpdate(false), 20000); setInterval(() => checkUpdate(false), 3 * 3600e3); }
-function restartApp() { if (!IS_APP) return; try { persist(); } catch (_) {} try { const { app } = require('electron'); app.relaunch(); setTimeout(() => app.exit(0), 300); } catch (e) { logErr('relaunch', e); } }
+// تطبيق التحديث المحفوظ: ينسخ الملفات الجديدة إلى مجلد البرنامج (مع نسخة احتياطية)
+function applyStaged() {
+  if (!IS_APP) return false;
+  try {
+    const cur = JSON.parse(fs.readFileSync(path.join(HOME, 'update', 'current.json'), 'utf8'));
+    if (!cur || !cur.dir || vcmp(cur.version, APP_VER) <= 0) return false;
+    let n = 0;
+    for (const f of ['index.html', 'server.js']) {
+      const src = path.join(cur.dir, f); if (!fs.existsSync(src)) continue;
+      const dst = path.join(__dirname, f);
+      try { fs.copyFileSync(dst, dst + '.bak'); } catch (_) {}
+      fs.copyFileSync(src, dst + '.tmp'); fs.renameSync(dst + '.tmp', dst); n++;
+    }
+    console.log('تم تطبيق التحديث ' + cur.version + ' (' + n + ' ملفات)');
+    return n > 0;
+  } catch (e) { if (e.code !== 'ENOENT') logErr('apply', e); return false; }
+}
+function restartApp() { if (!IS_APP) return; try { applyStaged(); } catch (_) {} try { persist(); } catch (_) {} try { const { app } = require('electron'); app.relaunch(); setTimeout(() => app.exit(0), 300); } catch (e) { logErr('relaunch', e); } }
 // ===== مكتبة الأصوات الحقيقية: كل صوت يتنزّل من myinstants أول مرة وينحفظ في media =====
 const crypto = require('crypto');
 const realPending = new Map();
@@ -814,6 +831,7 @@ wss.on('connection', (ws, req) => {
 fs.watchFile(path.join(__dirname, 'index.html'), { interval: 1500 }, (a, b) => { if (a.mtimeMs !== b.mtimeMs) { console.log('تحديث جديد للصفحة — تحديث الشاشات'); broadcast({ type: 'reload' }); } });
 if (!IS_APP) fs.watchFile(__filename, { interval: 1500 }, (a, b) => { if (a.mtimeMs !== b.mtimeMs) { console.log('تحديث جديد للسيرفر — إعادة تشغيل'); persist(); setTimeout(() => process.exit(0), 600); } });
 
+if (IS_APP && applyStaged()) { setTimeout(() => restartApp(), 500); }
 server.listen(PORT, '0.0.0.0', () => {
   console.log('عرش اللايف شغال: http://localhost:' + PORT);
   const lan = lanUrl(); if (lan) console.log('تحكم من جوالك على نفس الواي فاي: ' + lan);

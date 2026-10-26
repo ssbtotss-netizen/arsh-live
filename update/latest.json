@@ -1,8 +1,8 @@
 {
-  "version": "2.4.3",
-  "notes": "تحديث 2.4.3: شعارات فورتنايت وكود (CODM) وببجي في قائمة حساباتي.",
+  "version": "2.4.4",
+  "notes": "تحديث 2.4.4: إصلاح زر التحديث من القائمة (يطبّق التحديث الآن بعد إعادة التشغيل).",
   "files": {
     "index.html": "ca7714a0dc5c636be40be32f4dd0ce5c1aa1e2ec1fa070e78fe7df7a51626216",
-    "server.js": "9f061784bc55c4b858c7a1b564aeed0db8f9fca26d2fcf89ee4ee174e1dc4eb9"
+    "server.js": "70e2dcb9efe357e5212d6dd48dfa7d7454ea702e208238be1ff0a370c49ee591"
   }
 }
