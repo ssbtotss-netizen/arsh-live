@@ -963,6 +963,11 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .scn-trophy .tr{position:relative!important;font-size:5em;line-height:1;animation:trr .8s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 .2em #ffd166)}
 @keyframes trr{from{transform:translateY(3em) scale(.3)}}
 .scn-cash{--sc:#3dd68c}
+/*b1*/
+.tgw{display:flex;align-items:center;gap:.6em;padding:.5em .7em;border-radius:14px;background:rgba(10,10,20,.75);border:2px solid var(--tc,#ffd166);box-shadow:0 0 12px var(--tc,#ffd166);color:#fff;direction:rtl;min-width:0}
+.tgi{width:2.4em;height:2.4em;border-radius:50%;background:var(--tc,#ffd166);display:grid;place-items:center;overflow:hidden;flex:none;font-weight:900;color:#111}
+.tgi img{width:100%;height:100%;object-fit:cover}
+.tgt{display:grid;min-width:0}.tgt small{color:var(--tc,#ffd166);font-weight:800}.tgt b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tgt .num{color:#ffd166;font-size:.9em}
 /*gc*/
 .gcw{width:100%;padding:.6em .8em;border-radius:14px;background:rgba(10,10,20,.7);border:1px solid rgba(255,255,255,.12);color:#fff;text-align:center;direction:rtl}
 .gct{font-weight:900;font-size:1.1em;text-shadow:0 0 .4em rgba(255,209,102,.6)}
@@ -2152,7 +2157,7 @@ if(!IS_SERVER){try{const s=JSON.parse(localStorage.getItem('arsh3')||'null');if(
 /* ================= live state ================= */
 let S;
 function blank(){return{users:{},T:{likes:0,diamonds:0,gifts:0,follows:0,shares:0,comments:0,viewers:0,peak:0},
-  taps:null,host:null,uni:[],mlog:[],goals:{},tl:{},chat:[],followers:[],giftsByName:{},king:null,ch:null,bt:null,tm:null,pl:null,ty:null,big:null,spam:{},qz:null,qzScore:{},au:null,marks:[],entered:{},start:Date.now(),combo:0,lastLikeBlock:0}}
+  taps:null,host:null,uni:[],mlog:[],goals:{},tl:{},chat:[],followers:[],giftsByName:{},king:null,ch:null,bt:null,tm:null,pl:null,ty:null,big:null,spam:{},qz:null,qzScore:{},au:null,marks:[],entered:{},start:Date.now(),combo:0,lastLikeBlock:0,gc:[0,0,0],topGift:null,topStreak:null}}
 S=blank();
 if(/[?&]demo=1/.test(location.search))window.__arsh={sim:e=>sim(e),simulate:k=>simulate(k),go:t=>go(t),set:()=>SET,save:()=>saveSet(true)};
 let dirty=true;
@@ -2278,6 +2283,9 @@ function handle(ev,replay){
     if(au){au.bids[u.name]=(au.bids[u.name]||0)+d;if(au.end-ts<10000)au.end=ts+10000}
     if(d>=+SET.alerts.bigAt)S.marks.push({ts,label:ev.gift+' من '+u.name+' ('+fmt(d)+')'});
     u.diamonds+=d;u.gifts+=cnt;S.T.diamonds+=d;S.T.gifts+=cnt;b.diamonds+=d;chAdd('diamonds',d);if(!replay)gcAdd(ev.gift,cnt);
+    if(!replay){if(!S.topGift||d>S.topGift.coins)S.topGift={name:u.name,pic:u.pic||'',color:u.color||'#ffd166',gift:ev.gift,coins:d,cur:'',ts:Date.now()};
+      const now=Date.now();if(S.sk&&S.sk.name===u.name&&now-S.sk.ts<15000){S.sk.n+=cnt;S.sk.ts=now}else S.sk={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',n:cnt,ts:now};
+      if(!S.topStreak||S.sk.n>S.topStreak.n)S.topStreak={name:S.sk.name,pic:S.sk.pic,color:S.sk.color,n:S.sk.n}}
     if(bt&&side&&bt.mode==='gifts')bt['s'+side]+=d;
     if(!S.big||d>S.big.d)S.big={user:u.name,gift:ev.gift,img:ev.img||'',d,ts};
     if(!replay&&!IS_SERVER&&IS_DASH){const C=SET.chatbot,k=ev.uid||u.name;if(C.gifts&&d>=(+C.giftMin||0)&&(!thankedL[k]||ts-thankedL[k]>20000)){thankedL[k]=ts;chatOut(fillMsg(pickLine(C.giftMsgs),ev),'gift')}}
@@ -3524,6 +3532,8 @@ const W={
     render(it){const L=S.lastDon;if(!L)return '';const st=it.o.style||'gold',col=L.color||'#ff4fd8',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));
       if(st==='nameonly')return '<div class="nb nb-nameonly ld"><span class="nno">'+esc(L.name)+' <b class="num">💸 '+esc(L.cur)+(+L.amount)+'</b></span></div>';
       return '<div class="nb nb-'+esc(st)+' ld"><div class="nbpod"><div class="nbs s1"><div class="nbf"><span class="nbi" style="background:'+col+'">'+pic+'</span></div><span class="nm">'+esc(L.name)+'</span><span class="nbv num">💸 '+esc(L.cur)+(+L.amount)+'</span>'+(L.msg?'<small>'+esc(L.msg)+'</small>':'')+'</div></div></div>'}},
+  topgift:{name:'أكبر هدية في البث',def:{x:4,y:50,w2:30},o:{},opts:[],render(it){const L=S.topGift;if(!L)return '';const col=L.color||'#ffd166',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));return '<div class="tgw" style="--tc:'+esc(col)+'"><span class="tgi">'+pic+'</span><div class="tgt"><small>🏆 أكبر هدية</small><b>'+esc(L.name)+'</b><span class="num">'+esc(giftAr(L.gift)||'')+' · '+(+L.coins)+' عملة</span></div></div>'}},
+  topstreak:{name:'أطول سلسلة هدايا',def:{x:4,y:62,w2:30},o:{},opts:[],render(it){const L=S.topStreak;if(!L)return '';const col=L.color||'#ff4fd8',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));return '<div class="tgw" style="--tc:'+esc(col)+'"><span class="tgi">'+pic+'</span><div class="tgt"><small>🔥 أطول سلسلة</small><b>'+esc(L.name)+'</b><span class="num">x'+(+L.n)+'</span></div></div>'}},
   gcounter:{name:'عداد الهدايا',def:{x:4,y:30,w2:30},o:{idx:0},opts:[['idx','العداد','sel',[['0','العداد 1'],['1','العداد 2'],['2','العداد 3']]]],render(it){const i=+it.o.idx||0,c=gcs()[i];if(!c||!c.on)return '';const n=(S.gc&&S.gc[i])||0,g=Math.max(1,+c.goal||1),p=Math.min(100,n/g*100);return '<div class="gcw"><div class="gct">'+esc(c.title)+'</div><div class="gcb"><i style="width:'+p.toFixed(1)+'%"></i></div><div class="gcn num">'+esc(giftAr(c.gift))+' · '+n+' / '+g+'</div></div>'}},
   goal:{name:'شريط هدف',def:{x:4,y:8,w2:44},o:{goal:0,gstyle:'neon'},opts:[['goal','الهدف','goalsel'],['gstyle','الشكل','sel',GOAL_STYLES]],
     render(it){const g=SET.goals[+it.o.goal]||SET.goals[0];if(!g)return '';const st=gstate(g),v=goalVal(g.type)-st.start+(+g.adj||0),p=Math.max(0,Math.min(100,v/st.target*100));
