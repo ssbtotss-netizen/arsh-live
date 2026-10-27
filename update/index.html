@@ -2958,9 +2958,9 @@ function virtItem(t){const d=W[t];if(!d)return null;const o=Object.assign({},d.o
   if(src&&['board','top','taps'].includes(t)){const so=src.o||{};if(so.n!=null&&!VQ.has('nfix'))o.n=so.n;if(so.col&&!VQ.has('cp'))o.col=so.col;const w2=Math.max(10,Math.min(100,+src.w2||100));
     return{id:'virt',w:t,on:true,x:(100-w2)/2,y:0,w2,h:null,scale:+VQ.get('scale')||(+src.scale||1),o}}
   return{id:'virt',w:t,on:true,x:0,y:0,w2:100,h:(t==='scenefx'||t==='fireworks')?100:null,scale:+VQ.get('scale')||1,o}}
-function wLink(type,params){const q=Object.entries(params||{}).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v===true?'yes':v===false?'no':v)).join('&');return (TUNNEL||BASE)+'/w/'+type+(q?'?'+q:'')}
+function wLink(type,params){const root=TUNNEL||(IS_SERVER?BASE:'');if(!root)return '';const q=Object.entries(params||{}).filter(([,v])=>v!=null&&v!=='').map(([k,v])=>k+'='+encodeURIComponent(v===true?'yes':v===false?'no':v)).join('&');return root+'/w/'+type+(q?'?'+q:'')}
 function colParams(c){if(!c||!c.p||c.p==='theme')return c&&c.medal===false?{cp:'theme',medal:false}:{};return{cp:c.p,c1:c.p==='custom'?c.c1:null,c2:c.p==='custom'?c.c2:null,c3:c.p==='custom'?c.c3:null,medal:c.medal===false?false:null}}
-const lnkBtn=u=>'<span class="lnk" role="button" tabindex="0" title="انسخ رابط هذا الشكل لحاله وحطه مصدر مستقل في TikTok LIVE Studio" data-lnk="'+esc(u)+'">🔗 نسخ الرابط</span>';
+const lnkBtn=u=>!u?'<span class="hint">🔗 الرابط يطلع لما يجهز رابط البث (اتصل بلايفك أولاً)</span>':'<span class="lnk" role="button" tabindex="0" title="انسخ رابط هذا الشكل لحاله وحطه مصدر مستقل في TikTok LIVE Studio" data-lnk="'+esc(u)+'">🔗 نسخ الرابط</span>';
 document.addEventListener('click',e=>{const b=e.target.closest('[data-lnk]');if(!b)return;e.stopPropagation();e.preventDefault();const t=b.dataset.lnk;
   const ok=()=>{b.classList.add('ok');b.textContent='✓ تم النسخ';setTimeout(()=>{b.classList.remove('ok');b.textContent='🔗 نسخ الرابط'},1600)};
   const fb=()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();try{document.execCommand('copy');ok()}catch(_){}ta.remove()};
