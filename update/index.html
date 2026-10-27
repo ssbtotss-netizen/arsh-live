@@ -1,7 +1,7 @@
 <title>عرش اللايف</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;900&family=Tajawal:wght@700;900&family=Noto+Kufi+Arabic:wght@700;900&display=swap">
 <style>
 /* Layout: control room — tab nav + settings column beside a sticky 9:16 live scene preview; gold-on-plum, single dark look by choice. Overlays (#scene, #item-…) render the same scene full-window on a transparent page for OBS. */
 :root{
@@ -963,6 +963,19 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .scn-trophy .tr{position:relative!important;font-size:5em;line-height:1;animation:trr .8s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 .2em #ffd166)}
 @keyframes trr{from{transform:translateY(3em) scale(.3)}}
 .scn-cash{--sc:#3dd68c}
+/*car*/
+.car{display:grid;gap:10px;justify-items:center}
+.car-s{display:grid;grid-template-columns:1fr;gap:6px;justify-items:center;width:100%;max-width:460px}
+.car-s .stage{width:100%}
+.car{grid-template-columns:auto 1fr auto;align-items:center}
+.car .row{grid-column:1/-1;justify-content:center}
+/*textfill*/
+.goal.gs-textfill{background:none!important;border:0!important;padding:0!important;box-shadow:none!important}
+.tfb{position:relative;height:2.6em;border-radius:14px;overflow:hidden;background:var(--bE);direction:rtl}
+.tf-base,.tf-in{display:flex;align-items:center;justify-content:center;white-space:nowrap;font-weight:900;height:100%;padding:0 .6em;box-sizing:border-box}
+.tf-base{position:absolute;inset:0;color:var(--tE)}
+.tf-fillw{position:absolute;left:0;top:0;bottom:0;background:var(--gc);overflow:hidden;transition:width .6s ease}
+.tf-in{position:absolute;left:0;top:0;bottom:0;color:var(--tF)}
 .vx{width:100%;height:100%;object-fit:contain;pointer-events:none;display:block}
 /*vid*/
 .vd{position:relative;display:grid;place-items:center;width:100%;height:100%;padding:.6em 1.2em;box-sizing:border-box}
@@ -2541,7 +2554,9 @@ const SOC=[
  ['rocket','روكيت ليق','#0b1d3a','#ffffff','#38bdf8','<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 14l3-3 2 2 3-4" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="16" cy="8" r="1.6" fill="currentColor"/>'],
  ['website','الموقع','#2fd39a','#04140f','#2fd39a','<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/>']];
 const SOCM=Object.fromEntries(SOC.map(x=>[x[0],x]));
-const GOAL_STYLES=[['seven','سيفين (شاشة 7 سجمنت)'],['saudi','سعودي (أخضر وذهبي)'],['battery','بطارية'],['laser','ليزر'],['pearl','لؤلؤي'],['desert','صحراء نجدية'],['ribbon','شريط متحرك'],['neon','نيون'],['fire','لهب'],['ice','جليد'],['gold','ذهبي'],['candy','حلوى'],['stripes','مخطط متحرك'],['segments','أجزاء'],['liquid','سائل'],['glass','زجاجي'],['crystal','كريستال'],['retro','ريترو'],['cyber','سايبر'],['holo','هولوغرام'],['rainbow','قوس قزح'],['lava','لافا'],['aurora','شفق'],['royal','ملكي'],['gamer','قيمرز'],['pixel','بكسل'],['cloud','سحابة'],['comic','كوميك'],['bubble','فقاعات'],['hearts','قلوب'],['stars','نجوم'],['heat','حرارة']];
+const GOAL_FONTS=[['thmanyah','ثمانية (Thmanyah Sans)',"'Thmanyah Sans','IBM Plex Sans Arabic',system-ui,sans-serif"],['cairo','كايرو','Cairo,system-ui,sans-serif'],['tajawal','تجوال','Tajawal,system-ui,sans-serif'],['kufi','نوتو كوفي','"Noto Kufi Arabic",system-ui,sans-serif'],['reem','ريم كوفي','"Reem Kufi",system-ui,sans-serif'],['plex','آيبيإم بليكس','"IBM Plex Sans Arabic",system-ui,sans-serif']];
+const goalFont=g=>((GOAL_FONTS.find(f=>f[0]===g.font)||GOAL_FONTS[0])[2]);
+const GOAL_STYLES=[['textfill','نص داخل الشريط (يتغير لونه مع التعبئة)'],['seven','سيفين (شاشة 7 سجمنت)'],['saudi','سعودي (أخضر وذهبي)'],['battery','بطارية'],['laser','ليزر'],['pearl','لؤلؤي'],['desert','صحراء نجدية'],['ribbon','شريط متحرك'],['neon','نيون'],['fire','لهب'],['ice','جليد'],['gold','ذهبي'],['candy','حلوى'],['stripes','مخطط متحرك'],['segments','أجزاء'],['liquid','سائل'],['glass','زجاجي'],['crystal','كريستال'],['retro','ريترو'],['cyber','سايبر'],['holo','هولوغرام'],['rainbow','قوس قزح'],['lava','لافا'],['aurora','شفق'],['royal','ملكي'],['gamer','قيمرز'],['pixel','بكسل'],['cloud','سحابة'],['comic','كوميك'],['bubble','فقاعات'],['hearts','قلوب'],['stars','نجوم'],['heat','حرارة']];
 const SOC_STYLES=[['pill','كبسولة بألوان المنصات'],['glass','زجاجي شفاف'],['clear','شفاف بالكامل'],['outline','إطار شفاف'],['neon','نيون'],['card','بطاقة داكنة'],['split','مقسوم'],['tile','مربعات'],['bubble','أيقونات دائرية'],['ribbon','شريط مائل'],['fade','متدرج شفاف'],['under','خط سفلي شفاف'],['mini','صغير شفاف'],['gold','ذهبي فخم'],['sticker','ستيكر'],['cute','بناتي'],['pixel','قيمنق'],['holo','هولوغرام'],['hex','سداسي'],['ticket','تذكرة'],['bubble2','فقاعة كلام'],['tag','بطاقة معلّقة'],['ribbon2','شريط مطوي'],['arrow','سهم'],['gold2','ذهبي مزخرف'],['holo2','هولوغرام'],['fire2','لهب'],['dash','إطار منقط'],['retro','ريترو'],['glitch2','قليتش'],['shine','لمعة متحركة'],['gradbd','إطار متدرج'],['soft3d','ثلاثي الأبعاد'],['stick','ملصق'],['comic','كوميك'],['cyber2','سايبر'],['rainbowb','قوس قزح'],['ice2','جليد'],['lava2','لافا'],['aurora2','شفق'],['coinb','عملة'],['pixel2','بكسل'],['bounce','قفز'],['flip','قلب'],['pulsebd','نبض'],['wave2','موجة'],['spot2','ضوء مسلّط'],['ninja','ساموراي'],['cloud','سحابة'],['stripe','مخطط'],['leaf','ورقة'],['candy2','حلوى'],['royal2','ملكي'],['scan','ماسح']];
 const SOC_LAYS=[['row','صف واحد'],['col','عمود'],['grid','شبكة (عمودين)'],['rotate','حساب حساب (يتبدل)'],['ticker','شريط متحرك']];
 const SOC_CM=[['brand','لون كل منصة'],['theme','ألوان الثيم'],['white','أبيض'],['custom','لون من اختيارك']];
@@ -3475,7 +3490,8 @@ const W={
       return '<div class="nb nb-'+esc(st)+' ld"><div class="nbpod"><div class="nbs s1"><div class="nbf"><span class="nbi" style="background:'+col+'">'+pic+'</span></div><span class="nm">'+esc(L.name)+'</span><span class="nbv num">💸 '+esc(L.cur)+(+L.amount)+'</span>'+(L.msg?'<small>'+esc(L.msg)+'</small>':'')+'</div></div></div>'}},
   goal:{name:'شريط هدف',def:{x:4,y:8,w2:44},o:{goal:0,gstyle:'neon'},opts:[['goal','الهدف','goalsel'],['gstyle','الشكل','sel',GOAL_STYLES]],
     render(it){const g=SET.goals[+it.o.goal]||SET.goals[0];if(!g)return '';const st=gstate(g),v=goalVal(g.type)-st.start+(+g.adj||0),p=Math.max(0,Math.min(100,v/st.target*100));
-      return '<div class="goal gl gs-'+esc(it.o.gstyle||'neon')+'" data-g="'+g.id+'"><div class="gh"><span>'+esc(g.title)+'</span><span class="lv">م'+st.level+'</span></div><div class="gbar"><i style="width:'+p.toFixed(1)+'%;--gc:'+esc(g.color)+'"></i></div><div class="gn num">'+fmt(v)+' / '+fmt(st.target)+'</div></div>'},
+      if(it.o.gstyle==='textfill'){const tE=g.tEmpty||'#ffffff',tF=g.tFill||'#000000',bE=g.bgEmpty||'#1f1f1f',txt=esc(g.title)+' · '+fmt(v)+' / '+fmt(st.target),pw=Math.max(p,0.5);return '<div class="goal gl gs-textfill" data-g="'+g.id+'" style="font-family:'+goalFont(g)+'"><div class="tfb" style="--gc:'+esc(g.color)+';--tE:'+esc(tE)+';--tF:'+esc(tF)+';--bE:'+esc(bE)+'"><div class="tf-base">'+txt+'</div><div class="tf-fillw" style="width:'+p.toFixed(1)+'%"><div class="tf-in" style="width:'+(10000/pw).toFixed(1)+'%">'+txt+'</div></div></div></div>'}
+      return '<div class="goal gl gs-'+esc(it.o.gstyle||'neon')+'" data-g="'+g.id+'" style="font-family:'+goalFont(g)+'"><div class="gh"><span>'+esc(g.title)+'</span><span class="lv">م'+st.level+'</span></div><div class="gbar"><i style="width:'+p.toFixed(1)+'%;--gc:'+esc(g.color)+'"></i></div><div class="gn num">'+fmt(v)+' / '+fmt(st.target)+'</div></div>'},
     fx:{goalDone(el,id){const g=$('.goal',el);if(g&&g.dataset.g===id){g.classList.remove('done');void g.offsetWidth;g.classList.add('done')}}}},
   taps:{name:'نظام التكبيس',def:{x:56,y:14,w2:40},o:{top:3,style:'ring'},opts:[['style','الشكل','sel',TAP_STYLES],['top','عدد ملوك التكبيس','num']],
     render(it){return wrapCol(W.taps.render0(it),it.o)},
@@ -4220,11 +4236,16 @@ function buildTab0(){
     const dPrev=k=>{const bk=S.lastDon;S.lastDon={name:'أبو فهد',pic:'',color:'#ff4fd8',amount:50,cur:'$',msg:'كفو عليك',ts:0};try{return W.lastdon.render({o:{style:k}})||''}catch(_){return ''}finally{S.lastDon=bk}};
     c.innerHTML=
       card('أليرت الدونيشن','<p class="hint">اختار شكل أليرت الدونيشن، ومدته، وانسخ رابطه لـ TikTok LIVE Studio. نفس مكتبة الأليرتات، بس لحدث الدونيشن.</p><div id="dnLib"></div>')+
-      card('شريط الدونيشن','<p class="hint">كل شكل بمعاينة صغيرة. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه لـ TikTok LIVE Studio.</p><div class="dgr">'+GOAL_STYLES.map(([k,n])=>'<div class="dpv"><div class="stage mini">'+gPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dgoal="'+k+'">إضافة</button>'+lnkBtn(wLink('goal',{goal:gIdx,gstyle:k}))+'</div></div>').join('')+'</div>')+
+      card('شريط الدونيشن','<p class="hint">اختار الشكل بالأسهم، وشوف المعاينة، وبعدها "إضافة" أو "نسخ الرابط".</p><div id="gCar"></div>')+
+      card('⚙️ إعدادات الهدف','<p class="hint">عنوان الهدف، والقيمة، ومبلغ البداية، والخط، والألوان. كلها تنحفظ مع الهدف.</p><div id="fGc"></div>')+
       card('آخر داعم دونيشن','<p class="hint">كل شكل بمعاينة فيها اسم داعم تجريبي. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه.</p><div class="dgr">'+BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).map(([k,n])=>'<div class="dpv"><div class="stage mini">'+dPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dlast="'+k+'">إضافة</button>'+lnkBtn(wLink('lastdon',{style:k}))+'</div></div>').join('')+'</div>');
     scEv='donation';drawSceneLib('dnLib');
     $$('[data-dgoal]',c).forEach(b=>b.onclick=()=>addDon('goal',{goal:dg(),gstyle:b.dataset.dgoal}));
     $$('[data-dlast]',c).forEach(b=>b.onclick=()=>addDon('lastdon',{style:b.dataset.dlast}));
+    const gcI=dg();const gO=SET.goals[gcI];
+    form($('#fGc'),gO,[['title','عنوان الهدف','text'],['target','قيمة الهدف','num'],['adj','مبلغ البداية (يضاف للتعبئة)','num'],['font','نوع الخط','sel',GOAL_FONTS.map(f=>[f[0],f[1]])],['color','لون التعبئة','color'],['bgEmpty','خلفية الشريط الفارغ','color'],['tEmpty','لون الكتابة قبل التعبئة','color'],['tFill','لون الكتابة داخل التعبئة','color']],'gc',()=>{const st=S.goals[gO.id];if(st)st.target=Math.max(1,+gO.target||1);saveSet(true);drawCar()});
+    let gi=0;const drawCar=()=>{const [k,n]=GOAL_STYLES[gi];$('#gCar').innerHTML='<div class="car"><button class="btn sm" type="button" id="gPrev">‹</button><div class="car-s"><div class="stage mini">'+gPrev(k)+'</div><b>'+esc(n)+' <small>('+(gi+1)+'/'+GOAL_STYLES.length+')</small></b></div><button class="btn sm" type="button" id="gNext">›</button></div><div class="row"><button class="btn sm" type="button" id="gAdd">إضافة</button>'+lnkBtn(wLink('goal',{goal:gIdx,gstyle:k}))+'</div>';$('#gPrev').onclick=()=>{gi=(gi-1+GOAL_STYLES.length)%GOAL_STYLES.length;drawCar()};$('#gNext').onclick=()=>{gi=(gi+1)%GOAL_STYLES.length;drawCar()};$('#gAdd').onclick=()=>addDon('goal',{goal:dg(),gstyle:k})};
+    drawCar();
     c.insertAdjacentHTML('beforeend','');
     c.insertAdjacentHTML('beforeend',card('💸 الدونيشن (Donations)','<p class="hint">لما أحد يتبرع لك من Streamlabs أو StreamElements أو Ko-fi يطلع له أليرت في البث، ويقرأ القارئ رسالته. تختار شكل أليرت الدونيشن من <b>مكتبة الأليرتات</b> (حدث "💸 دونيشن")، وصوته من <b>أصوات الدعم</b>.</p><div id="fDn"></div><div class="qsec" style="margin-top:14px">🎚️ صوت ومقطع لكل مبلغ</div><p class="hint">لكل مبلغ صوت خاص، وتقدر تضيف له مقطع فيديو أو GIF يطلع في البث. الدونيشن ياخذ أعلى مبلغ يوصله (مثلاً 12$ ياخذ صوت 10$). العملات الثانية تتحول للدولار تلقائي.</p><div id="dnTiers"></div><div class="dnguide"><div class="qsec">📘 كيف أربط حسابي؟ (اختر الموقع اللي تستخدمه)</div>'+
       '<details><summary><b>Streamlabs</b> — Socket API Token</summary><ol><li>ادخل <b>streamlabs.com</b> وسجّل دخول.</li><li>من القائمة اليسار: <b>Settings</b> (الإعدادات).</li><li>اضغط <b>API Settings</b> ثم تبويب <b>API Tokens</b>.</li><li>انسخ <b>Your Socket API Token</b>.</li><li>الصقه هنا في خانة <b>Streamlabs — Socket API Token</b>. خلاص ✅</li></ol><p class="hint">نصيحة: خلّ أي ودجت من Streamlabs مفتوح وقت البث (مثل Event List) عشان Streamlabs يرسل الدونيشن بدون تأخير.</p></details>'+
