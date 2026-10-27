@@ -2069,7 +2069,7 @@ const DEF={
     {id:'a1',on:'gift',match:'أسد',min:0,media:'',sound:'',say:'شكراً {user} على الأسد',fireworks:true,dur:5,cd:0},
     {id:'a2',on:'follow',match:'',min:0,media:'',sound:'',say:'',fireworks:false,dur:4,cd:10}],
   music:{enabled:true,who:'all',tiktokMods:true,modCtrl:true,cmd:'!sr',skipCmd:'!skip',maxPerUser:2,minDiamonds:0,maxDur:8,volume:60,paused:false},
-  tts:{enabled:false,comments:true,gifts:true,follows:false,readName:true,onlyPrefix:'',minDiamonds:0,maxLen:120,rate:1,volume:1,voice:''},
+  tts:{enabled:false,modOnly:false,comments:true,gifts:true,follows:false,readName:true,onlyPrefix:'',minDiamonds:0,maxLen:120,rate:1,volume:1,voice:''},
   chatbot:{enabled:true,welcome:true,welcomeMode:'random',welcomeMsgs:'',fixedMsg:'',offWelcome:[],pool:null,cooldown:60,
     gifts:true,giftMin:100,giftMsgs:'شكراً @{user} على {gift}، الله يسعدك\nكفو يا @{user} على {gift}',follows:false,followMsgs:'شكراً على المتابعة يا @{user}',botReplies:true,gap:4,maxQueue:3},
   bot:{enabled:true,cmds:true,speak:false,cd:3,rules:[
@@ -2308,7 +2308,7 @@ function handle(ev,replay){
       if(IS_LEAD())musicCommand(u,txt,ev);
       SET.actions.filter(a=>a.on==='keyword'&&a.match&&txt.includes(a.match)).forEach(a=>runAction(a,ev));
       const tt=SET.tts;
-      if(tt.comments&&u.diamonds>=(+tt.minDiamonds||0)&&(!tt.onlyPrefix||txt.startsWith(tt.onlyPrefix))&&!txt.startsWith('!'))
+      if(tt.comments&&u.diamonds>=(+tt.minDiamonds||0)&&(!tt.onlyPrefix||txt.startsWith(tt.onlyPrefix))&&!txt.startsWith('!')&&(!tt.modOnly||isMod(u.name,ev)))
         speak((tt.readName?u.name+' يقول: ':'')+(tt.onlyPrefix?txt.slice(tt.onlyPrefix.length):txt));
     }
   }else if(t==='follow'){
@@ -2500,7 +2500,7 @@ let lq=[],lqBusy=false,lastLocal=0;const welcomedL={},thankedL={};
 function chatOut(text,kind){
   const C=SET.chatbot;if(!C.enabled||!text)return;
   if(IS_SERVER){if(IS_LEAD())bus.send({type:'chatSay',text});return}
-  if(kind!=='bot'&&lq.length>=(+C.maxQueue||3))return;lq.push(String(text).slice(0,150));pumpLocal();
+  if(kind!=='bot'&&lq.length>=(+C.maxQueue||3))return;lq.push(String(text).slice(0,400));pumpLocal();
 }
 function pumpLocal(){
   if(lqBusy||!lq.length)return;lqBusy=true;const wait=Math.max(0,lastLocal+Math.max(2,+SET.chatbot.gap||4)*1000-Date.now());
@@ -2561,7 +2561,9 @@ const SOC=[
  ['codm','كود (Call of Duty)','#0d1a0d','#ffffff','#b7ff3a','<path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5z" fill="currentColor"/><path d="M9 9l3 3-3 3M15 9l-3 3 3 3" stroke="#0d1a0d" stroke-width="1.6" fill="none"/>'],
  ['pubg','ببجي','#f2a900','#1a1200','#ffffff','<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M12 4v16M4 12h16" stroke="currentColor" stroke-width="2.2"/>'],
  ['rocket','روكيت ليق','#0b1d3a','#ffffff','#38bdf8','<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 14l3-3 2 2 3-4" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="16" cy="8" r="1.6" fill="currentColor"/>'],
- ['website','الموقع','#2fd39a','#04140f','#2fd39a','<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/>']];
+ ['website','الموقع','#2fd39a','#04140f','#2fd39a','<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/>'],
+ ['donate','رابط الدونيشن بالبايو','#ffd166','#111111','#ffd166','<text x="12" y="17.5" text-anchor="middle" font-size="17" font-weight="900" font-family="system-ui,sans-serif" fill="currentColor">$</text>'],
+];
 const SOCM=Object.fromEntries(SOC.map(x=>[x[0],x]));
 const GOAL_ICONS=[['hearts','قلب يتعبى','♥','#ff2d6f'],
 ['stars','نجمة تتعبى','★','#ffd166'],
@@ -3398,7 +3400,7 @@ function botReply(u,txt){
 /* ================= TTS (dashboard only) ================= */
 function speakNow(text,cb){
   if(!('speechSynthesis' in window)){cb&&cb();return}const T=SET.tts;
-  try{const m=new SpeechSynthesisUtterance(String(text).slice(0,+T.maxLen||120));m.lang='ar-SA';
+  try{const m=new SpeechSynthesisUtterance(String(text).slice(0,Math.max(+T.maxLen||120,400)));m.lang='ar-SA';
     const v=speechSynthesis.getVoices().find(v=>v.name===T.voice);if(v)m.voice=v;m.rate=+T.rate||1;m.volume=+T.volume;
     m.onend=m.onerror=()=>{cb&&cb()};speechSynthesis.speak(m)}catch(e){cb&&cb()}
 }
@@ -4383,7 +4385,7 @@ function buildTab0(){
   else if(tab==='tts'){
     const vs=('speechSynthesis' in window)?speechSynthesis.getVoices():[];
     c.innerHTML=card('القارئ الصوتي','<p class="hint">يقرأ التعليقات والهدايا بصوت من جهازك. اختار صوت عربي، ووجّه صوت المتصفح لبرنامج البث.</p><div id="fV"></div><label class="field" for="voice">الصوت<select id="voice"><option value="">الافتراضي</option>'+vs.map(v=>'<option'+(v.name===SET.tts.voice?' selected':'')+' value="'+esc(v.name)+'">'+esc(v.name)+' ('+v.lang+')</option>').join('')+'</select></label><div class="row"><input id="ttsTest" class="btn grow" value="هلا والله بالجميع" style="text-align:right"><button class="btn gold" id="ttsGo">تجربة</button></div>');
-    form($('#fV'),SET.tts,[['enabled','تشغيل القارئ','bool'],['comments','قراءة التعليقات','bool'],['gifts','قراءة الهدايا','bool'],['follows','قراءة المتابعات','bool'],['readName','يقرأ اسم الشخص','bool'],['onlyPrefix','يقرأ فقط اللي يبدأ بـ (فاضي = الكل)','text'],['minDiamonds','يقرأ تعليقات الداعمين من (عملة)','num'],['maxLen','أقصى عدد حروف','num'],['rate','السرعة','range',[.5,2,.1]],['volume','مستوى الصوت','range',[0,1,.05]]],'tt');
+    form($('#fV'),SET.tts,[['enabled','تشغيل القارئ','bool'],['comments','قراءة التعليقات','bool'],['modOnly','قراءة رسائل المشرفين فقط','bool'],['gifts','قراءة الهدايا','bool'],['follows','قراءة المتابعات','bool'],['readName','يقرأ اسم الشخص','bool'],['onlyPrefix','يقرأ فقط اللي يبدأ بـ (فاضي = الكل)','text'],['minDiamonds','يقرأ تعليقات الداعمين من (عملة)','num'],['maxLen','أقصى عدد حروف','num'],['rate','السرعة','range',[.5,2,.1]],['volume','مستوى الصوت','range',[0,1,.05]]],'tt');
     $('#voice').onchange=e=>{SET.tts.voice=e.target.value;saveSet()};$('#ttsGo').onclick=()=>speakNow($('#ttsTest').value);
     if('speechSynthesis' in window&&!vs.length)speechSynthesis.onvoiceschanged=()=>{if(tab==='tts')buildTab()};
   }
