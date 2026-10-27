@@ -963,6 +963,15 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .scn-trophy .tr{position:relative!important;font-size:5em;line-height:1;animation:trr .8s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 .2em #ffd166)}
 @keyframes trr{from{transform:translateY(3em) scale(.3)}}
 .scn-cash{--sc:#3dd68c}
+/*icons*/
+.goal.gs-ifl{background:none!important;border:0!important;padding:0!important;box-shadow:none!important;text-align:center}
+.ifl-row{display:flex;justify-content:center}
+.ifl-g{position:relative;display:inline-block;font-size:4.2em;line-height:1;direction:ltr}
+.ifl-base{color:#1c1f2a;text-shadow:0 0 .1em rgba(255,255,255,.08)}
+.ifl-fill{position:absolute;left:0;top:0;bottom:0;overflow:hidden;transition:width .6s ease}
+.ifl-in{position:absolute;left:0;top:0;bottom:0;display:flex;align-items:center;justify-content:center;color:var(--ic);text-shadow:0 0 .12em var(--ic),0 0 .32em var(--ic);font-size:1em}
+.ifl-g>.ifl-base{display:block}
+.ifl-t{margin-top:.25em;font-weight:900;color:#fff;text-shadow:0 0 .4em var(--ic);white-space:nowrap}
 /*car*/
 .car{display:grid;gap:10px;justify-items:center}
 .car-s{display:grid;grid-template-columns:1fr;gap:6px;justify-items:center;width:100%;max-width:460px}
@@ -2554,9 +2563,26 @@ const SOC=[
  ['rocket','روكيت ليق','#0b1d3a','#ffffff','#38bdf8','<circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M7 14l3-3 2 2 3-4" stroke="currentColor" stroke-width="2" fill="none"/><circle cx="16" cy="8" r="1.6" fill="currentColor"/>'],
  ['website','الموقع','#2fd39a','#04140f','#2fd39a','<circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.9"/><path fill="none" stroke="currentColor" stroke-width="1.6" d="M3 12h18M12 3c2.6 2.6 3.8 5.6 3.8 9s-1.2 6.4-3.8 9c-2.6-2.6-3.8-5.6-3.8-9S9.4 5.6 12 3z"/>']];
 const SOCM=Object.fromEntries(SOC.map(x=>[x[0],x]));
+const GOAL_ICONS=[['hearts','قلب يتعبى','♥','#ff2d6f'],
+['stars','نجمة تتعبى','★','#ffd166'],
+['crownf','تاج يتعبى','♛','#ffc83d'],
+['planef','طيارة تتعبى','✈','#4fd8ff'],
+['shipf','سفينة تتعبى','⛵︎','#22e6ff'],
+['sunf','شمس تتعبى','☀','#ffb020'],
+['moonf','قمر يتعبى','☾','#c4b5fd'],
+['diamondf','ماسة تتعبى','♦','#7dd3fc'],
+['boltf','برق يتعبى','⚡︎','#fde047'],
+['flowerf','وردة تتعبى','✿','#fb7185'],
+['spadef','ورقة تتعبى','♠','#e5e7eb'],
+['clubf','نادي تتعبى','♣','#86efac'],
+['starburst','انفجار نجوم','✹','#f0abfc'],
+['sparkf','بريق يتعبى','✦','#fef08a'],
+['flagf','علم يتعبى','⚑','#fca5a5'],
+['shamrock','شمروخ يتعبى','☘','#4ade80'],
+['gemf','جوهرة تتعبى','⬢','#67e8f9']];
 const GOAL_FONTS=[['thmanyah','ثمانية (Thmanyah Sans)',"'Thmanyah Sans','IBM Plex Sans Arabic',system-ui,sans-serif"],['cairo','كايرو','Cairo,system-ui,sans-serif'],['tajawal','تجوال','Tajawal,system-ui,sans-serif'],['kufi','نوتو كوفي','"Noto Kufi Arabic",system-ui,sans-serif'],['reem','ريم كوفي','"Reem Kufi",system-ui,sans-serif'],['plex','آيبيإم بليكس','"IBM Plex Sans Arabic",system-ui,sans-serif']];
 const goalFont=g=>((GOAL_FONTS.find(f=>f[0]===g.font)||GOAL_FONTS[0])[2]);
-const GOAL_STYLES=[['textfill','نص داخل الشريط (يتغير لونه مع التعبئة)'],['seven','سيفين (شاشة 7 سجمنت)'],['saudi','سعودي (أخضر وذهبي)'],['battery','بطارية'],['laser','ليزر'],['pearl','لؤلؤي'],['desert','صحراء نجدية'],['ribbon','شريط متحرك'],['neon','نيون'],['fire','لهب'],['ice','جليد'],['gold','ذهبي'],['candy','حلوى'],['stripes','مخطط متحرك'],['segments','أجزاء'],['liquid','سائل'],['glass','زجاجي'],['crystal','كريستال'],['retro','ريترو'],['cyber','سايبر'],['holo','هولوغرام'],['rainbow','قوس قزح'],['lava','لافا'],['aurora','شفق'],['royal','ملكي'],['gamer','قيمرز'],['pixel','بكسل'],['cloud','سحابة'],['comic','كوميك'],['bubble','فقاعات'],['hearts','قلوب'],['stars','نجوم'],['heat','حرارة']];
+const GOAL_STYLES=[...GOAL_ICONS.map(([k,n])=>['ic-'+k,n]),['textfill','نص داخل الشريط (يتغير لونه مع التعبئة)'],['seven','سيفين (شاشة 7 سجمنت)'],['saudi','سعودي (أخضر وذهبي)'],['battery','بطارية'],['laser','ليزر'],['pearl','لؤلؤي'],['desert','صحراء نجدية'],['ribbon','شريط متحرك'],['neon','نيون'],['fire','لهب'],['ice','جليد'],['gold','ذهبي'],['candy','حلوى'],['stripes','مخطط متحرك'],['segments','أجزاء'],['liquid','سائل'],['glass','زجاجي'],['crystal','كريستال'],['retro','ريترو'],['cyber','سايبر'],['holo','هولوغرام'],['rainbow','قوس قزح'],['lava','لافا'],['aurora','شفق'],['royal','ملكي'],['gamer','قيمرز'],['pixel','بكسل'],['cloud','سحابة'],['comic','كوميك'],['bubble','فقاعات'],['hearts','قلوب'],['stars','نجوم'],['heat','حرارة']];
 const SOC_STYLES=[['pill','كبسولة بألوان المنصات'],['glass','زجاجي شفاف'],['clear','شفاف بالكامل'],['outline','إطار شفاف'],['neon','نيون'],['card','بطاقة داكنة'],['split','مقسوم'],['tile','مربعات'],['bubble','أيقونات دائرية'],['ribbon','شريط مائل'],['fade','متدرج شفاف'],['under','خط سفلي شفاف'],['mini','صغير شفاف'],['gold','ذهبي فخم'],['sticker','ستيكر'],['cute','بناتي'],['pixel','قيمنق'],['holo','هولوغرام'],['hex','سداسي'],['ticket','تذكرة'],['bubble2','فقاعة كلام'],['tag','بطاقة معلّقة'],['ribbon2','شريط مطوي'],['arrow','سهم'],['gold2','ذهبي مزخرف'],['holo2','هولوغرام'],['fire2','لهب'],['dash','إطار منقط'],['retro','ريترو'],['glitch2','قليتش'],['shine','لمعة متحركة'],['gradbd','إطار متدرج'],['soft3d','ثلاثي الأبعاد'],['stick','ملصق'],['comic','كوميك'],['cyber2','سايبر'],['rainbowb','قوس قزح'],['ice2','جليد'],['lava2','لافا'],['aurora2','شفق'],['coinb','عملة'],['pixel2','بكسل'],['bounce','قفز'],['flip','قلب'],['pulsebd','نبض'],['wave2','موجة'],['spot2','ضوء مسلّط'],['ninja','ساموراي'],['cloud','سحابة'],['stripe','مخطط'],['leaf','ورقة'],['candy2','حلوى'],['royal2','ملكي'],['scan','ماسح']];
 const SOC_LAYS=[['row','صف واحد'],['col','عمود'],['grid','شبكة (عمودين)'],['rotate','حساب حساب (يتبدل)'],['ticker','شريط متحرك']];
 const SOC_CM=[['brand','لون كل منصة'],['theme','ألوان الثيم'],['white','أبيض'],['custom','لون من اختيارك']];
@@ -3490,6 +3516,7 @@ const W={
       return '<div class="nb nb-'+esc(st)+' ld"><div class="nbpod"><div class="nbs s1"><div class="nbf"><span class="nbi" style="background:'+col+'">'+pic+'</span></div><span class="nm">'+esc(L.name)+'</span><span class="nbv num">💸 '+esc(L.cur)+(+L.amount)+'</span>'+(L.msg?'<small>'+esc(L.msg)+'</small>':'')+'</div></div></div>'}},
   goal:{name:'شريط هدف',def:{x:4,y:8,w2:44},o:{goal:0,gstyle:'neon'},opts:[['goal','الهدف','goalsel'],['gstyle','الشكل','sel',GOAL_STYLES]],
     render(it){const g=SET.goals[+it.o.goal]||SET.goals[0];if(!g)return '';const st=gstate(g),v=goalVal(g.type)-st.start+(+g.adj||0),p=Math.max(0,Math.min(100,v/st.target*100));
+      if((it.o.gstyle||'').startsWith('ic-')){const ic=GOAL_ICONS.find(x=>'ic-'+x[0]===it.o.gstyle)||GOAL_ICONS[0];const txt=esc(g.title)+' · '+fmt(v)+' / '+fmt(st.target);return '<div class="goal gl gs-ifl" data-g="'+g.id+'" style="font-family:'+goalFont(g)+';--ic:'+esc(ic[3])+'"><div class="ifl-row"><div class="ifl-g"><span class="ifl-base">'+ic[2]+'</span><span class="ifl-fill" style="width:'+p.toFixed(1)+'%"><span class="ifl-in" style="width:'+(10000/Math.max(p,0.5)).toFixed(1)+'%">'+ic[2]+'</span></span></div></div><div class="ifl-t">'+txt+'</div></div>'}
       if(it.o.gstyle==='textfill'){const tE=g.tEmpty||'#ffffff',tF=g.tFill||'#000000',bE=g.bgEmpty||'#1f1f1f',txt=esc(g.title)+' · '+fmt(v)+' / '+fmt(st.target),pw=Math.max(p,0.5);return '<div class="goal gl gs-textfill" data-g="'+g.id+'" style="font-family:'+goalFont(g)+'"><div class="tfb" style="--gc:'+esc(g.color)+';--tE:'+esc(tE)+';--tF:'+esc(tF)+';--bE:'+esc(bE)+'"><div class="tf-base">'+txt+'</div><div class="tf-fillw" style="width:'+p.toFixed(1)+'%"><div class="tf-in" style="width:'+(10000/pw).toFixed(1)+'%">'+txt+'</div></div></div></div>'}
       return '<div class="goal gl gs-'+esc(it.o.gstyle||'neon')+'" data-g="'+g.id+'" style="font-family:'+goalFont(g)+'"><div class="gh"><span>'+esc(g.title)+'</span><span class="lv">م'+st.level+'</span></div><div class="gbar"><i style="width:'+p.toFixed(1)+'%;--gc:'+esc(g.color)+'"></i></div><div class="gn num">'+fmt(v)+' / '+fmt(st.target)+'</div></div>'},
     fx:{goalDone(el,id){const g=$('.goal',el);if(g&&g.dataset.g===id){g.classList.remove('done');void g.offsetWidth;g.classList.add('done')}}}},
