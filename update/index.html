@@ -963,6 +963,12 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .scn-trophy .tr{position:relative!important;font-size:5em;line-height:1;animation:trr .8s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 .2em #ffd166)}
 @keyframes trr{from{transform:translateY(3em) scale(.3)}}
 .scn-cash{--sc:#3dd68c}
+/*gc*/
+.gcw{width:100%;padding:.6em .8em;border-radius:14px;background:rgba(10,10,20,.7);border:1px solid rgba(255,255,255,.12);color:#fff;text-align:center;direction:rtl}
+.gct{font-weight:900;font-size:1.1em;text-shadow:0 0 .4em rgba(255,209,102,.6)}
+.gcb{margin:.4em 0;height:.7em;border-radius:99px;background:rgba(255,255,255,.12);overflow:hidden}
+.gcb i{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#ffb020,#ffd166);box-shadow:0 0 8px #ffd166;transition:width .5s ease}
+.gcn{font-size:.95em;color:#ffd166}
 /*icons*/
 .goal.gs-ifl{background:none!important;border:0!important;padding:0!important;box-shadow:none!important;text-align:center}
 .ifl-row{display:flex;justify-content:center}
@@ -2194,6 +2200,8 @@ function tierOf(name){
 function badge(name){const t=tierOf(name);return t<0?'':'<span class="bdg t'+Math.min(3,t)+'">'+esc(tierOf.lbl)+'</span>'}
 function frame(name){if(!SET.badges.frames)return '';const t=tierOf(name);return t<0?'':' fr'+Math.min(3,t)}
 function goalVal(t){return S.T[t]||0}
+function gcs(){SET.gcounters=SET.gcounters||[{on:false,gift:'Rose',goal:50,title:'تحدي الورد'},{on:false,gift:'Rose',goal:100,title:'عداد 2'},{on:false,gift:'Rose',goal:200,title:'عداد 3'}];return SET.gcounters}
+function gcAdd(name,cnt){gcs().forEach((c,i)=>{if(c.on&&c.gift&&giftAr(c.gift)===name){S.gc=S.gc||[0,0,0];S.gc[i]=(S.gc[i]||0)+cnt}})}
 function gstate(g){if(!S.goals[g.id])S.goals[g.id]={level:1,start:0,target:Math.max(1,+g.target||1)};return S.goals[g.id]}
 function tapState(){if(!S.taps)S.taps={level:1,start:0,target:Math.max(10,+SET.taps.base||1000)};return S.taps}
 function advance(st,val,mult,cb){let done=false;while(val-st.start>=st.target){st.start+=st.target;st.level++;st.target=Math.max(1,Math.round(st.target*(+mult||1)));done=true;cb&&cb(st)}return done}
@@ -2269,7 +2277,7 @@ function handle(ev,replay){
     const au=S.au&&ts>=S.au.start&&ts<=S.au.end?S.au:null;
     if(au){au.bids[u.name]=(au.bids[u.name]||0)+d;if(au.end-ts<10000)au.end=ts+10000}
     if(d>=+SET.alerts.bigAt)S.marks.push({ts,label:ev.gift+' من '+u.name+' ('+fmt(d)+')'});
-    u.diamonds+=d;u.gifts+=cnt;S.T.diamonds+=d;S.T.gifts+=cnt;b.diamonds+=d;chAdd('diamonds',d);
+    u.diamonds+=d;u.gifts+=cnt;S.T.diamonds+=d;S.T.gifts+=cnt;b.diamonds+=d;chAdd('diamonds',d);if(!replay)gcAdd(ev.gift,cnt);
     if(bt&&side&&bt.mode==='gifts')bt['s'+side]+=d;
     if(!S.big||d>S.big.d)S.big={user:u.name,gift:ev.gift,img:ev.img||'',d,ts};
     if(!replay&&!IS_SERVER&&IS_DASH){const C=SET.chatbot,k=ev.uid||u.name;if(C.gifts&&d>=(+C.giftMin||0)&&(!thankedL[k]||ts-thankedL[k]>20000)){thankedL[k]=ts;chatOut(fillMsg(pickLine(C.giftMsgs),ev),'gift')}}
@@ -3516,6 +3524,7 @@ const W={
     render(it){const L=S.lastDon;if(!L)return '';const st=it.o.style||'gold',col=L.color||'#ff4fd8',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));
       if(st==='nameonly')return '<div class="nb nb-nameonly ld"><span class="nno">'+esc(L.name)+' <b class="num">💸 '+esc(L.cur)+(+L.amount)+'</b></span></div>';
       return '<div class="nb nb-'+esc(st)+' ld"><div class="nbpod"><div class="nbs s1"><div class="nbf"><span class="nbi" style="background:'+col+'">'+pic+'</span></div><span class="nm">'+esc(L.name)+'</span><span class="nbv num">💸 '+esc(L.cur)+(+L.amount)+'</span>'+(L.msg?'<small>'+esc(L.msg)+'</small>':'')+'</div></div></div>'}},
+  gcounter:{name:'عداد الهدايا',def:{x:4,y:30,w2:30},o:{idx:0},opts:[['idx','العداد','sel',[['0','العداد 1'],['1','العداد 2'],['2','العداد 3']]]],render(it){const i=+it.o.idx||0,c=gcs()[i];if(!c||!c.on)return '';const n=(S.gc&&S.gc[i])||0,g=Math.max(1,+c.goal||1),p=Math.min(100,n/g*100);return '<div class="gcw"><div class="gct">'+esc(c.title)+'</div><div class="gcb"><i style="width:'+p.toFixed(1)+'%"></i></div><div class="gcn num">'+esc(giftAr(c.gift))+' · '+n+' / '+g+'</div></div>'}},
   goal:{name:'شريط هدف',def:{x:4,y:8,w2:44},o:{goal:0,gstyle:'neon'},opts:[['goal','الهدف','goalsel'],['gstyle','الشكل','sel',GOAL_STYLES]],
     render(it){const g=SET.goals[+it.o.goal]||SET.goals[0];if(!g)return '';const st=gstate(g),v=goalVal(g.type)-st.start+(+g.adj||0),p=Math.max(0,Math.min(100,v/st.target*100));
       if((it.o.gstyle||'').startsWith('ic-')){const ic=GOAL_ICONS.find(x=>'ic-'+x[0]===it.o.gstyle)||GOAL_ICONS[0];const txt=esc(g.title)+' · '+fmt(v)+' / '+fmt(st.target);return '<div class="goal gl gs-ifl" data-g="'+g.id+'" style="font-family:'+goalFont(g)+';--ic:'+esc(ic[3])+'"><div class="ifl-row"><div class="ifl-g"><span class="ifl-base">'+ic[2]+'</span><span class="ifl-fill" style="width:'+p.toFixed(1)+'%"><span class="ifl-in" style="width:'+(10000/Math.max(p,0.5)).toFixed(1)+'%">'+ic[2]+'</span></span></div></div><div class="ifl-t">'+txt+'</div></div>'}
@@ -4291,8 +4300,11 @@ function buildTab0(){
     drawDonTiers();
   }
   else if(tab==='goals'){
+    c.insertAdjacentHTML('beforeend','');
     c.innerHTML=card('الأشكال','<p class="hint">اختيار الأشكال كله صار في مكان واحد.</p><div class="row"><button class="btn gold" type="button" data-golooks="taps">شكل التكبيس</button><button class="btn" type="button" data-golooks="tappers">شكل قائمة المكبسين</button></div>')+card('هدف الحب','<p class="hint">قلب يتعبّى مع اللايكات، ويكبر هدفه كل ما اكتمل. شغّل أداة "هدف الحب" من المظهر والمشهد.</p><div id="fLv"></div>')+card('نظام التكبيس','<p class="hint">التكبيس يحسب لايكات الشاشة. كل ما اكتمل الهدف ينتقل لمرحلة جديدة بهدف أكبر.</p><div id="fT"></div><div id="fAR"></div><div class="row"><button class="btn bad" id="tapReset" type="button">تصفير التكبيس والعدادات الحين</button></div>')+card('أهداف البث','<p class="hint">كل هدف يظهر كشريط في المشهد عن طريق أداة "شريط هدف".</p><div id="fG"></div>');
     form($('#fLv'),SET.love,[['title','العنوان','text'],['type','يتعبّى من','sel',[['likes','اللايكات'],['diamonds','عملات الهدايا'],['follows','المتابعين']]],['target','الهدف','num'],['mult','بعد الاكتمال','sel',[['1','يبقى نفسه'],['1.5','×1.5'],['2','×2']]],['color','اللون','color']],'lv',()=>{delete S.goals.love;handleRecalc();saveSet()});
+    const GO=gcs().map((_,i)=>card('🎯 عداد الهدايا '+(i+1),'<div id="fGC'+i+'"></div>')).join('');c.insertAdjacentHTML('beforeend',GO);
+    gcs().forEach((cc,i)=>form($('#fGC'+i),cc,[['on','تشغيل العداد','bool'],['gift','نوع الهدية','sel',QGIFTS.map(g=>[g[0],giftAr(g[0])+' ('+g[2]+' عملة)'])],['goal','الهدف (عدد)','num'],['title','العنوان','text']],'gc'+i,()=>saveSet(true)));
     form($('#fAR'),SET,[['autoReset','تصفير التكبيس والعدادات تلقائياً مع كل بث جديد (ويحفظ البث القديم في الإحصائيات)','bool']],'ar');
     $('#tapReset').onclick=e=>{const b=e.currentTarget;if(b.dataset.c!=='1'){b.dataset.c='1';b.textContent='متأكد؟ اضغط مرة ثانية';return}saveSession();b.dataset.c='';b.textContent='تم التصفير ✓'};
     form($('#fT'),SET.taps,[['base','هدف المرحلة الأولى','num'],['mult','زيادة الهدف كل مرحلة','sel',[['1','ثابت'],['1.25','×1.25'],['1.5','×1.5'],['2','×2']]]],'tp',()=>{S.taps=null;handleRecalc();saveSet()});
