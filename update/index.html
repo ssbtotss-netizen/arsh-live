@@ -963,6 +963,29 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .scn-trophy .tr{position:relative!important;font-size:5em;line-height:1;animation:trr .8s cubic-bezier(.2,1.4,.4,1) both;filter:drop-shadow(0 0 .2em #ffd166)}
 @keyframes trr{from{transform:translateY(3em) scale(.3)}}
 .scn-cash{--sc:#3dd68c}
+.vx{width:100%;height:100%;object-fit:contain;pointer-events:none;display:block}
+/*vid*/
+.vd{position:relative;display:grid;place-items:center;width:100%;height:100%;padding:.6em 1.2em;box-sizing:border-box}
+.vd svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.vd-sw path{fill:none;stroke:var(--sw,#000);stroke-width:14;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:vdsw 5.2s ease-out infinite}
+.vd-ring ellipse{fill:none;stroke:var(--ac);stroke-width:6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:vdr 5.2s ease-in-out infinite;filter:drop-shadow(0 0 4px var(--ac))}
+.vd-ring ellipse.thin{stroke:#888;stroke-width:1.5;opacity:.6;animation-delay:.25s}
+.vd b{position:relative;display:block;font-size:1em;font-weight:900;color:var(--ink,#000);white-space:nowrap;text-shadow:2px 0 var(--halo,#fff),-2px 0 var(--halo,#fff),0 2px var(--halo,#fff),0 -2px var(--halo,#fff),2px 2px var(--halo,#fff),-2px -2px var(--halo,#fff),2px -2px var(--halo,#fff),-2px 2px var(--halo,#fff);animation:vdt 5.2s ease-out infinite}
+.vd-puff{position:absolute;left:14%;top:52%;width:.9em;height:.9em;border-radius:50%;background:radial-gradient(#555,rgba(0,0,0,0) 70%);filter:blur(2px);opacity:0;animation:vdp 5.2s ease-out infinite}
+.vd-puff.p2{left:auto;right:12%;top:42%;animation-delay:.15s}
+@keyframes vdsw{0%{stroke-dashoffset:1;opacity:1}16%{stroke-dashoffset:0;opacity:1}24%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes vdr{0%{stroke-dashoffset:1;opacity:0}8%{opacity:1}22%{stroke-dashoffset:0;opacity:1}32%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes vdt{0%{opacity:0;transform:scale(1.25)}20%{opacity:1;transform:scale(1)}78%{opacity:1}90%,100%{opacity:0}}
+@keyframes vdp{0%,38%{opacity:0;transform:scale(.4)}52%{opacity:.75}86%,100%{opacity:0;transform:scale(2.4)}}
+/*rings*/
+.scn-ringpurple{--c:#a77bff;--c2:#5b8cff}.scn-ringcyan{--c:#22d3ee;--c2:#3b82f6}.scn-ringpink{--c:#f472b6;--c2:#fb7185}.scn-ringgold{--c:#fbbf24;--c2:#fde68a}.scn-ringgreen{--c:#34d399;--c2:#a3e635}.scn-ringfire{--c:#f97316;--c2:#ef4444}
+.rgw{width:100%;height:100%;display:grid;place-items:center}
+.rg{position:relative;padding:.55em 1.2em;isolation:isolate}
+.rg::before,.rg::after{content:"";position:absolute;left:-8%;right:-8%;top:50%;height:150%;transform:translateY(-50%);border-radius:50%;border:.12em solid var(--c);border-left-color:transparent;border-right-color:transparent;z-index:-1;animation:rgr 2.6s linear infinite;box-shadow:0 0 .5em var(--c)}
+.rg::after{left:-14%;right:-14%;height:118%;border-color:var(--c2);border-top-color:transparent;border-bottom-color:transparent;animation-duration:1.8s;animation-direction:reverse}
+@keyframes rgr{to{transform:translateY(-50%) rotate(360deg)}}
+.rg b{position:relative;display:block;font-size:1em;font-weight:900;color:#fff;white-space:nowrap;-webkit-text-stroke:.05em #000;paint-order:stroke fill;text-shadow:0 .08em 0 #000,0 0 .6em var(--c);animation:rgp 1.6s ease-in-out infinite alternate}
+@keyframes rgp{from{transform:scale(1)}to{transform:scale(1.06)}}
 /*more-styles*/
 .goal.gs-battery{background:#111;color:#fff;border:2px solid #444;border-radius:8px;position:relative;padding-right:10px}
 .goal.gs-battery .gbar{background:#0a0a0a;border:2px solid #888;border-radius:4px;height:1.3em;overflow:hidden;padding:2px}
@@ -3673,11 +3696,11 @@ function nextEnt(el){
 const SCENES=[['speedlines','خطوط سرعة','anime'],['impact','إطار صدمة','anime'],['sparkle','بريق كيوت','anime'],['powerup','باور أب','anime'],['katana','ضربة سيف','anime'],['manga','لوحة مانغا','anime'],['chibi','ستيكر واو','anime'],
   ['levelup','ليفل أب','game'],['glitch','قليتش','game'],['portal','بوابة','game'],['fireworks','ألعاب نارية','party'],['confetti','قصاصات','party'],['balloons','بالونات','party'],['hearts','انفجار قلوب','party'],
   ['royal','دخلة ملكية','lux'],['trophy','كأس الفوز','lux'],['cash','مطر فلوس','lux'],['neon','لوحة نيون','lux'],['lightning','برق','power'],['warp','سفر فضائي','power'],['rocket','صاروخ','power'],['boom','بووم كرتوني','power'],
-  ['bow','فيونكة','girl'],['butterfly','فراشات','girl'],['mirror','مرآة المكياج','girl'],['princess','أميرة','girl'],['linkblue','رابط الدعم أزرق','link'],['linkgold','رابط الدعم ذهبي','link'],['linkpink','رابط الدعم وردي','link'],['linkgreen','رابط الدعم أخضر','link'],['adhkar','أذكار متغيرة','pray'],['prayerfull','رايح أصلي وبجي','pray'],['kisses','بوسات','girl'],['candy','حلويات','girl'],['flowers','باقة ورد','girl'],['glitter','جليتر لامع','girl'],['unicorn','يونيكورن','girl'],['perfume','عطر فخم','girl'],
+  ['bow','فيونكة','girl'],['butterfly','فراشات','girl'],['mirror','مرآة المكياج','girl'],['princess','أميرة','girl'],['linkblue','رابط الدعم أزرق','link'],['linkgold','رابط الدعم ذهبي','link'],['linkpink','رابط الدعم وردي','link'],['linkgreen','رابط الدعم أخضر','link'],['adhkar','أذكار متغيرة','pray'],['prayerfull','رايح أصلي وبجي','pray'],['ringpurple','حلقات بنفسجي','ring'],['ringcyan','حلقات سماوي','ring'],['ringpink','حلقات وردي','ring'],['ringgold','حلقات ذهبي','ring'],['ringgreen','حلقات أخضر','ring'],['ringfire','حلقات ناري','ring'],['vidcustom','حلقات بألواني ونصي','ring'],['videoexact','الفيديو الأصلي (نص ثابت)','ring'],['kisses','بوسات','girl'],['candy','حلويات','girl'],['flowers','باقة ورد','girl'],['glitter','جليتر لامع','girl'],['unicorn','يونيكورن','girl'],['perfume','عطر فخم','girl'],
   ['gacha','سحب جاتشا','anime'],['samurai','ساموراي','anime'],['sakura','ساكورا','anime'],
   ['giftzoom','الهدية العملاقة','sup'],['giftrain','مطر الهدية','sup'],['flipcard','بطاقة نادرة','sup'],['casino','جاكبوت','sup'],['scroll','مرسوم ملكي','sup'],['approved','ختم الاعتماد','sup'],
   ['cinema','سينمائي','cine'],['ticker','خبر عاجل','cine'],['spotlight','أضواء المسرح','cine'],['hologram','هولوقرام','cine'],['typewriter','شاشة هكر','cine'],['fighter','دخول الحلبة','cine'],['dragon','تنين','cine'],['phoenix','عنقاء','cine'],['meteor','نيزك','cine']];
-const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة'],['link','🔗 روابط الدعم'],['pray','🕌 صلاة وذكر']];
+const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة'],['link','🔗 روابط الدعم'],['pray','🕌 صلاة وذكر'],['ring','💫 حلقات متحركة']];
 const SC_EV=[['follow','➕ متابعة'],['share','↗️ مشاركة'],['giftS','🎁 هدية صغيرة'],['giftM','🎀 هدية متوسطة'],['giftB','💎 هدية كبيرة'],['first','🥇 أول دعم من شخص'],['throne','👑 انتزاع العرش']];
 const scEvOf=a=>a.kind==='donation'?'donation':a.kind==='gift'?(a.d>=(+SET.alerts.bigAt||1000)?'giftB':a.d>=(+SET.sfx.midAt||100)?'giftM':'giftS'):a.kind;
 const randScene=()=>pick(SCENES)[0];
@@ -3685,6 +3708,9 @@ function alertOut(a){const sc=SET.alerts.scene||{};const ev=a.throne?'throne':(a
   FX('scene',Object.assign({},a,{sk:k,ev}));if(a.throne)return;FX('alert',Object.assign({},a,{_sk:k}))}
 const durFor=ev=>+((SET.alerts.durBy||{})[ev])||+SET.alerts.sceneDur||4.5;
 const ADHKAR=['لا تنسى تصلي على النبي ﷺ','اللهم صلِّ وسلّم على نبينا محمد ﷺ','أكثروا الصلاة عليّ ﷺ','من صلّى عليّ صلاة صلّى الله عليه عشراً','سبحان الله وبحمده، سبحان الله العظيم','لا إله إلا الله وحده لا شريك له، له الملك وله الحمد','الحمد لله رب العالمين','الله أكبر، ولا حول ولا قوة إلا بالله','أستغفر الله العظيم وأتوب إليه','لا حول ولا قوة إلا بالله العلي العظيم','اللهم اغفر لي ولوالدي وللمسلمين','حسبي الله ونعم الوكيل','اللهم إنك عفوٌّ تحب العفو فاعفُ عني','ذكر الله تطمئن به القلوب'];
+const RING_TXT=()=>esc((SET.alerts&&SET.alerts.ringText)||'رابط الدونيشن بالبايو');
+const VC=(k,d)=>(SET.alerts&&SET.alerts[k])||d;
+function VID(ac,sw,ink,halo){return '<div class="vd" style="--ac:'+ac+';--sw:'+(sw||'#000')+';--ink:'+(ink||'#000')+';--halo:'+(halo||'#fff')+'"><svg class="vd-sw" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true"><path pathLength="1" d="M18,118 Q120,6 262,36 Q332,52 384,16"/></svg><svg class="vd-ring" viewBox="0 0 400 160" preserveAspectRatio="none" aria-hidden="true"><ellipse pathLength="1" cx="200" cy="80" rx="184" ry="50"/><ellipse class="thin" pathLength="1" cx="200" cy="80" rx="196" ry="60"/></svg><b>'+RING_TXT()+'</b><i class="vd-puff"></i><i class="vd-puff p2"></i></div>'}
 const PT_NAMES={Fajr:'الفجر',Dhuhr:'الظهر',Asr:'العصر',Maghrib:'المغرب',Isha:'العشاء'};
 const MOSQUE_SVG='<svg viewBox="0 0 800 300" preserveAspectRatio="none" aria-hidden="true"><path fill="#1b1234" opacity=".9" d="M0 300V190h60v-30h40v-40h30v-20h20v20h30v40h40v30h40v-60h50v-30c0-70 40-110 100-110s100 40 100 110v30h50v60h40v-30h30v-40h40v40h40v-40h30v40h40v30h40v-30h30v30h40v30h40v-100h10v100h40v-30h40v30h40v30h40V300z"/><rect x="150" y="30" width="6" height="170" fill="#1b1234"/><rect x="640" y="20" width="6" height="180" fill="#1b1234"/></svg>';
 let PT=null,PT_KEY='';
@@ -3713,6 +3739,14 @@ function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R
     linkgreen:()=>'<div class="lkp"><b>رابط الدعم بالبايو</b></div>',
     adhkar:()=>{ptLoad();return '<div class="adh"><b class="pt-cur"></b>'+ADHKAR.map((t,i)=>'<span class="r" style="--i:'+i+'">'+esc(t)+'</span>').join('')+'</div>'},
     prayerfull:()=>{ptLoad();return '<div class="pfull">'+MOSQUE_SVG+'<div class="pf-t"><h2>رايح أصلي وبجي</h2><div class="pt-next pf-n"></div><div class="pt-cd pf-c"></div></div></div>'},
+    ringpurple:()=>VID('#a66cff','#000','#000','#fff'),
+    ringcyan:()=>VID('#22d3ee','#000','#000','#fff'),
+    ringpink:()=>VID('#ff4fb8','#000','#000','#fff'),
+    ringgold:()=>VID('#ffc83d','#000','#000','#fff'),
+    ringgreen:()=>VID('#3dd68c','#000','#000','#fff'),
+    ringfire:()=>VID('#ff5a3d','#000','#000','#fff'),
+    videoexact:()=>'<video class="vx" autoplay muted playsinline src="https://arshlive.com/update/ring-intro.webm"></video>',
+    vidcustom:()=>VID(VC('ringAccent','#a66cff'),VC('ringSwoosh','#000000'),VC('ringInk','#000000'),VC('ringHalo','#ffffff')),
     bow:()=>P(14,()=>pt(5+R()*90,5+R()*90,'--s:'+f2(1+R()*1.4)+'em;--d:'+f2(R()*1.2)+'s','✦'))+'<div class="gy"><small>'+head+'</small><div class="bw"><s class="a"></s><s class="b"></s><i class="l"></i><i class="r"></i><em></em></div>'+av+'<b>'+nm+'</b>'+sb+'</div>',
     butterfly:()=>P(12,()=>{const a=R()*Math.PI*2,r=9+R()*7;return pt(50,46,'--x:'+f2(Math.cos(a)*r)+'em;--y:'+f2(Math.sin(a)*r)+'em;--s:'+f2(1.6+R()*1.6)+'em;--d:'+f2(R()*.8)+'s','🦋')})+gyc(),
     mirror:()=>'<div class="gy"><small>'+head+'</small><div class="mr">'+P(13,i=>{const a=Math.PI+i/12*Math.PI;return '<i class="bulb" style="left:calc('+f2(50+47*Math.cos(a))+'% - .5em);top:calc('+f2(40+38*Math.sin(a))+'% - .5em);--d:'+f2(i*.08)+'s"></i>'})+av+'<b>'+nm+'</b>'+sb+'</div></div>'+P(5,i=>'<i class="kiss" style="left:'+[10,78,14,80,46][i]+'%;top:'+[22,30,70,72,86][i]+'%;--d:'+f2(1+i*.25)+'s">💋</i>'),
@@ -4145,7 +4179,7 @@ function buildTab0(){
       card('🔔 تنبيهات المنصات','<p class="hint">فولو كيك، سب تويتش، سوبر تشات وأعضاء يوتيوب، البتس والرِيد. اختر وش يطلع لك:</p><div class="chips" id="malEls"></div><div class="row" style="margin-top:10px">'+[['kick','follow','فولو كيك'],['youtube','ytsub','مشترك يوتيوب'],['twitch','sub','سب تويتش'],['youtube','super','سوبر تشات'],['twitch','raid','رِيد'],['chat','','تعليقات']].map(([p,k,l])=>'<button class="btn sm" type="button" data-mtest="'+p+'|'+k+'">جرّب: '+l+'</button>').join('')+'</div><div class="bsg" id="lgMal" style="margin-top:12px"></div>'),
       follow:card('شكل تنبيه المتابعة والمشاركة','<p class="hint">يطلع لما أحد يتابعك أو يشارك اللايف. اضغط أي شكل وتشوفه يطلع في المعاينة.</p><div class="bsg" id="lgFol"></div><div id="fFt" style="margin-top:12px"></div>')+card('🔊 صوت المتابعة والمشاركة','<div id="qsFol"></div>'),
       gift:card('شكل تنبيه الهدايا','<p class="hint">يطلع لما أحد يرسل هدية. اضغط أي شكل وتشوفه في المعاينة.</p><div class="bsg" id="lgGift"></div><div class="row" style="margin-top:10px"><button class="btn" id="tGift" type="button">جرّب هدية كبيرة</button></div>')+card('🔊 صوت كل هدية','<p class="hint">اختر الصوت تحت أي هدية ويشتغل لك على طول عشان تسمعه. مثلاً الوردة صوت، والأسد صوت ثاني.</p><div id="qsGift"></div>'),
-      scenes:card('🕌 أوقات الصلاة','<p class="hint">المدينة تحدد أوقات الصلاة في شكل "رايح أصلي وبجي" و"حان وقت الصلاة". اكتبها بالإنجليزي.</p><div id="fPt"></div>')+card('⚡ وضع الأداء','<div id="fPerf"></div><p class="hint">مفعّل تلقائياً: يخفف رسم الأليرتات في البث عشان ما يصير تقطيع أو دروبات، خصوصاً على الأجهزة المتوسطة. الشكل يبقى نفسه تقريباً.</p>')+card('🎬 مكتبة الأليرتات','<p class="hint">'+SCENES.length+' أليرت كاملة الشاشة، كل وحدة بتصميم مختلف. اختر الحدث من فوق (متابعة، مشاركة، هدية…)، وبعدها اضغط الأليرت اللي يعجبك ويطلع لك في المعاينة على طول. تقدر بعد ترفع فيديو أو GIF من جهازك.</p><div id="scLib"></div>'),
+      scenes:card('✍️ نص الأشكال الحلقية','<p class="hint">اكتب النص، واختر ألوان الحلقة والخط والنص والإطار. الشكل "حلقات بألواني ونصي" يستخدم اختيارك.</p><div id="fRt"></div>')+card('🕌 أوقات الصلاة','<p class="hint">المدينة تحدد أوقات الصلاة في شكل "رايح أصلي وبجي" و"حان وقت الصلاة". اكتبها بالإنجليزي.</p><div id="fPt"></div>')+card('⚡ وضع الأداء','<div id="fPerf"></div><p class="hint">مفعّل تلقائياً: يخفف رسم الأليرتات في البث عشان ما يصير تقطيع أو دروبات، خصوصاً على الأجهزة المتوسطة. الشكل يبقى نفسه تقريباً.</p>')+card('🎬 مكتبة الأليرتات','<p class="hint">'+SCENES.length+' أليرت كاملة الشاشة، كل وحدة بتصميم مختلف. اختر الحدث من فوق (متابعة، مشاركة، هدية…)، وبعدها اضغط الأليرت اللي يعجبك ويطلع لك في المعاينة على طول. تقدر بعد ترفع فيديو أو GIF من جهازك.</p><div id="scLib"></div>'),
       sounds:card('🔊 أصوات الدعم والمتابعة','<p class="hint">كل شي من مكان واحد: اختر الصوت من القائمة تحت الحدث أو الهدية، ويشتغل لك على طول عشان تسمعه. تبي ميمز أكثر؟ من قسم "مكتبة الأصوات" تقدر تضيف أي صوت.</p><div id="qsAll"></div>'),
       theme:card('ألوان البث','<p class="hint">يغيّر ألوان كل الأدوات في البث بضغطة.</p><div class="themes">'+THEMES.map(([k,l,cs])=>'<button class="th" data-th="'+k+'" aria-pressed="'+(SET.theme===k)+'"><span class="sw3">'+cs.map(x=>'<i style="background:'+x+'"></i>').join('')+'</span>'+l+'</button>').join('')+'</div>'+(occKey()&&SET.occ.theme?'<p class="hint">ملاحظة: اليوم '+OCC[occKey()].name+' فألوان المناسبة هي اللي ظاهرة.</p>':''))}[lookSub];
     c.innerHTML='<div class="seg" role="tablist">'+SUB.map(([k,l])=>'<button type="button" role="tab" data-lsub="'+k+'" aria-selected="'+(k===lookSub)+'">'+l+'</button>').join('')+'</div>'+body;
@@ -4153,7 +4187,7 @@ function buildTab0(){
     if(lookSub==='taps'){drawTapGallery('lgTap');drawColorPicker('lcTap','tap',()=>drawTapGallery('lgTap'))}else if(lookSub==='tappers'){drawBoardGallery('lgBoard','taps');drawColorPicker('lcBoard','taps',()=>drawBoardGallery('lgBoard','taps'))}else if(lookSub==='sup'){drawBoardGallery('lgSup','sup');drawColorPicker('lcSup','sup',()=>drawBoardGallery('lgSup','sup'))}else if(lookSub==='mplat')drawMplat();else if(lookSub==='soc'){drawSocEditor('soEd');drawSocOpts('soOp');drawSocGallery('lgSoc');drawSocFx('lgSfx')}else if(lookSub==='fol')drawWLooks('fol');else if(lookSub==='tmr'){drawWLooks('tmr');drawSubathon()}
     else if(lookSub==='follow'){drawAlertGallery('lgFol','follow');drawQuickSounds('qsFol',['follow','share','join']);form($('#fFt'),SET.alerts,[['follow','تنبيه المتابعة شغال','bool'],['share','تنبيه المشاركة شغال','bool'],['followText','نص المتابعة','text'],['shareText','نص المشاركة','text']],'ft',()=>{saveSet(true);drawAlertGallery('lgFol','follow')})}
     else if(lookSub==='sounds')drawQuickSounds('qsAll');
-    else if(lookSub==='scenes'){drawSceneLib('scLib');SET.perf=SET.perf||{lite:true};form($('#fPerf'),SET.perf,[['lite','وضع الأداء (موصى به)','bool']],'pf',()=>saveSet(true));SET.prayer=SET.prayer||{city:'Riyadh',country:'Saudi Arabia'};form($('#fPt'),SET.prayer,[['city','المدينة (مثال: Riyadh)','text'],['country','الدولة (مثال: Saudi Arabia)','text']],'pt',()=>{PT_KEY='';ptLoad()});ptLoad()}
+    else if(lookSub==='scenes'){drawSceneLib('scLib');SET.perf=SET.perf||{lite:true};form($('#fPerf'),SET.perf,[['lite','وضع الأداء (موصى به)','bool']],'pf',()=>saveSet(true));SET.prayer=SET.prayer||{city:'Riyadh',country:'Saudi Arabia'};form($('#fPt'),SET.prayer,[['city','المدينة (مثال: Riyadh)','text'],['country','الدولة (مثال: Saudi Arabia)','text']],'pt',()=>{PT_KEY='';ptLoad()});form($('#fRt'),SET.alerts,[['ringText','النص داخل الحلقات','text'],['ringAccent','لون الحلقة','color'],['ringSwoosh','لون الخط المنحني','color'],['ringInk','لون النص','color'],['ringHalo','لون الإطار حول النص','color']],'rt',()=>saveSet(true));ptLoad()}
     else if(lookSub==='gift'){drawAlertGallery('lgGift','gift');drawQuickSounds('qsGift');$('#tGift').onclick=()=>simulate('lion')}
     else $$('.th[data-th]',c).forEach(b=>b.onclick=()=>{SET.theme=b.dataset.th;$$('.th[data-th]',c).forEach(x=>x.setAttribute('aria-pressed',x===b));saveSet(true)});
   }
