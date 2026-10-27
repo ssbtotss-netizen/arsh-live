@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.27';
+const APP_VER = '2.4.28';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -689,12 +689,14 @@ function licAllows(username) {
 }
 // إعادة الاتصال التلقائي: ننتظر بداية اللايف، ونرجع نتصل لو انقطع
 let connGen = 0, retryT = null;
+let failN = 0;
+function backoff(base, max) { failN = Math.min(failN + 1, 8); return Math.min(base * Math.pow(2, failN - 1), max); }
 function retryLater(username, gen, sec, msg) {
   if (gen !== connGen) return; clearTimeout(retryT); setStatus(msg, false);
   retryT = setTimeout(() => { if (gen === connGen) connect(username, true); }, sec * 1000);
 }
 async function connect(username, isRetry) {
-  if (!isRetry) connGen++;
+  if (!isRetry) { connGen++; failN = 0; }
   const gen = connGen; clearTimeout(retryT);
   if (tiktok) { const old = tiktok; tiktok = null; try { old.disconnect(); } catch (_) {} }
   if (store.lastUser !== username) { store.lastUser = username; persist(); }
@@ -752,6 +754,7 @@ async function connect(username, isRetry) {
     else if (auto && room && !store.lastRoom && events.length && Date.now() - (events[events.length - 1].ts || 0) > 20 * 60e3) newSession(); // أول مرة: بيانات من بث سابق
     if (room) { store.lastRoom = room; persist(); }
     console.log('متصل بلايف @' + username + ' (نسخة ' + made.ver + ') — roomId ' + (st && st.roomId));
+    failN = 0;
     setStatus('متصل بلايف @' + username, true);
     currentUser = username;
     pushHost(st, me, username);
@@ -768,8 +771,8 @@ async function connect(username, isRetry) {
     else if (/sign|euler|api key|401|403/i.test(why)) hint = 'خدمة التوقيع رفضت الاتصال';
     else if (/captcha|verify/i.test(why)) hint = 'تيك توك طلب تحقق، جرّب بعد شوي';
     if (tiktok !== me) return;
-    if (/offline|not live|LIVE has ended|isn't online|user_not_found|room ?id/i.test(why)) retryLater(username, gen, 20, '@' + username + ' مو لايف الحين — أول ما تبدأ اللايف نتصل تلقائياً (نتأكد كل 20 ثانية)');
-    else retryLater(username, gen, /rate|429|limit/i.test(why) ? 60 : 30, 'فشل الاتصال — ' + hint + ' · نعيد المحاولة تلقائياً · السبب: ' + why.slice(0, 120));
+    if (/offline|not live|LIVE has ended|isn't online|user_not_found|room ?id/i.test(why)) retryLater(username, gen, backoff(20, 300), '@' + username + ' مو لايف الحين — أول ما تبدأ اللايف نتصل تلقائياً (نتأكد كل 20 ثانية)');
+    else retryLater(username, gen, /rate|429|limit/i.test(why) ? backoff(60, 600) : backoff(30, 300), 'فشل الاتصال — ' + hint + ' · نعيد المحاولة تلقائياً · السبب: ' + why.slice(0, 120));
   }
 }
 
