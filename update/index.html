@@ -3927,7 +3927,7 @@ function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R
   const bolt='<svg class="blt" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><g style="fill:none;stroke:#fffbd0;stroke-width:1.1;stroke-linejoin:bevel;filter:drop-shadow(0 0 1.5px #7fd4ff)"><polyline points="18,0 27,18 17,21 31,44 22,46 34,62"/><polyline points="82,4 72,22 84,26 68,48 78,50 66,70"/></g></svg>';
   const pt=(x,y,extra,ch)=>'<i class="p" style="--x0:'+f2(x)+'%;--y0:'+f2(y)+'%;'+extra+'">'+(ch||'')+'</i>';
   let L='',top='',bot='';
-  const nm=esc(u.name),av='<span class="av2" style="background:'+u.color+'">'+pic+'</span>',gi='<span class="gim">'+(d.img?'<img src="'+esc(d.img)+'" alt="">':(d.kind==='donation'?'💸':d.kind==='follow'?'➕':d.kind==='share'?'↗️':'🎁'))+'</span>',
+  const nm=esc(u.name),av=(d.kind==='donation'&&d.msg)?'':'<span class="av2" style="background:'+u.color+'">'+pic+'</span>',gi='<span class="gim">'+(d.img?'<img src="'+esc(d.img)+'" alt="">':(d.kind==='donation'?'💸':d.kind==='follow'?'➕':d.kind==='share'?'↗️':'🎁'))+'</span>',
     st=(d.kind==='donation'?esc(d.cur||'$')+d.amount+dmMsg(d.msg):d.kind==='gift'?esc(giftAr(d.gift))+' ×'+d.count:esc(d.kind==='share'?(A.shareText||'شارك اللايف'):(A.followText||'تابع الحساب، حيّاك'))),sb='<span>'+gi+st+'</span>',
     rc={giftB:'#ffd166',giftM:'#c58bff',giftS:'#4fd8ff',follow:'#3dff8b',share:'#ff7ac3',first:'#7dff8a',throne:'#ffd166',donation:'#3dd68c'}[d.ev]||'#ffd166',rar={giftB:'أسطوري',giftM:'نادر',giftS:'مميز',follow:'متابع',share:'مشارك',first:'أول دعم',throne:'ملك البث',donation:'دونيشن'}[d.ev]||'مميز',
     W2=x=>'<div class="scn scn-'+k+(loop?' loop':'')+'" style="--dur:'+f2(durFor(d.ev))+'s;--rc:'+rc+'">'+x+'</div>';
