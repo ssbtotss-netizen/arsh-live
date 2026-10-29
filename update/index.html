@@ -622,6 +622,9 @@ canvas.fx{position:absolute;inset:0;width:100%;height:100%}
 .bgx-light .gl,.bgx-light .lb,.bgx-light .sup,.bgx-light .lr,.bgx-light .lb .lh{color:#1a1326}
 .bgx-clear .gl,.bgx-clear .lb,.bgx-clear .sup{--pn:transparent;background:transparent!important;border-color:transparent!important;box-shadow:none!important;backdrop-filter:none!important}
 .bgx-line .gl,.bgx-line .lb,.bgx-line .sup{--pn:transparent;background:transparent!important;box-shadow:0 0 0 .06em var(--a1),0 0 .9em color-mix(in srgb,var(--a1) 55%,transparent)!important;backdrop-filter:none!important}
+.bgx-neon .gl,.bgx-neon .lb,.bgx-neon .sup{--pn:rgba(8,6,14,.92);box-shadow:0 0 0 .08em var(--a1),0 0 1.1em color-mix(in srgb,var(--a1) 70%,transparent)!important}
+.bgx-grad .gl,.bgx-grad .lb,.bgx-grad .sup{--pn:transparent;background:linear-gradient(90deg,#6a2bd9,#2a6bff)!important;box-shadow:0 0 .8em rgba(106,43,217,.6)!important}
+.bgx-gold .gl,.bgx-gold .lb,.bgx-gold .sup{--pn:rgba(20,14,4,.92);box-shadow:0 0 0 .08em #d4a84b,0 0 .8em rgba(212,168,75,.5)!important}
 .ns-l .lr,.ns-l .pl,.ns-l .vr,.ns-l .wrr,.ns-l .spr,.ns-l .gx,.ns-l .crr{flex-direction:row-reverse}
 .lcw{--a1:var(--lc1);--a2:color-mix(in srgb,var(--lc1) 40%,#fff);--a3:var(--lc3);--pn:color-mix(in srgb,var(--lc2) 45%,rgba(0,0,0,.78));--bd:color-mix(in srgb,var(--lc1) 60%,transparent);--hl:color-mix(in srgb,var(--lc1) 22%,transparent)}
 .lcw .st:not(.s1):not(.s2):not(.s3),.lcw.nomedal .st{background:linear-gradient(90deg,var(--lc1),var(--lc2));color:#fff}
@@ -2934,7 +2937,7 @@ function drawQuickSounds(hostId,only){const h=$('#'+hostId);if(!h)return;const X
   const sel=(attr,v,first)=>sfxSelect(attr,v,first||null);
   const gEntry=n=>X.gifts.find(x=>{const m=String(x.match).trim();return m.toLowerCase()===n.toLowerCase()||m===GIFT_AR[n.toLowerCase()]});
   const evs=only?QEV.filter(e=>only.includes(e[0])):QEV;
-  let html='<div class="form"><label class="field bool" for="'+hostId+'-on"><span>تشغيل الأصوات</span><input class="sw" type="checkbox" id="'+hostId+'-on"'+(X.enabled?' checked':'')+'></label></div>'+
+  let html='<div class="form"><label class="field bool" for="'+hostId+'-on"><span>تشغيل الأصوات</span><input class="sw" type="checkbox" id="'+hostId+'-on"'+(X.enabled?' checked':'')+'></label></div>'+'<div class="form"><label class="field"><span>مستوى صوت الدعم</span><input type="range" min="0" max="100" step="5" value="'+Math.round((X.vol??.8)*100)+'" id="'+hostId+'-vol" style="width:100%"><b id="'+hostId+'-volv" class="num">'+Math.round((X.vol??.8)*100)+'%</b></label></div>'+
     '<div class="qsec">أصوات الأحداث</div><div class="qsg">'+evs.map(([k,e,l])=>'<div class="qst'+(X.ev[k]?' set':'')+'"><div class="qh"><span class="qe">'+e+'</span>'+l+'</div><div class="qr">'+sel('data-qev="'+k+'"',X.ev[k]||'')+'<button class="btn sm" type="button" data-qplay="ev:'+k+'" aria-label="تجربة">▶</button></div></div>').join('')+'</div>';
   if(!only){const custom=X.gifts.filter(g=>g.match&&!QGIFTS.some(q=>gEntry(q[0])===g));
     html+='<div class="qsec">صوت خاص لكل هدية <span class="hint" style="font-weight:400">— اختار الصوت تحت الهدية، والهدايا اللي ما لها صوت تاخذ صوت "أي هدية" فوق</span></div><div class="qsg">'+
@@ -2943,7 +2946,7 @@ function drawQuickSounds(hostId,only){const h=$('#'+hostId);if(!h)return;const X
       '</div><div class="row" style="margin-top:8px"><input class="btn grow" id="'+hostId+'-new" style="text-align:right;font-weight:500" placeholder="هدية ثانية؟ اكتب اسمها مثل: Lion أو أسد" aria-label="اسم هدية"><button class="btn gold" type="button" id="'+hostId+'-add">إضافة هدية</button></div>'}
   h.innerHTML=html;
   const save=()=>{saveSet();drawQuickSounds(hostId,only)};
-  $('#'+hostId+'-on').onchange=e=>{X.enabled=e.target.checked;saveSet()};
+  $('#'+hostId+'-on').onchange=e=>{X.enabled=e.target.checked;saveSet()};const vr=$('#'+hostId+'-vol');if(vr){vr.oninput=e=>{X.vol=+e.target.value/100;const vb=$('#'+hostId+'-volv');if(vb)vb.textContent=e.target.value+'%'};vr.onchange=()=>saveSet()};
   h.onchange=e=>{const t=e.target;if(t.dataset.qev){X.ev[t.dataset.qev]=t.value;save();if(t.value)playSfx(t.value,true)}
     else if(t.dataset.qg){const n=t.dataset.qg;let g=gEntry(n);if(!t.value){X.gifts=X.gifts.filter(x=>x!==g)}else{if(!g){g={id:'g'+uid(),match:n,snd:''};X.gifts.push(g)}g.snd=t.value;playSfx(t.value,true)}save()}
     else if(t.dataset.qgid){const g=X.gifts.find(x=>x.id===t.dataset.qgid);if(g){g.snd=t.value;if(t.value)playSfx(t.value,true)}save()}};
@@ -3563,7 +3566,7 @@ function wrapX(h,o){if(!o||h==null)return h;const c=[];if(o.bg&&o.bg!=='solid')c
 function wrapCol(h,o){const c=o&&o.col;if(!c||h==null)return h;const a=colVars(c),nomed=c.medal===false,nmc=!!c.c4&&c.nmOn;if(!a&&!nomed&&!nmc)return h;
   const v=a||['var(--a1)','color-mix(in srgb,var(--a1) 30%,#000)','var(--a3)'];
   return '<div class="lcw'+(nomed?' nomedal':'')+(nmc?' nmc':'')+'" style="--lc1:'+esc(v[0])+';--lc2:'+esc(v[1])+';--lc3:'+esc(v[2])+(nmc?';--lc4:'+esc(c.c4):'')+'">'+h+'</div>'}
-const BG_OPTS=[['solid','لوحة ملونة (افتراضي)'],['glass','زجاج شفاف'],['dark','داكنة'],['light','فاتحة'],['clear','شفافة بالكامل'],['line','إطار نيون بدون خلفية']];
+const BG_OPTS=[['solid','لوحة ملونة (افتراضي)'],['glass','زجاج شفاف'],['dark','داكنة'],['light','فاتحة'],['clear','شفافة بالكامل'],['line','إطار نيون بدون خلفية'],['neon','نيون داكن'],['grad','تدرج بنفسجي'],['gold','إطار ذهبي']];
 const LIST_OPTS=[['bg','خلفية القائمة','sel',BG_OPTS],['ns','موقع الاسم بالنسبة للصورة','sel',[['r','الاسم بعد الصورة'],['l','الاسم قبل الصورة']]],['ltr','اتجاه من اليسار لليمين (LTR)','bool']];
 const TAP_STYLES=[['ring','حلقة'],['heart','قلب يتعبّى'],['flame','شعلة تتعبّى'],['star','نجمة تتعبّى'],['crown','تاج يتعبّى'],['gem','جوهرة تتعبّى'],['orb','كرة سائلة'],['battery','بطارية'],['thermo','ميزان حرارة'],['gauge','عداد سرعة'],['blocks','مربعات تضوي'],['hearts5','خمس قلوب'],['bar','شريط تقدّم'],['jar','كوب يتعبّى'],['neon','رقم نيون']];
 const TAP_SHAPES={flame:['0 0 100 120','M50 2C58 30 90 46 90 80a40 40 0 0 1-80 0c0-20 12-31 19-45 4 15 10 21 17 23C52 41 40 22 50 2z'],star:['0 0 100 96','M50 3l14.5 30 33 4.5-24 23 6 33-29.5-16-29.5 16 6-33-24-23 33-4.5z'],
