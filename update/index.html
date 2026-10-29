@@ -2091,6 +2091,8 @@ body.ov #ovStage{display:block;position:fixed;inset:0;width:100vw;height:100vh;a
 .tgv{font-weight:800;font-size:15px;color:#fff;text-shadow:0 0 8px var(--gl,#000)}
 .tsvw{width:150px;height:150px;display:grid;place-items:center}.tsv{width:100%;height:100%;overflow:visible}
 .dmsg{display:inline-block;font-weight:700;line-height:1.5;margin-inline-start:4px}
+@keyframes dmIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.dmtl{margin-top:12px;display:flex;flex-direction:column;gap:8px}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3900,7 +3902,7 @@ const SCENES=[['speedlines','خطوط سرعة','anime'],['impact','إطار ص�
 const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة'],['link','🔗 روابط الدعم'],['pray','🕌 صلاة وذكر'],['ring','💫 حلقات متحركة']];
 const SC_EV=[['follow','➕ متابعة'],['share','↗️ مشاركة'],['giftS','🎁 هدية صغيرة'],['giftM','🎀 هدية متوسطة'],['giftB','💎 هدية كبيرة'],['first','🥇 أول دعم من شخص'],['throne','👑 انتزاع العرش']];
 const DM_FONTS=[['Cairo','Cairo'],['Tajawal','تجوال'],['Changa','تشانغا'],['Lalezar','لاليزار'],['Reem Kufi','ريم كوفي'],['Amiri','أميري'],['IBM Plex Sans Arabic','IBM Plex']];
-function dmStyle(){const m=(SET.alerts&&SET.alerts.dm)||{};const f=DM_FONTS.some(x=>x[0]===m.font)?m.font:'Cairo';return 'color:'+esc(m.color||'#ffffff')+';font-size:'+(+m.size||22)+'px;font-family:"'+f+'",system-ui,sans-serif'}
+function dmStyle(){const m=(SET.alerts&&SET.alerts.dm)||{};const f=DM_FONTS.some(x=>x[0]===m.font)?m.font:'Cairo';return 'color:'+esc(m.color||'#ffffff')+';font-size:'+(+m.size||22)+'px;font-family:"'+f+'",system-ui,sans-serif;animation:dmIn .4s ease both;animation-delay:'+(+m.at||0)+'s'}
 function dmMsg(msg){return msg?'<span class="dmsg" style="'+dmStyle()+'"> '+esc(msg)+'</span>':''}
 const scEvOf=a=>a.kind==='donation'?'donation':a.kind==='gift'?(a.d>=(+SET.alerts.bigAt||1000)?'giftB':a.d>=(+SET.sfx.midAt||100)?'giftM':'giftS'):a.kind;
 const randScene=()=>pick(SCENES)[0];
@@ -4482,7 +4484,12 @@ function buildTab0(){
       card('آخر داعم دونيشن','<p class="hint">كل شكل بمعاينة فيها اسم داعم تجريبي. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه.</p><div class="dgr">'+BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).map(([k,n])=>'<div class="dpv"><div class="stage mini">'+dPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dlast="'+k+'">إضافة</button>'+lnkBtn(wLink('lastdon',{style:k}))+'</div></div>').join('')+'</div>');
     scEv='donation';drawSceneLib('dnLib');
     {const dl=$('#dlOn');if(dl){dl.checked=SET.items.some(i=>i.w==='lastdon'&&i.on);dl.onchange=e=>{const on=e.target.checked;if(on&&!SET.items.some(i=>i.w==='lastdon')){addDon('lastdon',{style:'gold'})}else SET.items.filter(i=>i.w==='lastdon').forEach(i=>i.on=on);saveSet(true);remountAll()}}}
-    {const dmo=SET.alerts.dm=SET.alerts.dm||{color:'#ffffff',size:22,font:'Cairo'};const dh=$('#dmForm');if(dh)form(dh,dmo,[['color','لون الرسالة','color'],['size','حجم الرسالة (px)','num'],['font','الخط','sel',DM_FONTS]],null,()=>{saveSet(true)})}
+    {const dmo=SET.alerts.dm=SET.alerts.dm||{color:'#ffffff',size:22,font:'Cairo'};const dh=$('#dmForm');if(dh)form(dh,dmo,[['color','لون الرسالة','color'],['size','حجم الرسالة (px)','num'],['font','الخط','sel',DM_FONTS]],null,()=>{saveSet(true)})
+    {const dur=Math.max(3,Math.round(durFor('donation')*10)/10);dh.insertAdjacentHTML('beforeend','<div class="dmtl"><label class="field" for="dmAt">يبدأ ظهور الرسالة عند الثانية <b id="dmAtV" dir="ltr">'+(dmo.at||0)+'</b> من '+dur+' ث<input type="range" id="dmAt" min="0" max="'+dur+'" step="0.1" value="'+(dmo.at||0)+'"></label><div class="row"><button class="btn sm" id="dmPrev" type="button">▶ معاينة التوقيت</button></div></div>');
+      const showAt=t=>$$('#pvStage .dmsg').forEach(x=>{x.style.animation='none';x.style.opacity=t>=(+dmo.at||0)?'1':'0'});
+      $('#dmAt').oninput=e=>{const t=+e.target.value;dmo.at=t;$('#dmAtV').textContent=t;const v=$('#pvStage video');if(v)v.currentTime=t;showAt(v?v.currentTime:t);saveSet()};
+      $('#dmAt').onchange=()=>saveSet(true);
+      $('#dmPrev').onclick=()=>sim({type:'donation',user:'معاينة',amount:10,currency:'USD',msg:'معاينة توقيت الرسالة',source:'test'});}}
     $$('[data-dgoal]',c).forEach(b=>b.onclick=()=>addDon('goal',{goal:dg(),gstyle:b.dataset.dgoal}));
     $$('[data-dlast]',c).forEach(b=>b.onclick=()=>addDon('lastdon',{style:b.dataset.dlast}));
     const gcI=dg();const gO=SET.goals[gcI];
