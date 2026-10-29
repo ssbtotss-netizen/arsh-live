@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.38';
+const APP_VER = '2.4.39';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -181,11 +181,11 @@ function readTunnel() {
 setInterval(readTunnel, 3000);
 app.use((req, res, next) => {
   if (!isRemote(req)) return next();
-  if (/^\/(scene|item\/[\w-]+|w\/\w+|hook\/(kofi|donate))\/?$/.test(req.path) || req.path.startsWith('/media/')) return next();
+  if (/^\/(scene|item\/[\w-]+|w\/\w+|widgets\/[\w-]+\.html|hook\/(kofi|donate))\/?$/.test(req.path) || req.path.startsWith('/media/')) return next();
   res.status(403).type('html').send('<meta charset="utf-8"><p style="font-family:sans-serif;direction:rtl">هذا الرابط مخصص للأوفرلاي فقط.</p>');
 });
 
-app.get(['/', '/scene', '/item/:id', '/w/:type'], (_req, res) => {
+app.get(['/', '/scene', '/item/:id', '/w/:type', '/widgets/:file'], (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.type('html').send(
     '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
