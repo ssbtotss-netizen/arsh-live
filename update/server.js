@@ -17,7 +17,7 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.42';
+const APP_VER = '2.4.43';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -116,6 +116,41 @@ async function pumpChat() {
   }
   pumping = false;
 }
+// تسجيل دخول الصانع داخل التطبيق المثبت (Electron): نافذة تيك توك، والسيرفر يقرأ sessionid و tt-target-idc تلقائياً
+function tiktokLogin(ws) {
+  if (!IS_APP) return send(ws, { type: 'chatAuthOk', ok: false, err: 'تسجيل الدخول التلقائي متاح في التطبيق المثبت بس. في نسخة المتصفح انسخ الخانات يدوياً.' });
+  let electron;
+  try { electron = require('electron'); } catch (_) { return send(ws, { type: 'chatAuthOk', ok: false, err: 'تعذر فتح نافذة تسجيل الدخول.' }); }
+  const { BrowserWindow, session } = electron;
+  const ses = session.fromPartition('persist:tiktok-login');
+  let w;
+  try { w = new BrowserWindow({ width: 480, height: 720, title: 'تسجيل دخول تيك توك', autoHideMenuBar: true, webPreferences: { session: ses } }); }
+  catch (e) { return send(ws, { type: 'chatAuthOk', ok: false, err: 'تعذر فتح نافذة تسجيل الدخول: ' + ((e && e.message) || e) }); }
+  let finished = false;
+  w.on('closed', () => { finished = true; });
+  const poll = async () => {
+    if (finished || w.isDestroyed()) return;
+    try {
+      const ck = await ses.cookies.get({ url: 'https://www.tiktok.com' });
+      const sid = ck.find(c => c.name === 'sessionid'), idc = ck.find(c => c.name === 'tt-target-idc');
+      if (sid && idc) {
+        finished = true;
+        secret = Object.assign({}, secret, { sessionId: sid.value, idc: idc.value });
+        store.secret = secret; persist();
+        const full = !!(secret.apiKey && secret.sessionId && secret.idc);
+        send(ws, { type: 'chatAuthOk', ok: full, err: full ? '' : 'تم حفظ الجلسة، بس ناقص مفتاح Euler Stream.' });
+        try { w.close(); } catch (_) {}
+        ses.clearStorageData().catch(() => {});
+        if (currentUser) startSender(currentUser);
+        return;
+      }
+    } catch (_) {}
+    setTimeout(poll, 1500);
+  };
+  setTimeout(poll, 2000);
+  w.loadURL('https://www.tiktok.com/login');
+}
+
 async function startSender(username) {
   senderReady = false;
   if (sender) { try { sender.disconnect(); } catch (_) {} sender = null; }
@@ -607,6 +642,7 @@ function pushHost(st, me, username) {
 function pushEvent(ev) {
   ev.ts = ev.ts || Date.now();
   events.push(ev); evDirty = true;
+  if (ev.type === 'donation' && ev.amount > 0) { store.states.lastDon = { user: ev.user, amount: ev.amount, currency: ev.currency, msg: ev.msg, ts: ev.ts }; persist(); }
   if (events.length > 60000) events = events.slice(-40000);
   ledgerAdd(ev);
   earn(ev);
@@ -822,6 +858,7 @@ wss.on('connection', (ws, req) => {
     }
     else if (m.type === 'fx') broadcast(m);
     else if (m.type === 'chatSay' && m.text) sayChat(m.text, 'bot');
+    else if (m.type === 'chatLogin') tiktokLogin(ws);
     else if (m.type === 'chatAuth') {
       secret = { apiKey: String(m.apiKey || '').trim(), sessionId: String(m.sessionId || '').trim(), idc: String(m.idc || '').trim() };
       store.secret = secret; persist();

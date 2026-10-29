@@ -2399,7 +2399,8 @@ function handle(ev,replay){
     if(!replay){sfxEvent('follow');if(SET.alerts.follow)alertOut({kind:'follow',u});SET.actions.filter(a=>a.on==='follow').forEach(a=>runAction(a,ev));
       if(SET.tts.follows)speak(u.name+' تابع الحساب');logEv('<b>'+esc(u.name)+'</b> تابع الحساب')}
   }else if(t==='donation'){
-    const D=SET.donate,amt=+ev.amount||0;S.T.donations=(S.T.donations||0)+amt;if(+SET.timer.perDonation>0)timerEv('donation',amt*(USDX[ev.currency||'USD']||1),SET.timer.perDonation,ts,replay);tmDonCmd(ev.msg,ts,replay);
+    const D=SET.donate,amt=+ev.amount||0;S.T.donations=(S.T.donations||0)+amt;
+    if(replay&&amt>0){const cr=ev.currency||'USD';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:({USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'})[cr]||cr+' ',msg:String(ev.msg||'').slice(0,140),ts:ts||Date.now()}}if(+SET.timer.perDonation>0)timerEv('donation',amt*(USDX[ev.currency||'USD']||1),SET.timer.perDonation,ts,replay);tmDonCmd(ev.msg,ts,replay);
     if(!replay&&D.enabled!==false&&amt>=(+D.minAmount||0)){const cur=ev.currency||'USD',sym={USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'}[cur]||cur+' ',a={kind:'donation',u,amount:amt,cur:sym,msg:String(ev.msg||'').slice(0,140),src:ev.source||''};
       const usd=amt*(USDX[cur]||1),tier=donTier(usd);a.tier=tier?tier.min:0;a.link=tier&&tier.link?tier.link:'';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:sym,msg:a.msg,ts:Date.now()};
       if(tier&&tier.snd){if(IS_LEAD()&&SET.sfx.enabled)playSfx(tier.snd,false,6)}else sfxEvent('donation');
@@ -4096,7 +4097,7 @@ function recv(m){
     if(m.settings)SET=merge(DEF,m.settings);migrateSfx();applyUI();STATE=Object.assign({music:{now:null,queue:[]},history:[],ledger:{days:{},big:{}},points:{},redeems:[],sfxOwn:[]},m.states||{});
     if(IS_DASH&&!(SET.chatbot.pool&&SET.chatbot.pool.length)){syncPool();saveSet()}
     if(m.lan)LAN=m.lan;LASTUSER=m.lastUser||LASTUSER;if(m.appVer){APPVER=m.appVer;UPD=m.upd||UPD;setTimeout(drawUpd)}if(m.mstatus)MST=m.mstatus;if(m.host)HOST0=Object.assign({base:0},m.host);if(m.lic)LIC=m.lic;setTimeout(drawLic);YTDLP=!!m.ytdlp;TUNNEL=m.tunnel||'';CHAT.auth=!!m.chatAuth;CHAT.ready=!!m.chatReady;
-    S=blank();(m.events||[]).forEach(e=>handle(e,true));if(m.events&&m.events[0])S.start=m.events[0].ts;
+    S=blank();(m.events||[]).forEach(e=>handle(e,true));const ld=m.states&&m.states.lastDon;if(ld&&ld.amount>0)S.lastDon={name:ld.user||'متبرع',pic:'',color:'#ff4fd8',amount:+ld.amount,cur:({USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'})[ld.currency]||(ld.currency||'$')+' ',msg:String(ld.msg||'').slice(0,140),ts:ld.ts||Date.now()};if(m.events&&m.events[0])S.start=m.events[0].ts;
     setStatus(m.status||'متصل بالسيرفر',m.live);remountAll();if(IS_DASH){buildTab();loadYT()}
   }else if(m.type==='ev'){handle(m.ev,false)}
   else if(m.type==='settings'){if(m.from===ME)return;SET=merge(DEF,m.settings);migrateSfx();applyUI();remountAll();if(IS_DASH)buildTab()}
@@ -4115,7 +4116,7 @@ function recv(m){
     if(a==='sfx')playSfx(v,true);else if(a==='skip')musicNext();else if(a==='pause'||a==='play'||a==='vol')musicPlayer(a,v);else if(a==='clear'){STATE.music.queue=[];pushMusic()}else if(a==='stopfx')aqClear()}
   else if(m.type==='reload'){setTimeout(()=>location.reload(),600+Math.random()*900)}
   else if(m.type==='chatSent'){if(m.sys)CHAT.ready=!!m.ok&&/جاهز/.test(m.text);chatLog(m.text,m.ok,m.err)}
-  else if(m.type==='chatAuthOk'){CHAT.auth=!!m.ok;const x=$('#cbMsg');if(x){x.hidden=false;x.textContent=m.ok?'تم الحفظ. البوت يتصل أول ما تتصل باللايف.':'ناقص بيانات، تأكد من الثلاث خانات.'}renderChatLog()}
+  else if(m.type==='chatAuthOk'){CHAT.auth=!!m.ok;const x=$('#cbMsg');if(x){x.hidden=false;x.textContent=m.ok?'تم الحفظ. البوت يتصل أول ما تتصل باللايف.':(m.err||'ناقص بيانات، تأكد من الثلاث خانات.')}renderChatLog()}
 }
 function connectWS(){
   ws=new WebSocket(window.LIVE_WS);
@@ -4549,6 +4550,7 @@ function buildTab0(){
         '<div class="row"><button class="btn" id="wPreview">معاينة رسالة عشوائية</button><button class="btn sm" id="wAllOn">تفعيل الكل</button><button class="btn sm" id="wAllOff">إيقاف الكل</button></div><p class="msg" id="wPrevOut" hidden></p>'+
         '<div class="listed" id="wLib" style="max-height:340px;overflow:auto"></div>')+
       '<div class="cards">'+card('حساب صانع المحتوى (الرسائل تنكتب منه)',IS_SERVER?'<p class="hint">الترحيب والردود تنكتب من <b>حسابك أنت</b>، نفس الحساب اللي تبث منه. ما تحتاج حساب ثاني. يحتاج ثلاث أشياء، وتنحفظ على جهازك فقط:</p><ol class="hint" style="margin:0;padding-inline-start:18px;line-height:1.9"><li>مفتاح API مجاني أو مدفوع من موقع eulerstream.com</li><li>افتح tiktok.com بحسابك في متصفح الكمبيوتر، ثم أدوات المطور ← Application ← Cookies، وانسخ قيمة <b>sessionid</b></li><li>ومن نفس المكان انسخ قيمة <b>tt-target-idc</b></li></ol>'+
+        '<div class="row" style="margin:8px 0"><button class="btn gold" id="cbLogin" type="button">تسجيل دخول بحساب تيك توك</button><span class="hint">تفتح نافذة تيك توك، تسجل دخول فيها، والخانات تنتعبى تلقائي.</span></div>'+
         '<div class="row" style="margin:8px 0;gap:8px;flex-wrap:wrap"><a class="btn gold sm" href="https://www.eulerstream.com" target="_blank" rel="noopener">افتح موقع Euler وانسخ المفتاح</a><a class="btn sm" href="https://www.tiktok.com/login" target="_blank" rel="noopener">افتح تيك توك وسجل دخول بحسابك</a></div><div class="form"><label class="field" for="cbKey">مفتاح Euler Stream<input id="cbKey" type="password" dir="ltr" autocomplete="off"></label><label class="field" for="cbSid">sessionid<input id="cbSid" type="password" dir="ltr" autocomplete="off"></label><label class="field" for="cbIdc">tt-target-idc<input id="cbIdc" dir="ltr" autocomplete="off" placeholder="مثل useast2a"></label></div>'+
         '<div class="row"><button class="btn gold" id="cbSave">حفظ</button><button class="btn" id="cbTest">إرسال رسالة تجربة</button></div><p class="msg" id="cbMsg" hidden></p>'+
         '<p class="hint"><b>مهم:</b> sessionid يفتح الحساب كامل، لا تعطيه لأحد. الأفضل تسوي حساب مخصص للبوت وتخليه مشرف في لايفك بدل حسابك الأساسي. ولا تنزّل الوقت بين الرسائل عن 3 ثواني، لأن تيك توك ممكن يقيّد الحسابات اللي ترسل رسائل كثيرة بسرعة.</p>'
@@ -4559,6 +4561,7 @@ function buildTab0(){
       ['gifts','شكر على الهدايا','bool'],['giftMin','يشكر على هدية قيمتها من (عملة)','num'],['giftMsgs','رسائل الشكر (كل رسالة بسطر)','area'],['follows','شكر على المتابعة','bool'],['followMsgs','رسائل المتابعة','area'],
       ['botReplies','يرد على الأسئلة والأوامر داخل الشات','bool'],['gap','أقل وقت بين كل رسالة (ثانية)','num'],['maxQueue','أقصى ترحيبات منتظرة (في الزحمة يتجاهل الباقي)','num']],'cb');
     if(IS_SERVER){$('#cbSave').onclick=()=>bus.send({type:'chatAuth',apiKey:$('#cbKey').value,sessionId:$('#cbSid').value,idc:$('#cbIdc').value});
+      const cl=$('#cbLogin');if(cl)cl.onclick=()=>{bus.send({type:'chatLogin'});const x=$('#cbMsg');if(x){x.hidden=false;x.textContent='افتح نافذة تيك توك وسجل دخول بحسابك...'}};
       $('#cbTest').onclick=()=>{bus.send({type:'chatTest',text:fillMsg(pickWelcome(),{user:'test'}).replace(/\{user\}/g,'test').replace(/\{name\}/g,'test')});const x=$('#cbMsg');x.hidden=false;x.textContent='انرسل طلب التجربة، شوف سجل الرسائل.'}}
     renderChatLog();drawWelcome();
     form($('#fB'),SET.bot,[['enabled','تشغيل البوت','bool'],['cmds','الأوامر الجاهزة','bool'],['speak','القارئ يقرأ الردود','bool'],['cd','انتظار بين الردود (ثانية)','num']],'bt');
