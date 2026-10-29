@@ -2060,6 +2060,20 @@ body.ov #ovStage{display:block;position:fixed;inset:0;width:100vw;height:100vh;a
 .dpv b{font-size:12px}
 .dpv .row{display:flex;gap:6px;flex-wrap:wrap;align-items:center}
 /*follow plate*/.fa-plate{display:inline-flex;align-items:center;gap:8px;direction:rtl;background:#0d0d10;border:2px solid var(--fc);border-radius:999px;padding:3px 14px 3px 3px;box-shadow:0 0 12px color-mix(in srgb,var(--fc) 55%,transparent),inset 0 0 8px color-mix(in srgb,var(--fc) 25%,transparent);max-width:100%}.fpl-av{width:34px;height:34px;flex:0 0 34px;border-radius:50%;overflow:hidden;border:2px solid var(--fc);background:#222;display:flex;align-items:center;justify-content:center;color:#fff;font-weight:800;font-size:14px}.fpl-av img{width:100%;height:100%;object-fit:cover}.fpl-nm{color:var(--fc);font-weight:800;font-size:15px;line-height:1;text-shadow:0 0 6px var(--fc);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+#asstBtn{position:fixed;left:16px;bottom:16px;z-index:60;border-radius:999px;padding:10px 14px;background:var(--em);color:#000;border:0;font-weight:700;cursor:pointer;box-shadow:0 6px 20px rgba(0,0,0,.35);font-size:14px}
+#asstBox{position:fixed;left:16px;bottom:70px;z-index:60;width:min(340px,calc(100vw - 32px));height:440px;max-height:70vh;display:flex;flex-direction:column;background:var(--panel);border:1px solid var(--line);border-radius:14px;box-shadow:0 12px 40px rgba(0,0,0,.4);overflow:hidden;color:inherit}
+#asstBox[hidden]{display:none}
+.asst-h{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line)}
+.asst-h button{background:none;border:0;color:inherit;cursor:pointer;font-size:16px}
+.asst-m{flex:1;min-height:0;overflow:auto;padding:10px;display:flex;flex-direction:column;gap:8px;font-size:13.5px}
+.asst-msg{max-width:85%;padding:8px 10px;border-radius:12px;line-height:1.6;overflow-wrap:anywhere}
+.asst-msg.bot{background:var(--panel-2);align-self:flex-start}
+.asst-msg.me{background:var(--em);color:#000;align-self:flex-end}
+.asst-msg button{margin-top:6px}
+.asst-chips{display:flex;flex-wrap:wrap;gap:5px;padding:6px 10px;border-top:1px solid var(--line);max-height:90px;overflow:auto}
+.asst-chips button{font-size:11.5px;padding:4px 8px;border-radius:999px;border:1px solid var(--line);background:var(--panel-2);color:inherit;cursor:pointer}
+.asst-f{display:flex;gap:6px;padding:8px;border-top:1px solid var(--line)}
+.asst-f input{flex:1;min-width:0;padding:8px;border-radius:8px;border:1px solid var(--line);background:transparent;color:inherit}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3942,11 +3956,12 @@ function drawSceneLib(hostId){const h=$('#'+hostId);if(!h)return;const A=SET.ale
     '<div class="form"><label class="field" for="'+hostId+'-dur">مدة الأليرت: <b id="'+hostId+'-durv" dir="ltr" style="color:var(--gold,#e8c77a)">'+durFor(scEv)+'</b> ثانية<input type="range" id="'+hostId+'-dur" min="2.5" max="60" step=".5" value="'+durFor(scEv)+'"></label></div>'+
     '<div class="qsec">لما يصير هالحدث، وش يطلع؟</div><div class="scg"><button class="bst" type="button" data-sck="" aria-pressed="'+(cur==='')+'"><div class="stage mini" data-th="'+th+'" style="display:grid;place-items:center;font-size:12px!important"><div class="alq" style="width:92%">'+alertHTML(sample(scEv),'fade')+'</div></div>بطاقة عادية<small>شكل التنبيه اللي اخترته</small></button>'+
     '<button class="bst rnd" type="button" data-sck="rand" aria-pressed="'+(cur==='rand')+'"><div class="stage mini" data-th="'+th+'">🎲</div>عشوائي<small>كل مرة أليرت مختلف من الـ'+SCENES.length+'</small>'+lnkBtn(wLink('scenefx',{k:'rand',ev:scEv}))+'</button>'+'<button class="bst" type="button" data-sck="custom" aria-pressed="'+(cur==='custom')+'"><div class="stage mini" data-th="'+th+'">'+(A.sceneMedia[scEv]?sceneHTML(Object.assign({sk:'custom',ev:scEv},sample(scEv)),true):'<div style="display:grid;place-items:center;height:100%;font-size:26px">📤</div>')+'</div>فيديو أو GIF من جهازك<small>'+(A.sceneMedia[scEv]?'اضغط لتغييره':'ارفع ملفك')+'</small></button></div>';
-  SCENE_CATS.forEach(([c,l])=>{html+='<div class="qsec">'+l+'</div><div class="scg">'+SCENES.filter(x=>x[2]===c).map(([k,n])=>'<button class="bst" type="button" data-sck="'+k+'" aria-pressed="'+(cur===k)+'"><div class="stage mini" data-th="'+th+'">'+sceneHTML(Object.assign({sk:k,ev:scEv},sample(scEv)),true)+'</div>'+n+lnkBtn(wLink('scenefx',{k,ev:scEv}))+'</button>').join('')+'</div>'});
+  SCENE_CATS.forEach(([c,l])=>{html+='<div class="qsec">'+l+'</div><div class="scg">'+SCENES.filter(x=>x[2]===c).map(([k,n])=>'<button class="bst" type="button" data-sck="'+k+'" aria-pressed="'+(cur===k)+'"><div class="stage mini" data-th="'+th+'">'+sceneHTML(Object.assign({sk:k,ev:scEv},sample(scEv)),true)+'</div>'+n+'<span class="btn sm" role="button" tabindex="0" data-sctest="'+k+'">▶ تجربة</span>'+lnkBtn(wLink('scenefx',{k,ev:scEv}))+'</button>').join('')+'</div>'});
   html+='<p class="hint" style="margin-top:14px">🔗 <b>الروابط:</b> كل أليرت تحته رابط خاص، تنسخه وتضيفه مصدر "رابط" مستقل في TikTok LIVE Studio، ويطلع بس لما يصير '+esc((SC_EV.find(x=>x[0]===scEv)||[,''])[1])+'. تقدر تكرر هالشي لكل حدث بأليرت مختلف.</p>';
   h.innerHTML=html;
   $('#'+hostId+'-dur').oninput=e=>{A.durBy=A.durBy||{};A.durBy[scEv]=+e.target.value;const dv=$('#'+hostId+'-durv');if(dv)dv.textContent=A.durBy[scEv];saveSet()};
   h.onclick=e=>{const ev=e.target.closest('[data-scev]');if(ev){scEv=ev.dataset.scev;drawSceneLib(hostId);return}
+    const tt=e.target.closest('[data-sctest]');if(tt){const k=tt.dataset.sctest;ensureSceneWidget();saveSet(true);const s=Object.assign(sample(scEv),{sk:k,ev:scEv});FX('scene',Object.assign({},s));FX('alert',Object.assign({},s,{_sk:k}));return}
     const b=e.target.closest('[data-sck]');if(!b)return;const k=b.dataset.sck;
     const apply=()=>{A.scene[scEv]=k;if(k)ensureSceneWidget();saveSet(true);drawSceneLib(hostId);setTimeout(()=>{const s=sample(scEv);alertOut(s)},150)};
     if(k==='custom'&&(!A.sceneMedia[scEv]||!b.closest('[aria-pressed="true"]'))){const i=document.createElement('input');i.type='file';i.accept='video/*,image/gif,image/*';
@@ -4221,6 +4236,41 @@ function buildNav(){
   $('#tabs').onclick=e=>{if(e.target.closest('#advT')){ADV=!ADV;try{localStorage.setItem('arsh-adv',ADV?'1':'0')}catch(_){}buildNav();return}const b=e.target.closest('[data-tab]');if(!b)return;go(b.dataset.tab)};
 }
 function go(t){tab=t;document.body.classList.toggle('hzed',t==='scene'&&LAY==='h');try{localStorage.setItem('arsh3-tab',tab)}catch(_){}$$('#tabs button').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===tab));buildTab();remountAll();if(innerWidth<860)$('#content').scrollIntoView({behavior:'smooth',block:'start'})}
+
+const ASST_RULES=[
+ [/اتص|يتصل|ما يتصل|يوزر/,'اكتب يوزرك في لوحة القيادة واضغط "اتصال". لازم يكون البث شغال في تيك توك.','home'],
+ [/رابط|لينك|ايرور|ستوديو|obs|اوبي/,'الرابط يشتغل في المتصفح. في TikTok Studio انسخ الرابط من قسم الأشكال وأضفه كمصدر رابط. إذا ظهر ايرور، أرسل نص الخطأ.','looks'],
+ [/مكتب|تجرب|معاين|مشهد|اليرت|اليرتات|تنبيه/,'الأليرتات في مكتبة المشاهد. زر "▶ تجربة" على أي بطاقة يشغّلها مباشرة بدون دونيشن.','scene'],
+ [/دونيشن|دونت|تبرع|دعم مالي/,'الدونيشن يتعدل من قسم الدونيشن: الأوامر والمبالغ والأليرتات.','donate'],
+ [/تكبيس|هدف|تايمر|وقت|زود|نقص/,'التكبيس والأهداف والتايمر في قسم الأهداف والتكبيس.','goals'],
+ [/داعم|شاره|مشجع|دعم/,'الداعمين والشارات في قسم الداعمين والشارات.','supporters'],
+ [/موسيق|اغني|صوت|اصوات/,'الأصوات والموسيقى في مكتبة الأصوات والموسيقى.','sounds'],
+ [/اشتراك|كود|تفعيل|تجديد|سعر/,'الاشتراك والتفعيل في قسم الاشتراك.','sub'],
+ [/لون|الوان|ثيم|شكل|خط|حجم/,'الألوان والثيمات والأشكال في قسم الأشكال والثيمات.','looks'],
+ [/احصائ|مشاهد|متابع/,'الإحصائيات في قسم الإحصائيات.','stats'],
+ [/بوت|شات/,'البوت والشات في قسم البوت.','bot'],
+ [/تلقائ|اجراء/,'الإجراءات التلقائية في قسم الإجراءات التلقائية.','actions']
+];
+const asNorm=s=>String(s).toLowerCase().replace(/[\u064B-\u0652]/g,'').replace(/[أإآ]/g,'ا').replace(/ى/g,'ي').replace(/ة/g,'ه');
+function asstAnswer(q){const t=asNorm(q).trim();
+  if(/^(سلام|السلام|هلا|اهلا|مرحبا|hi|hello)/.test(t))return {text:'هلا! اكتب مشكلتك وأحلها لك، أو اختر القسم اللي تبيه من تحت.'};
+  for(const [re,text,tab] of ASST_RULES){if(re.test(t))return {text,tab}}
+  return {text:'ما قدرت أحدد المشكلة. اكتب تفاصيل أكثر (مثلاً: الأليرت ما يطلع في البث) أو اختر القسم من الأزرار.'}}
+function initAsst(){
+  const btn=document.createElement('button');btn.type='button';btn.id='asstBtn';btn.textContent='💬 مساعد';
+  const box=document.createElement('div');box.id='asstBox';box.hidden=true;
+  box.innerHTML='<div class="asst-h"><b>مساعد عرش اللايف</b><button type="button" id="asstX" aria-label="إغلاق">✕</button></div><div class="asst-m" id="asstM"></div><div class="asst-chips" id="asstChips">'+TABS.map(([k,l])=>'<button type="button" data-asst-go="'+k+'">'+esc(l)+'</button>').join('')+'</div><form class="asst-f" id="asstF"><input id="asstI" placeholder="اكتب مشكلتك..." autocomplete="off"><button class="btn sm" type="submit">إرسال</button></form>';
+  document.body.append(btn,box);
+  const M=box.querySelector('#asstM');
+  const add=(who,html)=>{const d=document.createElement('div');d.className='asst-msg '+who;d.innerHTML=html;M.appendChild(d);M.scrollTop=M.scrollHeight};
+  const say=(text,tab)=>{const lbl=(TABS.find(x=>x[0]===tab)||[,''])[1];add('bot',esc(text)+(tab?'<div><button class="btn sm" type="button" data-asst-go="'+tab+'">افتح '+esc(lbl)+'</button></div>':''))};
+  say('هلا! اكتب مشكلتك وأحلها لك، أو اختر القسم اللي تبيه من تحت.');
+  btn.onclick=()=>{box.hidden=!box.hidden;if(!box.hidden)box.querySelector('#asstI').focus()};
+  box.querySelector('#asstX').onclick=()=>{box.hidden=true};
+  box.querySelector('#asstF').onsubmit=e=>{e.preventDefault();const inp=box.querySelector('#asstI');const q=inp.value.trim();if(!q)return;inp.value='';add('me',esc(q));const a=asstAnswer(q);say(a.text,a.tab)};
+  box.onclick=e=>{const b=e.target.closest('[data-asst-go]');if(!b)return;go(b.dataset.asstGo);if(innerWidth<860)box.hidden=true};
+}
+initAsst();
 const THEMES=[['emerald','زمرد ملكي',['#04140f','#2fd39a','#e2b865','#ff93a8']],['night','ليل ذهبي',['#0e0b15','#d6b066','#f4dea6','#ff9fb1']],['neon','نيون',['#050614','#22e6ff','#ff4fd8','#c4fbff']],
   ['rose','وردي',['#2a0a18','#ff8fab','#ffe1e9','#ffd166']],['ice','ثلجي',['#9ab8d0','#ffffff','#9ad1ff','#ff7aa2']],['desert','صحراء نجد',['#2a1408','#e79a4d','#ffe2bd','#ff6f59']]];
 function preset(k){const I=(w,x,y,w2,o,h)=>Object.assign({id:'i'+uid(),w,on:true,x,y,w2,o:Object.assign(clone(W[w].o),o||{})},h?{h}:{});
