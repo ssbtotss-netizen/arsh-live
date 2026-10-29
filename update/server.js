@@ -17,7 +17,9 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
-const APP_VER = '2.4.43';
+// مكتبة الاتصال تحتاج تعرف سيرفر التوقيع المسموح له باستقبال الـ sessionid (قبل ما تتحمّل)
+process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST = process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST || new URL(process.env.SIGN_API_URL || 'https://api.eulerstream.com').host;
+const APP_VER = '2.4.44';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
