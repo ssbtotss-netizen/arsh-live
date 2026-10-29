@@ -3018,7 +3018,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-golooks]')
 const BOARD_GROUPS=[['⭐ أساسي',['nameonly','list','podium','medals','spot','stairs','race']],['👑 فخامة وملكي',['vip','wreath','galaxy','fire','lantern']],['⚡ نيون وتقنية',['neon','gamer','hud','arcade','cyberpunk','crystal']],['🎨 تصاميم مميزة',['sadu','hex','tower','cards','bubbles','pills','natday']]];
 function drawBoardGallery(hostId,mode){
   hostId=hostId||'bsg';mode=mode||'taps';const g=$('#'+hostId);if(!g)return;const sup=mode==='sup',th=curTheme();
-  const targets=()=>sup?SET.items.filter(i=>i.w==='top'||(i.w==='board'&&(i.o||{}).kind==='diamonds')):(()=>{const l=SET.items.filter(i=>i.w==='board'&&(i.o||{}).kind==='likes');return l.length?l:SET.items.filter(i=>i.w==='board'&&(i.o||{}).kind!=='diamonds')})();
+  const targets=()=>sup?SET.items.filter(i=>i.w==='top'||(i.w==='board'&&(i.o||{}).kind==='diamonds')):SET.items.filter(i=>i.w==='board'&&(i.o||{}).kind==='likes');
   const t0=targets()[0],cur=t0?((t0.o||{}).style||(t0.w==='top'?'classic':'stairs')):(sup?'classic':'stairs');
   const styles=sup?[['classic','منصة التتويج الأصلية']].concat(BOARD_STYLES.filter(x=>x[0]!=='podium')):BOARD_STYLES;
   const col=t0&&t0.o?t0.o.col:null,prev=k=>withSample(()=>sup?W.top.render({o:Object.assign({},W.top.o,{style:k,n:4,period:'live',col})}):W.board.render({o:Object.assign({},W.board.o,{style:k,n:4,kind:'likes',title:'أكثر المكبسين',period:'live',col})}));
@@ -3658,7 +3658,7 @@ const W={
     render(it){const o=it.o,c=[];if(o.viewers)c.push(['مشاهد',S.T.viewers]);if(o.likes)c.push(['لايك',S.T.likes]);if(o.diamonds)c.push(['عملة',S.T.diamonds]);if(o.follows)c.push(['متابع جديد',S.T.follows]);
       return '<div class="cnt">'+c.map(([l,v])=>'<span><b class="num">'+fmt(v)+'</b> '+l+'</span>').join('')+'</div>'}},
   lastdon:{name:'آخر داعم (دونيشن)',def:{x:4,y:72,w2:40},o:{style:'gold'},opts:[['style','الشكل','sel',BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).concat(ORB_STYLES)],['oc','لون الكرة (للشكل المخصص)','color']],
-    render(it){const L=S.lastDon;if(!L)return '';const st=it.o.style||'gold',col=L.color||'#ff4fd8',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));
+    render(it){const L=S.lastDon||{name:'بانتظار أول داعم',pic:'',color:'#ff4fd8',amount:0,cur:'',msg:''};const st=it.o.style||'gold',col=L.color||'#ff4fd8',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));
       if(st==='hero'){const hc=it.o.oc||'#ffd166';return '<div class="hero ld" style="--oc:'+esc(hc)+'"><div class="hero-rays"></div><div class="hero-crest"><svg viewBox="0 0 64 44" aria-hidden="true"><use href="#crown"/></svg><span class="hero-h">♥</span></div><div class="hero-banner"><span class="hero-tag">الداعم الأول</span><b class="hero-n">'+esc(L.name)+'</b><span class="hero-a num">'+esc(L.cur)+(+L.amount).toFixed(2)+'</span></div></div>'}
       if(st.startsWith('orb-')){const oc=st==='orb-custom'?(it.o.oc||'#22d3ee'):(ORB_COLS.find(x=>'orb-'+x[0]===st)||ORB_COLS[0])[1];return '<div class="orb ld" style="--oc:'+oc+'"><div class="orb-core"><i class="orb-ring"></i><span class="orb-h">♥</span></div><div class="orb-plate"><span class="orb-n">'+esc(L.name)+'</span><span class="orb-a num">'+esc(L.cur)+(+L.amount).toFixed(2)+'</span></div></div>'}
       if(st==='nameonly')return '<div class="nb nb-nameonly ld"><span class="nno">'+esc(L.name)+' <b class="num">💸 '+esc(L.cur)+(+L.amount)+'</b></span></div>';
@@ -4477,9 +4477,11 @@ function buildTab0(){
       card('أليرت الدونيشن','<p class="hint">اختار شكل أليرت الدونيشن، ومدته، وانسخ رابطه لـ TikTok LIVE Studio. نفس مكتبة الأليرتات، بس لحدث الدونيشن.</p><div id="dnLib"></div>')+
       card('شريط الدونيشن','<p class="hint">اختار الشكل بالأسهم، وشوف المعاينة، وبعدها "إضافة" أو "نسخ الرابط".</p><div id="gCar"></div>')+
       card('⚙️ إعدادات الهدف','<p class="hint">عنوان الهدف، والقيمة، ومبلغ البداية، والخط، والألوان. كلها تنحفظ مع الهدف.</p><div id="fGc"></div>')+
+      card('👁️ شكل آخر داعم','<label class="chk"><input type="checkbox" id="dlOn"> اعرض شكل آخر داعم في القائمة</label><p class="hint">القائمة هذي معزولة عن قوائم المكبسين والداعمين، ما تتأثر بها.</p>')+
       card('🎨 شكل رسالة الدونيشن','<p class="hint">الرسالة اللي يكتبها الداعم تطلع داخل نص الأليرت. تتحكم فيها باللون والحجم والخط.</p><div id="dmForm"></div>')+
       card('آخر داعم دونيشن','<p class="hint">كل شكل بمعاينة فيها اسم داعم تجريبي. "إضافة" يحطه في المعاينة، و"نسخ الرابط" يعطيك رابطه.</p><div class="dgr">'+BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).map(([k,n])=>'<div class="dpv"><div class="stage mini">'+dPrev(k)+'</div><b>'+esc(n)+'</b><div class="row"><button class="btn sm" type="button" data-dlast="'+k+'">إضافة</button>'+lnkBtn(wLink('lastdon',{style:k}))+'</div></div>').join('')+'</div>');
     scEv='donation';drawSceneLib('dnLib');
+    {const dl=$('#dlOn');if(dl){dl.checked=SET.items.some(i=>i.w==='lastdon'&&i.on);dl.onchange=e=>{const on=e.target.checked;if(on&&!SET.items.some(i=>i.w==='lastdon')){addDon('lastdon',{style:'gold'})}else SET.items.filter(i=>i.w==='lastdon').forEach(i=>i.on=on);saveSet(true);remountAll()}}}
     {const dmo=SET.alerts.dm=SET.alerts.dm||{color:'#ffffff',size:22,font:'Cairo'};const dh=$('#dmForm');if(dh)form(dh,dmo,[['color','لون الرسالة','color'],['size','حجم الرسالة (px)','num'],['font','الخط','sel',DM_FONTS]],null,()=>{saveSet(true)})}
     $$('[data-dgoal]',c).forEach(b=>b.onclick=()=>addDon('goal',{goal:dg(),gstyle:b.dataset.dgoal}));
     $$('[data-dlast]',c).forEach(b=>b.onclick=()=>addDon('lastdon',{style:b.dataset.dlast}));
