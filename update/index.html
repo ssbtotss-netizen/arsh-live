@@ -2093,6 +2093,31 @@ body.ov #ovStage{display:block;position:fixed;inset:0;width:100vw;height:100vh;a
 .dmsg{display:inline-block;font-weight:700;line-height:1.5;margin-inline-start:4px}
 @keyframes dmIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
 .dmtl{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+
+/* ---- 3 designs from reference videos ---- */
+.nb-violetrings{--c:#a66cff;background:linear-gradient(180deg,#1a0b33,#07030f)}
+.nb-violetrings .nbi{border:.14em solid #c9a2ff;box-shadow:0 0 .7em #a66cff,0 0 1.4em #7c3cff}
+.nb-violetrings .nbf{background:linear-gradient(90deg,#4b1d8f,#2b1160);border:.1em solid #a66cff;border-radius:999px;box-shadow:0 0 .6em rgba(166,108,255,.7);color:#fff}
+.tpq{display:flex;gap:.45em;justify-content:center;align-items:flex-end;margin:.3em 0}
+.tpq .qi{position:relative;width:2.3em;height:2.3em;border-radius:50%;border:.1em solid rgba(255,255,255,.55);overflow:hidden;background:rgba(255,255,255,.08);display:grid;place-items:center;box-shadow:0 0 .6em rgba(166,108,255,.5)}
+.tpq .qi i{position:absolute;left:0;right:0;bottom:0;background:linear-gradient(0deg,var(--a3),var(--a1));transition:height .4s}
+.tpq .qi b{position:relative;z-index:1;color:#fff;font-size:1.2em;text-shadow:0 0 .3em #000}
+.scn-jarcoins{--sc:#ff4fd8}
+.scn-jarcoins .p{top:-2em;font-size:1.5em;animation:cfa 2.6s linear var(--d) infinite both}
+.scn-jarcoins .jc-jar{position:relative!important;width:8em;height:10em;margin:0 auto;border-radius:1.6em 1.6em 2.2em 2.2em;border:.28em solid rgba(255,255,255,.85);background:rgba(255,255,255,.07);box-shadow:0 0 1.1em #ff4fd8,inset 0 0 1em rgba(255,255,255,.3);overflow:hidden;animation:scPop .5s both}
+.scn-jarcoins .jc-liq{position:absolute;left:0;right:0;bottom:0;height:45%;background:linear-gradient(0deg,#ff1fcf,#ff8ae6);animation:jcFill 2s ease-out both}
+.scn-jarcoins .jc-n{position:absolute;left:50%;bottom:.4em;transform:translateX(-50%);background:#ff2bd6;color:#fff;border-radius:999px;padding:.1em .6em;font-size:1.1em;white-space:nowrap}
+@keyframes jcFill{from{height:5%}to{height:45%}}
+
+/* ---- list designer dialog ---- */
+.dsg-ov{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:9999;display:grid;place-items:center;padding:16px}
+.dsg{width:min(980px,100%);max-height:90vh;display:flex;flex-direction:column;background:#111;border:1px solid #333;border-radius:14px;overflow:hidden;color:#f3efe4}
+.dsg-h{display:flex;justify-content:space-between;align-items:center;padding:12px 16px;border-bottom:1px solid #333;font-weight:700}
+.dsg-b{overflow:auto;padding:14px;flex:1}
+.dsg-f{display:flex;gap:8px;padding:12px 16px;border-top:1px solid #333}
+.dsg-b .bst{position:relative}
+.dsg-b .bst::after{content:"";position:absolute;top:10px;right:10px;width:16px;height:16px;border-radius:50%;border:2px solid #fff;box-sizing:border-box;background:#000}
+.dsg-b .bst[aria-pressed="true"]::after{background:#e2b865;box-shadow:inset 0 0 0 4px #000}
 </style>
 
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
@@ -3590,8 +3615,8 @@ function loadYT(){
 const av=(u)=>'<span class="av" style="background:'+u.color+'">'+(u.pic?'<img src="'+esc(u.pic)+'" alt="" onerror="this.remove()">':'')+esc(u.name.slice(0,1))+'</span>';
 const ORB_COLS=[['cyan','#22d3ee','كرة سماوي'],['gold','#ffd166','كرة ذهبي'],['pink','#ff4fd8','كرة وردي'],['green','#22c55e','كرة أخضر'],['violet','#a78bfa','كرة بنفسجي'],['fire','#ff6b35','كرة ناري'],['ice','#93c5fd','كرة جليد'],['emerald','#10b981','كرة زمردي'],['royal','#3b82f6','كرة ملكي'],['sand','#e7c27d','كرة رملي'],['lime','#a3e635','كرة ليموني'],['rose','#fb7185','كرة وردة'],['orange','#fb923c','كرة برتقالي'],['teal','#2dd4bf','كرة تركوازي'],['indigo','#818cf8','كرة نيلي'],['yellow','#fde047','كرة أصفر'],['slate','#94a3b8','كرة فضي'],['crimson','#dc2626','كرة قرمزي'],['mint','#86efac','كرة نعناعي']].map(([k,c,n])=>[k,c,n]);
 const ORB_STYLES=ORB_COLS.map(([k,c,n])=>['orb-'+k,n+' متحركة']).concat([['orb-custom','كرة بلون أختاره أنا'],['hero','شكل البطل (تاج وأشعة وبانر)']]);
-const BOARD_STYLES=[['nameonly','اسم فقط (شفاف بدون قوائم)'],['sadu','سدو نجدي'],['crownd','تاج ذهبي'],['glassy','زجاج شفاف'],['neonline','خط نيون'],['wreath','إكليل بنفسجي'],['royal','إكليل ذهبي'],['fire','لهب ناري'],['galaxy','مجرّة'],['vip','VIP أسود وذهبي'],['crystal','كريستال متلوّن'],['hex','خلايا سداسية'],['gamer','ستايل قيمرز'],['tower','أبراج'],['cards','بطاقات بالصور'],['pills','كبسولات زجاجية'],['spot','الأول بارز'],['stairs','درج ملوّن'],['race','سباق بأشرطة'],['neon','نيون'],['bubbles','دوائر بالصور'],['podium','منصة تتويج'],['medals','ميداليات'],['ticker','شريط متحرك'],['list','قائمة كلاسيك'],['lantern','فوانيس رمضانية'],['rings','حلقات متوهجة'],['roses','منصة الورد'],['skull','جماجم'],['rainbow','قوس السحاب'],['spectrum','طيف الألوان'],['butterfly','فراشات'],['lavender','زهور اللافندر'],['natday','اليوم الوطني السعودي'],['cyberpunk','سايبر بانك'],['frost','جليد'],['coins','عملات ذهبية'],['aurora','شفق قطبي'],['sakura','ساكورا'],['holo','هولوغرام نابض'],['glitch','قليتش RGB'],['electric','كهرباء'],['candy','حلويات ملونة'],['hud','واجهة HUD'],['lava','لافا متدفقة'],['arcade','أركيد بكسل'],['waves','أمواج'],['velvet','مخمل ملكي'],['bubbly','فقاعات كيوت']];
-const NEW_BOARD=['nameonly','sadu','crownd','glassy','neonline','lantern','rings','roses','skull','rainbow','spectrum','butterfly','lavender','natday','cyberpunk','frost','coins','aurora','sakura','holo','glitch','electric','candy','hud','lava','arcade','waves','velvet','bubbly'];
+const BOARD_STYLES=[['nameonly','اسم فقط (شفاف بدون قوائم)'],['sadu','سدو نجدي'],['crownd','تاج ذهبي'],['glassy','زجاج شفاف'],['neonline','خط نيون'],['wreath','إكليل بنفسجي'],['royal','إكليل ذهبي'],['fire','لهب ناري'],['galaxy','مجرّة'],['vip','VIP أسود وذهبي'],['crystal','كريستال متلوّن'],['hex','خلايا سداسية'],['gamer','ستايل قيمرز'],['tower','أبراج'],['cards','بطاقات بالصور'],['pills','كبسولات زجاجية'],['spot','الأول بارز'],['stairs','درج ملوّن'],['race','سباق بأشرطة'],['neon','نيون'],['bubbles','دوائر بالصور'],['podium','منصة تتويج'],['medals','ميداليات'],['ticker','شريط متحرك'],['list','قائمة كلاسيك'],['lantern','فوانيس رمضانية'],['rings','حلقات متوهجة'],['roses','منصة الورد'],['skull','جماجم'],['rainbow','قوس السحاب'],['spectrum','طيف الألوان'],['butterfly','فراشات'],['lavender','زهور اللافندر'],['natday','اليوم الوطني السعودي'],['cyberpunk','سايبر بانك'],['frost','جليد'],['coins','عملات ذهبية'],['aurora','شفق قطبي'],['sakura','ساكورا'],['holo','هولوغرام نابض'],['glitch','قليتش RGB'],['electric','كهرباء'],['candy','حلويات ملونة'],['hud','واجهة HUD'],['lava','لافا متدفقة'],['arcade','أركيد بكسل'],['waves','أمواج'],['velvet','مخمل ملكي'],['bubbly','فقاعات كيوت'],['violetrings','حلقات بنفسجي متوهج']];
+const NEW_BOARD=['nameonly','sadu','crownd','glassy','neonline','lantern','rings','roses','skull','rainbow','spectrum','butterfly','lavender','natday','cyberpunk','frost','coins','aurora','sakura','holo','glitch','electric','candy','hud','lava','arcade','waves','velvet','bubbly','violetrings'];
 function kindIcon(k){if(k==='diamonds')return '<svg class="ic2" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l5 6-10 12L2 9z" fill="#7fd4ff"/><path d="M2 9h20M7 3l5 18M17 3l-5 18" stroke="#fff" stroke-opacity=".5" fill="none"/></svg>';
   if(k==='likes')return '<svg class="ic2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21C6 16.5 2 13 2 8.5 2 5.4 4.4 3 7.4 3c1.9 0 3.6 1 4.6 2.5C13 4 14.7 3 16.6 3 19.6 3 22 5.4 22 8.5 22 13 18 16.5 12 21z" fill="#ff4f7b"/></svg>';
   return '<span class="ic2" aria-hidden="true">'+(k==='points'?'⭐':k==='comments'?'💬':'↗')+'</span>'}
@@ -3600,12 +3625,12 @@ const LIST_COLORS=[['theme','ألوان الثيم'],['purple','بنفسجي','#
   ['blackgold','أسود وذهبي','#d4af37','#000000','#f6dfa4'],['tiktok','تيك توك','#fe2c55','#111111','#25f4ee'],['custom','ألوان من اختيارك']];
 function colVars(c){if(!c)return null;let a=null;if(c.p==='custom')a=[c.c1||'#ff4fd8',c.c2||'#2a0a40',c.c3||'#ffffff'];else{const p=LIST_COLORS.find(x=>x[0]===c.p);if(p&&p[2])a=p.slice(2)}
   return a}
-function wrapX(h,o){if(!o||h==null)return h;const c=[];if(o.bg&&o.bg!=='solid')c.push('bgx-'+o.bg);if(o.ns==='l')c.push('ns-l');if(!c.length&&!o.ltr)return h;return '<div class="'+c.join(' ')+'" style="display:contents"'+(o.ltr?' dir="ltr"':'')+'>'+h+'</div>'}
+function wrapX(h,o){if(!o||h==null)return h;const c=[],ltr=o.dir==='ltr'||o.ltr===true;if(o.bg&&o.bg!=='solid')c.push('bgx-'+o.bg);if(o.ns==='l')c.push('ns-l');if(!c.length&&!ltr)return h;return '<div class="'+c.join(' ')+'" style="display:contents"'+(ltr?' dir="ltr"':'')+'>'+h+'</div>'}
 function wrapCol(h,o){const c=o&&o.col;if(!c||h==null)return h;const a=colVars(c),nomed=c.medal===false,nmc=!!c.c4&&c.nmOn;if(!a&&!nomed&&!nmc)return h;
   const v=a||['var(--a1)','color-mix(in srgb,var(--a1) 30%,#000)','var(--a3)'];
   return '<div class="lcw'+(nomed?' nomedal':'')+(nmc?' nmc':'')+'" style="--lc1:'+esc(v[0])+';--lc2:'+esc(v[1])+';--lc3:'+esc(v[2])+(nmc?';--lc4:'+esc(c.c4):'')+'">'+h+'</div>'}
 const BG_OPTS=[['solid','لوحة ملونة (افتراضي)'],['glass','زجاج شفاف'],['dark','داكنة'],['light','فاتحة'],['clear','شفافة بالكامل'],['line','إطار نيون بدون خلفية'],['neon','نيون داكن'],['grad','تدرج بنفسجي'],['gold','إطار ذهبي']];
-const LIST_OPTS=[['bg','خلفية القائمة','sel',BG_OPTS],['ns','موقع الاسم بالنسبة للصورة','sel',[['r','الاسم بعد الصورة'],['l','الاسم قبل الصورة']]],['ltr','اتجاه من اليسار لليمين (LTR)','bool']];
+const LIST_OPTS=[['bg','خلفية القائمة','sel',BG_OPTS],['ns','موقع الاسم بالنسبة للصورة','sel',[['r','الاسم بعد الصورة'],['l','الاسم قبل الصورة']]],['dir','اتجاه التصميم','sel',[['rtl','من اليمين لليسار (RTL)'],['ltr','من اليسار لليمين (LTR)']]]];
 // 25 أشكال مميزة جديدة: كل واحد له شكل خاص وتعبئة متدرجة من الأسفل
 const TAP25=[
 ['volcano','بركان','M20 170 L80 62 L94 76 L110 48 L180 170 Z','#ff5a1a','#ffd54a',''],
@@ -3642,7 +3667,7 @@ const TAPX={},TAPG_LIST=[];
 TAP25.forEach(([k,n,d,c1,c2,x])=>{const key='x_'+k;TAPX[key]=(p,u)=>tapGenSvg(d,c1,c2,x,p,u);TAPG_LIST.push([key,n])});
 TAP_LUX.forEach(([k,n,sv])=>{TAPX[k]=(p,u)=>tapLuxSvg(sv,p,u);TAPG_LIST.push([k,n])});
 TAPX.lux_hex=p=>tapHexSvg(p);TAPG_LIST.push(['lux_hex','خلية الطاقة']);
-const TAP_STYLES=[['ring','حلقة'],['heart','قلب يتعبّى'],['flame','شعلة تتعبّى'],['star','نجمة تتعبّى'],['crown','تاج يتعبّى'],['gem','جوهرة تتعبّى'],['orb','كرة سائلة'],['battery','بطارية'],['thermo','ميزان حرارة'],['gauge','عداد سرعة'],['blocks','مربعات تضوي'],['hearts5','خمس قلوب'],['bar','شريط تقدّم'],['jar','كوب يتعبّى'],['neon','رقم نيون']].concat(TAPG_LIST);
+const TAP_STYLES=[['ring','حلقة'],['heart','قلب يتعبّى'],['flame','شعلة تتعبّى'],['star','نجمة تتعبّى'],['crown','تاج يتعبّى'],['gem','جوهرة تتعبّى'],['orb','كرة سائلة'],['battery','بطارية'],['thermo','ميزان حرارة'],['gauge','عداد سرعة'],['blocks','مربعات تضوي'],['hearts5','خمس قلوب'],['bar','شريط تقدّم'],['jar','كوب يتعبّى'],['neon','رقم نيون'],['quad','أربع أيقونات تتعبّى (هلال/شمس/قلب/نجمة)']].concat(TAPG_LIST);
 const TAP_SHAPES={flame:['0 0 100 120','M50 2C58 30 90 46 90 80a40 40 0 0 1-80 0c0-20 12-31 19-45 4 15 10 21 17 23C52 41 40 22 50 2z'],star:['0 0 100 96','M50 3l14.5 30 33 4.5-24 23 6 33-29.5-16-29.5 16 6-33-24-23 33-4.5z'],
   crown:['0 0 100 80','M5 22l22 20L50 5l23 37 22-20-8 53H13z'],gem:['0 0 100 92','M22 4h56l20 27-48 57L2 31z']};
 const FOLLOW_STYLES2=[['neon','نيون'],['glass','زجاجي'],['fire','ناري'],['galaxy','مجرّة'],['vip','VIP أسود وذهبي'],['crystal','كريستال'],['gamer','قيمرز'],['stamp','ختم +1'],['confetti','احتفال']];
@@ -3693,6 +3718,7 @@ const W={
         else if(TS==='hearts5'){body='<div class="th5">'+Array.from({length:5},(_,i)=>'<span>♥<b style="width:'+(Math.max(0,Math.min(1,p*5-i))*100).toFixed(0)+'%">♥</b></span>').join('')+'</div><div class="tcap">'+lv+'<b class="num">'+fmt(v)+'</b><small>/ '+fmt(st.target)+'</small></div>'}
         else if(TS==='bar')body='<div class="tpb gl"><div class="tbh"><span>'+kindIcon('likes')+' التكبيس</span><b>المرحلة '+st.level+'</b></div><div class="tbt"><i style="width:'+(p*100).toFixed(1)+'%"></i><span class="num">'+fmt(v)+' / '+fmt(st.target)+'</span></div></div>';
         else if(TS==='jar')body='<div class="tpj"><div class="jar"><i style="height:'+(p*100).toFixed(1)+'%"></i><em>♥</em></div><div class="jt">'+lv+'<b class="num">'+fmt(v)+'</b><small>الهدف '+fmt(st.target)+'</small></div></div>';
+        else if(TS==='quad')body=lv+'<div class="tpq">'+['☾','☀','♥','★'].map((ic,i)=>'<span class="qi"><i style="height:'+(Math.max(0,Math.min(1,p*4-i))*100).toFixed(1)+'%"></i><b>'+ic+'</b></span>').join('')+'</div><div class="tv"><b class="num">'+fmt(v)+'</b><small>من '+fmt(st.target)+'</small></div>';
         else body='<div class="tpn">'+lv+'<b class="num">'+fmt(v)+'</b><small>تكبيسة من '+fmt(st.target)+'</small><div class="nl"><i style="width:'+(p*100).toFixed(1)+'%"></i></div></div>';
         return '<div class="taps tpz">'+body+cmb+lst+'</div>'}
       return '<div class="taps"><span class="lvl">المرحلة '+st.level+'</span><div class="ring"><svg viewBox="0 0 200 200"><circle class="tr" cx="100" cy="100" r="88"/><circle class="br" cx="100" cy="100" r="88" stroke-dasharray="'+CIRC.toFixed(1)+'" stroke-dashoffset="'+(CIRC*(1-Math.min(1,v/st.target))).toFixed(1)+'"/></svg><div class="mid"><span class="h">♥</span><span class="big num">'+fmt(v)+'</span><span class="of">من '+fmt(st.target)+'</span></div></div>'+
@@ -3897,7 +3923,7 @@ const SCENES=[['speedlines','خطوط سرعة','anime'],['impact','إطار ص�
   ['royal','دخلة ملكية','lux'],['trophy','كأس الفوز','lux'],['cash','مطر فلوس','lux'],['neon','لوحة نيون','lux'],['lightning','برق','power'],['warp','سفر فضائي','power'],['rocket','صاروخ','power'],['boom','بووم كرتوني','power'],
   ['bow','فيونكة','girl'],['butterfly','فراشات','girl'],['mirror','مرآة المكياج','girl'],['princess','أميرة','girl'],['linkblue','رابط الدعم أزرق','link'],['linkgold','رابط الدعم ذهبي','link'],['linkpink','رابط الدعم وردي','link'],['linkgreen','رابط الدعم أخضر','link'],['adhkar','أذكار متغيرة','pray'],['prayerfull','رايح أصلي وبجي','pray'],['ringpurple','حلقات بنفسجي','ring'],['ringcyan','حلقات سماوي','ring'],['ringpink','حلقات وردي','ring'],['ringgold','حلقات ذهبي','ring'],['ringgreen','حلقات أخضر','ring'],['ringfire','حلقات ناري','ring'],['vidcustom','حلقات بألواني ونصي','ring'],['videoexact','الفيديو الأصلي (نص ثابت)','ring'],['kisses','بوسات','girl'],['candy','حلويات','girl'],['flowers','باقة ورد','girl'],['glitter','جليتر لامع','girl'],['unicorn','يونيكورن','girl'],['perfume','عطر فخم','girl'],
   ['gacha','سحب جاتشا','anime'],['samurai','ساموراي','anime'],['sakura','ساكورا','anime'],
-  ['giftzoom','الهدية العملاقة','sup'],['giftrain','مطر الهدية','sup'],['flipcard','بطاقة نادرة','sup'],['casino','جاكبوت','sup'],['scroll','مرسوم ملكي','sup'],['approved','ختم الاعتماد','sup'],
+  ['giftzoom','الهدية العملاقة','sup'],['jarcoins','برطمان العملات','sup'],['giftrain','مطر الهدية','sup'],['flipcard','بطاقة نادرة','sup'],['casino','جاكبوت','sup'],['scroll','مرسوم ملكي','sup'],['approved','ختم الاعتماد','sup'],
   ['cinema','سينمائي','cine'],['ticker','خبر عاجل','cine'],['spotlight','أضواء المسرح','cine'],['hologram','هولوقرام','cine'],['typewriter','شاشة هكر','cine'],['fighter','دخول الحلبة','cine'],['dragon','تنين','cine'],['phoenix','عنقاء','cine'],['meteor','نيزك','cine']];
 const SCENE_CATS=[['sup','💎 للداعمين'],['girl','🎀 بناتي'],['anime','🎌 أنمي'],['cine','🎬 سينمائي'],['game','🎮 ألعاب'],['party','🎉 احتفال'],['lux','👑 فخامة'],['power','⚡ قوة'],['link','🔗 روابط الدعم'],['pray','🕌 صلاة وذكر'],['ring','💫 حلقات متحركة']];
 const SC_EV=[['follow','➕ متابعة'],['share','↗️ مشاركة'],['giftS','🎁 هدية صغيرة'],['giftM','🎀 هدية متوسطة'],['giftB','💎 هدية كبيرة'],['first','🥇 أول دعم من شخص'],['throne','👑 انتزاع العرش']];
@@ -3997,6 +4023,7 @@ function sceneHTML(d,loop){const k=d.sk,u=d.u||{name:'ضيف',color:'#9a8cc0'},R
     case 'royal':L='<i class="cur l"></i><i class="cur r"></i>'+P(14,()=>pt(5+R()*90,5+R()*90,'--d:'+f2(R()*1.4)+'s','✦'));top='<svg class="crw" viewBox="0 0 64 44" aria-hidden="true"><use href="#crown"/></svg>';break;
     case 'trophy':L='<i class="ry"></i>';top='<span class="tr">🏆</span>';break;
     case 'cash':L=P(28,i=>pt(R()*96,0,'--x:'+f2((R()-.5)*6)+'em;--d:'+f2(R()*1.6)+'s',['💵','💵','💰','🪙'][i%4]));break;
+    case 'jarcoins':L=P(12,i=>pt(R()*92,-6,'--x:'+f2((R()-.5)*4)+'em;--d:'+f2(i*.18)+'s',['🪙','💰','💸'][i%3]))+'<div class="jc-jar"><i class="jc-liq"></i><b class="jc-n num">'+esc(String(d.amount||d.count||''))+'</b></div>';break;
     case 'neon':L='<i class="nb"></i>';break;
     case 'lightning':L='<i class="fl2"></i>'+bolt;break;
     case 'warp':L=P(40,i=>pt(50,50,'--r:'+(i*9)+'deg;--d:'+f2(R()*.7)+'s'));break;
@@ -4351,6 +4378,19 @@ function preset(k){const I=(w,x,y,w2,o,h)=>Object.assign({id:'i'+uid(),w,on:true
   return out}
 const card=(h,body,id)=>'<section class="card"'+(id?' id="'+id+'"':'')+'><h2>'+h+'</h2>'+body+'</section>';
 
+function openDesigner(ids,redraw){
+  const snap=JSON.stringify(SET.items);
+  const moved=ids.map(id=>{const el=document.getElementById(id);if(!el)return null;const n=id.startsWith('lc')?(el.closest('.card')||el):el;return{n,home:n.parentNode,next:n.nextSibling}}).filter(Boolean);
+  const ov=document.createElement('div');ov.className='dsg-ov';
+  ov.innerHTML='<div class="dsg" role="dialog" aria-modal="true" aria-label="تصميم القائمة"><div class="dsg-h"><span>تصميم القائمة</span><button type="button" class="btn sm" data-x>✕</button></div><div class="dsg-b"></div><div class="dsg-f"><button type="button" class="btn gold" data-save>حفظ</button><button type="button" class="btn" data-cancel>إلغاء</button></div></div>';
+  const body=ov.querySelector('.dsg-b');moved.forEach(m=>body.appendChild(m.n));
+  let done=false;
+  const finish=keep=>{if(done)return;done=true;if(!keep){SET.items=JSON.parse(snap);saveSet(true)}moved.forEach(m=>m.home.insertBefore(m.n,m.next));ov.remove();redraw&&redraw()};
+  ov.querySelector('[data-save]').onclick=()=>{saveSet(true);finish(true)};
+  ov.querySelector('[data-cancel]').onclick=()=>finish(false);
+  ov.querySelector('[data-x]').onclick=()=>finish(false);
+  document.body.appendChild(ov);
+}
 function buildTab(){buildTab0();const c=$('#content'),t=TABS.find(x=>x[0]===tab);if(c&&t&&TAB_DESC[tab])c.insertAdjacentHTML('afterbegin','<p class="tabdesc"><b>'+t[1]+'</b>'+TAB_DESC[tab]+'</p>')}
 function buildTab0(){
   const c=$('#content');$('#pvHint').textContent=tab==='scene'?'اسحب أي أداة لتغيير مكانها':'الشكل اللي يطلع في البث';
@@ -4441,6 +4481,7 @@ function buildTab0(){
       theme:card('ألوان البث','<p class="hint">يغيّر ألوان كل الأدوات في البث بضغطة.</p><div class="themes">'+THEMES.map(([k,l,cs])=>'<button class="th" data-th="'+k+'" aria-pressed="'+(SET.theme===k)+'"><span class="sw3">'+cs.map(x=>'<i style="background:'+x+'"></i>').join('')+'</span>'+l+'</button>').join('')+'</div>'+(occKey()&&SET.occ.theme?'<p class="hint">ملاحظة: اليوم '+OCC[occKey()].name+' فألوان المناسبة هي اللي ظاهرة.</p>':''))}[lookSub];
     c.innerHTML='<div class="seg" role="tablist">'+SUB.map(([k,l])=>'<button type="button" role="tab" data-lsub="'+k+'" aria-selected="'+(k===lookSub)+'">'+l+'</button>').join('')+'</div>'+body;
     $('.seg',c).onclick=e=>{const b=e.target.closest('[data-lsub]');if(b){lookSub=b.dataset.lsub;buildTab()}};
+    if(['taps','tappers','sup'].includes(lookSub)){const M={taps:['lgTap','lcTap'],tappers:['lgBoard','lcBoard'],sup:['lgSup','lcSup']}[lookSub];$('#'+M[0]).insertAdjacentHTML('beforebegin','<div class="row" style="margin:6px 0 10px"><button class="btn gold" type="button" id="dsgOpen">🎨 فتح تصميم القائمة</button></div>');$('#dsgOpen').onclick=()=>openDesigner(M,()=>buildTab())}
     if(lookSub==='taps'){drawTapGallery('lgTap');drawColorPicker('lcTap','tap',()=>drawTapGallery('lgTap'))}else if(lookSub==='tappers'){drawBoardGallery('lgBoard','taps');drawColorPicker('lcBoard','taps',()=>drawBoardGallery('lgBoard','taps'))}else if(lookSub==='sup'){drawBoardGallery('lgSup','sup');drawColorPicker('lcSup','sup',()=>drawBoardGallery('lgSup','sup'))}else if(lookSub==='mplat')drawMplat();else if(lookSub==='soc'){drawSocEditor('soEd');drawSocOpts('soOp');drawSocGallery('lgSoc');drawSocFx('lgSfx')}else if(lookSub==='fol')drawWLooks('fol');else if(lookSub==='tmr'){drawWLooks('tmr');drawSubathon()}
     else if(lookSub==='follow'){drawAlertGallery('lgFol','follow');drawQuickSounds('qsFol',['follow','share','join']);form($('#fFt'),SET.alerts,[['follow','تنبيه المتابعة شغال','bool'],['share','تنبيه المشاركة شغال','bool'],['followText','نص المتابعة','text'],['shareText','نص المشاركة','text']],'ft',()=>{saveSet(true);drawAlertGallery('lgFol','follow')})}
     else if(lookSub==='sounds')drawQuickSounds('qsAll');
