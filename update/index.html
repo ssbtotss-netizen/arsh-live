@@ -3534,9 +3534,20 @@ function botReply(u,txt){
 
 /* ================= TTS (dashboard only) ================= */
 function speakNow(text,cb){
+  const T=SET.tts||{};
+  if(T.engine==='edge'){
+    const pct=Math.round(((+T.rate||1)-1)*100),hz=Math.round(((+T.pitch||1)-1)*50);
+    const q=new URLSearchParams({text:String(text).slice(0,400),voice:T.edgeVoice||'ar-SA-ZariyahNeural',rate:(pct>=0?'+':'')+pct+'%',pitch:(hz>=0?'+':'')+hz+'Hz'});
+    const a=new Audio('/api/tts?'+q.toString());a.volume=Math.min(1,+T.volume||1);
+    a.onended=()=>{cb&&cb()};a.onerror=()=>speakBrowser(text,cb);
+    a.play().catch(()=>speakBrowser(text,cb));return;
+  }
+  speakBrowser(text,cb);
+}
+function speakBrowser(text,cb){
   if(!('speechSynthesis' in window)){cb&&cb();return}const T=SET.tts;
   try{const m=new SpeechSynthesisUtterance(String(text).slice(0,Math.max(+T.maxLen||120,400)));m.lang='ar-SA';
-    const v=speechSynthesis.getVoices().find(v=>v.name===T.voice);if(v)m.voice=v;m.rate=+T.rate||1;m.volume=+T.volume;
+    const v=speechSynthesis.getVoices().find(v=>v.name===T.voice);if(v)m.voice=v;m.rate=+T.rate||1;m.pitch=+T.pitch||1;m.volume=+T.volume;
     m.onend=m.onerror=()=>{cb&&cb()};speechSynthesis.speak(m)}catch(e){cb&&cb()}
 }
 function speak(text,force){
@@ -4398,6 +4409,7 @@ function openDesigner(ids,redraw,mode){
   document.body.appendChild(ov);
 }
 function buildTab(){buildTab0();const c=$('#content'),t=TABS.find(x=>x[0]===tab);if(c&&t&&TAB_DESC[tab])c.insertAdjacentHTML('afterbegin','<p class="tabdesc"><b>'+t[1]+'</b>'+TAB_DESC[tab]+'</p>')}
+function vgen(n){return /hamed|naayf|majed|salim|omar|ahmed|male|david|mark|guy|george/i.test(n||'')?'ذكر':/zariyah|salma|hoda|fatima|female|zira|aria|jenny|sara/i.test(n||'')?'أنثى':''}
 function buildTab0(){
   const c=$('#content');$('#pvHint').textContent=tab==='scene'?'اسحب أي أداة لتغيير مكانها':'الشكل اللي يطلع في البث';
   if(tab==='home'){
@@ -4653,10 +4665,10 @@ function buildTab0(){
         if(n){const E=SET.sfx.ev;if(E.giftB==='rand:trend'||!E.giftB)E.giftB='rand:trend';if(E.follow==='t:newfollow')E.follow='rand:trend';if(E.likes==='t:67en'){const s67=ownList().find(o=>/6\s*7/.test(o.name));if(s67)E.likes='f:'+s67.id}saveSet();setTimeout(buildTab,1500)}};
     }
   }
-  else if(tab==='tts'){
+    else if(tab==='tts'){
     const vs=('speechSynthesis' in window)?speechSynthesis.getVoices():[];
-    c.innerHTML=card('القارئ الصوتي','<p class="hint">يقرأ التعليقات والهدايا بصوت من جهازك. اختار صوت عربي، ووجّه صوت المتصفح لبرنامج البث.</p><div id="fV"></div><label class="field" for="voice">الصوت<select id="voice"><option value="">الافتراضي</option>'+vs.map(v=>'<option'+(v.name===SET.tts.voice?' selected':'')+' value="'+esc(v.name)+'">'+esc(v.name)+' ('+v.lang+')</option>').join('')+'</select></label><div class="row"><input id="ttsTest" class="btn grow" value="هلا والله بالجميع" style="text-align:right"><button class="btn gold" id="ttsGo">تجربة</button></div>');
-    form($('#fV'),SET.tts,[['enabled','تشغيل القارئ','bool'],['comments','قراءة التعليقات','bool'],['modOnly','قراءة رسائل المشرفين فقط','bool'],['gifts','قراءة الهدايا','bool'],['follows','قراءة المتابعات','bool'],['readName','يقرأ اسم الشخص','bool'],['onlyPrefix','يقرأ فقط اللي يبدأ بـ (فاضي = الكل)','text'],['minDiamonds','يقرأ تعليقات الداعمين من (عملة)','num'],['maxLen','أقصى عدد حروف','num'],['rate','السرعة','range',[.5,2,.1]],['volume','مستوى الصوت','range',[0,1,.05]]],'tt');
+    c.innerHTML=card('القارئ الصوتي','<p class="hint">يقرأ التعليقات والهدايا بصوت من جهازك. اختار صوت عربي، ووجّه صوت المتصفح لبرنامج البث.</p><div id="fV"></div><label class="field" for="voice">الصوت<select id="voice"><option value="">الافتراضي</option>'+vs.slice().sort((a,b)=>(/^ar/i.test(b.lang||''))-(/^ar/i.test(a.lang||''))).map(v=>'<option'+(v.name===SET.tts.voice?' selected':'')+' value="'+esc(v.name)+'">'+(/^ar/i.test(v.lang||'')?'🇸🇦 ':'')+esc(v.name)+(vgen(v.name)?' · '+vgen(v.name):'')+' ('+v.lang+')</option>').join('')+'</select></label><div class="row"><input id="ttsTest" class="btn grow" value="هلا والله بالجميع" style="text-align:right"><button class="btn gold" id="ttsGo">تجربة</button></div>');
+    form($('#fV'),SET.tts,[['engine','المحرك الصوتي','sel',[['browser','صوت جهازك (المتصفح)'],['edge','نيورال مجاني (واقعي، يحتاج نت)']]],['edgeVoice','الصوت الواقعي (للنيورال)','sel',[['ar-SA-ZariyahNeural','زارية · أنثى · سعودي'],['ar-SA-HamedNeural','حامد · ذكر · سعودي'],['ar-EG-SalmaNeural','سلمى · أنثى · مصري'],['ar-EG-ShakirNeural','شاكر · ذكر · مصري'],['ar-AE-FatimaNeural','فاطمة · أنثى · إماراتي'],['ar-AE-HamdanNeural','حمدان · ذكر · إماراتي']]],['enabled','تشغيل القارئ','bool'],['comments','قراءة التعليقات','bool'],['modOnly','قراءة رسائل المشرفين فقط','bool'],['gifts','قراءة الهدايا','bool'],['follows','قراءة المتابعات','bool'],['readName','يقرأ اسم الشخص','bool'],['onlyPrefix','يقرأ فقط اللي يبدأ بـ (فاضي = الكل)','text'],['minDiamonds','يقرأ تعليقات الداعمين من (عملة)','num'],['maxLen','أقصى عدد حروف','num'],['rate','السرعة','range',[.5,2,.1]],['pitch','النبرة (أعلى = أنثى، أقل = ذكر أعمق)','range',[.5,2,.05]],['volume','مستوى الصوت','range',[0,1,.05]]],'tt');
     $('#voice').onchange=e=>{SET.tts.voice=e.target.value;saveSet()};$('#ttsGo').onclick=()=>speakNow($('#ttsTest').value);
     if('speechSynthesis' in window&&!vs.length)speechSynthesis.onvoiceschanged=()=>{if(tab==='tts')buildTab()};
   }
