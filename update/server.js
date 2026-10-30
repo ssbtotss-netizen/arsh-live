@@ -17,6 +17,8 @@ const PORT = process.env.PORT || 3000;
 // في نسخة التطبيق تنحفظ البيانات في مجلد المستخدم (AppData) بدل مجلد البرنامج
 const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive: true });
 const IS_APP = !!process.env.ARSH_APP;
+// مكتبة الاتصال تحتاج تعرف سيرفر التوقيع المسموح له باستقبال الـ sessionid (قبل ما تتحمّل)
+process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST = process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST || new URL(process.env.SIGN_API_URL || 'https://api.eulerstream.com').host;
 const APP_VER = '2.4.53';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
@@ -116,6 +118,41 @@ async function pumpChat() {
   }
   pumping = false;
 }
+// تسجيل دخول الصانع داخل التطبيق المثبت (Electron): نافذة تيك توك، والسيرفر يقرأ sessionid و tt-target-idc تلقائياً
+function tiktokLogin(ws) {
+  if (!IS_APP) return send(ws, { type: 'chatAuthOk', ok: false, err: 'تسجيل الدخول التلقائي متاح في التطبيق المثبت بس. في نسخة المتصفح انسخ الخانات يدوياً.' });
+  let electron;
+  try { electron = require('electron'); } catch (_) { return send(ws, { type: 'chatAuthOk', ok: false, err: 'تعذر فتح نافذة تسجيل الدخول.' }); }
+  const { BrowserWindow, session } = electron;
+  const ses = session.fromPartition('persist:tiktok-login');
+  let w;
+  try { w = new BrowserWindow({ width: 480, height: 720, title: 'تسجيل دخول تيك توك', autoHideMenuBar: true, webPreferences: { session: ses } }); }
+  catch (e) { return send(ws, { type: 'chatAuthOk', ok: false, err: 'تعذر فتح نافذة تسجيل الدخول: ' + ((e && e.message) || e) }); }
+  let finished = false;
+  w.on('closed', () => { finished = true; });
+  const poll = async () => {
+    if (finished || w.isDestroyed()) return;
+    try {
+      const ck = await ses.cookies.get({ url: 'https://www.tiktok.com' });
+      const sid = ck.find(c => c.name === 'sessionid'), idc = ck.find(c => c.name === 'tt-target-idc');
+      if (sid && idc) {
+        finished = true;
+        secret = Object.assign({}, secret, { sessionId: sid.value, idc: idc.value });
+        store.secret = secret; persist();
+        const full = !!(secret.apiKey && secret.sessionId && secret.idc);
+        send(ws, { type: 'chatAuthOk', ok: full, err: full ? '' : 'تم حفظ الجلسة، بس ناقص مفتاح Euler Stream.' });
+        try { w.close(); } catch (_) {}
+        ses.clearStorageData().catch(() => {});
+        if (currentUser) startSender(currentUser);
+        return;
+      }
+    } catch (_) {}
+    setTimeout(poll, 1500);
+  };
+  setTimeout(poll, 2000);
+  w.loadURL('https://www.tiktok.com/login');
+}
+
 async function startSender(username) {
   senderReady = false;
   if (sender) { try { sender.disconnect(); } catch (_) {} sender = null; }
@@ -181,11 +218,11 @@ function readTunnel() {
 setInterval(readTunnel, 3000);
 app.use((req, res, next) => {
   if (!isRemote(req)) return next();
-  if (/^\/(scene|item\/[\w-]+|w\/\w+|hook\/(kofi|donate))\/?$/.test(req.path) || req.path.startsWith('/media/')) return next();
+  if (/^\/(scene|item\/[\w-]+|w\/\w+|widgets\/[\w-]+\.html|hook\/(kofi|donate))\/?$/.test(req.path) || req.path.startsWith('/media/')) return next();
   res.status(403).type('html').send('<meta charset="utf-8"><p style="font-family:sans-serif;direction:rtl">هذا الرابط مخصص للأوفرلاي فقط.</p>');
 });
 
-app.get(['/', '/scene', '/item/:id', '/w/:type'], (_req, res) => {
+app.get(['/', '/scene', '/item/:id', '/w/:type', '/widgets/:file'], (_req, res) => {
   res.set('Cache-Control', 'no-store');
   res.type('html').send(
     '<!doctype html><html lang="ar" dir="rtl"><head><meta charset="utf-8">' +
@@ -481,7 +518,6 @@ function realFile(q) {
   })().finally(() => realPending.delete(q));
   realPending.set(q, p); return p;
 }
-
 // ===== صوت عربي نيورال مجاني (Microsoft Edge read-aloud) — يرجع mp3 للبث =====
 const EDGE_TOKEN = '6A5AA1D4EAFF4E9FB37E23D68491D6F4';
 const EDGE_VER = '130.0.2849.68';
@@ -647,6 +683,7 @@ function pushHost(st, me, username) {
 function pushEvent(ev) {
   ev.ts = ev.ts || Date.now();
   events.push(ev); evDirty = true;
+  if (ev.type === 'donation' && ev.amount > 0) { store.states.lastDon = { user: ev.user, amount: ev.amount, currency: ev.currency, msg: ev.msg, ts: ev.ts }; persist(); }
   if (events.length > 60000) events = events.slice(-40000);
   ledgerAdd(ev);
   earn(ev);
@@ -698,12 +735,14 @@ const giftInfo = d => {
   };
 };
 
+let forceV1 = false;
 async function makeConnection(username) {
+  if (forceV1) { forceV1 = false; return { conn: new WebcastPushConnection(username, { enableExtendedGiftInfo: false }), ver: 1, E: {} }; }
   // 1) الواجهة الأساسية للنسخة 2: WebSocket موقّع مجاناً. (جلب قائمة الهدايا enableExtendedGiftInfo يطلب باقة مدفوعة من Euler، فنطفيه — اسم الهدية وقيمتها يجون مع الحدث نفسه)
   try {
     const mod = await import('tiktok-live-connector-v2');
     const C = mod.TikTokLiveConnection || (mod.default && mod.default.TikTokLiveConnection);
-    if (C) { const E = Object.assign({}, mod.ControlEvent || {}, mod.WebcastEvent || {}); return { conn: new C(username, { enableExtendedGiftInfo: false }), ver: 2, E }; }
+    if (C) { const E = Object.assign({}, mod.ControlEvent || {}, mod.WebcastEvent || {}); const so = (secret && secret.apiKey) ? { signApiKey: secret.apiKey } : {}; return { conn: new C(username, Object.assign({ enableExtendedGiftInfo: false }, so)), ver: 2, E }; }
   } catch (e) { logErr('v2-load', e); }
   // 2) احتياط: المكتبة القديمة
   return { conn: new WebcastPushConnection(username, { enableExtendedGiftInfo: false }), ver: 1, E: {} };
@@ -737,12 +776,14 @@ function licAllows(username) {
 }
 // إعادة الاتصال التلقائي: ننتظر بداية اللايف، ونرجع نتصل لو انقطع
 let connGen = 0, retryT = null;
+let failN = 0;
+function backoff(base, max) { failN = Math.min(failN + 1, 8); return Math.min(base * Math.pow(2, failN - 1), max); }
 function retryLater(username, gen, sec, msg) {
   if (gen !== connGen) return; clearTimeout(retryT); setStatus(msg, false);
   retryT = setTimeout(() => { if (gen === connGen) connect(username, true); }, sec * 1000);
 }
 async function connect(username, isRetry) {
-  if (!isRetry) connGen++;
+  if (!isRetry) { connGen++; failN = 0; }
   const gen = connGen; clearTimeout(retryT);
   if (tiktok) { const old = tiktok; tiktok = null; try { old.disconnect(); } catch (_) {} }
   if (store.lastUser !== username) { store.lastUser = username; persist(); }
@@ -800,6 +841,7 @@ async function connect(username, isRetry) {
     else if (auto && room && !store.lastRoom && events.length && Date.now() - (events[events.length - 1].ts || 0) > 20 * 60e3) newSession(); // أول مرة: بيانات من بث سابق
     if (room) { store.lastRoom = room; persist(); }
     console.log('متصل بلايف @' + username + ' (نسخة ' + made.ver + ') — roomId ' + (st && st.roomId));
+    failN = 0;
     setStatus('متصل بلايف @' + username, true);
     currentUser = username;
     pushHost(st, me, username);
@@ -809,14 +851,15 @@ async function connect(username, isRetry) {
     if (store.settings && store.settings.telegram && store.settings.telegram.enabled) telegram(username);
   } catch (err) {
     const why = logErr('connect v' + made.ver, err);
+    if (made.ver === 2 && /room ?id/i.test(why) && !made.fb && tiktok === me) { made.fb = 1; forceV1 = true; setStatus('تيك توك رفض النسخة الأولى — نجرّب طريقة ثانية…', false); setTimeout(() => { if (gen === connGen) connect(username, true); }, 1500); return; }
     let hint = 'تأكد إن @' + username + ' فاتح لايف والحساب عام';
     if (/offline|not live|LIVE has ended|isn't online/i.test(why)) hint = 'تيك توك يقول إن @' + username + ' مو لايف — تأكد من اسم الحساب';
     else if (/rate|429|limit/i.test(why)) hint = 'محاولات كثيرة، انتظر دقيقة وجرّب';
     else if (/sign|euler|api key|401|403/i.test(why)) hint = 'خدمة التوقيع رفضت الاتصال';
     else if (/captcha|verify/i.test(why)) hint = 'تيك توك طلب تحقق، جرّب بعد شوي';
     if (tiktok !== me) return;
-    if (/offline|not live|LIVE has ended|isn't online|user_not_found|room ?id/i.test(why)) retryLater(username, gen, 20, '@' + username + ' مو لايف الحين — أول ما تبدأ اللايف نتصل تلقائياً (نتأكد كل 20 ثانية)');
-    else retryLater(username, gen, /rate|429|limit/i.test(why) ? 60 : 30, 'فشل الاتصال — ' + hint + ' · نعيد المحاولة تلقائياً · السبب: ' + why.slice(0, 120));
+    if (/offline|not live|LIVE has ended|isn't online|user_not_found|room ?id/i.test(why)) retryLater(username, gen, backoff(20, 300), '@' + username + ' مو لايف الحين — أول ما تبدأ اللايف نتصل تلقائياً (نتأكد كل 20 ثانية)');
+    else retryLater(username, gen, /rate|429|limit/i.test(why) ? backoff(60, 600) : backoff(30, 300), 'فشل الاتصال — ' + hint + ' · نعيد المحاولة تلقائياً · السبب: ' + why.slice(0, 120));
   }
 }
 
@@ -856,6 +899,7 @@ wss.on('connection', (ws, req) => {
     }
     else if (m.type === 'fx') broadcast(m);
     else if (m.type === 'chatSay' && m.text) sayChat(m.text, 'bot');
+    else if (m.type === 'chatLogin') tiktokLogin(ws);
     else if (m.type === 'chatAuth') {
       secret = { apiKey: String(m.apiKey || '').trim(), sessionId: String(m.sessionId || '').trim(), idc: String(m.idc || '').trim() };
       store.secret = secret; persist();
