@@ -2448,7 +2448,7 @@ function handle(ev,replay){
       if(SET.tts.follows)speak(u.name+' تابع الحساب');logEv('<b>'+esc(u.name)+'</b> تابع الحساب')}
   }else if(t==='donation'){
     const D=SET.donate,amt=+ev.amount||0;S.T.donations=(S.T.donations||0)+amt;
-    if(replay&&amt>0){const cr=ev.currency||'USD';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:({USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'})[cr]||cr+' ',msg:String(ev.msg||'').slice(0,140),ts:ts||Date.now()}}if(+SET.timer.perDonation>0)timerEv('donation',amt*(USDX[ev.currency||'USD']||1),SET.timer.perDonation,ts,replay);tmDonCmd(ev.msg,ts,replay);
+    if(replay&&amt>0){const cr=ev.currency||'USD';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:({USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'})[cr]||cr+' ',msg:String(ev.msg||'').slice(0,140),ts:ts||Date.now()}}const tmCmd=/زود\s*الوقت|نقص/.test(String(ev.msg||''));if(+SET.timer.perDonation>0&&!tmCmd)timerEv('donation',amt*(USDX[ev.currency||'USD']||1),SET.timer.perDonation,ts,replay);tmDonCmd(ev.msg,ts,replay);
     if(!replay&&D.enabled!==false&&amt>=(+D.minAmount||0)){const cur=ev.currency||'USD',sym={USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'}[cur]||cur+' ',a={kind:'donation',u,amount:amt,cur:sym,msg:String(ev.msg||'').slice(0,140),src:ev.source||''};
       const usd=amt*(USDX[cur]||1),tier=donTier(usd);a.tier=tier?tier.min:0;a.link=tier&&tier.link?tier.link:'';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:sym,msg:a.msg,ts:Date.now()};
       if(tier&&tier.snd){if(IS_LEAD()&&SET.sfx.enabled)playSfx(tier.snd,false,6)}else sfxEvent('donation');
@@ -3809,7 +3809,10 @@ const W={
       return '<div class="ty gl"><h4>'+esc(T.title)+'</h4><p>'+esc(T.msg)+'</p><div class="cols">'+col('أقوى الداعمين',sup,'diamonds')+col('ملوك التكبيس',tap,'likes')+'</div><p class="num">'+fmt(S.T.likes)+' لايك · '+fmt(S.T.diamonds)+' عملة · '+fmt(S.T.follows)+' متابع جديد</p></div>'}},
   alerts:{name:'تنبيهات الهدايا',def:{x:8,y:50,w2:84},o:{},opts:[],
     render(){return null},mount(el){el.innerHTML='<div class="alq"></div>';el._q=[];el._busy=false},
-    fx:{alert(el,a,it){if(a._sk&&document.querySelector('.wi[data-w="scenefx"]:not(.off)'))return;el._it=it;el._q.push(a);if(el._q.length>20)el._q.shift();nextAlert(el)}}},
+    fx:{alert(el,a,it){if(a.kind==='follow'&&document.querySelector('.wi[data-w="followalert"]:not(.off)'))return;if(a._sk&&document.querySelector('.wi[data-w="scenefx"]:not(.off)'))return;el._it=it;el._q.push(a);if(el._q.length>20)el._q.shift();nextAlert(el)}}},
+  followalert:{name:'تنبيه المتابعة',def:{x:8,y:50,w2:84},o:{},opts:[],
+    render(){return null},mount(el){el.innerHTML='<div class="alq"></div>';el._q=[];el._busy=false},
+    fx:{alert(el,a,it){if(a.kind!=='follow')return;if(a._sk&&document.querySelector('.wi[data-w="scenefx"]:not(.off)'))return;el._it=it;el._q.push(a);if(el._q.length>20)el._q.shift();nextAlert(el)}}},
   chat:{name:'الشات',def:{x:4,y:66,w2:56},o:{n:6,gifts:true},opts:[['n','عدد الرسائل','num'],['gifts','إظهار الهدايا','bool']],
     render(it){const m=S.chat.filter(c=>it.o.gifts||!c.gift).slice(-(+it.o.n||6));
       return '<div class="chat">'+m.map(c=>'<div class="cm'+(c.gift?' gf':'')+(c.bot?' bt':'')+'"><b>'+esc(c.user)+badge(c.user)+'</b><span>'+esc(c.text)+'</span></div>').join('')+'</div>'}},
