@@ -2851,7 +2851,8 @@ function drawMplat(){drawMst();const M=SET.multi=SET.multi||{};M.kick=M.kick||{}
   ensureMulti();const T=w=>SET.items.filter(i=>i.w===w),th=curTheme();
   {const kh=((SET.socials&&SET.socials.list)||[]).find(x=>x&&x.k==='kick');const slug=String((kh&&kh.h)||'').trim().replace(/^@/,'').replace(/^.*kick\.com\//i,'').replace(/[^\w-]/g,'').toLowerCase();
     const ob=$('#kkOpen');if(ob){if(slug){ob.href='https://kick.com/api/v2/channels/'+encodeURIComponent(slug);ob.hidden=false}else ob.hidden=true}
-    const pa=$('#kkPaste'),st=$('#kkStat');if(pa){const run=()=>{const t=pa.value;const bare=t.trim().match(/^\d{4,}$/);const m=bare?[null,bare[0]]:t.match(/"chatroom"\s*:\s*\{\s*"id"\s*:\s*(\d+)/);if(!m){if(t.trim()&&st)st.textContent='ما لقيت رقم الشات. تأكد إنك نسخت الصفحة كاملة (Ctrl+A ثم Ctrl+C).';return}
+    const pa=$('#kkPaste'),st=$('#kkStat');if(pa){const run=()=>{const t=pa.value;if(/Channel not found|"status"\s*:\s*404/i.test(t)){if(st)st.textContent='القناة ما لقيناها بهالاسم. تأكد من اسم القناة في 📱 حساباتي، لازم يكون نفس اللي في رابط kick.com/اسمك.';return}
+      const bare=t.trim().match(/^\d{4,}$/);const m=bare?[null,bare[0]]:t.match(/"chatroom"\s*:\s*\{\s*"id"\s*:\s*(\d+)/);if(!m){if(t.trim()&&st)st.textContent='ما لقيت رقم الشات. تأكد إنك نسخت الصفحة كاملة (Ctrl+A ثم Ctrl+C).';return}
       const kh2=((SET.socials&&SET.socials.list)||[]).find(x=>x&&x.k==='kick');if(!(kh2&&String(kh2.h||'').trim())){if(st)st.textContent='اكتب اسم قناتك في 📱 حساباتي أول، وبعدين الصق هنا.';return}
       const ch=bare?null:t.match(/^\s*\{\s*"id"\s*:\s*(\d+)/);M.kick=M.kick||{};M.kick.on=true;M.kick.chatroomId=m[1];if(ch)M.kick.channelId=ch[1];saveSet(true);if(st)st.textContent='✓ تم الربط. رقم الشات: '+m[1];pa.value=''};
       pa.addEventListener('input',run);pa.addEventListener('paste',()=>setTimeout(run,0))}}
