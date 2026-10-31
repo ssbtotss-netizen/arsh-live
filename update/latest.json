@@ -1,8 +1,8 @@
 {
-  "version": "2.4.61",
-  "notes": "تحديث 2.4.61: إذا اسم قناة كيك غلط، تطلع رسالة واضحة توضح وش المطلوب، بدل خطأ الصفحة.",
+  "version": "2.4.62",
+  "notes": "تحديث 2.4.62: بعد ربط كيك يطلع رقم الشات مع زر نسخ الرقم.",
   "files": {
-    "index.html": "db8d7adf41b23cffa9f3aa0a9bba75955e05e41da0119638c1c184cc38491436",
-    "server.js": "381a3d840a0d2a1f38e18a3185a00ebfdc3d0af0a3b9e06787ad1175e32151ed"
+    "index.html": "d4bebc085655961840aacb9a903f1ed62a4f2634ea08de0ee026aff4515259c5",
+    "server.js": "0ec468f8babac56121d22ede274321c9cb33fa8722a122d1a3e9a01c97089bb6"
   }
 }
