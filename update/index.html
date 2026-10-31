@@ -2851,9 +2851,9 @@ function drawMplat(){drawMst();const M=SET.multi=SET.multi||{};M.kick=M.kick||{}
   ensureMulti();const T=w=>SET.items.filter(i=>i.w===w),th=curTheme();
   {const kh=((SET.socials&&SET.socials.list)||[]).find(x=>x&&x.k==='kick');const slug=String((kh&&kh.h)||'').trim().replace(/^@/,'').replace(/^.*kick\.com\//i,'').replace(/[^\w-]/g,'').toLowerCase();
     const ob=$('#kkOpen');if(ob){if(slug){ob.href='https://kick.com/api/v2/channels/'+encodeURIComponent(slug);ob.hidden=false}else ob.hidden=true}
-    const pa=$('#kkPaste'),st=$('#kkStat');if(pa){const run=()=>{const t=pa.value;const m=t.match(/"chatroom"\s*:\s*\{\s*"id"\s*:\s*(\d+)/);if(!m){if(t.trim()&&st)st.textContent='ما لقيت رقم الشات. تأكد إنك نسخت الصفحة كاملة (Ctrl+A ثم Ctrl+C).';return}
+    const pa=$('#kkPaste'),st=$('#kkStat');if(pa){const run=()=>{const t=pa.value;const bare=t.trim().match(/^\d{4,}$/);const m=bare?[null,bare[0]]:t.match(/"chatroom"\s*:\s*\{\s*"id"\s*:\s*(\d+)/);if(!m){if(t.trim()&&st)st.textContent='ما لقيت رقم الشات. تأكد إنك نسخت الصفحة كاملة (Ctrl+A ثم Ctrl+C).';return}
       const kh2=((SET.socials&&SET.socials.list)||[]).find(x=>x&&x.k==='kick');if(!(kh2&&String(kh2.h||'').trim())){if(st)st.textContent='اكتب اسم قناتك في 📱 حساباتي أول، وبعدين الصق هنا.';return}
-      const ch=t.match(/^\s*\{\s*"id"\s*:\s*(\d+)/);M.kick=M.kick||{};M.kick.on=true;M.kick.chatroomId=m[1];if(ch)M.kick.channelId=ch[1];saveSet(true);if(st)st.textContent='✓ تم الربط. رقم الشات: '+m[1];pa.value=''};
+      const ch=bare?null:t.match(/^\s*\{\s*"id"\s*:\s*(\d+)/);M.kick=M.kick||{};M.kick.on=true;M.kick.chatroomId=m[1];if(ch)M.kick.channelId=ch[1];saveSet(true);if(st)st.textContent='✓ تم الربط. رقم الشات: '+m[1];pa.value=''};
       pa.addEventListener('input',run);pa.addEventListener('paste',()=>setTimeout(run,0))}}
   const c0=Object.assign({},W.mchat.o,T('mchat')[0].o);
   form($('#mchOp'),c0,[['n','عدد الرسائل','num'],['tiktok','تعليقات تيك توك معها','bool'],['logos','شعار المنصة','bool'],['avatars','صور الحسابات','bool'],['fade','الرسائل القديمة باهتة','bool']],'mch',()=>{T('mchat').forEach(i=>i.o=Object.assign({},W.mchat.o,i.o,{n:c0.n,tiktok:c0.tiktok,logos:c0.logos,avatars:c0.avatars,fade:c0.fade}));saveSet(true);gm()});
@@ -4498,7 +4498,7 @@ function buildTab0(){
       card('⚙️ إعدادات متقدمة','<details><summary class="hint" style="cursor:pointer">أرقام دقيقة، والحد الأقصى، والساعة المضاعفة</summary><div id="sbSet" style="margin-top:10px"></div></details>'),
       mplat:card('📡 حالة الربط','<div class="mstbox">'+['tiktok'].concat(MPL).map(k=>'<div class="mstrow">'+plogo(k)+'<b>'+PLAT[k]+'</b><span class="mst" data-mst="'+k+'"></span></div>').join('')+'</div><p class="hint">تيك توك يتصل من <b>لوحة القيادة</b> (اكتب يوزرك واضغط اتصال). كيك ويوتيوب وتويتش تربطها من <b>📱 حساباتي</b>: اكتب اسم قناتك وفعّل "📡 ربط البث". يكفي الاسم بدون تسجيل دخول.</p>'+
         '<details class="sbmore"><summary>ℹ️ مشتركين يوتيوب الجدد وفولو تويتش</summary><p class="hint">يوتيوب وتويتش ما يعلنون عن المشتركين/المتابعين الجدد في الشات. عشان تجيك تنبيهاتهم، اربط <b>Streamlabs</b> أو <b>StreamElements</b> من قسم الدونيشن في التنبيهات (نفس التوكن) — وتجيك تلقائي بدون تكرار.</p></details>'+
-        '<div class="listed" style="margin-top:10px"><b>🔗 ربط كيك (الطريقة الأسهل)</b><p class="hint">1) اضغط الزر تحت، تفتح صفحة قناتك في كيك.<br>2) في الصفحة اضغط <b>Ctrl+A</b> ثم <b>Ctrl+C</b> (تنسخ كل شي).<br>3) ارجع هنا والصق في الخانة. الربط يصير لحاله.</p>'+
+        '<div class="listed" style="margin-top:10px"><b>🔗 ربط كيك (الطريقة الأسهل)</b><p class="hint">1) اضغط الزر تحت، تفتح صفحة قناتك في كيك.<br>2) في الصفحة اضغط <b>Ctrl+F</b> واكتب <b>chatroom</b>، وانسخ <b>الرقم</b> اللي بعدها بس.<br>3) ارجع هنا والصق الرقم. الربط يصير لحاله.</p>'+
         '<a class="btn sm" id="kkOpen" target="_blank" rel="noopener" hidden>📋 افتح صفحة قناتي في كيك</a>'+
         '<textarea id="kkPaste" rows="3" placeholder="الصق هنا (Ctrl+V)" style="width:100%;margin-top:8px"></textarea>'+
         '<p class="hint" id="kkStat"></p></div><div id="kkMan"></div>')+
