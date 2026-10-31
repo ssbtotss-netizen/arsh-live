@@ -19,7 +19,7 @@ const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive:
 const IS_APP = !!process.env.ARSH_APP;
 // مكتبة الاتصال تحتاج تعرف سيرفر التوقيع المسموح له باستقبال الـ sessionid (قبل ما تتحمّل)
 process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST = process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST || new URL(process.env.SIGN_API_URL || 'https://api.eulerstream.com').host;
-const APP_VER = '2.4.65';
+const APP_VER = '2.4.66';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -752,7 +752,26 @@ function logErr(where, err) {
 const U = d => (d && d.user) || d || {};
 const nick = d => { const u = U(d); return u.nickname || u.uniqueId || d.nickname || d.uniqueId || 'مجهول'; };
 const uidOf = d => { const u = U(d); return u.uniqueId || d.uniqueId || ''; };
-const picOf = d => { const u = U(d), p = u.profilePicture || {}; return u.profilePictureUrl || d.profilePictureUrl || (p.url && p.url[0]) || (p.urls && p.urls[0]) || (p.urlList && p.urlList[0]) || ''; };
+const picOf = d => { const u = U(d), p = u.profilePicture || {}; const raw = u.profilePictureUrl || d.profilePictureUrl || (p.url && p.url[0]) || (p.urls && p.urls[0]) || (p.urlList && p.urlList[0]) || ''; return raw ? '/api/pic?u=' + encodeURIComponent(raw) : ''; };
+// صور الحسابات تمر من السيرفر (مع كاش)، عشان ما تنكسر في البث
+const picCache = new Map();
+app.get('/api/pic', async (req, res) => {
+  const raw = String(req.query.u || '');
+  let url; try { url = new URL(raw); } catch (_) { return res.status(400).end(); }
+  if (url.protocol !== 'https:' || !/(^|\.)(tiktokcdn[\w-]*\.com|tiktok\.com|ttwstatic\.com)$/i.test(url.hostname)) return res.status(400).end();
+  const hit = picCache.get(raw);
+  if (hit && Date.now() - hit.t < 6 * 3600e3) { res.set('Content-Type', hit.ct).set('Cache-Control', 'public, max-age=21600').send(hit.buf); return; }
+  try {
+    const r = await fetch(raw, { headers: { 'User-Agent': UA['User-Agent'], Referer: 'https://www.tiktok.com/' } });
+    if (!r.ok) return res.status(502).end();
+    const buf = Buffer.from(await r.arrayBuffer());
+    if (buf.length > 2e6) return res.status(413).end();
+    const ct = r.headers.get('content-type') || 'image/jpeg';
+    picCache.set(raw, { t: Date.now(), buf, ct });
+    if (picCache.size > 800) picCache.delete(picCache.keys().next().value);
+    res.set('Content-Type', ct).set('Cache-Control', 'public, max-age=21600').send(buf);
+  } catch (_) { res.status(502).end(); }
+});
 const giftInfo = d => {
   const g = d.giftDetails || d.gift || {}, x = d.extendedGiftInfo || {}, img = g.giftImage || g.image || x.image || {};
   return {
