@@ -19,7 +19,7 @@ const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive:
 const IS_APP = !!process.env.ARSH_APP;
 // مكتبة الاتصال تحتاج تعرف سيرفر التوقيع المسموح له باستقبال الـ sessionid (قبل ما تتحمّل)
 process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST = process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST || new URL(process.env.SIGN_API_URL || 'https://api.eulerstream.com').host;
-const APP_VER = '2.4.62';
+const APP_VER = '2.4.63';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -373,10 +373,24 @@ let kkSock = null, kkKey = '';
 const kickIdCache = {};
 async function kickIds(slug) {
   if (kickIdCache[slug]) return kickIdCache[slug];
-  const r = await fetch('https://kick.com/api/v2/channels/' + encodeURIComponent(slug), { headers: { 'User-Agent': UA['User-Agent'], Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9' } });
-  if (!r.ok) throw new Error('HTTP ' + r.status);
-  const j = await r.json(); const ids = { chat: j.chatroom && j.chatroom.id, chan: j.id };
-  if (!ids.chat) throw new Error('no chatroom'); kickIdCache[slug] = ids; return ids;
+  const H = { 'User-Agent': UA['User-Agent'], Accept: 'application/json', 'Accept-Language': 'en-US,en;q=0.9' };
+  let lastErr = null;
+  for (const u of ['https://kick.com/api/v2/channels/', 'https://kick.com/api/v1/channels/']) {
+    try {
+      const r = await fetch(u + encodeURIComponent(slug), { headers: H });
+      if (!r.ok) { lastErr = new Error(u + ' ' + r.status); continue; }
+      const j = await r.json();
+      const chat = j && j.chatroom && j.chatroom.id;
+      if (chat) { const ids = { chat, chan: j.id || 0 }; kickIdCache[slug] = ids; return ids; }
+    } catch (e) { lastErr = e; }
+  }
+  try {
+    const r = await fetch('https://kick.com/' + encodeURIComponent(slug), { headers: { 'User-Agent': UA['User-Agent'], Accept: 'text/html', 'Accept-Language': 'en-US,en;q=0.9' } });
+    const html = await r.text();
+    const m = html.match(/chatroom\\?"?:\s*\{\s*\\?"id\\?"\s*:\s*(\d+)/);
+    if (m) { const ids = { chat: +m[1], chan: 0 }; kickIdCache[slug] = ids; return ids; }
+  } catch (e) { lastErr = e; }
+  throw lastErr || new Error('no chatroom');
 }
 function kickEv(name, d) {
   const E = String(name || '').replace(/^App\\Events\\/, '');
