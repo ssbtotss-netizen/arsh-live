@@ -19,7 +19,7 @@ const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive:
 const IS_APP = !!process.env.ARSH_APP;
 // مكتبة الاتصال تحتاج تعرف سيرفر التوقيع المسموح له باستقبال الـ sessionid (قبل ما تتحمّل)
 process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST = process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST || new URL(process.env.SIGN_API_URL || 'https://api.eulerstream.com').host;
-const APP_VER = '2.4.63';
+const APP_VER = '2.4.65';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -75,6 +75,19 @@ async function telegram(username) {
     const r = await fetch('https://api.telegram.org/bot' + t.token + '/sendMessage', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ chat_id: t.chat, text: String(t.msg || '').replace(/\{user\}/g, username || '') })
+    });
+    return r.ok;
+  } catch (_) { return false; }
+}
+// إشعار ديسكورد عند بداية اللايف (ويبهوك). ما يرسل إلا لروابط ويبهوك ديسكورد الرسمية.
+async function discord(username, force) {
+  const d = store.settings && store.settings.discord;
+  if (!d || !d.url || (!d.enabled && !force)) return false;
+  if (!/^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(String(d.url))) return false;
+  try {
+    const r = await fetch(String(d.url), {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: String(d.msg || '').replace(/\{user\}/g, username || '') })
     });
     return r.ok;
   } catch (_) { return false; }
@@ -408,8 +421,9 @@ function startKick() {
   if (!key) { setM('kick', false, ''); return; }
   setM('kick', false, 'جاري الاتصال بشات كيك…');
   (async () => {
-    let ids = { chat: +c.chatroomId || 0, chan: +c.channelId || 0 };
-    if (!ids.chat) { try { ids = await kickIds(slug); } catch (e) { logErr('kick-ids', e); if (kkKey === key) setM('kick', false, 'كيك منع جلب رقم الشات تلقائياً — حطه يدوي من "ما اشتغل كيك؟"'); return; } }
+    const manual = { chat: +c.chatroomId || 0, chan: +c.channelId || 0 };
+    let ids = manual;
+    try { ids = await kickIds(slug); } catch (e) { logErr('kick-ids', e); if (!manual.chat) { if (kkKey === key) setM('kick', false, 'كيك منع جلب رقم الشات تلقائياً — حطه يدوي من "ما اشتغل كيك؟"'); return; } ids = { chat: manual.chat, chan: manual.chan || 0 }; }
     const open = () => {
       if (kkKey !== key) return; const s = new WSC('wss://ws-us2.pusher.com/app/32cbd69e4b950bf97679?protocol=7&client=js&version=8.4.0&flash=false'); kkSock = s;
       s.on('message', buf => { let m; try { m = JSON.parse(String(buf)); } catch (_) { return; }
@@ -863,6 +877,7 @@ async function connect(username, isRetry) {
     me._hostT = setInterval(async () => { if (tiktok !== me) return clearInterval(me._hostT); try { const ri = me.fetchRoomInfo ? await me.fetchRoomInfo() : null; if (ri) pushHost({ roomInfo: ri }, me, username); } catch (_) {} }, 10 * 60e3);
     startSender(username);
     if (store.settings && store.settings.telegram && store.settings.telegram.enabled) telegram(username);
+    discord(username, false);
   } catch (err) {
     const why = logErr('connect v' + made.ver, err);
     if (made.ver === 2 && /room ?id/i.test(why) && !made.fb && tiktok === me) { made.fb = 1; forceV1 = true; setStatus('تيك توك رفض النسخة الأولى — نجرّب طريقة ثانية…', false); setTimeout(() => { if (gen === connGen) connect(username, true); }, 1500); return; }
@@ -932,6 +947,7 @@ wss.on('connection', (ws, req) => {
       else if (L.until <= Date.now()) send(ws, { type: 'licErr', text: 'هذا الكود منتهي' });
       else { store.license = { code: String(m.code).trim() }; persist(); broadcast({ type: 'lic', ...licStatus(), fresh: 1 }); if (store.lastUser && !tiktok) connect(store.lastUser); } }
     else if (m.type === 'telegramTest') telegram(currentUser || 'username').then(ok => send(ws, { type: 'status', text: ok ? 'وصلت رسالة تيليجرام التجريبية' : 'فشل إرسال تيليجرام — تأكد من التوكن والمعرّف', live: status.live }));
+    else if (m.type === 'discordTest') discord(currentUser || 'username', true).then(ok => send(ws, { type: 'status', text: ok ? 'وصلت رسالة ديسكورد التجريبية' : 'فشل إرسال ديسكورد — تأكد من رابط الويبهوك' }));
   });
 });
 

@@ -2206,6 +2206,7 @@ const DEF={
   thanks:{title:'شكراً لكم',msg:'شكراً لكل من دعم ونوّر اللايف، نشوفكم الجاي',secs:25},
   badges:{enabled:true,tiers:'100:برونزي\n1000:فضي\n10000:ذهبي\n50000:ماسي',frames:true},
   telegram:{enabled:false,token:'',chat:'',msg:'أنا لايف الحين على تيك توك! تعال: https://www.tiktok.com/@{user}/live'},
+  discord:{enabled:false,url:'',msg:'بديت البث الحين على تيك توك! تعال: https://www.tiktok.com/@{user}/live'},
   ui:{preset:'emerald',accent:'#2fd39a',second:'#e2b865',bg:'#05100d',panel:'#0a1a15'},
   sfx:{enabled:true,vol:.8,cd:0,mode:'queue',maxQ:3,maxLen:6,duck:true,merge:true,lang:'both',midAt:100,bigAt:1000,likesEvery:500,
     ev:{follow:'r:kidsyay',share:'r:whoosh',join:'',giftS:'r:mariocoin',giftM:'r:kaching',giftB:'rand:trend',likes:'r:vineboom'},
@@ -4715,10 +4716,12 @@ function buildTab0(){
   else if(tab==='filters'){
     c.innerHTML=card('مكافحة السبام','<p class="hint">يخفي رسائل المزعجين من الشاشة والقارئ والبوت. تيك توك ما يسمح لأي أداة تكتم المشاهد داخل اللايف نفسه.</p><div id="fSp"></div>')+
       card('الفلاتر','<div id="fFi"></div><p class="hint">فلتر الدولة غير متاح، لأن تيك توك ما يرسل دولة المشاهد لأي أداة خارجية.</p>')+
-      card('إشعار تيليجرام','<p class="hint">أول ما تتصل باللايف يرسل رسالة لقناتك أو قروبك في تيليجرام. سوّ بوت من BotFather، وأضفه مشرف في القناة.</p><div id="fTg"></div><button class="btn" id="tgTest">إرسال رسالة تجربة</button><p class="msg" id="tgMsg" hidden></p>');
+      card('إشعار تيليجرام','<p class="hint">أول ما تتصل باللايف يرسل رسالة لقناتك أو قروبك في تيليجرام. سوّ بوت من BotFather، وأضفه مشرف في القناة.</p><div id="fTg"></div><button class="btn" id="tgTest">إرسال رسالة تجربة</button><p class="msg" id="tgMsg" hidden></p>')+card('إشعار ديسكورد','<p class="hint">أول ما تتصل باللايف يرسل رسالة لقناة ديسكورد. سوّ ويبهوك من إعدادات القناة (Integrations > Webhooks) وحط الرابط هنا.</p><div id="fDc"></div><button class="btn" id="dcTest">إرسال رسالة تجربة</button><p class="msg" id="dcMsg" hidden></p>');
     form($('#fSp'),SET.filters,[['antiSpam','تفعيل مكافحة السبام','bool'],['maxPer10','أقصى رسائل للشخص كل 10 ثواني','num'],['dupes','إخفاء الرسالة المكررة','bool']],'sp');
     form($('#fTg'),SET.telegram,[['enabled','تفعيل الإشعار','bool'],['token','توكن البوت','text'],['chat','معرّف القناة (@channel) أو رقم القروب','text'],['msg','الرسالة ({user} = اسمك)','area']],'tg');
     $('#tgTest').onclick=()=>{const m=$('#tgMsg');m.hidden=false;if(IS_SERVER){bus.send({type:'telegramTest'});m.textContent='تم إرسال طلب التجربة، شيّك تيليجرام.'}else m.textContent='الإرسال يشتغل من نسخة السيرفر على جهازك.'};
+    form($('#fDc'),SET.discord,[['enabled','تفعيل الإشعار','bool'],['url','رابط الويبهوك','text'],['msg','الرسالة ({user} = اسمك)','area']],'dc');
+    $('#dcTest').onclick=()=>{const m=$('#dcMsg');m.hidden=false;if(IS_SERVER){bus.send({type:'discordTest'});m.textContent='تم إرسال طلب التجربة، شيّك ديسكورد.'}else m.textContent='الإرسال يشتغل من نسخة السيرفر على جهازك.'};
     form($('#fFi'),SET.filters,[['blacklist','قائمة الحظر — يتم تجاهلهم بالكامل (اسم بكل سطر)','area'],['whitelistOnly','التفاعل للقائمة البيضاء فقط','bool'],['whitelist','القائمة البيضاء','area'],['mods','المشرفين (يتحكمون بالأغاني من الشات)','area'],['words','كلمات ممنوعة — تخفي التعليق من الشاشة والقارئ والبوت','area'],['minLen','تجاهل التعليقات الأقصر من (حرف)','num']],'fi');
   }
   else if(tab==='games'){
