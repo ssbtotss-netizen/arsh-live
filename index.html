@@ -194,6 +194,7 @@ footer .w{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-c
     <div class="cta">
       <a class="btn gold" href="ArshAlLive-Setup.exe"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M6 11l6 6 6-6M4 21h16"/></svg><span>حمّل للويندوز<small>3 أيام مجاناً</small></span></a>
       <a class="btn" href="#pricing">الاشتراك $9.99 بالشهر</a>
+      <a class="btn" id="gamesBtn" href="#" hidden>🎮 ألعاب عرش قيمنق</a>
     </div>
     <div class="meta"><span>ويندوز 10 و 11</span><span>ما يطلب كلمة مرور حسابك</span><span>يشتغل مع LIVE Studio و OBS</span></div>
   </div>
@@ -319,6 +320,11 @@ footer .w{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:center;justify-c
 (()=>{const tabs=[...document.querySelectorAll('[role=tab]')];tabs.forEach(t=>t.addEventListener('click',()=>{tabs.forEach(x=>{const on=x===t;x.setAttribute('aria-selected',on);document.getElementById(x.getAttribute('aria-controls')).hidden=!on})}));
 const b=document.getElementById('cpIban');b.addEventListener('click',()=>{const t=document.getElementById('iban').textContent,ok=()=>{b.textContent='✓ تم النسخ';setTimeout(()=>b.textContent='نسخ الآيبان',1500)};
   try{navigator.clipboard.writeText(t).then(ok,()=>{getSelection().selectAllChildren(document.getElementById('iban'))})}catch(_){getSelection().selectAllChildren(document.getElementById('iban'))}})})();
+</script>
+<script>
+/* رابط منصة ألعاب عرش قيمنق: حط الرابط هنا، والزر يظهر تلقائياً */
+const GAMES_URL="https://saht-al-live.onrender.com";
+try{const g=document.getElementById("gamesBtn");if(g&&GAMES_URL){g.href=GAMES_URL;g.target="_blank";g.rel="noopener";g.hidden=false}}catch(e){}
 </script>
 </body>
 </html>
