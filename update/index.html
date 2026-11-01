@@ -2344,8 +2344,8 @@ function donTier(usd){const T=((SET.donate||{}).tiers||[]).filter(t=>t&&+t.min>0
 const cooldowns={};
 function handle(ev,replay){
   const t=ev.type,ts=ev.ts||Date.now();TMU=t==='timer'?'':(ev.user||'');
-  if(t==='mchat'){S.uni.push(Object.assign({},ev,{ts}));if(S.uni.length>80)S.uni.shift();dirty=true;return}
-  if(t==='malert'){S.mlog.unshift(Object.assign({},ev,{ts}));if(S.mlog.length>50)S.mlog.pop();if(!replay&&((SET.multi||{}).alerts||{})[ev.kind]!==false){sfxEvent(/follow|ytsub/.test(ev.kind)?'follow':ev.kind==='raid'?'giftB':'giftM');FX('malert',ev);logEv(PLAT[ev.src]+': '+esc(ev.user||'')+' — '+esc(MKIND[ev.kind]||ev.kind))}dirty=true;return}
+  if(t==='mchat'){S.uni.push(Object.assign({},ev,{ts}));if(S.uni.length>80)S.uni.shift();platCount(ev.src,'chat');dirty=true;return}
+  if(t==='malert'){S.mlog.unshift(Object.assign({},ev,{ts}));if(S.mlog.length>50)S.mlog.pop();platCount(ev.src,ev.kind);if(!replay&&((SET.multi||{}).alerts||{})[ev.kind]!==false){sfxEvent(/follow|ytsub/.test(ev.kind)?'follow':ev.kind==='raid'?'giftB':'giftM');FX('malert',ev);logEv(PLAT[ev.src]+': '+esc(ev.user||'')+' — '+esc(MKIND[ev.kind]||ev.kind))}dirty=true;return}
   if(t==='host'){S.host={name:ev.name||'',pic:ev.pic||'',followers:+ev.followers||0,base:S.T.follows};HOST0=S.host;dirty=true;return}
   if(t==='viewers'){S.T.viewers=ev.count;S.T.peak=Math.max(S.T.peak,ev.count);dirty=true;return}
   if(t==='challenge'){
@@ -2805,6 +2805,9 @@ function malHTML(a,st){const p=SOCM[a.src]||SOCM.website,[h,sub]=malHead(a);
 function nextMal(el){if(el._busy||!el._q.length)return;el._busy=true;const a=el._q.shift(),it=el._it||{},o=it.o||{},q=el.querySelector('.maq');if(!q){el._busy=false;return}
   q.innerHTML=malHTML(a,o.style);const dur=Math.max(3,+o.dur||5)*1000;setTimeout(()=>{const c=q.firstChild;if(c)c.classList.add('out');setTimeout(()=>{q.innerHTML='';el._busy=false;nextMal(el)},450)},dur)}
 function ensureMulti(){['mchat','malerts'].forEach(w=>{if(!SET.items.some(i=>i.w===w)){SET.items.push(Object.assign({id:'i'+uid(),w,on:true,o:clone(W[w].o)},clone(W[w].def)));if(w==='mchat')SET.items.filter(i=>i.w==='chat').forEach(i=>i.on=false)}})}
+function platCount(src,kind){if(!src)return;S.plat=S.plat||{};const P=S.plat[src]=S.plat[src]||{};P[kind]=(P[kind]||0)+1}
+const PLAT_ROWS=[['kick','كيك','متابعات، اشتراكات، هدايا، رِيد'],['youtube','يوتيوب','مشتركين، أعضاء، Super Chat'],['twitch','تويتش','متابعات، اشتراكات، بِتس، رِيد']];
+function platSummary(src){const P=(S.plat||{})[src]||{};const n=k=>P[k]||0;return {chat:n('chat'),follow:n('follow')+n('ytsub'),sub:n('sub')+n('member'),gift:n('gift')+n('bits')+n('super'),raid:n('raid')}}
 function drawMst(){$$('[data-mst]').forEach(el=>{const k=el.dataset.mst;if(k==='tiktok'){el.className='mst '+(LSTAT.on?'ok':LSTAT.t?'wait':'off');el.textContent=LSTAT.on?'● '+LSTAT.t:(LSTAT.t||'غير متصل');el.title=el.textContent;return}const m=MST[k],on=((SET.multi||{})[k]||{}).on;el.className='mst '+(!on?'off':m&&m.ok?'ok':'wait');el.textContent=!on?'غير مربوط':m?(m.ok?'● ':'')+m.text:'…';el.title=el.textContent})}
 function socRender(o,list){if(!list.length)return '';const cm=o.cm||'brand',cc=o.cc||'#ff4fd8';
   const chip=(a,i)=>{const p=SOCM[a.k];let sb=p[2],sf=p[3],sa=p[4];if(cm==='theme'){sb='var(--a1)';sf='var(--ink2,#111)';sa='var(--a1)'}else if(cm==='white'){sb='#ffffff';sf='#111111';sa='#ffffff'}else if(cm==='custom'){sb=cc;sf='#ffffff';sa=cc}
@@ -4319,14 +4322,14 @@ const IC={sub:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2
   alerts:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21a2 2 0 0 0 4 0"/>',goals:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',games:'<path d="M7 8h10a5 5 0 0 1 0 10l-2-2H9l-2 2A5 5 0 0 1 7 8zM8 11v4M6 13h4"/>',
   actions:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',tts:'<path d="M4 9v6h4l5 4V5L8 9zM17 8a5 5 0 0 1 0 8"/>',
   bot:'<rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/>',filters:'<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',points:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5h4.5a2 2 0 0 1 0 4H9"/>',sounds:'<path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',entrance:'<path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/>',supporters:'<path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>',stats:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',donate:'<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-2.8.8-2.8 2s1.1 1.7 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.5 0-2.6-.6-3.1-1.6M12 6v2M12 16v2"/>'};
-const NAV=[['الرئيسية',[['home','لوحة القيادة'],['sub','الاشتراك']]],['الأوفرلايات',[['looks','الأشكال والثيمات'],['scene','المظهر والمشهد'],['alerts','التنبيهات'],['goals','الأهداف والتكبيس'],['donate','الدونيشن'],['games','الألعاب والتحديات'],['occasions','المناسبات']]],
+const NAV=[['الرئيسية',[['home','لوحة القيادة'],['sub','الاشتراك'],['occasions','🌙 العيد والمناسبات']]],['الأوفرلايات',[['looks','الأشكال والثيمات'],['scene','المظهر والمشهد'],['alerts','التنبيهات'],['goals','الأهداف والتكبيس'],['donate','الدونيشن'],['games','الألعاب والتحديات']]],
   ['التفاعل',[['sounds','مكتبة الأصوات'],['points','النقاط والمكافآت'],['entrance','الدخلات الملكية'],['actions','الإجراءات التلقائية'],['music','الموسيقى'],['tts','القارئ الصوتي'],['bot','البوت']]],['الإدارة',[['supporters','الداعمين والشارات'],['stats','الإحصائيات'],['filters','الفلاتر والإشعارات']]]];
 const TABS=NAV.flatMap(g=>g[1]);
 const BASIC=new Set(['home','sub','looks','scene','alerts','goals','games','sounds','music','bot','entrance']);
 let ADV=false;try{ADV=localStorage.getItem('arsh-adv')==='1'}catch(_){}
-const TAB_DESC={sub:'اشتراكك في عرش اللايف: حالته، والسعر، وطريقة الدفع والتفعيل.',home:'ابدأ من هنا: اتصل بلايفك، وجرّب الأزرار وشوف كل شي في المعاينة.',looks:'اختر شكل كل شي يطلع في البث بضغطة: التكبيس، المكبسين، الداعمين، التنبيهات، والألوان.',
+const TAB_DESC={donate:'الدونيشن: رابط الدعم وتنبيه كل تبرع يطلع على الشاشة.',sub:'اشتراكك في عرش اللايف: حالته، والسعر، وطريقة الدفع والتفعيل.',home:'ابدأ من هنا: اتصل بلايفك، وجرّب الأزرار وشوف كل شي في المعاينة.',looks:'اختر شكل كل شي يطلع في البث بضغطة: التكبيس، المكبسين، الداعمين، التنبيهات، والألوان.',
   scene:'رتّب مكان الأدوات في البث بالسحب، وانسخ رابط البث لبرنامج TikTok LIVE Studio أو OBS.',alerts:'وش يطلع على الشاشة لما أحد يتابع أو يشارك أو يرسل هدية.',goals:'أهداف اللايكات والهدايا، ونظام التكبيس بالمراحل.',
-  games:'العجلة والمعارك والتصويت والمسابقات والمزاد.',occasions:'ثيمات رمضان والعيدين واليوم الوطني ويوم التأسيس، تشتغل لحالها بيومها.',sounds:'الصوت اللي يطلع مع كل متابعة أو هدية أو مشاركة، ومكتبة الميمز.',
+  games:'العجلة والمعارك والتصويت والمسابقات والمزاد.',occasions:'ثيمات العيد والمناسبات: رمضان، عيد الفطر، عيد الأضحى، اليوم الوطني، ويوم التأسيس. تشتغل لحالها في يومها، وتقدر تفعّلها أو توقفها بضغطة.',sounds:'الصوت اللي يطلع مع كل متابعة أو هدية أو مشاركة، ومكتبة الميمز.',
   points:'المشاهدين يجمعون نقاط من تفاعلهم ويستبدلونها بمكافآت.',entrance:'دخلة خاصة بفيديو وصوت لما يدخل داعم مهم.',actions:'سوّ أي شي تلقائي مع أي حدث: صورة، صوت، جملة، ألعاب نارية.',
   music:'المشاهدين يطلبون أغاني من الشات، والمشرفين يتحكمون فيها.',tts:'يقرأ التعليقات والهدايا بصوت.',bot:'بوت يكتب في شات لايفك: يرحب بالداخلين ويشكر الداعمين ويرد.',
   supporters:'سجل الداعمين باليوم والأسبوع والشهر، والشارات.',stats:'أرقام بثوثك السابقة.',filters:'الكلمات الممنوعة والمشرفين وإشعار تيليجرام.'};
@@ -4433,8 +4436,9 @@ function buildTab0(){
          ['wheel','hot','العجلة','دوّرها'],['battle','','معركة','ابدأ'],['timer','','المؤقت','شغّل/أوقف'],['poll','','تصويت','ابدأ'],['quiz','','سؤال','مسابقة'],['auction','','مزاد','ابدأ'],['join','hot','دخلة','تجربة'],['donate','hot','دونيشن','تجربة'],['mark','pk','لقطة','علّمها'],['thanks','hot','الشكر','بطاقة النهاية'],['fw','hot','ألعاب','نارية']].map(([k,cl,t,sm])=>'<button class="'+cl+'" data-sim="'+k+'"><b>'+t+'</b><small>'+sm+'</small></button>').join('')+
         '</div><div class="row"><input id="tName" class="btn" style="width:110px;text-align:right" value="ريم" aria-label="اسم المشاهد"><input id="tText" class="btn grow" style="text-align:right" placeholder="جرّب تعليق أو أمر مثل !المتجر" aria-label="تعليق تجريبي"><button class="btn" id="tSend">إرسال</button></div><label class="field bool" for="autoSim"><span>مشاهدين تجريبيين تلقائياً</span><input class="sw" type="checkbox" id="autoSim"'+(auto?' checked':'')+'></label>')+'</div>'+
       card('اللايف الحين','<div class="chips" id="liveChips"></div><div class="row"><button class="btn" id="saveSession">حفظ الجلسة وتصفير</button><button class="btn" data-go="stats">كل الإحصائيات</button></div>')+'<div class="cards">'+card('لوحة الأصوات','<div class="sb" id="sb"></div>')+card('لقطات للمونتاج','<p class="hint">تتعلّم تلقائياً مع الهدايا الكبيرة وانتزاع العرش والأهداف، وبالزر. الوقت محسوب من بداية اللايف.</p><div class="listed" id="marks" style="max-height:220px;overflow:auto"></div><button class="btn sm" id="copyMarks">نسخ كل اللقطات</button>')+
+      card('ربط المنصات الثلاث','<p class="hint">تأكد إن كيك ويوتيوب وتويتش متصلين قبل ما تبدأ البث. الحالة تتحدث لحالها.</p><div class="mstbox">'+PLAT_ROWS.map(([k,l,d])=>'<div class="mstrow"><b>'+l+'</b><span class="mst off" data-mst="'+k+'"></span><small class="hint">'+d+'</small></div>').join('')+'</div><div class="row" style="margin-top:8px"><button class="btn gold" data-go="looks" type="button">افتح ربط المنصات</button></div>')+
       card('تحكم من جوالك',IS_SERVER?'<div class="qrbox"><div id="qr"></div><div style="flex:1;min-width:160px"><p class="hint">امسح الكود بجوالك وهو على نفس شبكة الواي فاي، وتتحكم بكل شي وأنت بالبث.</p><div id="lanUrl"></div></div></div>':'<p class="hint">في نسخة السيرفر يطلع هنا كود تمسحه بجوالك، وتفتح لوحة التحكم كاملة من الجوال وأنت بالبث.</p>')+'</div>'+card('سجل الأحداث','<div class="log" id="log"></div>');
-    drawSoundboard();renderMarks();drawQR();if(LASTUSER&&$('#user'))$('#user').value=LASTUSER;
+    drawSoundboard();renderMarks();drawQR();drawMst();if(LASTUSER&&$('#user'))$('#user').value=LASTUSER;
     $('#copyMarks').onclick=e=>{const t=marksText(),b=e.currentTarget;try{navigator.clipboard.writeText(t).then(()=>{b.textContent='تم النسخ'},()=>{})}catch(_){}};
     logEv.a&&($('#log').innerHTML=logEv.a.map(x=>'<div>'+x+'</div>').join(''));
     $('#connect').onclick=()=>{const u=$('#user').value.trim().replace(/^@/,''),m=$('#cmsg');m.hidden=false;
@@ -4785,7 +4789,7 @@ function buildTab0(){
   }
   else if(tab==='stats'){
     c.innerHTML=card('إحصائيات اللايف','<div class="chips" id="stChips"></div>')+'<div class="cards">'+card('العملات بالدقيقة','<div class="bars" id="bD"></div><p class="hint">آخر 30 دقيقة</p>')+card('اللايكات بالدقيقة','<div class="bars rose" id="bL"></div><p class="hint">آخر 30 دقيقة</p>')+'</div>'+
-      card('أقوى لحظات البث','<div class="chips" id="moments"></div>')+'<div class="cards">'+card('أكثر الهدايا','<table class="tbl" id="tG"></table>')+card('أقوى الداعمين','<table class="tbl" id="tS"></table>')+card('متابعين جدد','<table class="tbl" id="tF"></table>')+'</div>'+card('الجلسات السابقة','<table class="tbl" id="tH"></table>');
+      card('أقوى لحظات البث','<div class="chips" id="moments"></div>')+'<div class="cards">'+card('أكثر الهدايا','<table class="tbl" id="tG"></table>')+card('أقوى الداعمين','<table class="tbl" id="tS"></table>')+card('متابعين جدد','<table class="tbl" id="tF"></table>')+card('حسب المنصة','<table class="tbl" id="tP"></table><p class="hint">عدد التفاعلات من كل منصة في هذا البث.</p>')+'</div>'+card('الجلسات السابقة','<table class="tbl" id="tH"></table>');
     renderStats();
   }
 }
@@ -4886,6 +4890,7 @@ function renderStats(){
   $('#moments').innerHTML=[[md,'diamonds','أكثر دقيقة دعم','عملة'],[ml,'likes','أكثر دقيقة تكبيس','لايك'],[mc,'comments','أكثر دقيقة تفاعل','تعليق']].map(([b,k,l,u])=>'<div><b class="num">'+(b?clock(+b[0]):'—')+'</b><span>'+l+(b?' · '+fmt(b[1][k])+' '+u:'')+'</span></div>').join('')+
     (S.big?'<div><b>'+esc(S.big.user)+'</b><span>أكبر هدية: '+esc(S.big.gift)+' · '+fmt(S.big.d)+' عملة</span></div>':'');
   $('#bD').innerHTML=bars('diamonds');$('#bL').innerHTML=bars('likes');
+  $('#tP').innerHTML='<tr><th>المنصة</th><th class="num">رسائل</th><th class="num">متابعات</th><th class="num">اشتراكات</th><th class="num">هدايا</th></tr>'+PLAT_ROWS.map(([k,l])=>{const x=platSummary(k);return '<tr><td>'+l+'</td><td class="num">'+fmt(x.chat)+'</td><td class="num">'+fmt(x.follow)+'</td><td class="num">'+fmt(x.sub)+'</td><td class="num">'+fmt(x.gift)+'</td></tr>'}).join('');
   $('#tG').innerHTML=Object.entries(S.giftsByName).sort((a,b)=>b[1].diamonds-a[1].diamonds).slice(0,8).map(([n,g])=>'<tr><td>'+esc(n)+'</td><td class="num">×'+fmt(g.count)+'</td><td class="num">'+fmt(g.diamonds)+'</td></tr>').join('')||'<tr><td class="hint">ما فيه هدايا للحين</td></tr>';
   $('#tS').innerHTML=ranked('diamonds').slice(0,8).map((u,i)=>'<tr><td>'+(i+1)+'. '+esc(u.name)+'</td><td class="num">'+fmt(u.diamonds)+'</td></tr>').join('')||'<tr><td class="hint">—</td></tr>';
   $('#tF').innerHTML=S.followers.slice(0,8).map(f=>'<tr><td>'+esc(f.name)+'</td><td class="num">'+new Date(f.ts).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})+'</td></tr>').join('')||'<tr><td class="hint">—</td></tr>';
