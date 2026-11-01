@@ -2655,7 +2655,7 @@ function drawWelcome(){
 }
 let lookSub='taps',LASTUSER='';
 /* ===== الاشتراك — عدّل بيانات الدفع هنا ===== */
-const SUBCFG={price:'9.99',old:'14',cur:'$',period:'شهر',whatsapp:'966554613230',bank:'بنك الراجحي',holder:'عبدالرحمن القحطاني',iban:'SA3080000475608016550424',acct:'475000010006086550424'};
+const SUBCFG={price:'9.99',old:'14',cur:'$',period:'شهر',payUrl:'https://arsh-pay.onrender.com/',whatsapp:'966554613230',bank:'بنك الراجحي',holder:'عبدالرحمن القحطاني',iban:'SA3080000475608016550424',acct:'475000010006086550424'};
 let LIC=IS_SERVER?null:{state:'trial',until:Date.now()+3*864e5};
 const daysLeft=t=>Math.max(0,Math.ceil((t-Date.now())/864e5));
 function drawLic(){const el=$('#licChip');if(!el||!IS_DASH)return;const L=LIC;if(!L){el.innerHTML='';return}
@@ -4475,6 +4475,7 @@ function buildTab0(){
     c.innerHTML='<div class="subwrap">'+card('اشتراك عرش اللايف','<div class="lstate"><span class="ic">'+st[0]+'</span><div><b>'+st[1]+'</b><span>'+st[2]+'</span></div></div>'+
       '<div class="prc"><span class="tagx">خصم '+Math.round((1-C.price/C.old)*100)+'٪</span><div class="pn">الباقة الشهرية · كل المميزات</div><div class="pr"><small>/ '+C.period+'</small><s>'+C.cur+C.old+'</s><b>'+C.cur+C.price+'</b></div>'+
       '<ul><li>كل أشكال التكبيس والقوائم والداعمين (أكثر من 60 شكل)</li><li>مكتبة الأليرتات كاملة (50 أليرت) + رفع فيديوهاتك</li><li>الأصوات الحقيقية والميمز لكل هدية</li><li>البوت والموسيقى للمشرفين والقارئ الصوتي</li><li>الألعاب: العجلة والمعارك والمسابقات والمزاد</li><li>كل التحديثات الجديدة مجاناً</li></ul></div>')+
+      (C.payUrl?card('ادفع أونلاين وتفعّل فوراً','<ul><li>شهر: <b>39 ريال</b></li><li>3 شهور: <b>99 ريال</b></li><li>6 شهور: <b>169 ريال</b></li><li>سنة: <b>299 ريال</b></li></ul><p class="hint">الدفع بالبطاقة أو Apple Pay. يوصلك كود التفعيل بعد الدفع مباشرة، الصقه هنا واضغط تفعيل.</p><div class="row" style="margin-top:8px"><a class="btn gold" href="'+esc(C.payUrl)+'" target="_blank" rel="noopener">ادفع الحين</a></div>'):'')+
       card('كيف أشترك؟','<ol class="paystep"><li><div><b>حوّل '+C.cur+C.price+'</b> على الحساب البنكي:'+(C.iban?'<div class="bankbox"><span>'+esc(C.bank)+' — باسم '+esc(C.holder)+'</span><span>الآيبان:</span><code>'+esc(C.iban)+'</code>'+(C.acct?'<span>رقم الحساب:</span><code>'+esc(C.acct)+'</code>':'')+'<div class="row" style="margin-top:4px"><button class="btn sm" type="button" data-copy="'+esc(C.iban)+'">نسخ الآيبان</button></div></div>':'<div class="bankbox"><span>بيانات الحساب البنكي توصلك على الواتساب.</span></div>')+'</div></li>'+
       '<li><div><b>أرسل الإيصال ويوزر تيك توك</b> على الواتساب.'+(wa?'<div class="row" style="margin-top:6px"><a class="btn gold sm" href="'+esc(wa)+'" target="_blank" rel="noopener">إرسال على الواتساب</a></div>':'')+'</div></li>'+
       '<li><div><b>يوصلك كود التفعيل</b>، الصقه هنا واضغط تفعيل:<textarea class="licin" id="licCode" placeholder="ARSH1.xxxxx.xxxxx" aria-label="كود التفعيل"></textarea><div class="row"><button class="btn gold" type="button" id="licGo">تفعيل الاشتراك</button></div><p class="msg" id="licMsg" hidden></p></div></li></ol>'+
