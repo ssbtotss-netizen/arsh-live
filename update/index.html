@@ -1,7 +1,8 @@
 <title>عرش اللايف</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;700&family=Changa:wght@400;700&family=Lalezar&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;900&family=Tajawal:wght@700;900&family=Noto+Kufi+Arabic:wght@700;900&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;700&family=Changa:wght@400;700&family=Lalezar&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;900&family=Tajawal:wght@700;900&family=Noto+Kufi+Arabic:wght@700;900&display=swap" media="print" onload="this.media='all'"><noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Reem+Kufi:wght@500;700&family=Tajawal:wght@400;700&family=Changa:wght@400;700&family=Lalezar&family=Amiri:wght@400;700&family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&family=Cairo:wght@700;900&family=Tajawal:wght@700;900&family=Noto+Kufi+Arabic:wght@700;900&display=swap"></noscript>
 <style>
 /* Layout: control room — tab nav + settings column beside a sticky 9:16 live scene preview; gold-on-plum, single dark look by choice. Overlays (#scene, #item-…) render the same scene full-window on a transparent page for OBS. */
 :root{
@@ -4482,8 +4483,12 @@ function buildTab0(){
       (C.payUrl?card('ادفع أونلاين وتفعّل فوراً','<ul><li>شهر: <b>39 ريال</b></li><li>3 شهور: <b>99 ريال</b></li><li>6 شهور: <b>169 ريال</b></li><li>سنة: <b>299 ريال</b></li></ul><p class="hint">الدفع بالبطاقة أو Apple Pay. يوصلك كود التفعيل بعد الدفع مباشرة، الصقه هنا واضغط تفعيل.</p><div class="row" style="margin-top:8px"><a class="btn gold" href="'+esc(C.payUrl)+'" target="_blank" rel="noopener">ادفع الحين</a></div>'):'')+
       card('كيف أشترك؟','<ol class="paystep"><li><div><b>حوّل '+C.cur+C.price+'</b> على الحساب البنكي:'+(C.iban?'<div class="bankbox"><span>'+esc(C.bank)+' — باسم '+esc(C.holder)+'</span><span>الآيبان:</span><code>'+esc(C.iban)+'</code>'+(C.acct?'<span>رقم الحساب:</span><code>'+esc(C.acct)+'</code>':'')+'<div class="row" style="margin-top:4px"><button class="btn sm" type="button" data-copy="'+esc(C.iban)+'">نسخ الآيبان</button></div></div>':'<div class="bankbox"><span>بيانات الحساب البنكي توصلك على الواتساب.</span></div>')+'</div></li>'+
       '<li><div><b>أرسل الإيصال ويوزر تيك توك</b> على الواتساب.'+(wa?'<div class="row" style="margin-top:6px"><a class="btn gold sm" href="'+esc(wa)+'" target="_blank" rel="noopener">إرسال على الواتساب</a></div>':'')+'</div></li>'+
-      '<li><div><b>يوصلك كود التفعيل</b>، الصقه هنا واضغط تفعيل:<textarea class="licin" id="licCode" placeholder="ARSH1.xxxxx.xxxxx" aria-label="كود التفعيل"></textarea><div class="row"><button class="btn gold" type="button" id="licGo">تفعيل الاشتراك</button></div><p class="msg" id="licMsg" hidden></p></div></li></ol>'+
+      '<li><div><b>يوصلك كود التفعيل</b>، الصقه هنا واضغط تفعيل:<textarea class="licin" id="licCode" placeholder="ARSH1.xxxxx.xxxxx" aria-label="كود التفعيل"></textarea><div class="row"><button class="btn gold" type="button" id="licGo">تفعيل الاشتراك</button><button class="btn" type="button" id="licAuto">تحقق من دفعي تلقائياً</button></div><p class="msg" id="licMsg" hidden></p></div></li></ol>'+
       '<p class="hint" style="margin-top:12px">الكود مربوط بيوزر تيك توك اللي ترسله، ويتجدد كل شهر بنفس الطريقة.</p>')+'</div>';
+    $('#licAuto').onclick=async()=>{const m=$('#licMsg');m.hidden=false;const u=String(LASTUSER||'').replace(/^@/,'').trim();if(!u){m.textContent='اكتب يوزر تيك توك أول من الرئيسية واتصل.';return}
+      m.textContent='جاري التحقق…';try{const base=String(SUBCFG.payUrl||'').replace(/\/+$/,'');const r=await fetch(base+'/check?u='+encodeURIComponent(u));const j=await r.json();
+        if(j.ok&&j.code){if(!IS_SERVER){m.textContent='التفعيل يشتغل من تطبيق عرش اللايف على جهازك.';return}m.textContent='تم العثور على اشتراكك، جاري التفعيل…';bus.send({type:'license',code:j.code})}
+        else m.textContent='ما لقينا دفع مكتمل لهذا اليوزر. إذا دفعت للتو، انتظر دقيقة وجرّب.'}catch(_){m.textContent='ما قدرنا نتحقق الحين. جرّب بعد شوي.'}};
     $('#licGo').onclick=()=>{const v=$('#licCode').value.trim(),m=$('#licMsg');m.hidden=false;if(!v){m.textContent='الصق الكود أول.';return}
       if(!IS_SERVER){m.textContent='التفعيل يشتغل من تطبيق عرش اللايف على جهازك.';return}m.textContent='جاري التحقق…';bus.send({type:'license',code:v})};
   }
