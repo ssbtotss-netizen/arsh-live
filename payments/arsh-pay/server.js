@@ -8,6 +8,9 @@ app.use(express.urlencoded({ extended: false }));
 
 const PUBLIC_URL = (process.env.PUBLIC_URL || '').replace(/\/+$/, '');
 const MOYASAR = 'https://api.moyasar.com/v1';
+// عرض خاص: الشهر بـ 26 ريال لمدة 30 يوم (ينتهي 2 ديسمبر 2026 الساعة 00:00 بتوقيت الرياض)
+const PROMO_END = Date.parse('2026-12-02T00:00:00+03:00');
+const priceOf = m => (+m === 1 && Date.now() < PROMO_END) ? 26 : PLANS[+m].sar;
 const PLANS = {
   1:  { name: 'شهر',      months: 1,  sar: 39 },
   3:  { name: '3 شهور',   months: 3,  sar: 99 },
@@ -38,11 +41,11 @@ code{direction:ltr;display:block;word-break:break-all;background:#0b0f14;padding
 app.get('/', (req, res) => {
   const cards = Object.entries(PLANS).map(([m, p]) => `
     <form class="card" method="post" action="/buy">
-      <h3>${p.name} — ${p.sar} ريال</h3>
+      <h3>${p.name} — ${priceOf(m)} ريال</h3>
       <input type="hidden" name="months" value="${m}">
       <label>اسم حسابك في تيك توك (بدون @)</label>
       <input name="user" required placeholder="username">
-      <p><button type="submit">ادفع ${p.sar} ريال</button></p>
+      <p><button type="submit">ادفع ${priceOf(m)} ريال</button></p>
     </form>`).join('');
   res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p>${cards}`));
 });
@@ -56,7 +59,7 @@ app.post('/buy', async (req, res) => {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', Authorization: 'Basic ' + Buffer.from(process.env.MOYASAR_SECRET_KEY + ':').toString('base64') },
       body: JSON.stringify({
-        amount: plan.sar * 100, currency: 'SAR',
+        amount: priceOf(plan.months) * 100, currency: 'SAR',
         description: 'عرش اللايف — ' + plan.name + ' — @' + user,
         callback_url: PUBLIC_URL + '/return',
         success_url: PUBLIC_URL + '/return',
