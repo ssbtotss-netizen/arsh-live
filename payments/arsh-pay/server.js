@@ -93,5 +93,40 @@ app.get('/return', async (req, res) => {
   }
 });
 
+
+// ===== صفحة الإدارة: إصدار كود يدوي للتحويلات البنكية =====
+// تحتاج متغير ADMIN_PASSWORD في Render. ما تحفظ شي، فقط تصدر الكود.
+const crypto2 = require('crypto');
+function passOk(given) {
+  const want = process.env.ADMIN_PASSWORD || '';
+  if (!want) return false;
+  const a = Buffer.from(String(given || '')), b = Buffer.from(want);
+  return a.length === b.length && crypto2.timingSafeEqual(a, b);
+}
+app.get('/admin', (req, res) => {
+  if (!process.env.ADMIN_PASSWORD) return res.status(503).send(page('الإدارة', '<p>صفحة الإدارة مو مفعّلة. أضف ADMIN_PASSWORD في Render.</p>'));
+  const opts = Object.entries(PLANS).map(([m, p]) => `<option value="${m}">${p.name}</option>`).join('');
+  res.send(page('إصدار كود', `<h2>إصدار كود اشتراك</h2>
+    <form class="card" method="post" action="/admin/issue">
+      <label>كلمة المرور</label><input type="password" name="pw" required>
+      <label>اسم حساب تيك توك (بدون @)</label><input name="user" required>
+      <label>المدة</label><select name="months" style="width:100%;padding:10px;border-radius:8px;background:#0b0f14;color:#eef;border:1px solid #334">${opts}</select>
+      <p><button type="submit">أصدر الكود</button></p>
+    </form>`));
+});
+app.post('/admin/issue', (req, res) => {
+  if (!passOk(req.body.pw)) return res.status(403).send(page('إدارة', '<p>كلمة المرور غلط.</p>'));
+  const plan = PLANS[+req.body.months];
+  const user = cleanUser(req.body.user);
+  if (!plan || !user) return res.status(400).send(page('إدارة', '<p>بيانات ناقصة.</p>'));
+  const code = makeCode({ user, months: plan.months, invoiceId: 'manual-' + Date.now(), plan: plan.name });
+  const msg = `تم تفعيل اشتراكك في عرش اللايف (${plan.name}). الكود:\n${code}\nالصقه في لوحة عرش اللايف، قسم الاشتراك.`;
+  const wa = 'https://wa.me/?text=' + encodeURIComponent(msg);
+  res.send(page('تم إصدار الكود', `<h2>تم إصدار الكود ✅</h2>
+    <p>للحساب <b>@${esc(user)}</b> — ${esc(plan.name)}</p>
+    <code>${esc(code)}</code>
+    <p><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">أرسله على واتساب</a></p>
+    <p><a href="/admin">إصدار كود ثاني</a></p>`));
+});
 app.get('/health', (_, res) => res.send('ok'));
 app.listen(process.env.PORT || 10000, () => console.log('arsh-pay up'));
