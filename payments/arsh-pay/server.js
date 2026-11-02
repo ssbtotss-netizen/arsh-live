@@ -19,9 +19,9 @@ const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;'
 const cleanUser = s => String(s || '').trim().replace(/^@/, '').toLowerCase().replace(/[^a-z0-9._]/g, '');
 
 // توقيع الكود بنفس الصيغة اللي تتحقق منها المنصة: ARSH1.<payload>.<signature>
-function makeCode({ user, months, invoiceId, plan }) {
+function makeCode({ user, months, invoiceId, plan, until: untilOverride }) {
   const b64u = buf => Buffer.from(buf).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-  const until = Date.now() + months * 30 * 864e5;
+  const until = untilOverride || Date.now() + months * 30 * 864e5;
   const payload = b64u(JSON.stringify({ u: user || '*', x: until, n: invoiceId, c: plan }));
   const key = process.env.LICENSE_PRIVATE_KEY.replace(/\\n/g, '\n');
   const sig = crypto.sign('sha256', Buffer.from(payload), { key, dsaEncoding: 'ieee-p1363' });
@@ -127,6 +127,35 @@ app.post('/admin/issue', (req, res) => {
     <code>${esc(code)}</code>
     <p><a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">أرسله على واتساب</a></p>
     <p><a href="/admin">إصدار كود ثاني</a></p>`));
+});
+
+// ===== التفعيل التلقائي للبطاقة وApple Pay =====
+// المنصة تسأل: هل فيه دفع مكتمل لهذا اليوزر؟ إذا فيه، نرجع الكود.
+// مدة الكود تُحسب من تاريخ الدفع (مو من الحين)، فكل طلب يرجع نفس المدة ولا يمدد الاشتراك.
+app.get('/check', async (req, res) => {
+  res.set('Access-Control-Allow-Origin', '*');
+  const user = cleanUser(req.query.u);
+  if (!user) return res.json({ ok: false });
+  try {
+    const r = await fetch(MOYASAR + '/invoices?page=1&per_page=100', {
+      headers: { Authorization: 'Basic ' + Buffer.from(process.env.MOYASAR_SECRET_KEY + ':').toString('base64') },
+    });
+    const j = await r.json();
+    const list = Array.isArray(j) ? j : (j.data || []);
+    const paid = list
+      .filter(i => i.status === 'paid' && cleanUser((i.metadata || {}).user) === user && +((i.metadata || {}).months) > 0)
+      .sort((a, b) => Date.parse(b.paid_at || b.created_at || 0) - Date.parse(a.paid_at || a.created_at || 0));
+    const hit = paid[0];
+    if (!hit) return res.json({ ok: false });
+    const m = hit.metadata;
+    const base = Date.parse(hit.paid_at || hit.created_at || '') || Date.now();
+    const until = base + (+m.months) * 30 * 864e5;
+    if (until <= Date.now()) return res.json({ ok: false, expired: true });
+    const code = makeCode({ user, months: +m.months, invoiceId: hit.id, plan: m.plan || '', until });
+    res.json({ ok: true, code });
+  } catch (_) {
+    res.status(502).json({ ok: false });
+  }
 });
 app.get('/health', (_, res) => res.send('ok'));
 app.listen(process.env.PORT || 10000, () => console.log('arsh-pay up'));
