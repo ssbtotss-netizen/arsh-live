@@ -1054,11 +1054,12 @@ body.lite .scn,body.lite .sc-c{will-change:opacity,transform}
 .vd-sw path{fill:none;stroke:var(--sw,#000);stroke-width:14;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:vdsw 5.2s ease-out infinite}
 .vd-ring ellipse{fill:none;stroke:var(--ac);stroke-width:6;stroke-linecap:round;stroke-dasharray:1;stroke-dashoffset:1;animation:vdr 5.2s ease-in-out infinite;filter:drop-shadow(0 0 4px var(--ac))}
 .vd-ring ellipse.thin{stroke:#888;stroke-width:1.5;opacity:.6;animation-delay:.25s}
-.vd b{position:relative;display:block;font-size:1em;font-weight:900;color:var(--ink,#000);white-space:nowrap;text-shadow:2px 0 var(--halo,#fff),-2px 0 var(--halo,#fff),0 2px var(--halo,#fff),0 -2px var(--halo,#fff),2px 2px var(--halo,#fff),-2px -2px var(--halo,#fff),2px -2px var(--halo,#fff),-2px 2px var(--halo,#fff);animation:vdt 5.2s ease-out infinite}
+.vd b{position:relative;display:block;font-size:1.6em;font-weight:900;color:var(--ink,#000);white-space:nowrap;text-shadow:2px 0 var(--halo,#fff),-2px 0 var(--halo,#fff),0 2px var(--halo,#fff),0 -2px var(--halo,#fff),2px 2px var(--halo,#fff),-2px -2px var(--halo,#fff),2px -2px var(--halo,#fff),-2px 2px var(--halo,#fff);animation:vdIn 1s ease-out both}
 .vd-puff{position:absolute;left:14%;top:52%;width:.9em;height:.9em;border-radius:50%;background:radial-gradient(#555,rgba(0,0,0,0) 70%);filter:blur(2px);opacity:0;animation:vdp 5.2s ease-out infinite}
 .vd-puff.p2{left:auto;right:12%;top:42%;animation-delay:.15s}
 @keyframes vdsw{0%{stroke-dashoffset:1;opacity:1}16%{stroke-dashoffset:0;opacity:1}24%,100%{stroke-dashoffset:0;opacity:0}}
 @keyframes vdr{0%{stroke-dashoffset:1;opacity:0}8%{opacity:1}22%{stroke-dashoffset:0;opacity:1}32%,100%{stroke-dashoffset:0;opacity:0}}
+@keyframes vdIn{0%{opacity:0;transform:scale(1.25)}100%{opacity:1;transform:scale(1)}}
 @keyframes vdt{0%{opacity:0;transform:scale(1.25)}20%{opacity:1;transform:scale(1)}78%{opacity:1}90%,100%{opacity:0}}
 @keyframes vdp{0%,38%{opacity:0;transform:scale(.4)}52%{opacity:.75}86%,100%{opacity:0;transform:scale(2.4)}}
 /*rings*/
