@@ -1661,6 +1661,10 @@ body.ovlite *{-webkit-backdrop-filter:none!important;backdrop-filter:none!import
 .fc-neon .fcv{text-shadow:0 0 .5em var(--k3),0 0 1em var(--k3)}
 .fc-gold{background:linear-gradient(160deg,#3a2a0e,var(--k2));border-color:var(--k1)}.fc-gold .fcv{background:linear-gradient(180deg,#fff3c4,#e2b865 55%,#b8862e);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
 .fc-cute{border:.12em dashed var(--k1);background:var(--k2)}.fc-cute .fcv{text-shadow:none}
+.logo3d-wrap{perspective:600px;display:flex;justify-content:center;margin:.2em 0 .4em}
+.logo3d{width:3.2em;height:3.2em;border-radius:50%;background:radial-gradient(circle at 30% 30%,#7ee9ff,#0a2a4a 70%);border:.12em solid #7ee9ff;display:grid;place-items:center;font-weight:900;color:#fff;font-size:.9em;transform-style:preserve-3d;animation:logo3dSpin 4s ease-in-out infinite;box-shadow:0 0 1em rgba(126,233,255,.5)}
+@keyframes logo3dSpin{0%{transform:rotateY(-35deg)}50%{transform:rotateY(35deg)}100%{transform:rotateY(-35deg)}}
+@media (prefers-reduced-motion:reduce){.logo3d{animation:none}}
 .fc-wide{flex-direction:row;text-align:start;gap:.7em;padding:.5em .9em .5em .6em;border-radius:99em}.fc-wide .fca{width:3em;height:3em}.fc-wide .fcv{font-size:1.6em}
 .swd{display:inline-grid}.swd>.sw1{grid-area:1/1;animation:swIn .9s cubic-bezier(.2,.8,.2,1) both}
 .sw2>.sw1{animation:swRot 8s linear infinite both}
@@ -1768,6 +1772,13 @@ body.ovlite *{-webkit-backdrop-filter:none!important;backdrop-filter:none!import
 .rngb{width:30px;height:30px;padding:0;font-size:18px;line-height:1;display:grid;place-items:center}
 /* style gallery (dashboard) */
 .bsg{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px}
+.gcar{display:grid;gap:8px;margin-bottom:12px}
+.gcar-big{display:flex;align-items:center;gap:8px;justify-content:center;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.08);border-radius:14px;padding:12px;min-height:150px}
+.gcar-stage{flex:1;min-width:0;display:flex;justify-content:center;zoom:1.5;overflow:hidden}
+.gcar-arr{flex:0 0 40px;height:40px;border-radius:50%;border:1px solid rgba(255,255,255,.2);background:transparent;color:inherit;font-size:22px;line-height:1;cursor:pointer}
+.gcar-name{text-align:center;margin:0;font-weight:700;font-size:14px}
+.gcar-strip{display:flex!important;overflow-x:auto;scroll-snap-type:x proximity;gap:10px;padding:4px 2px 10px}
+.gcar-strip>.bst{flex:0 0 150px;scroll-snap-align:start}
 .bst{display:flex;flex-direction:column;gap:6px;padding:8px;border-radius:12px;border:1px solid var(--line);background:var(--panel-2);cursor:pointer;text-align:right;font-weight:600;font-size:13px;color:var(--text)}
 .bst[aria-pressed="true"]{border-color:var(--em);box-shadow:0 0 0 2px color-mix(in srgb,var(--em) 30%,transparent)}
 .bst .stage.mini{aspect-ratio:auto;height:170px;border-radius:9px;padding:10px 8px;pointer-events:none}
@@ -3827,9 +3838,9 @@ const W={
   chat:{name:'الشات',def:{x:4,y:66,w2:56},o:{n:6,gifts:true},opts:[['n','عدد الرسائل','num'],['gifts','إظهار الهدايا','bool']],
     render(it){const m=S.chat.filter(c=>it.o.gifts||!c.gift).slice(-(+it.o.n||6));
       return '<div class="chat">'+m.map(c=>'<div class="cm'+(c.gift?' gf':'')+(c.bot?' bt':'')+'"><b>'+esc(c.user)+badge(c.user)+'</b><span>'+esc(c.text)+'</span></div>').join('')+'</div>'}},
-  socials:{name:'حساباتي (التواصل)',def:{x:3,y:84,w2:64},o:{style:'pill',lay:'row',cm:'brand',cc:'#ff4fd8',nm:false,head:false,title:'تابعني',sec:4,fx:'burst'},
-    opts:[['style','الشكل','sel',SOC_STYLES],['lay','طريقة العرض','sel',SOC_LAYS],['cm','الألوان','sel',SOC_CM],['nm','إظهار اسم المنصة','bool'],['head','إظهار العنوان','bool'],['title','العنوان','text'],['sec','مدة كل حساب (ثواني)','num']],
-    render(it){return socRender(it.o,socList())}},
+  socials:{name:'حساباتي (التواصل)',def:{x:3,y:84,w2:64},o:{style:'pill',lay:'row',cm:'brand',cc:'#ff4fd8',nm:false,head:false,title:'تابعني',sec:4,fx:'burst',logo3d:true},
+    opts:[['style','الشكل','sel',SOC_STYLES],['lay','طريقة العرض','sel',SOC_LAYS],['cm','الألوان','sel',SOC_CM],['nm','إظهار اسم المنصة','bool'],['head','إظهار العنوان','bool'],['title','العنوان','text'],['sec','مدة كل حساب (ثواني)','num'],['logo3d','شعار المنصة ثلاثي الأبعاد يدور يمين ويسار','bool']],
+    render(it){return (it.o.logo3d?'<div class="logo3d-wrap"><div class="logo3d">عرش</div></div>':'')+socRender(it.o,socList())}},
   music:{name:'الأغنية الحالية',def:{x:4,y:92,w2:60},o:{},opts:[],
     render(){const n=STATE.music.now;if(!n)return '';return '<div class="mus gl"><span class="disc"></span><div class="tx"><b>'+esc(n.title)+'</b><span>طلب: '+esc(n.user)+(STATE.music.queue.length?' · بالطابور '+STATE.music.queue.length:'')+'</span></div></div>'}},
   media:{name:'صور وفيديو الإجراءات',def:{x:25,y:26,w2:50},o:{},opts:[],render(){return null},
@@ -4991,5 +5002,23 @@ else if(IS_DASH){
   S.T.viewers=S.T.peak=148;STATE.music={now:{id:'',title:'محمد عبده — الأماكن',user:'ريم'},queue:[]};simEnd=setTimeout(musicNext,25000);S.marks=[];
 }
 tick();
+// معرض بمعاينة كبيرة فوق + أسهم يمين ويسار + شريط أشكال تحت (يتطبق على كل المعارض)
+function enhanceCarousel(g){
+  if(!g)return;const prev=g.previousElementSibling;if(prev&&prev.classList.contains('gcar'))prev.remove();
+  g.classList.add('gcar-strip');
+  const btns=[...g.querySelectorAll(':scope>.bst')];if(!btns.length)return;
+  let idx=btns.findIndex(b=>b.getAttribute('aria-pressed')==='true');if(idx<0)idx=0;
+  const cur=btns[idx],st=cur.querySelector('.stage');
+  const name=[...cur.childNodes].filter(n=>n.nodeType===3).map(n=>n.textContent.trim()).join(' ');
+  const wrap=document.createElement('div');wrap.className='gcar';
+  wrap.innerHTML='<div class="gcar-big"><button type="button" class="gcar-arr" data-dir="-1" aria-label="السابق">‹</button><div class="gcar-stage">'+(st?st.outerHTML:'')+'</div><button type="button" class="gcar-arr" data-dir="1" aria-label="التالي">›</button></div><p class="gcar-name">'+name.replace(/[<>&]/g,'')+'</p>';
+  wrap.querySelectorAll('.gcar-arr').forEach(b=>b.onclick=()=>{const n=(idx+(+b.dataset.dir)+btns.length)%btns.length;btns[n].click()});
+  g.parentNode.insertBefore(wrap,g);
+}
+{const _tg=drawTapGallery,_bg=drawBoardGallery,_ag=drawAlertGallery,_wl=drawWLooks;
+ drawTapGallery=function(h){_tg(h);enhanceCarousel($('#'+h))};
+ drawBoardGallery=function(h,m){_bg(h,m);enhanceCarousel($('#'+(h||'bsg')))};
+ drawAlertGallery=function(h,w){_ag(h,w);enhanceCarousel($('#'+h))};
+ drawWLooks=function(k){_wl(k);enhanceCarousel($('#'+(k==='fol'?'lgFc':'lgTm')))};}
 })();
 </script>
