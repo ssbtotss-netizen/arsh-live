@@ -4312,7 +4312,7 @@ function remountAll(){applyLite();setTimeout(warmScenes,1500);
   ensureOcc();
   if(OV&&hash.startsWith('w-')){VIRT=virtItem(hash.slice(2));mountScene($('#ovStage'),{virt:VIRT})}
   else if(OV)mountScene($('#ovStage'),{only:hash.startsWith('item-')?hash.slice(5):null});
-  else mountScene($('#pvStage'),{edit:tab==='scene'});
+  else{if($('#pvStage'))mountScene($('#pvStage'),{edit:tab==='scene'});if($('#uniStage'))mountScene($('#uniStage'),{edit:true})}
 }
 
 /* ================= dashboard ================= */
@@ -4858,9 +4858,10 @@ else if(tab==='unified'){
     const pickHtml=PICK.map(([k,l])=>{const it=SET.items.find(x=>x.w===k);const body=(k==='timer'?subInner:'')+(SHP_F(k).length?'<p class="hint" style="margin:8px 0 2px">اختر الشكل اللي يطلع للناس:</p><div class="shp" id="shp-'+k+'"></div>':'');return '<details class="uni-item" style="border:1px solid rgba(255,255,255,.1);border-radius:12px;padding:10px 12px;margin:8px 0"><summary style="cursor:pointer;font-weight:800">'+esc(l)+'</summary><div style="padding-top:8px"><label class="chk" style="display:flex;gap:8px;align-items:center;margin:6px 0"><input type="checkbox" data-wk="'+k+'"'+(it&&it.on!==false?' checked':'')+'> تفعيل في البث</label>'+body+'</div></details>'}).join('');
     const SCN=BASE+'/scene';
     const copyCard=card('📋 رابط المشهد: للتيك توك و OBS','<p class="hint"><b>لتيك توك:</b> انسخه والصقه في TikTok LIVE Studio كمصدر متصفح (Browser Source). <b>لـ OBS:</b> نفس الرابط كمصدر متصفح. يجمع كل الأدوات اللي علّمتها فوق.</p><div class="copy"><code>'+esc(SCN)+'</code><button class="btn sm" data-copy="'+esc(SCN)+'">نسخ الرابط الموحد</button></div>');
-    c.innerHTML='<div class="cards">'+card('✅ اختر الأدوات',pickHtml)+'</div>'+'<div class="cards">'+card('🔗 الرابط الموحد','<p class="hint">رابط واحد يجمع كل الأدوات الظاهرة.</p><p class="uni-h">1) نوع البث</p><div class="uni-types">'+ob+'</div><p class="uni-h">2) التخطيط الجاهز</p><div class="uni-btns">'+btns+'</div>'+
+    c.innerHTML='<div class="cards">'+card('🎬 المعاينة: اسحب أي أداة لتغير مكانها، واضغط عليها لإعداداتها','<div class="stage" id="uniStage" style="max-width:340px;margin:0 auto"></div>')+'</div>'+'<div class="cards">'+card('✅ اختر الأدوات',pickHtml)+'</div>'+'<div class="cards">'+card('🔗 الرابط الموحد','<p class="hint">رابط واحد يجمع كل الأدوات الظاهرة.</p><p class="uni-h">1) نوع البث</p><div class="uni-types">'+ob+'</div><p class="uni-h">2) التخطيط الجاهز</p><div class="uni-btns">'+btns+'</div>'+
       '<label class="chk"><input type="checkbox" id="uniAuto"'+(U.auto?' checked':'')+'> ترتيب تلقائي (إذا طفيته يرتب الأدوات بترتيبها الافتراضي)</label>'+
       '<p class="hint">الخانات اللي تنضاف تطلع فوق في المشهد. إذا تبي ترتب يدوي، طفّ الترتيب التلقائي وعدّل المواقع من المشهد.</p>')+copyCard+'</div>';
+    mountScene($('#uniStage'),{edit:true});
     PICK.forEach(([k])=>{const fs=SHP_F(k),host=$('#shp-'+k);if(!host||!fs.length)return;const key=fs[0][0],opts=fs[0][3];
       const base=()=>{const it=SET.items.find(x=>x.w===k);return it?it.o:(SET.shapes[k]=SET.shapes[k]||clone(W[k].o))};
       const cur=base()[key];
@@ -4925,10 +4926,10 @@ function openGear(id){const it=item(id);if(!it)return;const d=W[it.w];if(it.scal
   if(d.opts.length)form($('#gearOpt'),it.o,d.opts,'go'+id,()=>{saveSet(true);remountAll();const n=$('[data-pick="'+id+'"]');if(n)n.textContent=d.name+(it.o.title?' · '+it.o.title:'')});
 }
 /* drag in preview (scene tab) */
-(function(){let drag=null,moved=0;
-  document.addEventListener('pointerdown',e=>{if(e.target.closest('#pvStage .wi.edit'))moved=0});
-  document.addEventListener('pointerdown',e=>{const el=e.target.closest('#pvStage .wi.edit');if(!el)return;const st=$('#pvStage').getBoundingClientRect(),it=item(el.dataset.id);
-    selItem=it.id;$$('#pvStage .wi').forEach(x=>x.classList.toggle('sel',x===el));const g=LAY==='h'?(it.lh=Object.assign({},autoH(it),it.lh||{})):it;drag={el,it:g,sx:e.clientX,sy:e.clientY,x:g.x,y:g.y,w:st.width,h:st.height,rz:!!e.target.closest('.rz'),w0:g.w2,s0:+g.scale||1};el.setPointerCapture(e.pointerId);e.preventDefault()});
+(function(){let drag=null,moved=0;const DRAG_SEL='#pvStage .wi.edit,#uniStage .wi.edit';
+  document.addEventListener('pointerdown',e=>{if(e.target.closest(DRAG_SEL))moved=0});
+  document.addEventListener('pointerdown',e=>{const el=e.target.closest(DRAG_SEL);if(!el)return;const st=el.closest('.stage').getBoundingClientRect(),it=item(el.dataset.id);
+    selItem=it.id;el.closest('.stage').querySelectorAll('.wi').forEach(x=>x.classList.toggle('sel',x===el));const g=LAY==='h'?(it.lh=Object.assign({},autoH(it),it.lh||{})):it;drag={el,it:g,sx:e.clientX,sy:e.clientY,x:g.x,y:g.y,w:st.width,h:st.height,rz:!!e.target.closest('.rz'),w0:g.w2,s0:+g.scale||1};el.setPointerCapture(e.pointerId);e.preventDefault()});
   document.addEventListener('pointermove',e=>{if(!drag)return;moved+=Math.abs(e.movementX||0)+Math.abs(e.movementY||0);const d=drag;
     if(d.rz){const dx=(d.sx-e.clientX)/d.w*100,f=Math.max(.3,Math.min(3,(d.w0+dx)/d.w0));d.it.w2=Math.round(Math.max(8,Math.min(100,d.w0*f)));d.it.scale=Math.round(Math.max(.4,Math.min(3,d.s0*f))*100)/100;d.it.x=Math.round((d.x-(d.it.w2-d.w0))*2)/2;place(d.el,d.it);return}d.it.x=Math.round(Math.max(-10,Math.min(100,d.x+(e.clientX-d.sx)/d.w*100))*2)/2;d.it.y=Math.round(Math.max(-10,Math.min(100,d.y+(e.clientY-d.sy)/d.h*100))*2)/2;place(d.el,d.it)});
   document.addEventListener('pointerup',()=>{if(!drag)return;const id=drag.el.dataset.id;drag=null;if(moved<=4){openGear(id);return}saveSet();drawItems()});
