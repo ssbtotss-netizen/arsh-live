@@ -1661,6 +1661,23 @@ body.ovlite *{-webkit-backdrop-filter:none!important;backdrop-filter:none!import
 .fc-neon .fcv{text-shadow:0 0 .5em var(--k3),0 0 1em var(--k3)}
 .fc-gold{background:linear-gradient(160deg,#3a2a0e,var(--k2));border-color:var(--k1)}.fc-gold .fcv{background:linear-gradient(180deg,#fff3c4,#e2b865 55%,#b8862e);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none}
 .fc-cute{border:.12em dashed var(--k1);background:var(--k2)}.fc-cute .fcv{text-shadow:none}
+.uni-btns{display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px}
+/* music widget shapes */
+.mus-luxury{background:linear-gradient(135deg,#2a1d05,#0b0803);border:.12em solid #d9b45a;border-radius:.6em;box-shadow:0 0 .8em rgba(217,180,90,.35);color:#f6e7b5}
+.mus-luxury .tx b{color:#ffd76a}
+.mus-neon{background:rgba(4,8,14,.7);border:.12em solid #35f0ff;border-radius:.6em;box-shadow:0 0 .6em #35f0ff,inset 0 0 .6em rgba(53,240,255,.3)}
+.mus-neon .tx b,.mus-neon .tx span{text-shadow:0 0 .5em #35f0ff}
+.mus-animated .disc{animation:musSpin 3s linear infinite}
+.mus-animated .tx{animation:musBreath 2.4s ease-in-out infinite}
+@keyframes musSpin{to{transform:rotate(360deg)}}
+@keyframes musBreath{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.mus-sweep{position:relative;overflow:hidden;background:rgba(10,12,20,.85);border-radius:.6em}
+.mus-sweep::after{content:'';position:absolute;inset:0;background:linear-gradient(115deg,transparent 40%,rgba(255,255,255,.45) 50%,transparent 60%);background-size:250% 250%;animation:musSweep 3.2s ease-in-out infinite;pointer-events:none}
+@keyframes musSweep{0%{background-position:120% 120%}100%{background-position:-20% -20%}}
+.mus-overlap{background:rgba(20,10,35,.85);border-radius:.6em;box-shadow:.25em .25em 0 rgba(166,108,255,.55),.5em .5em 0 rgba(166,108,255,.3);transform:rotate(-2deg)}
+.mus-overlap .disc{margin-inline-end:-1.2em;transform:translateX(.4em);z-index:2;position:relative}
+.mus-flicker{background:rgba(10,8,16,.8);border-radius:.6em;animation:musFlick 1.6s steps(1,end) infinite}
+@keyframes musFlick{0%,19%{opacity:1}20%,21%{opacity:.35}22%,59%{opacity:1}60%{opacity:.2}61%,100%{opacity:1}}
 .fc-wide{flex-direction:row;text-align:start;gap:.7em;padding:.5em .9em .5em .6em;border-radius:99em}.fc-wide .fca{width:3em;height:3em}.fc-wide .fcv{font-size:1.6em}
 .swd{display:inline-grid}.swd>.sw1{grid-area:1/1;animation:swIn .9s cubic-bezier(.2,.8,.2,1) both}
 .sw2>.sw1{animation:swRot 8s linear infinite both}
@@ -2746,6 +2763,7 @@ function socHandle(a){let h=String(a.h||'').trim();if(['tiktok','instagram','x',
 
 /* حركات تبديل الحسابات (وضع: حساب حساب يتبدل) */
 const HID='opacity:0';
+const MUS_STYLES=[['classic','كلاسيكي'],['luxury','فخم (ذهبي)'],['neon','نيون'],['animated','متحرك (يلف ويتنفس)'],['sweep','لمعة تمشي من الزاوية'],['overlap','متداخل (كروت تتكدس)'],['flicker','وميض']];
 const SOCFX={
  spin3d:{n:'🎡 لفّة ثلاثية الأبعاد',c:[[0,'transform:perspective(20em) rotateY(-90deg);opacity:0'],[.08,'transform:perspective(20em) rotateY(0);opacity:1'],[.2,'transform:perspective(20em) rotateY(35deg);opacity:1'],[.32,'transform:perspective(20em) rotateY(-35deg);opacity:1'],[.44,'transform:perspective(20em) rotateY(0);opacity:1'],[.62,'transform:perspective(20em) rotateY(360deg);opacity:1'],[.8,'transform:perspective(20em) rotateY(360deg);opacity:1'],[.9,'transform:perspective(20em) rotateY(360deg) scale(.6);opacity:0'],[1,'transform:perspective(20em) rotateY(360deg) scale(.6);opacity:0']]},
  burst:{n:'💥 انفجار وفرشاة',c:[[0,'clip-path:inset(-3em -3em -3em calc(100% - 2.5em))'],[.07,'clip-path:inset(-3em -3em -3em calc(100% - 2.5em))'],[.17,'clip-path:inset(-3em -3em -3em -3em)'],[.84,'clip-path:inset(-3em -3em -3em -3em)'],[.93,'clip-path:inset(-3em -3em -3em calc(100% - 2.5em))'],[1,'clip-path:inset(-3em -3em -3em calc(100% - 2.5em))']],i:[[0,'transform:scale(0) rotate(-120deg)'],[.06,'transform:scale(1.3) rotate(12deg)'],[.1,'transform:none'],[.88,'transform:none'],[.94,'transform:scale(1.2)'],[1,'transform:scale(0) rotate(90deg)']],
@@ -3848,8 +3866,8 @@ const W={
   socials:{name:'حساباتي (التواصل)',def:{x:3,y:84,w2:64},o:{style:'pill',lay:'rotate',cm:'brand',cc:'#ff4fd8',nm:false,head:false,title:'تابعني',sec:4,fx:'spin3d'},
     opts:[['style','الشكل','sel',SOC_STYLES],['lay','طريقة العرض','sel',SOC_LAYS],['cm','الألوان','sel',SOC_CM],['nm','إظهار اسم المنصة','bool'],['head','إظهار العنوان','bool'],['title','العنوان','text'],['sec','مدة كل حساب (ثواني)','num']],
     render(it){return socRender(it.o,socList())}},
-  music:{name:'الأغنية الحالية',def:{x:4,y:92,w2:60},o:{},opts:[],
-    render(){const n=STATE.music.now;if(!n)return '';return '<div class="mus gl"><span class="disc"></span><div class="tx"><b>'+esc(n.title)+'</b><span>طلب: '+esc(n.user)+(STATE.music.queue.length?' · بالطابور '+STATE.music.queue.length:'')+'</span></div></div>'}},
+  music:{name:'الأغنية الحالية',def:{x:4,y:92,w2:60},o:{style:'classic'},opts:[['style','الشكل','sel',MUS_STYLES]],
+    render(it){const n=STATE.music.now;if(!n)return '';const st=(it&&it.o&&it.o.style)||'classic';return '<div class="mus gl mus-'+st+'"><span class="disc"></span><div class="tx"><b>'+esc(n.title)+'</b><span>طلب: '+esc(n.user)+(STATE.music.queue.length?' · بالطابور '+STATE.music.queue.length:'')+'</span></div></div>'}},
   media:{name:'صور وفيديو الإجراءات',def:{x:25,y:26,w2:50},o:{},opts:[],render(){return null},
     mount(el){el.innerHTML='<div class="media"></div>'},
     fx:{media(el,d){const m=$('.media',el);const isV=/\.(mp4|webm|mov)(\?|$)/i.test(d.url);
@@ -4340,12 +4358,12 @@ const IC={sub:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2
   alerts:'<path d="M6 16v-5a6 6 0 0 1 12 0v5l2 2H4zM10 21a2 2 0 0 0 4 0"/>',goals:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/>',games:'<path d="M7 8h10a5 5 0 0 1 0 10l-2-2H9l-2 2A5 5 0 0 1 7 8zM8 11v4M6 13h4"/>',
   actions:'<path d="M13 2L4 14h7l-1 8 9-12h-7z"/>',music:'<path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>',tts:'<path d="M4 9v6h4l5 4V5L8 9zM17 8a5 5 0 0 1 0 8"/>',
   bot:'<rect x="4" y="7" width="16" height="12" rx="3"/><path d="M12 3v4M9 13h.01M15 13h.01"/>',filters:'<path d="M3 5h18l-7 8v6l-4-2v-4z"/>',points:'<circle cx="12" cy="12" r="9"/><path d="M12 7v10M9 9.5h4.5a2 2 0 0 1 0 4H9"/>',sounds:'<path d="M11 5L6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/>',entrance:'<path d="M3 21h18M5 21V7l7-4 7 4v14M10 21v-5h4v5"/>',supporters:'<path d="M12 2l3 6 7 1-5 5 1 7-6-3-6 3 1-7-5-5 7-1z"/>',stats:'<path d="M4 20V10M10 20V4M16 20v-8M22 20H2"/>',donate:'<circle cx="12" cy="12" r="9"/><path d="M15 9.5c-.5-1-1.6-1.5-3-1.5-1.7 0-2.8.8-2.8 2s1.1 1.7 2.8 2 2.8.8 2.8 2-1.1 2-2.8 2c-1.5 0-2.6-.6-3.1-1.6M12 6v2M12 16v2"/>'};
-const NAV=[['الرئيسية',[['home','لوحة القيادة'],['sub','الاشتراك'],['occasions','🌙 العيد والمناسبات']]],['الأوفرلايات',[['looks','الأشكال والثيمات'],['scene','المظهر والمشهد'],['alerts','التنبيهات'],['goals','الأهداف والتكبيس'],['donate','الدونيشن'],['games','الألعاب والتحديات']]],
+const NAV=[['الرئيسية',[['home','لوحة القيادة'],['sub','الاشتراك'],['occasions','🌙 العيد والمناسبات']]],['الأوفرلايات',[['looks','الأشكال والثيمات'],['scene','المظهر والمشهد'],['alerts','التنبيهات'],['unified','🔗 الرابط الموحد'],['goals','الأهداف والتكبيس'],['donate','الدونيشن'],['games','الألعاب والتحديات']]],
   ['التفاعل',[['sounds','مكتبة الأصوات'],['points','النقاط والمكافآت'],['entrance','الدخلات الملكية'],['actions','الإجراءات التلقائية'],['music','الموسيقى'],['tts','القارئ الصوتي'],['bot','البوت']]],['الإدارة',[['supporters','الداعمين والشارات'],['stats','الإحصائيات'],['filters','الفلاتر والإشعارات'],['help','المساعدة والسياسات']]]];
 const TABS=NAV.flatMap(g=>g[1]);
-const BASIC=new Set(['home','sub','looks','scene','alerts','goals','games','sounds','music','bot','entrance']);
+const BASIC=new Set(['home','sub','looks','scene','alerts','unified','goals','games','sounds','music','bot','entrance']);
 let ADV=false;try{ADV=localStorage.getItem('arsh-adv')==='1'}catch(_){}
-const TAB_DESC={help:'المساعدة: الأسئلة الشائعة، طريقة الدعم، وشروط الاستخدام وسياسة الخصوصية وسياسة الاسترداد.',donate:'الدونيشن: رابط الدعم وتنبيه كل تبرع يطلع على الشاشة.',sub:'اشتراكك في عرش اللايف: حالته، والسعر، وطريقة الدفع والتفعيل.',home:'ابدأ من هنا: اتصل بلايفك، وجرّب الأزرار وشوف كل شي في المعاينة.',looks:'اختر شكل كل شي يطلع في البث بضغطة: التكبيس، المكبسين، الداعمين، التنبيهات، والألوان.',
+const TAB_DESC={unified:'الرابط الموحد: رابط واحد يجمع كل الأدوات. اختر تخطيطاً جاهزاً (تلقائي، بث سوالف، بث تكبيس، بث ألعاب)، أو خلّه يرتب بنفسه.',help:'المساعدة: الأسئلة الشائعة، طريقة الدعم، وشروط الاستخدام وسياسة الخصوصية وسياسة الاسترداد.',donate:'الدونيشن: رابط الدعم وتنبيه كل تبرع يطلع على الشاشة.',sub:'اشتراكك في عرش اللايف: حالته، والسعر، وطريقة الدفع والتفعيل.',home:'ابدأ من هنا: اتصل بلايفك، وجرّب الأزرار وشوف كل شي في المعاينة.',looks:'اختر شكل كل شي يطلع في البث بضغطة: التكبيس، المكبسين، الداعمين، التنبيهات، والألوان.',
   scene:'رتّب مكان الأدوات في البث بالسحب، وانسخ رابط البث لبرنامج TikTok LIVE Studio أو OBS.',alerts:'وش يطلع على الشاشة لما أحد يتابع أو يشارك أو يرسل هدية.',goals:'أهداف اللايكات والهدايا، ونظام التكبيس بالمراحل.',
   games:'العجلة والمعارك والتصويت والمسابقات والمزاد.',occasions:'ثيمات العيد والمناسبات: رمضان، عيد الفطر، عيد الأضحى، اليوم الوطني، ويوم التأسيس. تشتغل لحالها في يومها، وتقدر تفعّلها أو توقفها بضغطة.',sounds:'الصوت اللي يطلع مع كل متابعة أو هدية أو مشاركة، ومكتبة الميمز.',
   points:'المشاهدين يجمعون نقاط من تفاعلهم ويستبدلونها بمكافآت.',entrance:'دخلة خاصة بفيديو وصوت لما يدخل داعم مهم.',actions:'سوّ أي شي تلقائي مع أي حدث: صورة، صوت، جملة، ألعاب نارية.',
@@ -4813,6 +4831,31 @@ function buildTab0(){
     c.innerHTML=card('إحصائيات اللايف','<div class="chips" id="stChips"></div>')+'<div class="cards">'+card('العملات بالدقيقة','<div class="bars" id="bD"></div><p class="hint">آخر 30 دقيقة</p>')+card('اللايكات بالدقيقة','<div class="bars rose" id="bL"></div><p class="hint">آخر 30 دقيقة</p>')+'</div>'+
       card('أقوى لحظات البث','<div class="chips" id="moments"></div>')+'<div class="cards">'+card('أكثر الهدايا','<table class="tbl" id="tG"></table>')+card('أقوى الداعمين','<table class="tbl" id="tS"></table>')+card('متابعين جدد','<table class="tbl" id="tF"></table>')+card('حسب المنصة','<table class="tbl" id="tP"></table><p class="hint">عدد التفاعلات من كل منصة في هذا البث.</p>')+'</div>'+card('الجلسات السابقة','<table class="tbl" id="tH"></table>');
     renderStats();
+  }
+else if(tab==='unified'){
+    const U=SET.uni||(SET.uni={auto:true,preset:'auto',orient:'v'});if(!U.orient)U.orient='v';
+    const PRE={auto:['تلقائي (ذكي)',['taps','top','followers','chat','socials']],talk:['بث سوالف',['chat','followers','socials','top']],tap:['بث تكبيس',['taps','top','board','goal','followers']],games:['بث ألعاب',['timer','goal','top','followers']]};
+    const uniApply=(k)=>{const keys=PRE[k][1];
+      keys.forEach((w,i)=>{let it=SET.items.find(x=>x.w===w);if(!it){it=Object.assign({id:'i'+uid(),w,on:true,o:clone(W[w].o)},clone(W[w].def));SET.items.push(it)}
+        it.on=true;
+        if(U.auto){const n=keys.length,wide=U.orient==='h'&&n>2,cols=wide?2:1,rows=Math.ceil(n/cols),col=i%cols,row=Math.floor(i/cols);it.x=cols===1?4:(col?52:4);it.y=Math.round(6+row*(86/rows));it.w2=cols===1?(U.orient==='h'?60:92):44}
+        else{Object.assign(it,clone(W[w].def))}});
+      U.preset=k;saveSet(true);buildTab()};
+    const ob=[['v','طولي (9:16) لتيك توك'],['h','عرضي (16:9) لكيك ويوتيوب']].map(([k,l])=>'<button type="button" class="btn sm'+(U.orient===k?' on':'')+'" data-orient="'+k+'">'+l+'</button>').join(' ');
+    const btns=Object.entries(PRE).map(([k,v])=>'<button type="button" class="btn sm'+(U.preset===k?' on':'')+'" data-uni="'+k+'">'+esc(v[0])+'</button>').join(' ');
+    const TI=SET.items.find(i=>i.w==='timer');const tp=TI?(TI.y<30?'top':TI.y<70?'mid':'bot'):'bot';const SBU=BASE+'/w/timer';
+    const tBtns=[['top','أعلى'],['mid','وسط'],['bot','أسفل']].map(([k,l])=>'<button type="button" class="btn sm'+(tp===k?' on':'')+'" data-tpos="'+k+'">'+l+'</button>').join(' ');
+    const tw=(TI&&+TI.w2)||0;const tsz=[['s','صغير',30],['m','وسط',60],['l','كبير',92]].map(([k,l,v])=>'<button type="button" class="btn sm'+(Math.abs(tw-v)<1?' on':'')+'" data-tsz="'+k+'">'+l+'</button>').join(' ');
+    const subCard=card('⏱ رابط السبّاثون','<p class="hint">حدد مكانه في البث، وانسخ الرابط الواحد وحطه في البث.</p><div class="uni-btns">'+tBtns+'</div><div class="uni-btns">'+tsz+'</div><div class="copy"><code>'+esc(SBU)+'</code><button class="btn sm" data-copy="'+esc(SBU)+'">نسخ رابط السبّاثون</button></div><p class="hint">إعدادات الوقت والهدايا تتحكم فيها من تبويب الأهداف والتكبيس.</p>');
+    c.innerHTML='<div class="cards">'+card('🔗 الرابط الموحد','<p class="hint">رابط واحد يجمع كل الأدوات الظاهرة. اختر الاتجاه أولاً ثم التخطيط:</p><div class="uni-btns">'+ob+'</div><div class="uni-btns">'+btns+'</div>'+
+      '<label class="chk"><input type="checkbox" id="uniAuto"'+(U.auto?' checked':'')+'> ترتيب تلقائي (إذا طفيته يرتب الأدوات بترتيبها الافتراضي)</label>'+
+      '<p class="hint">الخانات اللي تنضاف تطلع فوق في المشهد. إذا تبي ترتب يدوي، طفّ الترتيب التلقائي وعدّل المواقع من المشهد.</p>')+subCard+'</div>';
+    c.onclick=e=>{const b=e.target.closest('[data-uni]');if(b){uniApply(b.dataset.uni);return}
+      const ort=e.target.closest('[data-orient]');if(ort){U.orient=ort.dataset.orient;saveSet(true);uniApply(U.preset||'auto');return}
+      const zs=e.target.closest('[data-tsz]');if(zs){let ti=SET.items.find(i=>i.w==='timer');if(!ti){ti=Object.assign({id:'i'+uid(),w:'timer',on:true,o:clone(W.timer.o)},clone(W.timer.def));SET.items.push(ti)}ti.on=true;ti.w2={s:30,m:60,l:92}[zs.dataset.tsz];saveSet(true);buildTab();return}
+      const t=e.target.closest('[data-tpos]');if(t){let ti=SET.items.find(i=>i.w==='timer');if(!ti){ti=Object.assign({id:'i'+uid(),w:'timer',on:true,o:clone(W.timer.o)},clone(W.timer.def));SET.items.push(ti)}
+        ti.on=true;ti.y={top:6,mid:45,bot:84}[t.dataset.tpos];saveSet(true);buildTab()}};
+    const ua=$('#uniAuto');if(ua)ua.onchange=()=>{U.auto=ua.checked;saveSet(true);uniApply(U.preset||'auto')};
   }
   else if(tab==='help'){
     const WA='https://wa.me/966554613230';
