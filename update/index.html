@@ -4861,8 +4861,13 @@ else if(tab==='unified'){
     c.innerHTML='<div class="cards">'+card('✅ اختر الأدوات',pickHtml)+'</div>'+'<div class="cards">'+card('🔗 الرابط الموحد','<p class="hint">رابط واحد يجمع كل الأدوات الظاهرة.</p><p class="uni-h">1) نوع البث</p><div class="uni-types">'+ob+'</div><p class="uni-h">2) التخطيط الجاهز</p><div class="uni-btns">'+btns+'</div>'+
       '<label class="chk"><input type="checkbox" id="uniAuto"'+(U.auto?' checked':'')+'> ترتيب تلقائي (إذا طفيته يرتب الأدوات بترتيبها الافتراضي)</label>'+
       '<p class="hint">الخانات اللي تنضاف تطلع فوق في المشهد. إذا تبي ترتب يدوي، طفّ الترتيب التلقائي وعدّل المواقع من المشهد.</p>')+copyCard+'</div>';
-    PICK.forEach(([k])=>{const fs=SHP_F(k),host=$('#shp-'+k);if(!host||!fs.length)return;const it=SET.items.find(x=>x.w===k);const obj=it?it.o:(SET.shapes[k]=SET.shapes[k]||clone(W[k].o));
-      form(host,obj,fs,'sh-'+k,()=>{SET.shapes[k]=obj;saveSet(true)})});
+    PICK.forEach(([k])=>{const fs=SHP_F(k),host=$('#shp-'+k);if(!host||!fs.length)return;const key=fs[0][0],opts=fs[0][3];
+      const base=()=>{const it=SET.items.find(x=>x.w===k);return it?it.o:(SET.shapes[k]=SET.shapes[k]||clone(W[k].o))};
+      const cur=base()[key];
+      host.innerHTML='<div class="gcar-strip">'+opts.map(([v,l])=>{let pv='';try{pv=withSample(()=>W[k].render({id:'shp'+k+v,o:Object.assign({},W[k].o,SET.shapes[k]||{},{[key]:v})}))}catch(e){pv=''}
+        return '<button type="button" class="bst" data-v="'+esc(v)+'" aria-pressed="'+(String(cur)===String(v))+'"><div class="stage mini" style="font-size:12px;display:grid;place-items:center">'+pv+'</div>'+esc(l)+'</button>'}).join('')+'</div>';
+      host.onclick=e=>{const bt=e.target.closest('[data-v]');if(!bt)return;const obj=base();obj[key]=bt.dataset.v;SET.shapes[k]=obj;
+        host.querySelectorAll('[data-v]').forEach(x=>x.setAttribute('aria-pressed',String(x===bt)));saveSet(true)}});
     c.onchange=e=>{const tm=e.target.closest('[data-tmin]');if(tm){SET.timer.minutes=Math.max(1,+tm.value||60);saveSet(true);return}const cb=e.target.closest('[data-wk]');if(!cb)return;const k=cb.dataset.wk;let it=SET.items.find(x=>x.w===k);
       if(!it&&cb.checked){it=Object.assign({id:'i'+uid(),w:k,on:true,o:clone((SET.shapes&&SET.shapes[k])||W[k].o)},clone(W[k].def));SET.items.push(it)}
       if(it)it.on=cb.checked;saveSet(true)};
