@@ -47,7 +47,7 @@ app.get('/', (req, res) => {
       <input name="user" required placeholder="username">
       <p><button type="submit">ادفع ${priceOf(m)} ريال</button></p>
     </form>`).join('');
-  res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p>${cards}`));
+  res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p>${cards}<div class="card"><p><a href="/terms">شروط الاستخدام</a> · <a href="/privacy">سياسة الخصوصية</a> · <a href="/refund">سياسة الاسترداد</a></p><p>الدعم: <a href="${WA_LINK}">واتساب</a></p></div>`));
 });
 
 app.post('/buy', async (req, res) => {
@@ -160,5 +160,15 @@ app.get('/check', async (req, res) => {
     res.status(502).json({ ok: false });
   }
 });
+// صفحات السياسات (مطلوبة لتفعيل حساب ميسر التجاري)
+const POLICY = {
+  terms: ['شروط الاستخدام', 'باستخدامك لمنصة عرش اللايف توافق على استخدامها لأغراض البث المشروع فقط. أنت مسؤول عن حسابك وعن المحتوى الذي تبثه. يحق لنا إيقاف أي حساب يخالف القوانين أو يسيء لغيره. المنصة أداة لتحسين تجربة البث، ولا نضمن أي دخل أو نتيجة محددة.'],
+  privacy: ['سياسة الخصوصية', 'نجمع فقط البيانات اللازمة لتشغيل المنصة: يوزر تيك توك، وبيانات الاشتراك، وسجل التفاعلات على بثك. لا نبيع بياناتك لأي طرف ثالث. بيانات الدفع تعالجها Moyasar، ولا نخزن أرقام البطاقات عندنا.'],
+  refund: ['سياسة الاسترداد', 'يحق لك طلب استرداد كامل خلال 7 أيام من تاريخ الدفع إذا لم تستخدم المنصة. بعد ذلك لا يتم الاسترداد عن الفترة المستخدمة. لطلب الاسترداد راسلنا على الواتساب مع ذكر يوزرك ورقم الفاتورة.'],
+};
+const WA_LINK = 'https://wa.me/966554613230';
+app.get('/terms', (_, res) => res.send(page(POLICY.terms[0], `<h2>${POLICY.terms[0]}</h2><div class="card">${esc(POLICY.terms[1])}</div><p><a href="/">الرجوع</a></p>`)));
+app.get('/privacy', (_, res) => res.send(page(POLICY.privacy[0], `<h2>${POLICY.privacy[0]}</h2><div class="card">${esc(POLICY.privacy[1])}</div><p><a href="/">الرجوع</a></p>`)));
+app.get('/refund', (_, res) => res.send(page(POLICY.refund[0], `<h2>${POLICY.refund[0]}</h2><div class="card">${esc(POLICY.refund[1])}</div><p><a href="/">الرجوع</a></p>`)));
 app.get('/health', (_, res) => res.send('ok'));
 app.listen(process.env.PORT || 10000, () => console.log('arsh-pay up'));
