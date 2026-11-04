@@ -45,7 +45,7 @@ app.get('/', (req, res) => {
       <input type="hidden" name="months" value="${m}">
       <label>اسم حسابك في تيك توك (بدون @)</label>
       <input name="user" required placeholder="username">
-      <p><button type="submit">ادفع ${priceOf(m)} ريال</button></p>
+      <p><button type="submit">ادفع ${priceOf(m)} ريال</button>${BANK_ON ? ' <button type="submit" formaction="/transfer" style="background:transparent;color:#e2b865;border:1px solid #e2b865">تحويل بنكي</button>' : ''}</p>
     </form>`).join('');
   res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p>${cards}<div class="card"><p><a href="/terms">شروط الاستخدام</a> · <a href="/privacy">سياسة الخصوصية</a> · <a href="/refund">سياسة الاسترداد</a></p><p>الدعم: <a href="${WA_LINK}">واتساب</a></p></div>`));
 });
@@ -72,6 +72,36 @@ app.post('/buy', async (req, res) => {
   } catch (_) {
     res.status(502).send(page('خطأ', '<p>ما قدرنا نجهز الدفع الحين. جرّب بعد شوي.</p>'));
   }
+});
+
+// ===== التحويل البنكي: يطلع الآيبان والمرجع، والتفعيل يدوي من /admin بعد التأكد =====
+// متغيرات Render اختيارية: BANK_IBAN, BANK_NAME, BANK_ACCOUNT_NAME
+// الحساب نفسه المعروض في الموقع الرئيسي (بنك الراجحي)، والمتغيرات تقدر تغيّره
+const BANK = {
+  iban: process.env.BANK_IBAN || 'SA3080000475608016550424',
+  name: process.env.BANK_NAME || 'بنك الراجحي',
+  holder: process.env.BANK_ACCOUNT_NAME || 'عبدالرحمن القحطاني',
+};
+const BANK_ON = !!BANK.iban;
+app.post('/transfer', (req, res) => {
+  if (!BANK_ON) return res.status(503).send(page('تحويل بنكي', '<p>التحويل البنكي غير متاح الحين. جرّب الدفع بالبطاقة.</p>'));
+  const plan = PLANS[+req.body.months];
+  const user = cleanUser(req.body.user);
+  if (!plan || !user) return res.status(400).send(page('خطأ', '<p>بيانات غير صحيحة. ارجع وحاول مرة ثانية.</p>'));
+  const amount = priceOf(plan.months);
+  const ref = 'ARSH-' + crypto.randomBytes(3).toString('hex').toUpperCase();
+  const msg = 'تحويل اشتراك عرش اللايف\nالحساب: @' + user + '\nالباقة: ' + plan.name + '\nالمبلغ: ' + amount + ' ريال\nالمرجع: ' + ref + '\n(أرفق الإيصال هنا)';
+  res.send(page('تحويل بنكي', `<h2>الدفع بالتحويل البنكي</h2>
+    <div class="card">
+      <p>المبلغ: <b>${amount} ريال</b> — ${esc(plan.name)} — @${esc(user)}</p>
+      <p>البنك: ${esc(BANK.name)}</p>
+      <p>اسم صاحب الحساب: ${esc(BANK.holder)}</p>
+      <p>الآيبان:</p><code>${esc(BANK.iban)}</code>
+      <p>اكتب هذا المرجع في خانة البيان أو الملاحظة:</p><code>${ref}</code>
+    </div>
+    <div class="card"><p>بعد التحويل أرسل الإيصال على الواتساب، ويصلك كود التفعيل بعد التأكد من الحوالة.</p>
+      <p><a class="btn" href="${esc(WA_LINK + '?text=' + encodeURIComponent(msg))}" target="_blank" rel="noopener">أرسل الإيصال على واتساب</a></p></div>
+    <p><a href="/">الرجوع</a></p>`));
 });
 
 // الرجوع من ميسر: نتحقق من الفاتورة من السيرفر نفسه، ونصدر الكود إذا مدفوعة
