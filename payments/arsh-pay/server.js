@@ -47,7 +47,7 @@ app.get('/', (req, res) => {
       <input name="user" required placeholder="username">
       <p><button type="submit">ادفع ${priceOf(m)} ريال</button>${BANK_ON ? ' <button type="submit" formaction="/transfer" style="background:transparent;color:#e2b865;border:1px solid #e2b865">تحويل بنكي</button>' : ''}</p>
     </form>`).join('');
-  res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p>${cards}<div class="card"><p><a href="/terms">شروط الاستخدام</a> · <a href="/privacy">سياسة الخصوصية</a> · <a href="/refund">سياسة الاسترداد</a></p><p>الدعم: <a href="${WA_LINK}">واتساب</a></p></div>`));
+  res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p><div class="card"><p>الدفع بمدى وApple Pay وفيزا وتابي من متجر بطوط:</p><p><a class="btn" href="${SALLA_URL}" target="_blank" rel="noopener">اشترك عبر متجر بطوط</a></p></div>${cards}<div class="card"><p><a href="/terms">شروط الاستخدام</a> · <a href="/privacy">سياسة الخصوصية</a> · <a href="/refund">سياسة الاسترداد</a></p><p>الدعم: <a href="${WA_LINK}">واتساب</a></p></div>`));
 });
 
 app.post('/buy', async (req, res) => {
@@ -197,6 +197,7 @@ const POLICY = {
   refund: ['سياسة الاسترداد', 'بعد إتمام عملية الدفع، الاشتراك غير قابل للاسترجاع. إذا واجهت مشكلة تقنية في تفعيل الاشتراك، راسلنا على الواتساب مع ذكر يوزرك ورقم الفاتورة.'],
 };
 const WA_LINK = 'https://wa.me/966554613230';
+const SALLA_URL = 'https://btotstore.com/%D8%B9%D8%B1%D8%B4-%D8%A7%D9%84%D8%A7%D9%8A%D9%81/p1641796010';
 app.get('/terms', (_, res) => res.send(page(POLICY.terms[0], `<h2>${POLICY.terms[0]}</h2><div class="card">${esc(POLICY.terms[1])}</div><p><a href="/">الرجوع</a></p>`)));
 app.get('/privacy', (_, res) => res.send(page(POLICY.privacy[0], `<h2>${POLICY.privacy[0]}</h2><div class="card">${esc(POLICY.privacy[1])}</div><p><a href="/">الرجوع</a></p>`)));
 app.get('/refund', (_, res) => res.send(page(POLICY.refund[0], `<h2>${POLICY.refund[0]}</h2><div class="card">${esc(POLICY.refund[1])}</div><p><a href="/">الرجوع</a></p>`)));
