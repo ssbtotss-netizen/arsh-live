@@ -47,7 +47,7 @@ app.get('/', (req, res) => {
       <input name="user" required placeholder="username">
       <p><button type="submit">ادفع ${priceOf(m)} ريال</button>${BANK_ON ? ' <button type="submit" formaction="/transfer" style="background:transparent;color:#e2b865;border:1px solid #e2b865">تحويل بنكي</button>' : ''}</p>
     </form>`).join('');
-  res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><p>التفعيل فوري بعد الدفع.</p><div class="card"><p>الدفع بمدى وApple Pay وفيزا وتابي من متجر بطوط:</p><p><a class="btn" href="${SALLA_URL}" target="_blank" rel="noopener">اشترك عبر متجر بطوط</a></p></div>${cards}<div class="card"><p><a href="/terms">شروط الاستخدام</a> · <a href="/privacy">سياسة الخصوصية</a> · <a href="/refund">سياسة الاسترداد</a></p><p>الدعم: <a href="${WA_LINK}">واتساب</a></p></div>`));
+  res.send(page('عرش اللايف — الاشتراكات', `<h2>اشتراك عرش اللايف</h2><div class="card"><p>اختر مدة الاشتراك وادفع من متجر بطوط (مدى، Apple Pay، فيزا، تابي):</p><p><a class="btn" href="${SALLA_URL}" target="_blank" rel="noopener">اشترك الحين</a></p></div><div class="card"><p><a href="/terms">شروط الاستخدام</a> · <a href="/privacy">سياسة الخصوصية</a> · <a href="/refund">سياسة الاسترداد</a></p><p>الدعم: <a href="${WA_LINK}">واتساب</a></p></div>`));
 });
 
 app.post('/buy', async (req, res) => {
