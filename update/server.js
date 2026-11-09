@@ -19,7 +19,7 @@ const HOME = process.env.ARSH_HOME || __dirname; fs.mkdirSync(HOME, { recursive:
 const IS_APP = !!process.env.ARSH_APP;
 // مكتبة الاتصال تحتاج تعرف سيرفر التوقيع المسموح له باستقبال الـ sessionid (قبل ما تتحمّل)
 process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST = process.env.WHITELIST_AUTHENTICATED_SESSION_ID_HOST || new URL(process.env.SIGN_API_URL || 'https://api.eulerstream.com').host;
-const APP_VER = '2.4.86';
+const APP_VER = '2.4.87';
 const DATA = path.join(HOME, 'data.json');
 const MEDIA = path.join(HOME, 'media');
 fs.mkdirSync(MEDIA, { recursive: true });
@@ -55,13 +55,15 @@ const pad2 = n => String(n).padStart(2, '0');
 const dayKey = ts => { const d = new Date(ts); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); };
 const weekKey = ts => { const d = new Date(ts); d.setDate(d.getDate() - d.getDay()); return dayKey(d.getTime()); };
 let ledgerTimer = null;
+const USD_RATE = { USD: 1, SAR: 1/3.75, AED: 1/3.67, KWD: 3.25, EUR: 1.08, GBP: 1.27, QAR: 1/3.64, BHD: 2.65, OMR: 2.6 };
 function ledgerAdd(ev) {
-  if (ev.type !== 'gift' && ev.type !== 'like') return;
+  if (ev.type !== 'gift' && ev.type !== 'like' && ev.type !== 'donation') return;
   const L = store.states.ledger, dk = dayKey(ev.ts), day = L.days[dk] || (L.days[dk] = {}), r = day[ev.user] || (day[ev.user] = [0, 0]);
   if (ev.type === 'gift') {
     const d = (+ev.diamonds || 1) * (+ev.count || 1); r[0] += d;
     const wk = weekKey(ev.ts); if (!L.big[wk] || d > L.big[wk].d) L.big[wk] = { user: ev.user, gift: ev.gift, img: ev.img || '', d, ts: ev.ts };
-  } else r[1] += +ev.count || 1;
+  } else if (ev.type === 'donation') { r[2] = (r[2] || 0) + (+ev.amount || 0) * (USD_RATE[ev.currency || 'USD'] || 1); }
+  else r[1] += +ev.count || 1;
   // نحتفظ بآخر 62 يوم فقط
   const keys = Object.keys(L.days).sort(); while (keys.length > 62) delete L.days[keys.shift()];
   if (!ledgerTimer) ledgerTimer = setTimeout(() => { ledgerTimer = null; persist(); broadcast({ type: 'state', key: 'ledger', val: L }); }, 3000);

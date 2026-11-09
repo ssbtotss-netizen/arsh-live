@@ -2341,7 +2341,7 @@ if(/[?&]demo=1/.test(location.search))window.__arsh={sim:e=>sim(e),simulate:k=>s
 let dirty=true;
 function user(name,pic){
   name=String(name||'مجهول');
-  if(!S.users[name]){const i=Object.keys(S.users).length;S.users[name]={name,pic:pic||'',likes:0,diamonds:0,gifts:0,comments:0,shares:0,follow:false,color:palette[i%palette.length]}}
+  if(!S.users[name]){const i=Object.keys(S.users).length;S.users[name]={name,pic:pic||'',likes:0,diamonds:0,gifts:0,comments:0,shares:0,don:0,follow:false,color:palette[i%palette.length]}}
   else if(pic)S.users[name].pic=pic;
   return S.users[name];
 }
@@ -2362,13 +2362,15 @@ let ledgerT;
 function ledgerAdd(ev){ // local mode only; the server owns the ledger when connected
   const L=STATE.ledger,dk=dayKey(ev.ts),day=L.days[dk]||(L.days[dk]={}),r=day[ev.user]||(day[ev.user]=[0,0]);
   if(ev.type==='gift'){const d=(+ev.diamonds||1)*(+ev.count||1);r[0]+=d;const wk=weekKey(ev.ts);if(!L.big[wk]||d>L.big[wk].d)L.big[wk]={user:ev.user,gift:ev.gift,img:ev.img||'',d,ts:ev.ts}}
+  else if(ev.type==='donation')r[2]=(r[2]||0)+(+ev.amount||0)*(USDX[ev.currency||'USD']||1);
   else r[1]+=+ev.count||1;
   clearTimeout(ledgerT);ledgerT=setTimeout(()=>{try{localStorage.setItem('arsh3-ledger',JSON.stringify(STATE.ledger))}catch(e){}},1500);
 }
+const LI={diamonds:0,likes:1,don:2};
 function rankedP(k,period){
   if(k==='points')return Object.entries(STATE.points||{}).filter(e=>e[1]>=1).sort((a,b)=>b[1]-a[1]).map(([n,v],j)=>{const u=S.users[n];return{name:n,v:Math.floor(v),color:u?u.color:palette[j%palette.length],pic:u?u.pic:''}});
-  if(!period||period==='live'||(k!=='diamonds'&&k!=='likes'))return ranked(k).map(u=>({name:u.name,v:u[k],color:u.color,pic:u.pic}));
-  const now=Date.now(),days=STATE.ledger.days||{},i=k==='diamonds'?0:1,from=period==='day'?dayKey(now):period==='week'?weekKey(now):dayKey(now).slice(0,7)+'-01',agg={};
+  if(!period||period==='live'||LI[k]===undefined)return ranked(k).map(u=>({name:u.name,v:u[k],color:u.color,pic:u.pic}));
+  const now=Date.now(),days=STATE.ledger.days||{},i=LI[k],from=period==='day'?dayKey(now):period==='week'?weekKey(now):dayKey(now).slice(0,7)+'-01',agg={};
   for(const dk in days){if(dk<from)continue;for(const n in days[dk])agg[n]=(agg[n]||0)+days[dk][n][i]}
   return Object.entries(agg).filter(e=>e[1]>0).sort((a,b)=>b[1]-a[1]).map(([n,v],j)=>{const u=S.users[n];return{name:n,v,color:u?u.color:palette[j%palette.length],pic:u?u.pic:''}});
 }
@@ -2512,7 +2514,7 @@ function handle(ev,replay){
     if(!replay){sfxEvent('follow');if(SET.alerts.follow)alertOut({kind:'follow',u});SET.actions.filter(a=>a.on==='follow').forEach(a=>runAction(a,ev));
       if(SET.tts.follows)speak(u.name+' تابع الحساب');logEv('<b>'+esc(u.name)+'</b> تابع الحساب')}
   }else if(t==='donation'){
-    const D=SET.donate,amt=+ev.amount||0;S.T.donations=(S.T.donations||0)+amt;
+    const D=SET.donate,amt=+ev.amount||0;S.T.donations=(S.T.donations||0)+amt;u.don=(u.don||0)+amt*(USDX[ev.currency||'USD']||1);if(!replay&&!IS_SERVER)ledgerAdd(ev);
     if(replay&&amt>0){const cr=ev.currency||'USD';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:({USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'})[cr]||cr+' ',msg:String(ev.msg||'').slice(0,140),ts:ts||Date.now()}}const tmCmd=/زود\s*الوقت|نقص/.test(String(ev.msg||''));if(+SET.timer.perDonation>0&&!tmCmd)timerEv('donation',amt*(USDX[ev.currency||'USD']||1),SET.timer.perDonation,ts,replay);tmDonCmd(ev.msg,ts,replay);
     if(!replay&&D.enabled!==false&&amt>=(+D.minAmount||0)){const cur=ev.currency||'USD',sym={USD:'$',EUR:'€',GBP:'£',SAR:'ر.س',AED:'د.إ',KWD:'د.ك'}[cur]||cur+' ',a={kind:'donation',u,amount:amt,cur:sym,msg:String(ev.msg||'').slice(0,140),src:ev.source||''};
       const usd=amt*(USDX[cur]||1),tier=donTier(usd);a.tier=tier?tier.min:0;a.link=tier&&tier.link?tier.link:'';S.lastDon={name:u.name,pic:u.pic||'',color:u.color||'#ff4fd8',amount:amt,cur:sym,msg:a.msg,ts:Date.now()};
@@ -3726,7 +3728,7 @@ function frameList(rows,key,title){const d=FR_DEF[key];if(!d||!rows.length)retur
   return (title?'<div class="wrh">'+title+'</div>':'')+'<div class="frlist">'+rows.map((u,i)=>'<div class="frow fr-'+key+'" style="'+css+'"><span class="fra" style="background:'+esc(u.color||'#333')+'">'+pic(u)+'</span><span class="frc num">'+fmt(u.v)+'</span><span class="frn"><b class="num">'+(i+1)+'</b>'+esc(u.name)+'</span></div>').join('')+'</div>'}
 BOARD_STYLES.unshift(...FR_STYLES);
 const NEW_BOARD=['gfarch','gfcut','gfdouble','gfribbon','gfemerald','gfrose','nameonly','sadu','crownd','glassy','neonline','lantern','rings','roses','skull','rainbow','spectrum','butterfly','lavender','natday','cyberpunk','frost','coins','aurora','sakura','holo','glitch','electric','candy','hud','lava','arcade','waves','velvet','bubbly','violetrings'];
-function kindIcon(k){if(k==='diamonds')return '<svg class="ic2" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l5 6-10 12L2 9z" fill="#7fd4ff"/><path d="M2 9h20M7 3l5 18M17 3l-5 18" stroke="#fff" stroke-opacity=".5" fill="none"/></svg>';
+function kindIcon(k){if(k==='don')return '<span class="ic2">💸</span>';if(k==='diamonds')return '<svg class="ic2" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3h10l5 6-10 12L2 9z" fill="#7fd4ff"/><path d="M2 9h20M7 3l5 18M17 3l-5 18" stroke="#fff" stroke-opacity=".5" fill="none"/></svg>';
   if(k==='likes')return '<svg class="ic2" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21C6 16.5 2 13 2 8.5 2 5.4 4.4 3 7.4 3c1.9 0 3.6 1 4.6 2.5C13 4 14.7 3 16.6 3 19.6 3 22 5.4 22 8.5 22 13 18 16.5 12 21z" fill="#ff4f7b"/></svg>';
   return '<span class="ic2" aria-hidden="true">'+(k==='points'?'⭐':k==='comments'?'💬':'↗')+'</span>'}
 const LIST_COLORS=[['theme','ألوان الثيم'],['purple','بنفسجي','#b98cff','#3b1670','#e8d6ff'],['gold','ذهبي','#f4c542','#5a3d00','#ffe9a8'],['pink','وردي','#ff5fa2','#5c0f35','#ffd1e6'],
@@ -3785,7 +3787,41 @@ const GIFT_STYLES2=[['spot','هدية كبيرة بأشعة'],['combo','كومب
 const SKINS=new Set(['fire','galaxy','vip','crystal','tiktok','gamer','neon','glass']);
 const FOLLOW_STYLES=[['plate','شارة الاسم (أحمر)'],['pop','دوائر نابضة'],['tiktok','ستايل تيك توك'],['banner','شريط عريض'],['heart','قلب'],['laurel','إكليل ملكي']].concat(FOLLOW_STYLES2,[['same','نفس شكل الهدايا']]);
 const GIFT_STYLES=GIFT_STYLES2.slice(0,3).concat([['gold','ذهبي'],['royal','ملكي'],['neon','نيون'],['glass','زجاجي'],['ribbon','شريط'],['minimal','بسيط']],GIFT_STYLES2.slice(3));
-const KIND={points:['نقطة','points'],likes:['تكبيسة','likes'],diamonds:['عملة','diamonds'],comments:['تعليق','comments'],shares:['مشاركة','shares']};
+const TMA_MOT=[['pop','ظهور منبثق'],['rise','صعود'],['shake','اهتزاز'],['bounce','نط'],['flip','قلب'],['zoom','تكبير'],['slide','انزلاق'],['glow','توهج']];
+const TMA_TONE=[['soft','ناعم'],['bold','قوي'],['neon','نيون']];
+const TM_ANIM=[];TMA_MOT.forEach(m=>TMA_TONE.forEach(t=>TM_ANIM.push([m[0]+'-'+t[0],m[1]+' · '+t[1]])));
+const TMA_CSS=`
+@keyframes tmaPop{0%{opacity:0;transform:translate(-50%,0) scale(.2)}20%{opacity:1;transform:translate(-50%,-8%) scale(1.25)}35%{transform:translate(-50%,-8%) scale(1)}80%{opacity:1;transform:translate(-50%,-40%)}100%{opacity:0;transform:translate(-50%,-90%) scale(.9)}}
+@keyframes tmaRise{0%{opacity:0;transform:translate(-50%,40%)}20%{opacity:1;transform:translate(-50%,0)}75%{opacity:1;transform:translate(-50%,-60%)}100%{opacity:0;transform:translate(-50%,-120%)}}
+@keyframes tmaShake{0%{opacity:0;transform:translate(-50%,0)}10%{opacity:1}20%{transform:translate(-50%,0) rotate(-9deg)}30%{transform:translate(-50%,0) rotate(9deg)}40%{transform:translate(-50%,0) rotate(-6deg)}50%{transform:translate(-50%,0) rotate(6deg)}60%{transform:translate(-50%,0) rotate(0)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-60%)}}
+@keyframes tmaBounce{0%{opacity:0;transform:translate(-50%,0)}10%{opacity:1;transform:translate(-50%,-70%)}20%{transform:translate(-50%,0)}30%{transform:translate(-50%,-30%)}40%{transform:translate(-50%,0)}50%{transform:translate(-50%,-12%)}60%{transform:translate(-50%,0)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%)}}
+@keyframes tmaFlip{0%{opacity:0;transform:translate(-50%,0) perspective(300px) rotateX(90deg)}25%{opacity:1;transform:translate(-50%,0) perspective(300px) rotateX(-10deg)}40%{transform:translate(-50%,0) perspective(300px) rotateX(0)}85%{opacity:1}100%{opacity:0;transform:translate(-50%,-30%) perspective(300px) rotateX(-90deg)}}
+@keyframes tmaZoom{0%{opacity:0;transform:translate(-50%,0) scale(3)}20%{opacity:1;transform:translate(-50%,0) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-20%) scale(.6)}}
+@keyframes tmaSlide{0%{opacity:0;transform:translate(-150%,0)}20%{opacity:1;transform:translate(-50%,0)}80%{opacity:1;transform:translate(-50%,0)}100%{opacity:0;transform:translate(50%,0)}}
+@keyframes tmaGlow{0%{opacity:0;transform:translate(-50%,0)}15%{opacity:1;filter:brightness(1.8);transform:translate(-50%,0) scale(1.15)}30%{filter:brightness(1)}60%{opacity:1;transform:translate(-50%,-10%)}100%{opacity:0;transform:translate(-50%,-40%)}}
+.tma.tma-pop{animation:tmaPop 1.8s ease-out forwards!important}
+.tma.tma-rise{animation:tmaRise 1.8s ease-out forwards!important}
+.tma.tma-shake{animation:tmaShake 1.8s ease-out forwards!important}
+.tma.tma-bounce{animation:tmaBounce 1.8s ease-out forwards!important}
+.tma.tma-flip{animation:tmaFlip 1.8s ease-out forwards!important}
+.tma.tma-zoom{animation:tmaZoom 1.8s ease-out forwards!important}
+.tma.tma-slide{animation:tmaSlide 1.8s ease-out forwards!important}
+.tma.tma-glow{animation:tmaGlow 1.8s ease-out forwards!important}
+.tone-soft{color:#f1e6ff;font-weight:700;text-shadow:0 2px 10px rgba(0,0,0,.45)}
+.tone-bold{color:#ffd166;font-weight:900;font-size:1.25em;text-shadow:0 3px 0 #000,0 0 14px rgba(255,209,102,.55)}
+.tone-neon{color:#7fffd4;font-weight:900;text-shadow:0 0 8px #7fffd4,0 0 18px #00c2ff,0 0 30px #00c2ff}
+.neg.tone-soft{color:#ff8fa3}
+.neg.tone-bold{color:#ff5c7a}
+.neg.tone-neon{color:#ff7aa2;text-shadow:0 0 8px #ff5c7a,0 0 18px #ff2e6e}
+.tmlog{position:absolute;left:2%;top:4%;display:flex;flex-direction:column;gap:.15em;font-family:var(--display);pointer-events:none}
+.tmlog .tmh{font-size:.5em;letter-spacing:.08em;color:var(--a3);opacity:.9}
+.tmlog .tmx{font-size:.55em;animation:tmaIn .4s ease-out both;transition:opacity .6s}
+.tmlog .tmx.tone-bold{font-size:.7em}
+.tmlog .tmx.out{opacity:0}
+@keyframes tmaIn{from{opacity:0;transform:translateX(-14px)}to{opacity:1;transform:none}}
+`;
+(function(){try{document.head.insertAdjacentHTML('beforeend','<style id="tma-css">'+TMA_CSS+'</style>')}catch(e){}})();
+const KIND={don:['دونيشن','don'],points:['نقطة','points'],likes:['تكبيسة','likes'],diamonds:['عملة','diamonds'],comments:['تعليق','comments'],shares:['مشاركة','shares']};
 const CIRC=2*Math.PI*88;
 function pulseRing(){$$('.ring,.tpz .tph,.tpz .tbt,.tpz .jar,.tpz .tpn').forEach(r=>{r.animate([{transform:'scale(1)'},{transform:'scale(1.05)'},{transform:'scale(1)'}],{duration:220})})}
 
@@ -3849,10 +3885,10 @@ const W={
     mount(el){el.insertAdjacentHTML('beforeend','<div class="fxl"></div>')},
     fx:{throne(el,d,it){if(!it.o.throne)return;$('.fxl',el).innerHTML='<div class="throne"><svg viewBox="0 0 64 44" aria-hidden="true"><use href="#crown"/></svg><span class="t1">انتزع العرش</span><span class="t2"><b>'+esc(d.now)+'</b> أخذ المركز الأول من '+esc(d.prev)+'</span></div>'}}},
   board:{name:'قائمة ترتيب',render(it){return wrapCol(wrapX(W.board.render0(it),it.o),it.o)},def:{x:56,y:40,w2:40},o:{kind:'likes',n:5,title:'أكثر المكبسين',period:'live',style:'stairs',head:false},
-    opts:[['style','الشكل','sel',BOARD_STYLES],['head','إظهار العنوان','bool'],['title','العنوان','text'],['kind','الترتيب حسب','sel',[['likes','التكبيس'],['diamonds','الهدايا'],['points','نقاط الولاء'],['comments','التعليقات'],['shares','المشاركات']]],['period','الفترة (للتكبيس والهدايا)','sel',PERIODS],['n','عدد الأشخاص (1-20)','num']].concat(LIST_OPTS),
-    render0(it){const k=KIND[it.o.kind]||KIND.likes,n=Math.min(20,Math.max(1,+it.o.n||5)),r=rankedP(k[1],it.o.period).slice(0,n),per=it.o.period&&it.o.period!=='live'&&(k[1]==='likes'||k[1]==='diamonds')?(PERIODS.find(p=>p[0]===it.o.period)||[])[1]:'';
+    opts:[['style','الشكل','sel',BOARD_STYLES],['head','إظهار العنوان','bool'],['title','العنوان','text'],['kind','الترتيب حسب','sel',[['likes','التكبيس'],['diamonds','الهدايا'],['don','الدونيشن'],['points','نقاط الولاء'],['comments','التعليقات'],['shares','المشاركات']]],['period','الفترة (للتكبيس والهدايا)','sel',PERIODS],['n','عدد الأشخاص (1-20)','num']].concat(LIST_OPTS),
+    render0(it){const k=KIND[it.o.kind]||KIND.likes,n=Math.min(20,Math.max(1,+it.o.n||5)),r=rankedP(k[1],it.o.period).slice(0,n),per=it.o.period&&it.o.period!=='live'&&(k[1]==='likes'||k[1]==='diamonds'||k[1]==='don')?(PERIODS.find(p=>p[0]===it.o.period)||[])[1]:'';
       const ST=it.o.style||'stairs',pic=u=>u.pic?'<img src="'+esc(u.pic)+'" alt="" onerror="this.remove()">':esc(String(u.name).slice(0,1)),head=it.o.head||ST==='race'||ST==='neon'||ST==='medals'||ST==='podium';
-      const ico0=k[1]==='diamonds'?'🪙':k[1]==='points'?'⭐':k[1]==='comments'?'💬':k[1]==='shares'?'↗':'♥',ttl='<span style="color:var(--a3)">'+ico0+'</span>'+esc(it.o.title)+(per?' · '+per:'');
+      const ico0=k[1]==='don'?'💸':k[1]==='diamonds'?'🪙':k[1]==='points'?'⭐':k[1]==='comments'?'💬':k[1]==='shares'?'↗':'♥',ttl='<span style="color:var(--a3)">'+ico0+'</span>'+esc(it.o.title)+(per?' · '+per:'');
       const empty='<div class="lr" style="color:#cfc6dc;font-size:.6em">تفاعل وتطلع هنا</div>';
       if(ST.indexOf('fr-')===0&&FR_DEF[ST.slice(3)])return r.length?frameList(r,ST.slice(3),head?ttl:''):empty;
       const IC2=kindIcon(k[1]),crw='<svg viewBox="0 0 64 44" aria-hidden="true"><use href="#crown"/></svg>',hd=it.o.head?'<div class="wrh">'+ttl+'</div>':'';
@@ -3954,11 +3990,11 @@ const W={
   followers:{name:'عدد المتابعين',def:{x:3,y:14,w2:30},o:{style:'red',label:'إجمالي المتابعين',label2:'',heart:true,cust:false,c1:'',c2:'',c3:'',c4:''},
     opts:[['style','الشكل','sel',FC_STYLES],['label','الكلمة','text'],['label2','كلمة ثانية تتبدل','text'],['heart','القلب','bool']],
     render(it){return fcRender(it.o,false)}},
-  timer:{name:'المؤقت (يزيد بالهدايا)',def:{x:4,y:88,w2:92},o:{style:'bar',side:'',sidev:'',showAdded:true,showRules:false,rules:'',sec:3,cust:false,c1:'',c2:'',c3:'',c4:''},
-    opts:[['style','الشكل','sel',TM_STYLES],['side','الكلمة الجانبية','text'],['sidev','القيمة','text'],['showRules','إظهار القوانين','bool']],
+  timer:{name:'المؤقت (يزيد بالهدايا)',def:{x:4,y:88,w2:92},o:{style:'bar',anim:'pop-soft',log:true,side:'',sidev:'',showAdded:true,showRules:false,rules:'',sec:3,cust:false,c1:'',c2:'',c3:'',c4:''},
+    opts:[['style','الشكل','sel',TM_STYLES],['side','الكلمة الجانبية','text'],['sidev','القيمة','text'],['showRules','إظهار القوانين','bool'],['anim','أنيميشن الزيادة والنقص','sel',TM_ANIM],['log','قائمة التوقيت','bool']],
     render(it){return tmRender(it,false)},
     mount(el){el.insertAdjacentHTML('beforeend','<div class="fxl"></div>')},
-    fx:{timerAdd(el,sec){const f=$('.fxl',el);const sp=document.createElement('span');sp.className='add';const a=Math.abs(sec);sp.textContent=(sec<0?'−':'+')+(a>=60?Math.round(a/60)+'د':a+'ث');if(sec<0)sp.style.color='#ff5c7a';f.appendChild(sp);setTimeout(()=>sp.remove(),1700)}}},
+    fx:{timerAdd(el,sec,it){const o=(it&&it.o)||{},an=String(o.anim||'pop-soft').split('-'),f=$('.fxl',el),a=Math.abs(sec),txt=(sec<0?'−':'+')+(a>=60?Math.round(a/60)+'د':a+'ث'),neg=sec<0?' neg':'',tone=an[1]||'soft';const sp=document.createElement('span');sp.className='add tma tma-'+(an[0]||'pop')+' tone-'+tone+neg;sp.textContent=txt;f.appendChild(sp);setTimeout(()=>sp.remove(),1900);if(o.log!==false){let L=$('.tmlog',el);if(!L){L=document.createElement('div');L.className='tmlog';L.innerHTML='<div class="tmh">التوقيت</div>';f.appendChild(L)}const row=document.createElement('div');row.className='tmx tone-'+tone+neg;row.textContent=txt;L.appendChild(row);while(L.querySelectorAll('.tmx').length>5)L.querySelector('.tmx').remove();setTimeout(()=>{row.classList.add('out');setTimeout(()=>row.remove(),700)},7000)}}}},
   occdecor:{name:'زينة المناسبة',def:{x:0,y:0,w2:100,h:100},o:{},opts:[],render(){return null},
     mount(el){const k=occKey();if(!k||!SET.occ.decor){el.innerHTML='';return}const R=Math.random,box=document.createElement('div');box.className='odc';let h='';
       if(k==='ramadan'){
