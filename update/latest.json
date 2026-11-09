@@ -1,8 +1,8 @@
 {
-  "version": "2.4.88",
-  "notes": "تحديث 2.4.88: خيار يطفي ويشغل أيقونة الدونيشن 💸 في قائمة القوانين.",
+  "version": "2.4.89",
+  "notes": "تحديث 2.4.89: خيار إظهار المبلغ والفلوس 💸 في ويدجت آخر داعم دونيشن، لتقدر تطفيها وتشغلها.",
   "files": {
-    "index.html": "4bf5863a6a7b77076814f2880c84bda37fb9aec6210d433fa186452e02a0115b",
-    "server.js": "6af66b5fb94cc59c75afc9cccd20dbcf57564d8a9cbf298f9c95acd04feb85e0"
+    "index.html": "def2c37650dce9e9a89e5d30619b7779f98c5c34e3d36ec2ec34989cef452ee7",
+    "server.js": "1409d57a573adffac5f22987cb8ae73f92c217592918abf282c6a843e7d97f50"
   }
 }
