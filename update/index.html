@@ -3830,8 +3830,8 @@ const W={
     opts:[['viewers','المشاهدين','bool'],['likes','اللايكات','bool'],['diamonds','العملات','bool'],['follows','المتابعين','bool']],
     render(it){const o=it.o,c=[];if(o.viewers)c.push(['مشاهد',S.T.viewers]);if(o.likes)c.push(['لايك',S.T.likes]);if(o.diamonds)c.push(['عملة',S.T.diamonds]);if(o.follows)c.push(['متابع جديد',S.T.follows]);
       return '<div class="cnt">'+c.map(([l,v])=>'<span><b class="num">'+fmt(v)+'</b> '+l+'</span>').join('')+'</div>'}},
-  lastdon:{name:'آخر داعم (دونيشن)',def:{x:4,y:72,w2:40},o:{style:'gold',money:true},opts:[['style','الشكل','sel',BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).concat(ORB_STYLES)],['oc','لون الكرة (للشكل المخصص)','color'],['money','إظهار المبلغ والفلوس 💸','bool']],
-    render(it){const h=W.lastdon._ld(it);return it.o.money===false?h.replace(/<span class="(?:hero-a|orb-a|nbv) num">[\s\S]*?<\/span>/g,'').replace(/<b class="num">💸[^<]*<\/b>/g,''):h},
+  lastdon:{name:'آخر داعم (دونيشن)',def:{x:4,y:72,w2:40},o:{style:'gold',money:true},opts:[['style','الشكل','sel',BOARD_STYLES.filter(x=>NEW_BOARD.includes(x[0])).concat(ORB_STYLES)],['oc','لون الكرة (للشكل المخصص)','color'],['money','إظهار أيقونة الفلوس 💸 (المبلغ يبقى ظاهر)','bool']],
+    render(it){const h=W.lastdon._ld(it);return it.o.money===false?h.replace(/💸\s?/g,''):h},
     _ld(it){const L=S.lastDon||{name:'بانتظار أول داعم',pic:'',color:'#ff4fd8',amount:0,cur:'',msg:''};const st=it.o.style||'gold',col=L.color||'#ff4fd8',pic=L.pic?'<img src="'+esc(L.pic)+'" alt="">':esc(String(L.name).slice(0,1));
       if(st==='hero'){const hc=it.o.oc||'#ffd166';return '<div class="hero ld" style="--oc:'+esc(hc)+'"><div class="hero-rays"></div><div class="hero-crest"><svg viewBox="0 0 64 44" aria-hidden="true"><use href="#crown"/></svg><span class="hero-h">♥</span></div><div class="hero-banner"><span class="hero-tag">الداعم الأول</span><b class="hero-n">'+esc(L.name)+'</b><span class="hero-a num">'+esc(L.cur)+(+L.amount).toFixed(2)+'</span></div></div>'}
       if(st.startsWith('orb-')){const oc=st==='orb-custom'?(it.o.oc||'#22d3ee'):(ORB_COLS.find(x=>'orb-'+x[0]===st)||ORB_COLS[0])[1];return '<div class="orb ld" style="--oc:'+oc+'"><div class="orb-core"><i class="orb-ring"></i><span class="orb-h">♥</span></div><div class="orb-plate"><span class="orb-n">'+esc(L.name)+'</span><span class="orb-a num">'+esc(L.cur)+(+L.amount).toFixed(2)+'</span></div></div>'}
@@ -5143,7 +5143,7 @@ setInterval(()=>{if(IS_DASH&&tab==='occasions')drawOccNow()},1000);
 setInterval(()=>{const n=Date.now();if(occKey()==='ramadan'||(S.qz&&n-S.qz.end<13000)||(S.au&&n-S.au.end<16000)||(S.pl&&n-S.pl.end<16000)||(S.ty&&n<S.ty.end+500)||(S.ch&&n-S.ch.end<16000)||(S.bt&&n-S.bt.end<16000)||(S.tm&&S.tm.run))dirty=true},250);
 
 /* ================= init ================= */
-if(OV){document.body.classList.add('ov','ovlite')}
+if(OV){document.documentElement.style.background='transparent';document.body.style.background='transparent';document.body.classList.add('ov','ovlite')}
 else{try{tab=localStorage.getItem('arsh3-tab')||'home';if(!TABS.some(t=>t[0]===tab))tab='home'}catch(e){}buildNav();buildTab();drawLic()}
 if(!SET.chatbot.pool)syncPool();
 if(IS_DASH){applyUI();$('#uiBtn').onclick=()=>{go('scene');setTimeout(()=>{const u=$('#uiCard');if(u)u.scrollIntoView({behavior:'smooth',block:'start'})},60)}}
