@@ -2973,9 +2973,9 @@ const TM_STYLES=[['bar','شريط أسود'],['flip','أرقام قلّابة'],
 const TM_DEF={flip:['#ffd166','#16171d','#ffffff','#ffffff'],big:['#ffd166','transparent','#ffffff','#ffffff'],tiktok:['#fe2c55','#000000','#ffffff','#25f4ee'],fire:['#ff8a3d','#2a0a00','#fff3e0','#ffd2a8'],pill:['#2fd39a','#0b0c12','#ffffff','#cfe9df'],pixel:['#7dff8a','#0d0d14','#7dff8a','#ffffff'],bar:['#ff3b3b','#000000','#ffffff','#ffffff'],classic:['#e2b865','#111','#fff','#ccc'],digital:['#7dff8a','#020a04','#7dff8a','#c9ffd0'],neon:['#ff4fd8','#08031a','#ffffff','#ffd1f5'],glass:['#ffd166','rgba(255,255,255,.12)','#ffffff','#ffffff'],clear:['#ffd166','transparent','#ffffff','#ffffff'],gold:['#e2b865','#1c1407','#f6dfa4','#f6dfa4'],cute:['#ff5fa2','#ffe3ef','#e23d86','#b03a6f']};
 function secRule(v){v=+v||0;return v%3600===0?(v/3600)+' ساعة':v%60===0?(v/60)+' دقيقة':v+' ثانية'}
 function secAr(x){x=+x||0;if(x>=60&&x%60===0){const m=x/60;return m===1?'دقيقة':m===2?'دقيقتين':m<=10?m+' دقائق':m+' دقيقة'}return x===1?'ثانية':x===2?'ثانيتين':x+' ثانية'}
-function tmRuleList(){const T=SET.timer,r=[],add=(k,ic,l,v)=>{const d=tmDir(k);if(d&&+v>0){const sr=secRule(v).split(' ');r.push({k,ic,l,v:(d<0?'−':'+')+secRule(v),vn:(d<0?'−':'+')+sr[0],vu:sr.slice(1).join(' '),neg:d<0})}};
-  add('gift','🎁','كل عملة دعم',T.perCoin);add('follow','➕','متابعة',T.perFollow);add('share','↗️','مشاركة',T.perShare);add('likes','❤️','100 لايك',T.perLikes);add('donation','💸','1$ دونيشن',T.perDonation);return r}
-function tmRules(o){const lines=String(o.rules||'').split('\n').map(x=>x.trim()).filter(Boolean);if(lines.length)return lines;const E=o.els||{};return tmRuleList().filter(x=>E[x.k]!==false).map(x=>x.ic+' '+x.l+' = '+x.v)}
+function tmRuleList(o){const T=SET.timer,r=[],add=(k,ic,l,v)=>{const d=tmDir(k);if(d&&+v>0){const sr=secRule(v).split(' ');r.push({k,ic,l,v:(d<0?'−':'+')+secRule(v),vn:(d<0?'−':'+')+sr[0],vu:sr.slice(1).join(' '),neg:d<0})}};
+  add('gift','🎁','كل عملة دعم',T.perCoin);add('follow','➕','متابعة',T.perFollow);add('share','↗️','مشاركة',T.perShare);add('likes','❤️','100 لايك',T.perLikes);add('donation',(o&&o.dIcon===false)?'':'💸','1$ دونيشن',T.perDonation);return r}
+function tmRules(o){const lines=String(o.rules||'').split('\n').map(x=>x.trim()).filter(Boolean);if(lines.length)return lines;const E=o.els||{};return tmRuleList(o).filter(x=>E[x.k]!==false).map(x=>x.ic+' '+x.l+' = '+x.v)}
 function rotWords(list,sec){const n=list.length;if(!n)return '';if(n===1)return '<span class="rw"><span>'+esc(list[0])+'</span></span>';const sl=100/n,a=(sl*.12).toFixed(2),b=(sl*.88).toFixed(2),c=sl.toFixed(2);
   return '<style>@keyframes rwK'+n+'{0%{opacity:0;transform:translateY(.45em);filter:blur(3px)}'+a+'%{opacity:1;transform:none;filter:none}'+b+'%{opacity:1;transform:none;filter:none}'+c+'%{opacity:0;transform:translateY(-.45em);filter:blur(3px)}100%{opacity:0}}</style><span class="rw">'+list.map((x,i)=>'<span style="animation:rwK'+n+' '+(n*sec)+'s '+(i*sec)+'s linear infinite both">'+esc(x)+'</span>').join('')+'</span>'}
 function tmRender(it,pv){const o=it.o||{},m=pv?{run:true,end:Date.now()+29088000,added:5400,hh:{x:2,until:Date.now()+1e6}}:S.tm;if(!m)return '';const st=o.style||'bar';
@@ -3027,7 +3027,7 @@ const rlOn=(o,k)=>{const E=o.els||{},d=RL_ELS.find(x=>x[0]===k);return E[k]==nul
 function rlItems(o,pv){const m=pv?{run:true,end:Date.now()+8100e3,added:5400,hh:{x:2,until:Date.now()+754e3},last:{u:'نواف',sec:300},by:{'نواف':1800,'ريم':1260,'فهد_77':600}}:S.tm,it=[];
   const custom=String(o.rules||'').split('\n').map(x=>x.trim()).filter(Boolean);
   if(custom.length)custom.forEach(x=>{const mm=x.match(/^(\S+)\s+(.*)$/);it.push({ic:mm&&/\p{Extended_Pictographic}/u.test(mm[1])?mm[1]:'•',l:mm&&/\p{Extended_Pictographic}/u.test(mm[1])?mm[2]:x,v:''})});
-  else tmRuleList().forEach(x=>{if(rlOn(o,x.k))it.push({ic:x.ic,l:x.l,v:x.v,vn:x.vn,vu:x.vu,neg:x.neg})});
+  else tmRuleList(o).forEach(x=>{if(rlOn(o,x.k))it.push({ic:x.ic,l:x.l,v:x.v,vn:x.vn,vu:x.vu,neg:x.neg})});
   if(m){if(rlOn(o,'hh')&&m.hh&&Date.now()<m.hh.until)it.push({ic:'🔥',l:'مضاعفة x'+m.hh.x,v:fmtDur((m.hh.until-Date.now())/1000),hot:1});
     if(rlOn(o,'remain'))it.push({ic:'⏳',l:'الباقي',v:fmtDur((m.run?m.end-Date.now():m.left)/1000)});
     if(rlOn(o,'added'))it.push({ic:'⏱️',l:'انضاف',v:'+'+fmtDur(m.added||0)});
@@ -3990,8 +3990,8 @@ const W={
   followers:{name:'عدد المتابعين',def:{x:3,y:14,w2:30},o:{style:'red',label:'إجمالي المتابعين',label2:'',heart:true,cust:false,c1:'',c2:'',c3:'',c4:''},
     opts:[['style','الشكل','sel',FC_STYLES],['label','الكلمة','text'],['label2','كلمة ثانية تتبدل','text'],['heart','القلب','bool']],
     render(it){return fcRender(it.o,false)}},
-  timer:{name:'المؤقت (يزيد بالهدايا)',def:{x:4,y:88,w2:92},o:{style:'bar',anim:'pop-soft',log:true,side:'',sidev:'',showAdded:true,showRules:false,rules:'',sec:3,cust:false,c1:'',c2:'',c3:'',c4:''},
-    opts:[['style','الشكل','sel',TM_STYLES],['side','الكلمة الجانبية','text'],['sidev','القيمة','text'],['showRules','إظهار القوانين','bool'],['anim','أنيميشن الزيادة والنقص','sel',TM_ANIM],['log','قائمة التوقيت','bool']],
+  timer:{name:'المؤقت (يزيد بالهدايا)',def:{x:4,y:88,w2:92},o:{style:'bar',anim:'pop-soft',log:true,dIcon:true,side:'',sidev:'',showAdded:true,showRules:false,rules:'',sec:3,cust:false,c1:'',c2:'',c3:'',c4:''},
+    opts:[['style','الشكل','sel',TM_STYLES],['side','الكلمة الجانبية','text'],['sidev','القيمة','text'],['showRules','إظهار القوانين','bool'],['anim','أنيميشن الزيادة والنقص','sel',TM_ANIM],['log','قائمة التوقيت','bool'],['dIcon','أيقونة الدونيشن 💸','bool']],
     render(it){return tmRender(it,false)},
     mount(el){el.insertAdjacentHTML('beforeend','<div class="fxl"></div>')},
     fx:{timerAdd(el,sec,it){const o=(it&&it.o)||{},an=String(o.anim||'pop-soft').split('-'),f=$('.fxl',el),a=Math.abs(sec),txt=(sec<0?'−':'+')+(a>=60?Math.round(a/60)+'د':a+'ث'),neg=sec<0?' neg':'',tone=an[1]||'soft';const sp=document.createElement('span');sp.className='add tma tma-'+(an[0]||'pop')+' tone-'+tone+neg;sp.textContent=txt;f.appendChild(sp);setTimeout(()=>sp.remove(),1900);if(o.log!==false){let L=$('.tmlog',el);if(!L){L=document.createElement('div');L.className='tmlog';L.innerHTML='<div class="tmh">التوقيت</div>';f.appendChild(L)}const row=document.createElement('div');row.className='tmx tone-'+tone+neg;row.textContent=txt;L.appendChild(row);while(L.querySelectorAll('.tmx').length>5)L.querySelector('.tmx').remove();setTimeout(()=>{row.classList.add('out');setTimeout(()=>row.remove(),700)},7000)}}}},
