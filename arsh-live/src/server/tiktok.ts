@@ -28,13 +28,14 @@ function userOf(d: any): LiveUser {
 
 export function startTikTok(
   username: string,
-  cb: { onEvent(ev: LiveEvent): void; onStatus(live: boolean, text: string): void; onGifts?(gifts: { id: number; name: string; diamonds: number; image?: string }[]): void }
+  cb: { onEvent(ev: LiveEvent): void; onStatus(live: boolean, text: string): void; onFollowers?(n: number): void; onGifts?(gifts: { id: number; name: string; diamonds: number; image?: string }[]): void }
 ): TikTokHandle {
   const handle: TikTokHandle = { connected: false, stop() {} };
   let stopped = false;
   let conn: any;
   let retry: NodeJS.Timeout | undefined;
   let attempts = 0;
+  let fcTimer: NodeJS.Timeout | undefined;
 
   (async () => {
     let mod: any;
@@ -91,7 +92,7 @@ export function startTikTok(
       // دخول المشاهدين (لبوت الترحيب) — حدث member من المكتبة غير الرسمية؛ قد لا يصل لكل مشاهد
       conn.on(ev("MEMBER", "member"), (d: any) => cb.onEvent({ type: "join", id: mid(d, "join") ?? `join:${userOf(d).id}`, user: userOf(d) } as any));
       conn.on(ev("SUBSCRIBE", "subscribe"), (d: any) => cb.onEvent({ type: "subscribe", id: mid(d, "sub"), user: userOf(d) }));
-      const onEnd = () => { handle.connected = false; cb.onStatus(false, "انتهى البث أو انقطع الاتصال"); schedule(); };
+      const onEnd = () => { clearInterval(fcTimer); handle.connected = false; cb.onStatus(false, "انتهى البث أو انقطع الاتصال"); schedule(); };
       conn.on(ev("STREAM_END", "streamEnd"), onEnd);
       conn.on(ev("DISCONNECTED", "disconnected"), onEnd);
       conn.on?.("error", () => {});
@@ -101,6 +102,10 @@ export function startTikTok(
         attempts = 0;
         handle.connected = true;
         cb.onStatus(true, `متصل ببث @${username}` + (state?.roomId ? ` (غرفة ${state.roomId})` : ""));
+        // العدد الحقيقي للمتابعين من معلومات غرفة البث (يكشف إلغاء المتابعة أيضاً) — كل دقيقة أثناء الاتصال
+        const syncFollowers = async () => { try { const info: any = await conn.fetchRoomInfo?.(); const o = info?.owner ?? info?.data?.owner ?? info?.roomInfo?.owner; const n = Number(o?.follow_info?.follower_count ?? o?.followInfo?.followerCount);
+          if (Number.isFinite(n) && n > 0) cb.onFollowers?.(n); } catch (e: any) { console.error("[tiktok] follower sync failed:", String(e?.message || e).slice(0, 160)); } };
+        clearInterval(fcTimer); syncFollowers(); fcTimer = setInterval(() => { if (handle.connected && !stopped) syncFollowers(); }, 60_000);
         // قائمة الهدايا الحقيقية (المعرّف والاسم والقيمة) لجدول السبثون — لا نفترض أسماء أو قيم ثابتة
         try {
           const list = state?.availableGifts ?? (await (conn.fetchAvailableGifts?.() ?? conn.getAvailableGifts?.()));
@@ -122,6 +127,7 @@ export function startTikTok(
     };
     handle.stop = () => {
       stopped = true;
+      clearInterval(fcTimer);
       clearTimeout(retry);
       try { conn?.disconnect(); } catch {}
       handle.connected = false;

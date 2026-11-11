@@ -3609,7 +3609,7 @@ function actLog(A,now,r,ev,actions,ok,reason){ A.log.unshift({at:now,rule:r.name
 // الحالة محفوظة داخل C.followers (تُحفظ مع حالة المؤقتات على الخادم وتصل لكل الروابط).
 // قاعدة الصدق: الرقم "موثّق" فقط إذا جاء من API رسمي؛ غير ذلك "تقديري" = عدد يدوي + متابعات مؤكدة من البث.
 const FC_PLATFORMS={
- tiktok:{name:"TikTok",unit:"متابع",units:"متابع",mono:"TT",color:"#fe2c55",sources:[["manual","يدوي + متابعات البث المباشر (تقديري)","ok"],["official","TikTok Display API (user.info.stats)","app"]]},
+ tiktok:{name:"TikTok",unit:"متابع",units:"متابع",mono:"TT",color:"#fe2c55",sources:[["manual","يدوي + متابعات البث المباشر (تقديري)","ok"],["tiktok_live","تلقائي من بث TikTok LIVE — كل دقيقة، يشمل إلغاء المتابعة","ok"],["official","TikTok Display API (user.info.stats)","app"]]},
  youtube:{name:"YouTube",unit:"مشترك",units:"مشترك",mono:"YT",color:"#ff0000",sources:[["manual","يدوي (تقديري)","ok"],["youtube","YouTube Data API v3 — رسمي","server"]]},
  instagram:{name:"Instagram",unit:"متابع",units:"متابع",mono:"IG",color:"#e1306c",sources:[["manual","يدوي (تقديري)","ok"],["official","Instagram Graph API (حسابات الأعمال/صنّاع المحتوى)","app"]]},
  twitch:{name:"Twitch",unit:"متابع",units:"متابع",mono:"TW",color:"#9146ff",sources:[["manual","يدوي (تقديري)","ok"],["twitch","Twitch Helix API — رسمي","server"]]},
@@ -3638,7 +3638,8 @@ function followersOnEvent(F,ev,now){
  // بيانات الاختبار لا تُحسب كرقم حقيقي: تُعرض فوق العدد وتُمسح بزر أو عند تعيين العدد
  if(ev.test){ s.test=(s.test||0)+1; s.last={name:ev.user?.name||"",av:ev.user?.avatar||"",at:now,test:true}; s.delta=1; return true }
  s.session++; s.last={name:ev.user?.name||"",av:ev.user?.avatar||"",at:now};
- if(s.source==="manual"){ s.value++; s.delta=1; s.at=now } return true;
+ // يدوي: يُضاف للتقديري. مزامنة البث (tiktok_live): يُضاف فوراً ثم تصحّحه المزامنة الدورية (تشمل إلغاء المتابعة)
+ if(s.source==="manual"||s.source==="tiktok_live"){ s.value++; s.delta=1; s.at=now } return true;
 }
 /** ما يُعرض في الواجهة = الرقم الحقيقي + متابعات الاختبار (إن وجدت) */
 function fcData(F,p){ const s=(F||{})[p]; if(!s) return null; const t=s.test||0; return {...s,real:s.value,value:s.value+t,session:s.session+t,platform:p,P:FC_PLATFORMS[p]} }

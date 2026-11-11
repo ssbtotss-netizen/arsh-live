@@ -110,6 +110,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         r.tiktok = startTikTok(username, {
           onEvent: ev => dispatch(id, r, ev),
           onGifts: gifts => { r.gifts = gifts; broadcast(r, { t: "gifts", gifts }); },
+          onFollowers: n => commit(id, r, roomClockOp(r, { target: "followers", op: "official", platform: "tiktok", value: n, source: "tiktok_live" }, Date.now())),
           onStatus: (live, text) => {
             const was = r.live;
             broadcast(r, { t: "status", live, text });
