@@ -52,7 +52,7 @@ export function startTikTok(
       if (stopped) return;
       try { conn?.disconnect(); } catch {}
       // مفتاح خدمة التوقيع (Euler Stream) يُضبط في إعدادات الخادم فقط: TIKTOK_SIGN_API_KEY — يرفع حدود الاتصال من خوادم الاستضافة
-      const opts: any = { enableExtendedGiftInfo: true, processInitialData: false };
+      const opts: any = { processInitialData: false }; // بدون enableExtendedGiftInfo: يجعل المكتبة تطلب توقيعاً من مسار Euler المدفوع (Business) — قيم الهدايا تصل في giftDetails
       if (process.env.TIKTOK_SIGN_API_KEY) opts.signApiKey = process.env.TIKTOK_SIGN_API_KEY;
       conn = new Conn(username, opts);
 
@@ -138,7 +138,8 @@ export function tiktokReason(m: string) {
   const x = m.toLowerCase();
   if (/offline|not live|isn't online|no live|ended/.test(x)) return "الحساب ليس في بث مباشر الآن (أو البث خاص)";
   if (/rate ?limit|429|too many/.test(x)) return "تجاوز حد خدمة التوقيع — حاول بعد دقيقة (أو أضف مفتاح TIKTOK_SIGN_API_KEY)";
-  if (/sign|euler|api key|unauthori[sz]ed|401/.test(x)) return "خدمة التوقيع رفضت الطلب — يلزم مفتاح TIKTOK_SIGN_API_KEY على الخادم";
+  if (/business plan|pricing/.test(x)) return "خدمة التوقيع تطلب اشتراكاً مدفوعاً لهذا النوع من الاتصال — أبلغ الدعم";
+  if (/sign|euler|api key|unauthori[sz]ed|401/.test(x)) return "خدمة التوقيع رفضت الطلب — حاول بعد دقيقة";
   if (/403|captcha|blocked|forbidden|room ?id|user_not_found|not found/.test(x)) return "TikTok رفض الطلب من الخادم أو لم يجد غرفة البث — تأكد من اسم المستخدم وأن البث عام";
   return "تأكد أن الحساب في بث مباشر الآن" + (m ? ` (${m.slice(0, 90)})` : "");
 }
