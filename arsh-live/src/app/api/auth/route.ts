@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getBilling } from "@/server/appconfig";
 import { checkPassword, createSession, destroySession, hashPassword, token } from "@/lib/auth";
 import { defaultLayouts } from "@/lib/core";
 
@@ -13,8 +14,10 @@ export async function POST(req: Request) {
     if (await prisma.user.findUnique({ where: { email: em } }))
       return NextResponse.json({ error: "البريد مسجل مسبقاً" }, { status: 409 });
     const layouts = defaultLayouts();
+    const bc = await getBilling();
     const user = await prisma.user.create({
       data: {
+        trialEndsAt: bc.trialEnabled && bc.trialDays > 0 ? new Date(Date.now() + bc.trialDays * 864e5) : new Date(),
         email: em, name: String(name || "صانع محتوى").slice(0, 60), passwordHash: hashPassword(password),
         overlayToken: "ov_" + token(12), editKey: "ek_" + token(24), activeLayoutId: layouts[0].id,
         settings: { bigGift: 1000, fx: true, tiktok: "" },

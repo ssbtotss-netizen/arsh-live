@@ -1,0 +1,19 @@
+{
+  "name": "b6o6-streaming-desktop",
+  "productName": "B6O6 Streaming",
+  "version": "1.0.0",
+  "description": "بطوط ستريم — برنامج سطح المكتب لويندوز",
+  "main": "main.js",
+  "author": "B6O6 Streaming",
+  "license": "UNLICENSED",
+  "scripts": { "start": "electron .", "dist": "electron-builder --win nsis --x64 --publish never" },
+  "devDependencies": { "electron": "^33.0.0", "electron-builder": "^25.1.8" },
+  "build": {
+    "appId": "com.b6o6.streaming",
+    "productName": "B6O6 Streaming",
+    "artifactName": "B6O6-Streaming-Setup.${ext}",
+    "files": ["main.js", "config.json", "icon.png"],
+    "win": { "target": "nsis", "icon": "icon.png" },
+    "nsis": { "oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true, "shortcutName": "بطوط ستريم" }
+  }
+}

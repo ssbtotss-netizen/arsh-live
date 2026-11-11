@@ -16,7 +16,7 @@ export default function DashboardPage() {
         settings: d.user.settings || {}, socials: d.user.socials && d.user.socials.accounts ? d.user.socials : null, donCfg: d.user.donCfg && d.user.donCfg.goals ? d.user.donCfg : null, bio: d.user.bio || null, bots: d.user.bots && d.user.bots.commands ? d.user.bots : null, providers: d.user.providers,
         donateURL: `${location.origin}/donate/${d.user.donateSlug}`, webhookURL: `${location.origin}/api/webhooks/moyasar/${d.user.donateSlug}`,
         api: (path: string, o: any = {}) => fetch(path, { method: o.method || "GET", headers: { "content-type": "application/json" }, body: o.body ? JSON.stringify(o.body) : undefined }).then(r => r.json()),
-        profile: { name: d.user.name, plan: d.user.planName || "مجانية", planId: d.user.plan || "free", planUntil: d.user.planUntil, isAdmin: !!d.user.isAdmin },
+        profile: { name: d.user.name, plan: d.user.sub?.label || "", sub: d.user.sub, isAdmin: !!d.user.isAdmin },
         wsUrl: `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
         room: d.user.overlayToken, key: d.user.editKey,
         overlayURL: (layoutId: string, only?: string, acc?: string) => `${location.origin}/overlay/${d.user.overlayToken}?layout=${layoutId}${only ? `&only=${only}` : ""}${acc ? `&acc=${acc}` : ""}${(window as any).__arshPM && (window as any).__arshPM !== "hq" ? `&pm=${(window as any).__arshPM}` : ""}`,

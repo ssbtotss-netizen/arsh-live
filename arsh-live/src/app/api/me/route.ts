@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { currentUser, token, isAdmin } from "@/lib/auth";
-import { effectivePlan, planCheck } from "@/engine/plans.js";
+import { subStatus, planCheck } from "@/engine/plans.js";
+import { getBilling } from "@/server/appconfig";
 
 import { canvasValid } from "@/engine/defs.js";
 
@@ -12,7 +13,7 @@ export async function GET() {
   const providers = await prisma.donationProvider.findMany({ where: { userId: u.id }, select: { kind: true, enabled: true, status: true } });
   const layouts = await prisma.layout.findMany({ where: { userId: u.id }, orderBy: { sort: "asc" } });
   return NextResponse.json({
-    user: { plan: effectivePlan(u).id, planName: effectivePlan(u).name, planUntil: u.planUntil, isAdmin: isAdmin(u), name: u.name, email: u.email, overlayToken: u.overlayToken, editKey: u.editKey, settings: u.settings, socials: u.socials, donCfg: u.donCfg, bots: u.bots, bio: (u as any).bio, donateSlug: u.donateSlug, providers: Object.fromEntries(providers.map(p => [p.kind, { enabled: p.enabled, connected: p.status === "connected", status: p.status }])) },
+    user: { sub: subStatus(u, await getBilling()), isAdmin: isAdmin(u), name: u.name, email: u.email, overlayToken: u.overlayToken, editKey: u.editKey, settings: u.settings, socials: u.socials, donCfg: u.donCfg, bots: u.bots, bio: (u as any).bio, donateSlug: u.donateSlug, providers: Object.fromEntries(providers.map(p => [p.kind, { enabled: p.enabled, connected: p.status === "connected", status: p.status }])) },
     activeLayoutId: u.activeLayoutId,
     layouts: layouts.map(l => ({ id: l.id, name: l.name, canvas: l.canvas, widgets: l.widgets })),
   });
@@ -37,7 +38,8 @@ export async function PUT(req: Request) {
   if (Array.isArray(body.layouts)) {
     if (body.layouts.length > 50) return NextResponse.json({ error: "too many layouts" }, { status: 400 });
     // حدود الباقة تُفرض على الخادم (لا يمكن تجاوزها من المتصفح)
-    const over = planCheck(u, "layouts", body.layouts.length) || planCheck(u, "widgets", body.layouts.reduce((n: number, l: any) => n + (Array.isArray(l?.widgets) ? l.widgets.length : 0), 0));
+    const bc = await getBilling();
+    const over = planCheck(u, "layouts", body.layouts.length, bc) || planCheck(u, "widgets", body.layouts.reduce((n: number, l: any) => n + (Array.isArray(l?.widgets) ? l.widgets.length : 0), 0), bc);
     if (over) return NextResponse.json({ error: over, code: "plan_limit" }, { status: 402 });
     const ids: string[] = [];
     body.layouts.forEach((l: any, i: number) => {

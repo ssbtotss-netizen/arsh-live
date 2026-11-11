@@ -34,8 +34,9 @@ model User {
   connections    PlatformConnection[]
   bio            Json        @default("{}")   // رابط البايو (التصميم والروابط والإحصائيات)
   bioHandle      String?     @unique          // الرابط العام /u/<handle>
-  plan           String      @default("free")  // free | starter | pro | elite | legend
+  plan           String      @default("free")  // free | pro | comp (منحة)
   planUntil      DateTime?
+  trialEndsAt    DateTime?                     // نهاية التجربة المجانية (يحددها التسجيل أو المشرف)
   disabled       Boolean     @default(false)   // إيقاف الحساب من لوحة الإدارة
   lastSeenAt     DateTime?
   subscriptions  Subscription[]
@@ -263,4 +264,11 @@ model Subscription {
   status      String   @default("paid")
   createdAt   DateTime @default(now())
   @@index([userId, createdAt])
+}
+
+// إعدادات عامة يتحكم بها المشرف (مثل billing: مدة التجربة والسعر)
+model AppConfig {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
 }

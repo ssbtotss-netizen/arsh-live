@@ -167,7 +167,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الباقة والاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -261,7 +261,7 @@ function renderPage(soft){
    <button class="btn pri" data-go="studio">🎬 رتّب عناصر شاشتك</button><button class="btn" data-go="subathon">⏳ جهّز السبثون</button><button class="btn" data-go="obs">🔗 انسخ روابط OBS</button></div>
    <p class="mut small" style="margin-top:12px">التخطيط النشط: <b style="color:var(--tx)">${esc(l.name)}</b> — ${l.widgets.length} عناصر على ${CV().label}</p></div>
   <div class="card"><h3>المتصدرون الآن</h3><div class="grid g2">${miniTop("❤️ التكبيس",sorted(D.likes).slice(0,3))}${miniTop("🎁 الدعم",sorted(D.gifts).slice(0,3))}</div></div></div>
-  <div class="card" style="margin-top:14px"><h3>خطة المنصة</h3><div class="mut small" style="line-height:2">✅ المرحلة 1: لوحة التحكم، الاستوديو، قوائم الترتيب<br>✅ المرحلة 2: السبثون الكامل + مؤقتات البث<br>✅ حساباتي وحسابات الألعاب: تصاميم، دخوليات، تدوير، روابط<br>✅ الدونيشن والتبرعات: لوحة، شريط، أهداف، آخر/أكبر داعم، تنبيهات، ربط Streamlabs وStreamElements وميسّر<br>⏳ التالي: الإجراءات الذكية، ثم السبثون التفاعلي<br>${ROADMAP.map(r=>`⏳ ${r[0]}: ${r[1]}`).join("<br>")}</div></div>`+testBar();
+  <div class="card" style="margin-top:14px"><h3>كل ما في المنصة</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[["studio","🎬 استوديو البث"],["falerts","🦆 تنبيهات المتابعين"],["followers","👥 عداد المتابعين"],["latest","✨ آخر التفاعلات"],["library","🏆 قوائم الداعمين"],["subathon","⏳ السبثون"],["bots","🤖 البوتات والقارئ الصوتي"],["actions","⚡ الإجراءات التلقائية"],["music","🎵 طلبات الأغاني"],["poststats","📊 إحصائيات نهاية البث"],["community","📣 Discord وTelegram"],["bio","🔗 رابط البايو"]].map(([g,n])=>`<button class="btn sm" data-go="${g}">${n}</button>`).join("")}</div></div></div>`+testBar();
  }
  else if(p==="live"){
   const s=S.settings;
@@ -1651,25 +1651,27 @@ function psInput(t,d,e){
  if(d.ps){ const k=d.ps; S.ps[k]=t.type==="checkbox"?t.checked:k==="thanksSize"?+t.value:t.value; psSave(k==="size"||k==="font"||k==="showUnavailable"); return true }
  return false }
 
-// ====== الباقات والاشتراك ======
-S.bill={months:1,data:null,err:""};
+// ====== الاشتراك: تجربة مجانية ثم اشتراك شهري (الإعدادات من لوحة الإدارة) ======
+S.bill={months:1,data:null};
 async function billLoad(){ if(!CFG) return; try{ const r=await fetch("/api/billing"); if(r.ok){ S.bill.data=await r.json(); if(S.page==="billing") renderPage(true) } }catch(e){} }
-function billHTML(){ const B=S.bill, cur=CFG?(B.data?.current||CFG.profile?.planId||"free"):"free", until=B.data?.planUntil||CFG?.profile?.planUntil; if(CFG&&!B.data) billLoad();
- const ok=/billing-ok/.test(location.hash)?'<div class="note" style="margin-bottom:12px">✅ تم استلام عملية الدفع. تُفعَّل الباقة تلقائياً فور تأكيد بوابة الدفع (عادة خلال ثوانٍ) — حدّث الصفحة.</div>':"";
- return head("💎 الباقة والاشتراك",CFG?`باقتك الحالية: <b>${esc(planOf(cur).name)}</b>${until&&cur!=="free"?" — تنتهي "+new Date(until).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn"):""}`:"وضع التجربة المحلي — الاشتراك يعمل بعد إنشاء حساب على المنصة المنشورة")+ok+
- `<div class="row" style="margin-bottom:12px"><span class="mut">مدة الدفع:</span>${[[1,"شهر"],[3,"3 أشهر"],[12,"سنة"]].map(([m,n])=>`<button class="btn sm ${B.months===m?"on":""}" data-billm="${m}">${n}</button>`).join("")}</div>
- <div class="grid g3">${PLANS.map(P=>`<div class="card" style="border-color:${P.color}${cur===P.id?";box-shadow:0 0 0 2px "+P.color:""}"><h3 style="color:${P.color}">${P.name} ${cur===P.id?'<span class="tag">باقتك</span>':""}</h3>
-  <div style="font-size:30px;font-weight:900">${P.price?"$"+P.price*B.months:"مجاناً"}<span class="mut small">${P.price?(B.months===1?" / شهر":" / "+B.months+" أشهر"):""}</span></div>
-  <ul class="small" style="padding-inline-start:18px;line-height:1.9">${P.perks.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
-  <div class="mut small">المشاهد: ${P.limits.layouts} · العناصر: ${P.limits.widgets} · المنصات: ${P.limits.platforms} · الإجراءات: ${P.limits.actions}</div>
-  ${P.price?`<button class="btn ${cur===P.id?"":"pri"}" style="margin-top:10px;width:100%" data-billbuy="${P.id}">${cur===P.id?"تجديد / تمديد":"اشترك الآن"}</button>`:""}</div>`).join("")}</div>
- <p class="mut small" style="margin-top:12px">الدفع عبر بوابة آمنة (Stripe Checkout) — لا نرى بيانات بطاقتك ولا نحفظها. تُفعَّل الباقة فقط بعد تأكيد موقّع من بوابة الدفع.</p>
- ${B.data?.history?.length?`<div class="card"><h3>سجل الاشتراكات</h3>${B.data.history.map(h=>`<div class="small">${new Date(h.createdAt).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn")} — ${esc(planOf(h.plan).name)} × ${h.months} — ${h.provider==="admin"?"منح إداري":"$"+h.amountUsd}</div>`).join("")}</div>`:""}
- ${CFG?.profile?.isAdmin?'<div class="card"><a class="btn pri" href="/admin">🛡️ فتح لوحة الإدارة</a></div>':""}` }
+function billHTML(){ const B=S.bill; if(CFG&&!B.data) billLoad();
+ const cfg=B.data?.cfg||billingCfg({}), st=B.data?.status||(CFG?CFG.profile?.sub:null), m=B.months, total=Math.round(cfg.priceUsd*m*100)/100, dt_=x=>new Date(x).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn");
+ const ok=/billing-ok/.test(location.hash)?'<div class="note" style="margin-bottom:12px">✅ تم استلام الدفع. يُفعَّل الاشتراك تلقائياً فور تأكيد بوابة الدفع (عادة خلال ثوانٍ) — حدّث الصفحة.</div>':"";
+ const stTxt=!CFG?"وضع التجربة المحلي — الاشتراك يعمل بعد إنشاء حساب على المنصة المنشورة":!st?"":st.state==="trial"?`🎁 فترة تجربة مجانية — متبقي <b>${st.daysLeft}</b> يوم (حتى ${dt_(st.until)})`:st.state==="active"?`✅ مشترك حتى ${dt_(st.until)}`:st.state==="comp"?`🎁 منحة إدارية${st.until?" حتى "+dt_(st.until):""}`:`⚠️ ${st.label} — بعض الميزات محدودة حتى تشترك`;
+ return head("💎 الاشتراك",stTxt)+ok+
+ `<div class="grid g2" style="align-items:start"><div class="card" style="border-color:#7c5cff;box-shadow:0 0 0 2px #7c5cff55">
+  <h3>B6O6 Streaming — كل الميزات</h3>
+  ${cfg.trialEnabled&&cfg.trialDays?`<div style="display:flex;align-items:baseline;gap:10px;flex-wrap:wrap"><s class="mut" style="font-size:22px">$${cfg.priceUsd}</s><b style="font-size:34px;color:#4ade80">مجاناً</b><span class="tag">أول ${cfg.trialDays} يوماً</span></div><p class="mut small">بعد التجربة: <b>$${cfg.priceUsd} شهرياً</b> — بدون التزام، ولا يُخصم شيء تلقائياً.</p>`:`<div style="font-size:34px;font-weight:900">$${cfg.priceUsd}<span class="mut small"> / شهر</span></div>`}
+  <ul class="small" style="padding-inline-start:18px;line-height:1.9">${cfg.perks.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+  <div class="row" style="margin:8px 0"><span class="mut">مدة الاشتراك:</span>${cfg.months.map(x=>`<button class="btn sm ${m===x?"on":""}" data-billm="${x}">${x===1?"شهر":x===12?"سنة":x+" أشهر"}</button>`).join("")}</div>
+  <button class="btn pri" style="width:100%" data-billbuy="1">${st&&st.state==="active"?"تمديد الاشتراك":"اشترك الآن"} — $${total}</button>
+  <p class="mut small" style="margin-top:8px">الدفع عبر بوابة آمنة (Stripe) — لا نرى بيانات بطاقتك. يُفعَّل الاشتراك فقط بعد تأكيد موقّع من بوابة الدفع، ويُضاف لما تبقّى من اشتراكك.</p></div>
+ <div>${B.data?.history?.length?`<div class="card"><h3>سجل الاشتراكات</h3>${B.data.history.map(h=>`<div class="small">${dt_(h.createdAt)} — ${h.months} شهر — ${h.provider==="admin"?"منحة إدارية":"$"+h.amountUsd}</div>`).join("")}</div>`:""}
+ ${CFG?.profile?.isAdmin?'<div class="card"><h3>🛡️ الإدارة</h3><p class="mut small">التحكم بمدة التجربة والسعر والاشتراكات لكل مستخدم.</p><a class="btn pri" href="/admin">فتح لوحة الإدارة</a></div>':""}</div></div>` }
 function billClick(t,d){
  if(d.billm){ S.bill.months=+d.billm; renderPage(true); return true }
  if(d.billbuy){ if(!CFG){ toast("الاشتراك متاح بعد إنشاء حساب على المنصة المنشورة"); return true }
-  fetch("/api/billing",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({plan:d.billbuy,months:S.bill.months})}).then(r=>r.json().then(j=>({r,j}))).then(({r,j})=>{ if(j.url) location.href=j.url; else toast(j.message||j.error||"تعذر بدء الدفع") }).catch(()=>toast("تعذر الاتصال")); return true }
+  fetch("/api/billing",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({months:S.bill.months})}).then(r=>r.json()).then(j=>{ if(j.url) location.href=j.url; else toast(j.message||j.error||"تعذر بدء الدفع") }).catch(()=>toast("تعذر الاتصال")); return true }
  return false }
 
 // ====== استوديو تنبيهات المتابعين V2 ======
