@@ -1,11 +1,11 @@
 // مكتبة الآيرتات: القوائم العامة (المعتمدة فقط) + آيرتاتي + المفضلة + أستخدمها — الخصوصية مطبّقة في الاستعلام نفسه
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { alValidate, alVisibilityPatch, alSort, alSearch, alCanView, alCanUse, AL_CATS } from "@/engine/alerts.js";
+import { alValidate, alVisibilityPatch, alSort, alSearch, alCanView, alCanUse, AL_CATS, AL_EVENT_GROUPS, alMeta } from "@/engine/alerts.js";
 import { viewer, toClient, alertsCfg, ownerSel } from "@/server/alerts-svc";
 
 const LISTED = { visibility: "public", review: "approved", removed: false } as const;
-const PUBLIC_SECTIONS = new Set(["all", "community", "new", "used", "rated", "trending", "week", "month"]);
+const PUBLIC_SECTIONS = new Set(["all", "community", "new", "used", "rated", "liked", "trending", "week", "month"]);
 
 export async function GET(req: Request) {
   const { user, v } = await viewer();
@@ -13,6 +13,8 @@ export async function GET(req: Request) {
   const page = Math.max(0, +(sp.get("page") || 0)), per = 40;
   let rows: any[] = [];
   const filt: any = {}; if (AL_CATS[cat]) filt.category = cat; if (kind) filt.kind = kind; if (event) filt.event = event;
+  const grp = sp.get("group") || ""; if ((AL_EVENT_GROUPS as any)[grp]) filt.event = { in: (AL_EVENT_GROUPS as any)[grp][1] };
+  const alpha = sp.get("alpha"); if (alpha === "1" || alpha === "0") filt.meta = { path: ["alpha"], equals: alpha === "1" };
   if (PUBLIC_SECTIONS.has(section)) rows = await prisma.alert.findMany({ where: { ...LISTED, ...filt }, orderBy: { publishedAt: "desc" }, take: 600, include: { owner: ownerSel } });
   else if (section === "designer") rows = await prisma.alert.findMany({ where: { ...LISTED, ownerId: String(sp.get("id") || "") }, orderBy: { publishedAt: "desc" }, take: 300, include: { owner: ownerSel } });
   else {
@@ -31,7 +33,7 @@ export async function GET(req: Request) {
     } else return NextResponse.json({ error: "bad_section" }, { status: 400 });
   }
   rows = alSearch(rows, q);
-  const mode = section === "rated" ? "rated" : section === "used" ? "used" : section === "trending" || section === "all" ? "trending" : section === "week" || section === "month" ? section : "new";
+  const mode = section === "liked" ? "liked" : section === "rated" ? "rated" : section === "used" ? "used" : section === "trending" || section === "all" ? "trending" : section === "week" || section === "month" ? section : "new";
   if (section !== "mine") rows = alSort(rows, mode);
   const total = rows.length; rows = rows.slice(page * per, page * per + per);
   let mineR: Record<string, any> = {}, usingS = new Set<string>();
@@ -51,7 +53,9 @@ export async function POST(req: Request) {
   const x: any = val.value;
   if ((await prisma.alert.count({ where: { ownerId: user.id } })) >= 300) return NextResponse.json({ error: "limit", message: "وصلت للحد الأعلى (300 آيرت)" }, { status: 400 });
   // الملفات يجب أن تكون ملك المستخدم نفسه — لا يمكن ربط ملف شخص آخر
-  for (const k of ["mediaId", "audioId", "coverId"]) if (x[k]) { const a = await prisma.alertAsset.findUnique({ where: { id: x[k] }, select: { ownerId: true, slot: true } }); if (!a || a.ownerId !== user.id) return NextResponse.json({ error: "bad_file", field: k }, { status: 400 }); }
+  for (const k of ["mediaId", "audioId", "coverId", "previewId"]) if (x[k]) { const a = await prisma.alertAsset.findUnique({ where: { id: x[k] }, select: { ownerId: true, slot: true } }); if (!a || a.ownerId !== user.id) return NextResponse.json({ error: "bad_file", field: k }, { status: 400 }); }
+  // خصائص الوسائط تُؤخذ من الملف المحفوظ في الخادم (لا من المتصفح)
+  const src = x.mediaId || x.audioId; if (src) { const a = await prisma.alertAsset.findUnique({ where: { id: src }, select: { meta: true } }); x.meta = alMeta(a?.meta); }
   const data: any = { ...x, ownerId: user.id, visibility: "private", review: "none", designerName: x.designerName || user.name };
   if (x.visibility === "public") { const p = alVisibilityPatch(null, "public", { rightsConfirmed: x.rightsConfirmed, autoApprove: (await alertsCfg()).autoApprove }); if (!p.ok) return NextResponse.json({ error: p.error }, { status: 400 }); Object.assign(data, p.patch); }
   const a = await prisma.alert.create({ data, include: { owner: ownerSel } });

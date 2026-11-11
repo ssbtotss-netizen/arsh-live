@@ -11,13 +11,17 @@ export async function usedBytes(ownerId: string) {
 export async function putAsset(ownerId: string, slot: string, bytes: Uint8Array) {
   const chk: any = alCheckFile(slot, bytes);
   if (!chk.ok) return { ok: false as const, error: chk.error, max: chk.max };
+  return putAssetRaw(ownerId, slot, bytes, chk.mime, {});
+}
+/** حفظ ملف فحصه الخادم أو أنتجه FFmpeg (النوع معروف) */
+export async function putAssetRaw(ownerId: string, slot: string, bytes: Uint8Array, mime: string, meta: any, extra = 0) {
   const used = await usedBytes(ownerId);
-  if (used + bytes.length > AL_LIMITS.quota) return { ok: false as const, error: "quota", used, max: AL_LIMITS.quota };
+  if (used + bytes.length + extra > AL_LIMITS.quota) return { ok: false as const, error: "quota", used, max: AL_LIMITS.quota };
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   // نفس الملف لنفس المستخدم لا يُخزَّن مرتين
   const dup = await prisma.alertAsset.findFirst({ where: { ownerId, sha256, slot }, select: { id: true, mime: true, size: true } });
   if (dup) return { ok: true as const, id: dup.id, mime: dup.mime, size: dup.size };
-  const a = await prisma.alertAsset.create({ data: { ownerId, slot, mime: chk.mime, size: bytes.length, sha256, data: Buffer.from(bytes) }, select: { id: true, mime: true, size: true } });
+  const a = await prisma.alertAsset.create({ data: { ownerId, slot, mime, size: bytes.length, sha256, meta: meta || {}, data: Buffer.from(bytes) }, select: { id: true, mime: true, size: true } });
   return { ok: true as const, ...a };
 }
 export const getAsset = (id: string) => prisma.alertAsset.findUnique({ where: { id } });
@@ -25,7 +29,7 @@ export const getAssetMeta = (id: string) => prisma.alertAsset.findUnique({ where
 /** حذف ملفات لم يعد يستخدمها أي آيرت لنفس المالك */
 export async function removeOrphans(ownerId: string, ids: (string | null | undefined)[]) {
   for (const id of ids.filter(Boolean) as string[]) {
-    const n = await prisma.alert.count({ where: { ownerId, OR: [{ mediaId: id }, { audioId: id }, { coverId: id }] } });
+    const n = await prisma.alert.count({ where: { ownerId, OR: [{ mediaId: id }, { audioId: id }, { coverId: id }, { previewId: id }] } });
     if (!n) await prisma.alertAsset.deleteMany({ where: { id, ownerId } });
   }
 }

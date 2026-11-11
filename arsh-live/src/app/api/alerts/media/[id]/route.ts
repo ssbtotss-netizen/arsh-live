@@ -10,7 +10,7 @@ const nf = () => new Response("not found", { status: 404 });
 export async function GET(req: Request, ctx: { params: Promise<{ id: string }> }) {
   const { id } = await ctx.params; const sp = new URL(req.url).searchParams;
   const meta = await prisma.alertAsset.findUnique({ where: { id }, select: { ownerId: true, mime: true, size: true } }); if (!meta) return nf();
-  const refs = await prisma.alert.findMany({ where: { OR: [{ mediaId: id }, { audioId: id }, { coverId: id }] }, select: { id: true, ownerId: true, visibility: true, review: true, removed: true } });
+  const refs = await prisma.alert.findMany({ where: { OR: [{ mediaId: id }, { audioId: id }, { coverId: id }, { previewId: id }] }, select: { id: true, ownerId: true, visibility: true, review: true, removed: true } });
   let allowed = false, isPublic = false;
   if (refs.some(alIsListed)) { allowed = true; isPublic = true; }
   if (!allowed && sp.get("s")) {

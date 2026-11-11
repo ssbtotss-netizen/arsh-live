@@ -1765,55 +1765,227 @@ function alDef(a){ return {id:a.id,name:a.name,kind:a.kind,event:a.event,duratio
 /** تعريفات المعاينة في اللوحة: الرسمية + المحلية + ما حُمّل من الخادم */
 function alSyncDefs(){ const A=ALS(), m={}; for(const a of alOfficial()) m[a.id]=alDef(a); for(const a of alLocal()) m[a.id]=alDef(a); for(const a of Object.values(A.cache)) if(!a.unavailable) m[a.id]=alDef(a); Object.assign(AB_DEFS,m) }
 const alKindOf=mime=>/^video/.test(mime)?"video":mime==="image/gif"?"gif":/^image/.test(mime)?"image":mime==="application/json"?"lottie":/^audio/.test(mime)?"audio":"";
-async function alLoad(force){ const A=ALS(); const key=[A.sec,A.q,A.cat,A.kind,A.event,A.vis,A.desId||""].join("|"); if(!force&&A.key===key&&Date.now()-A.at<20000) return; A.key=key; A.at=Date.now();
- if(A.sec==="official"){ A.items=alSearch(alOfficial(),A.q); A.total=A.items.length; return softRefresh() }
+async function alLoad(force){ const A=ALS(); const key=[A.sec,A.q,A.cat,A.kind,A.event,A.vis,A.grp||"",A.alpha||"",A.desId||""].join("|"); if(!force&&A.key===key&&Date.now()-A.at<20000) return; A.key=key; A.at=Date.now();
+ if(A.sec==="official"){ A.items=alFilter(alSearch(alOfficial(),A.q)); A.total=A.items.length; return softRefresh() }
  if(A.sec==="packs"){ if(!CFG){ A.packs=[]; return softRefresh() } const [pub,mine]=await Promise.all([alApi("/api/alerts/packs"),alApi("/api/alerts/packs?mine=1")]); const m=new Map(); for(const p of [...(mine.packs||[]).map(x=>({...x,mine:true})),...(pub.packs||[])]) if(!m.has(p.id)) m.set(p.id,p); A.packs=[...m.values()]; return softRefresh() }
  if(A.sec==="designers"){ if(!CFG){ A.designers=[]; return softRefresh() } const j=await alApi("/api/alerts/designers"); A.designers=j.designers||[]; return softRefresh() }
- if(!CFG){ const loc=alLocal().map(a=>({...a,mine:true,using:true,badge:alBadge(a)})); A.items=["mine","using","all"].includes(A.sec)?alSearch(loc,A.q):[]; A.total=A.items.length; return softRefresh() }
- const p=new URLSearchParams({section:A.sec==="designer"?"designer":A.sec,q:A.q,cat:A.cat,kind:A.kind,event:A.event,vis:A.vis}); if(A.desId) p.set("id",A.desId);
+ if(!CFG){ const loc=alLocal().map(a=>({...a,mine:true,using:true,badge:alBadge(a),group:alEventGroup(a.event)})); A.items=["mine","using","all"].includes(A.sec)?alFilter(alSearch(loc,A.q)):[]; if(A.sec==="all") A.items=[...A.items,...alFilter(alSearch(alOfficial(),A.q)).slice(0,24)]; A.total=A.items.length; return softRefresh() }
+ const p=new URLSearchParams({section:A.sec==="designer"?"designer":A.sec,q:A.q,cat:A.cat,kind:A.kind==="template"?"":A.kind,event:A.event,vis:A.vis,group:A.grp||"",alpha:A.alpha||""}); if(A.desId) p.set("id",A.desId);
  A.busy=true; const j=await alApi("/api/alerts?"+p); A.busy=false; if(j.error){ A.items=[]; A.err=j.status===401?"سجّل الدخول لعرض هذا القسم":"تعذر التحميل"; return softRefresh() }
- A.err=""; A.items=j.items||[]; if(A.sec==="mine"&&A.sort&&A.sort!=="date") A.items.sort((x,y)=>String(x[A.sort]||"").localeCompare(String(y[A.sort]||""),"ar")); A.total=j.total||A.items.length; for(const a of A.items) if(a.id) A.cache[a.id]=a; if(A.sec==="all"&&!A.q&&!A.cat&&!A.kind) A.items=[...A.items,...alOfficial().slice(0,12)]; alSyncDefs(); softRefresh() }
+ A.err=""; A.items=alFilter(j.items||[]); if(A.sec==="mine"&&A.sort&&A.sort!=="date") A.items.sort((x,y)=>String(x[A.sort]||"").localeCompare(String(y[A.sort]||""),"ar")); A.total=j.total||A.items.length; for(const a of A.items) if(a.id) A.cache[a.id]=a;
+ if(A.sec==="all"&&!A.q) A.items=[...A.items,...alFilter(alOfficial()).slice(0,24)]; alSyncDefs(); softRefresh() }
+/** فلترة إضافية في المتصفح (نفس منطق الخادم) — مجموعة الحدث، الطابع، نوع الملف، الشفافية */
+function alFilter(list){ const A=ALS(), G=A.grp&&AL_EVENT_GROUPS[A.grp]?AL_EVENT_GROUPS[A.grp][1]:null;
+ return list.filter(a=>(!G||G.includes(a.event))&&(!A.cat||a.category===A.cat)&&(!A.kind||a.kind===A.kind)&&(!A.alpha||(A.alpha==="1")===alIsAlpha(a))) }
+function alIsAlpha(a){ return a.kind==="template"||a.kind==="lottie"||!!(a.meta&&a.meta.alpha) }
+function alFind(id){ const A=ALS(); return A.cache[id]||alLocal().find(x=>x.id===id)||alOfficial().find(x=>x.id===id)||(A.items||[]).find(x=>x.id===id) }
+const alFmtSize=b=>!b?"":b>1048576?(b/1048576).toFixed(1)+" MB":Math.max(1,Math.round(b/1024))+" KB";
+const alFmtDur=s=>s==null?"":(Math.round(s*10)/10)+" ث";
+function alCard(a){ const off=a.official, b=a.mine&&a.badge?a.badge:null, ev=AL_EVENTS[a.event]||{}, my=a.my||{}, d=a.designer||{}, m=a.meta||{};
+ const cover=a.coverUrl||a.coverData||((a.kind==="image"||a.kind==="gif")?(a.mediaUrl||a.mediaData):"");
+ const thumb=cover?`<img src="${esc(cover)}" alt="" loading="lazy" decoding="async">`:a.kind==="audio"?`<div class="al-acov"><span>🔊</span><b>${esc(a.name||"")}</b></div>`:`<div class="al-acov"><span>${off?"🦆":a.kind==="lottie"?"✨":"🔔"}</span><b>${esc(a.name||"")}</b></div>`;
+ const hasSound=a.kind==="audio"||!!(a.audioUrl||a.audioData)||m.hasAudio===true||off;
+ return `<div class="card al-card"><div class="al-th" data-alhv="${esc(a.id)}">${thumb}
+  <div class="al-tags">${alIsAlpha(a)?`<span title="خلفية شفافة">◩ شفاف</span>`:""}${a.durationSec?`<span>${a.durationSec}ث</span>`:""}</div>
+  ${hasSound?`<button class="al-snd" data-alsnd="${esc(a.id)}" title="تجربة الصوت">🔊</button>`:""}<button class="al-tp" data-altp="${esc(a.id)}" title="تشغيل">▶</button></div>
+ <div class="al-nm">${esc(a.name||"")}</div>
+ <div class="mut small">${esc(AL_CATS[a.category]||"")}${a.category?" · ":""}${ev.icon||""} ${esc(ev.label||a.event||"")}</div>
+ <div class="small">${off?"🏛️ رسمي من المنصة":`🎨 ${esc(d.name||a.designerName||"")}${d.verified?" ✔️":""}`}${b?` · <span class="tag" title="${esc(b[1])}">${b[0]} ${esc(b[1])}</span>`:""}</div>
+ ${off||a.mine?"":`<div class="mut small">▶️ ${a.uses|0} · ❤️ ${a.likes|0} · ⭐ ${a.rating||0}</div>`}
+ ${a.mine&&a.reviewNote&&(a.review==="rejected"||a.removed)?`<div class="note small">ملاحظة الإدارة: ${esc(a.reviewNote)}</div>`:""}
+ <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:auto;padding-top:6px">
+  <button class="btn sm pri" data-aluse="${esc(a.id)}">➕ استخدام</button><button class="btn sm" data-alpv="${esc(a.id)}">👁 معاينة</button>
+  ${a.mine?`<button class="btn sm" data-alman="${esc(a.id)}">⚙️ إدارة</button>`:""}
+  ${!off&&!a.mine&&CFG?`<button class="btn sm ${my.fav?"on":""}" data-alact="fav" data-alid="${esc(a.id)}" title="المفضلة">🔖</button><button class="btn sm ${my.like?"on":""}" data-alact="like" data-alid="${esc(a.id)}" title="إعجاب">❤️</button>
+  <select class="inp" style="width:auto;padding:2px 4px" data-alrate="${esc(a.id)}"><option value="0">⭐</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${my.rating===n?"selected":""}>${"★".repeat(n)}</option>`).join("")}</select>
+  <button class="btn sm" data-alrep="${esc(a.id)}" title="إبلاغ">🚩</button>${a.using?`<button class="btn sm" data-alunuse="${esc(a.id)}" title="إزالة من آيرتاتي المستخدمة">✖</button>`:""}${d.id?`<button class="btn sm" data-aldes="${esc(d.id)}" title="أعمال المصمم">👤</button>`:""}`:""}</div></div>` }
+
+function alLibHTML(){ const A=ALS(); alLoad();
+ const secs=AL_SECTIONS.filter(([k])=>CFG||["all","official","mine","using"].includes(k));
+ const sub=A.sec==="mine"?`<div class="row" style="gap:4px;flex-wrap:wrap;margin:6px 0">${[["all","جميع آيرتاتي"],["public","🌍 العامة"],["private","🔒 الخاصة"],["pending","⏳ بانتظار المراجعة"],["rejected","❌ مرفوضة/محذوفة"]].map(([k,n])=>`<button class="btn sm ${A.vis===k?"on":""}" data-alvisf="${k}">${n}</button>`).join("")}<select class="inp" style="width:auto;padding:2px 6px" data-alsort><option value="date" ${A.sort==="date"?"selected":""}>الأحدث</option><option value="name" ${A.sort==="name"?"selected":""}>الاسم</option><option value="kind" ${A.sort==="kind"?"selected":""}>النوع</option></select>${CFG&&A.quota?`<span class="mut small">مساحتك: ${(A.quota.used/1048576).toFixed(1)} / ${Math.round(A.quota.quota/1048576)} MB</span>`:""}</div>`:"";
+ let body;
+ if(A.sec==="packs") body=`<div class="row" style="margin-bottom:8px"><button class="btn pri" data-alpknew ${CFG?"":"disabled"}>➕ إنشاء حزمة</button>${CFG?"":`<span class="mut small">الحزم متاحة بعد تسجيل الدخول</span>`}</div>`+(!A.packs?`<div class="empty">جاري التحميل…</div>`:!A.packs.length?`<div class="empty">لا توجد حزم بعد — اجمع آيرتاتك المتناسقة (فولو، لايك، هدية، دونيشن…) في حزمة واحدة</div>`:`<div class="grid g3">${A.packs.map(p=>`<div class="card"><h3>📦 ${esc(p.name)}</h3><p class="mut small">${esc(p.description||"")}</p><p class="small">${p.alertIds.length} آيرت${p.mine?` · ${p.visibility==="public"?"🌍 عامة":"🔒 خاصة"}`:""}</p><div class="row" style="gap:4px;flex-wrap:wrap"><button class="btn sm pri" data-alpkadd="${esc(p.id)}">➕ إضافة الحزمة كاملة</button>${p.mine?`<button class="btn sm" data-alpkdel="${esc(p.id)}">🗑️</button>`:""}</div></div>`).join("")}</div>`);
+ else if(A.sec==="designers") body=!A.designers?`<div class="empty">جاري التحميل…</div>`:!A.designers.length?`<div class="empty">لا يوجد مصممون بآيرتات عامة معتمدة بعد</div>`:`<div class="grid g3">${A.designers.map(d=>`<div class="card"><h3>🎨 ${esc(d.name)}</h3><div class="row" style="gap:4px;flex-wrap:wrap">${d.badges.map(b=>`<span class="tag">${esc(b[1])}</span>`).join("")}</div><p class="mut small">${d.count} آيرت · ${d.uses} استخدام · ⭐ ${d.rating} · ${d.followers} متابع</p><div class="row" style="gap:4px"><button class="btn sm pri" data-aldes="${esc(d.id)}">عرض الآيرتات</button><button class="btn sm ${d.following?"on":""}" data-alfol="${esc(d.id)}">${d.following?"✔ تتابعه":"➕ متابعة"}</button></div></div>`).join("")}</div>`;
+ else body=A.busy?`<div class="empty">جاري التحميل…</div>`:A.err?`<div class="empty">${esc(A.err)}</div>`:!A.items.length?`<div class="empty">${A.sec==="mine"?"لم ترفع آيرتات بعد — ابدأ من «رفع آيرت جديد»":!CFG&&!["official"].includes(A.sec)?"آيرتات المجتمع متاحة بعد تسجيل الدخول على المنصة":"لا توجد آيرتات بهذه الفلاتر"}</div>`:`<div class="al-grid">${A.items.map(alCard).join("")}</div>`;
+ const chips=(attr,cur,list)=>`<div class="al-chips">${list.map(([k,n])=>`<button class="al-chip ${cur===k?"on":""}" ${attr}="${k}">${esc(n)}</button>`).join("")}</div>`;
+ return `<div class="card al-hero"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><div><h3 style="margin:0">🔔 اختر آيرتك</h3><p class="mut small" style="margin:2px 0 0">مرّر الماوس على أي آيرت لمشاهدة حركته — 🔊 لتجربة الصوت</p></div><button class="btn pri" data-altab="create">➕ إنشاء آيرت جديد</button></div>
+ <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:8px">${secs.map(([k,n])=>`<button class="btn sm ${A.sec===k||A.sec==="designer"&&k==="designers"?"pri":""}" data-alsec="${k}">${n}</button>`).join("")}</div>
+ <input class="inp" style="margin-top:8px" placeholder="🔍 ابحث باسم الآيرت أو المصمم أو التصنيف" data-alq value="${esc(A.q)}">
+ <div class="small mut" style="margin-top:8px">نوع الحدث</div>${chips("data-algrp",A.grp||"",[["","الكل"],...Object.entries(AL_EVENT_GROUPS).map(([k,[n]])=>[k,n])])}
+ <div class="small mut">طابع التصميم</div>${chips("data-alsty",A.cat||"",[["","الكل"],...Object.entries(AL_STYLES)])}
+ <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><select class="inp" style="width:auto" data-alf="kind"><option value="">كل الأنواع</option>${[["video","🎬 فيديو"],["gif","🌀 GIF متحرك"],["image","🖼️ صورة"],["audio","🔊 صوت فقط"],["lottie","✨ Lottie"],["template","🏛️ قالب رسمي"]].map(([k,n])=>`<option value="${k}" ${A.kind===k?"selected":""}>${n}</option>`).join("")}</select>
+ <select class="inp" style="width:auto" data-alf="alpha"><option value="">شفاف أو بخلفية</option><option value="1" ${A.alpha==="1"?"selected":""}>◩ شفاف فقط</option><option value="0" ${A.alpha==="0"?"selected":""}>▣ بخلفية فقط</option></select></div>${sub}
+ <p class="mut small" style="margin-top:6px">🔒 الآيرت الخاص يراه صاحبه فقط. 🌍 العام يظهر للجميع بعد المراجعة. عند استخدام آيرت غيرك تحصل على إعداداتك المستقلة — لا يتغير الأصل.</p></div>${body}` }
+
+/* ---------------- معاينة البطاقة (Hover) — معاينة واحدة فقط في كل لحظة ---------------- */
+let AH={el:null,v:null,au:null,view:null,img:null,snd:false,id:""}, alIO=null;
+function alHoverStop(){ const h=AH; if(!h.el) return; h.el.classList.remove("playing","snd"); try{ if(h.v){ h.v.pause(); h.v.removeAttribute("src"); h.v.load(); h.v.remove() } if(h.au){ h.au.pause(); h.au.src="" } if(h.img) h.img.remove(); if(h.view){ liveViews.delete(h.view); h.view.el.parentNode&&h.view.el.parentNode.remove() } }catch(e){} if(alIO&&h.el) alIO.unobserve(h.el); AH={el:null,v:null,au:null,view:null,img:null,snd:false,id:""} }
+function alHoverStart(th,sound){ const id=th.dataset.alhv, a=alFind(id); if(!a) return;
+ if(AH.el===th){ if(sound!==undefined) alHoverSound(sound); return } alHoverStop(); AH={el:th,v:null,au:null,view:null,img:null,snd:false,id}; th.classList.add("playing");
+ const src=a.previewUrl||a.mediaUrl||a.mediaData;
+ if(a.kind==="video"&&src){ const v=document.createElement("video"); v.className="al-hv"; v.muted=true; v.loop=true; v.playsInline=true; v.preload="auto"; v.src=src; th.appendChild(v); AH.v=v; v.play().catch(()=>{}) }
+ else if((a.kind==="gif"||a.kind==="image")&&(a.mediaUrl||a.mediaData)&&(a.coverUrl||a.coverData)){ const im=document.createElement("img"); im.className="al-hv"; im.src=a.mediaUrl||a.mediaData; th.appendChild(im); AH.img=im }
+ else if(a.kind==="template"||a.kind==="lottie"){ AB_DEFS[a.id]=alDef(a); const box=document.createElement("div"); box.className="al-hv"; th.appendChild(box); const v=alPreviewMountEl(box,{mute:true}); if(v){ AH.view=v; v.aboxPush([{id:"h"+Date.now(),alertId:a.id,event:a.event,vars:{...AL_TEST_VARS},priority:1,test:false}]) } }
+ if(!alIO&&"IntersectionObserver" in window) alIO=new IntersectionObserver(es=>{ for(const e of es) if(!e.isIntersecting&&e.target===AH.el) alHoverStop() },{threshold:.15});
+ if(alIO) alIO.observe(th);
+ if(sound) alHoverSound(true) }
+/** الصوت بالضغط فقط (سياسات المتصفح تسمح بالصوت بعد تفاعل المستخدم) */
+function alHoverSound(on){ const a=alFind(AH.id); if(!a||!AH.el) return; AH.snd=on; AH.el.classList.toggle("snd",on);
+ if(AH.v){ AH.v.muted=!on; AH.v.volume=1; if(on){ AH.v.currentTime=0; AH.v.play().catch(()=>{}) } }
+ const au=a.audioUrl||a.audioData||(a.kind==="audio"?(a.mediaUrl||a.mediaData):"");
+ if(au){ if(on){ if(!AH.au) AH.au=new Audio(au); AH.au.currentTime=0; AH.au.play().catch(()=>toast("المتصفح منع تشغيل الصوت — اضغط مرة أخرى")) } else if(AH.au) AH.au.pause() }
+ if(AH.view&&on){ /* القوالب الرسمية بدون ملف صوتي */ } }
+function alHoverWire(){ const pg=document.getElementById("pg"); if(!pg||pg.__alhv) return; pg.__alhv=1;
+ const canHover=()=>matchMedia("(hover:hover)").matches;
+ pg.addEventListener("mouseover",e=>{ if(!canHover()) return; const th=e.target.closest&&e.target.closest(".al-th[data-alhv]"); if(th&&S.page==="alerts") alHoverStart(th) });
+ pg.addEventListener("mouseout",e=>{ if(!canHover()||!AH.el) return; const to=e.relatedTarget; if(!to||!AH.el.contains(to)) { const from=e.target.closest&&e.target.closest(".al-th"); if(from===AH.el) alHoverStop() } }) }
+function alPreviewMountEl(box,opt){ box.innerHTML=""; const cv={w:Math.max(160,box.clientWidth||320),h:Math.max(90,box.clientHeight||180)}; const stg=document.createElement("div"); stg.className="stage"; stg.style.cssText=`width:${cv.w}px;height:${cv.h}px;background:none;position:absolute;left:0;top:0`; box.appendChild(stg);
+ const v=new View(newWidget("abox",{id:"pv_ab"+Math.random().toString(36).slice(2,6),x:0,y:0,w:1,h:1}),cv,{data:SRC,mute:opt&&opt.mute!==false}); stg.appendChild(v.el); return v }
+
+/* ---------------- نافذة المعاينة الكاملة ---------------- */
+const AL_BGS={checker:"repeating-conic-gradient(#d9dbe3 0 25%,#fff 0 50%) 0 0/22px 22px",black:"#000",white:"#fff",game:"url(\"data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360"><defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#3a7bd5"/><stop offset="1" stop-color="#9fd3ff"/></linearGradient></defs><rect width="640" height="360" fill="url(#s)"/><circle cx="520" cy="70" r="34" fill="#fff6b0"/><path d="M0 250 L90 170 L170 230 L260 140 L360 240 L450 160 L540 220 L640 150 V360 H0Z" fill="#3c6e47"/><rect y="290" width="640" height="70" fill="#5b4632"/><rect x="300" y="236" width="26" height="54" fill="#e94b3c"/><circle cx="313" cy="226" r="12" fill="#f5c9a0"/><rect x="12" y="12" width="150" height="14" rx="7" fill="#0007"/><rect x="14" y="14" width="104" height="10" rx="5" fill="#ff4d4d"/><rect x="12" y="32" width="110" height="12" rx="6" fill="#0007"/><rect x="14" y="34" width="60" height="8" rx="4" fill="#4dc3ff"/><rect x="560" y="12" width="68" height="22" rx="6" fill="#0008"/><text x="594" y="28" font-family="sans-serif" font-size="13" fill="#fff" text-anchor="middle">12:48</text><rect x="12" y="300" width="200" height="48" rx="8" fill="#0007"/><text x="22" y="320" font-family="sans-serif" font-size="12" fill="#fff">viewer: hi!</text><text x="22" y="338" font-family="sans-serif" font-size="12" fill="#ffd76a">fan: GG 🔥</text></svg>')+"\") center/cover"};
+function alPreviewModal(id){ const a=alFind(id); if(!a) return; alHoverStop(); AB_DEFS[a.id]=alDef(a); const m0=a.meta||{}, ev=AL_EVENTS[a.event]||{}, d=a.designer||{}; let mute=true, bg="checker";
+ const info=[["النوع",(AL_KINDS[a.kind]||a.kind)],["الحدث",(ev.icon||"")+" "+(ev.label||a.event)],["التصنيف",AL_CATS[a.category]||"—"],["المصمم",a.official?"بطوط ستريم":(d.name||a.designerName||"—")],["المدة",(a.durationSec||"—")+" ث"+(m0.duration?` (الملف ${alFmtDur(m0.duration)})`:"")],["الأبعاد",m0.w?m0.w+"×"+m0.h:"—"],["الحجم",alFmtSize(m0.size)||"—"],["الصوت",m0.hasAudio?"يحتوي صوتاً":a.audioUrl||a.audioData?"ملف صوتي مرفق":m0.hasAudio===false?"بدون صوت":"—"],["الشفافية",alIsAlpha(a)?"◩ خلفية شفافة":"▣ بخلفية"]];
+ const m=modal(`<div class="al-pm"><div class="row" style="justify-content:space-between;align-items:center;gap:8px"><h3 style="margin:0">${esc(a.name||"")}</h3><button class="btn sm" data-close>✖</button></div>
+ <div id="al-mpv" class="al-stage"></div>
+ <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:8px"><span class="small mut">الخلفية:</span>${[["checker","▦ شطرنج"],["black","⬛ سوداء"],["white","⬜ بيضاء"],["game","🎮 لعبة تجريبية"]].map(([k,n])=>`<button class="btn sm ${k===bg?"on":""}" data-pbg="${k}">${n}</button>`).join("")}</div>
+ <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn" data-preplay>🔁 إعادة التشغيل</button><button class="btn" data-pmute>🔇 الصوت مكتوم — اضغط للتشغيل</button><button class="btn pri" data-puse>➕ استخدام الآيرت</button></div>
+ <div class="al-info">${info.map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>${a.description?`<p class="mut small">${esc(a.description)}</p>`:""}</div>`);
+ let view=null; const box=m.querySelector("#al-mpv");
+ const play=()=>{ if(view) liveViews.delete(view); box.style.background=AL_BGS[bg]; view=alPreviewMountEl(box,{mute}); if(view){ liveViews.add(view); view.aboxPush([{id:"pv"+Date.now(),alertId:a.id,event:a.event,vars:{...AL_TEST_VARS,avatar:""},priority:10,test:false}]) } };
+ setTimeout(play,60);
+ m.addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t) return;
+  if(t.dataset.pbg){ bg=t.dataset.pbg; box.style.background=AL_BGS[bg]; m.querySelectorAll("[data-pbg]").forEach(x=>x.classList.toggle("on",x===t)) }
+  if(t.hasAttribute("data-preplay")) play();
+  if(t.hasAttribute("data-pmute")){ mute=!mute; t.textContent=mute?"🔇 الصوت مكتوم — اضغط للتشغيل":"🔊 الصوت يعمل — اضغط للكتم"; play() }
+  if(t.hasAttribute("data-puse")){ m.remove(); alClick(t,{aluse:a.id}) }
+  if(t.hasAttribute("data-close")){ if(view) liveViews.delete(view); box.innerHTML="" } });
+ const obs=new MutationObserver(()=>{ if(!m.isConnected){ if(view) liveViews.delete(view); box.innerHTML=""; obs.disconnect() } }); obs.observe(document.body,{childList:true}) }
+
+/* ---------------- رفع/تعديل آيرت ---------------- */
+function alNewForm(){ return {id:"",name:"",description:"",kind:"",event:"follow",durationSec:6,durAuto:null,category:"",tags:"",designerName:"",visibility:"private",rightsConfirmed:false,mediaId:"",mediaUrl:"",mediaMime:"",audioId:"",audioUrl:"",coverId:"",coverUrl:"",coverAuto:true,previewId:"",previewUrl:"",meta:{},config:alConfig({title:{text:"شكراً على الفولو يا {display_name} ❤️"},sub:{text:""}})} }
+const AL_EVENT_TEXT={follow:"شكراً على الفولو يا {display_name} ❤️",like_user:"🔥 {display_name} وصل إلى {likes} تكبيسة!",like_total:"🔥 وصلنا {total_likes} تكبيسة!",donation:"💸 {display_name} دعم بمبلغ {amount} {currency}",gift:"🎁 شكراً {display_name} على {gift_count} × {gift_name}",gift_value:"🎁 شكراً {display_name} على {gift_name}",share:"🔁 شكراً {display_name} على المشاركة",join:"👋 أهلاً {display_name}",subscribe:"⭐ شكراً {display_name} على الاشتراك"};
+const AL_ACCEPT=".mp4,.webm,.mov,.gif,.apng,.png,.webp,.jpg,.jpeg,.mp3,.wav,.ogg,.m4a,.aac,.json,video/*,audio/*,image/*";
+function alFormHTML(){ const A=ALS(), F=A.form||(A.form=alNewForm()), c=F.config, ed=!!F.id, U=A.up, m=F.meta||{};
+ const o=(obj,v)=>Object.entries(obj).map(([k,n])=>`<option value="${k}" ${v===k?"selected":""}>${esc(typeof n==="string"?n:n.icon+" "+n.label)}</option>`).join("");
+ const lo=(list,v)=>list.map(([k,n])=>`<option value="${k}" ${v===k?"selected":""}>${esc(n)}</option>`).join("");
+ const fi=(k,l,inner)=>`<div class="fld"><label>${l}</label>${inner}</div>`;
+ const tx=(k,v,ph)=>`<input class="inp" data-alff="${k}" value="${esc(v??"")}" placeholder="${esc(ph||"")}">`;
+ const nm=(k,v,a,b,st)=>`<input type="range" min="${a}" max="${b}" step="${st||1}" data-alff="${k}" value="${v}">`;
+ const lay=(k,l)=>`<div class="ttl" style="margin:8px 0 4px">${l}</div><div class="grid g3" style="gap:6px">${fi(k,"إظهار",`<select class="inp" data-alff="config.${k}.show"><option value="1" ${c[k].show?"selected":""}>ظاهر</option><option value="0" ${c[k].show?"":"selected"}>مخفي</option></select>`)}
+  ${k!=="avatar"?fi(k,"النص",tx("config."+k+".text",c[k].text,"{display_name}")):fi(k,"الإطار ("+AL_FRAMES.length+")",`<select class="inp" data-alff="config.avatar.frame">${lo(AL_FRAMES,c.avatar.frame)}</select>`)}
+  ${fi(k,"اللون",`<input type="color" data-alff="config.${k}.color" value="${c[k].color}">`)}${fi(k,"أفقي "+c[k].x+"%",nm("config."+k+".x",c[k].x,0,100))}${fi(k,"عمودي "+c[k].y+"%",nm("config."+k+".y",c[k].y,0,100))}${fi(k,"الحجم "+c[k].size,nm("config."+k+".size",c[k].size,4,k==="avatar"?60:20,.5))}</div>`;
+ const miss=alMissing(c.title.text+" "+c.sub.text+" "+(c.tts.text||""),F.event);
+ const has=!!(F.mediaId||F.audioId||F.kind==="template"), cov=F.coverUrl||F.coverData||((F.kind==="image"||F.kind==="gif")?(F.mediaUrl||F.mediaData):"");
+ const phases={read:"📖 قراءة الملف…",upload:"⬆️ جاري الرفع",process:"⚙️ معالجة الفيديو وإنشاء المعاينة…",cover:"🖼️ حفظ صورة المعاينة…",done:"✅ تم الرفع بنجاح",error:"❌ فشل الرفع"};
+ const status=U?`<div class="al-up ${U.phase}"><div class="row" style="justify-content:space-between;gap:6px"><b>${phases[U.phase]||""}</b><span class="small mut">${esc(U.name||"")} ${U.size?"· "+alFmtSize(U.size):""}</span></div>
+  ${U.phase==="upload"||U.phase==="process"||U.phase==="cover"?`<div class="al-bar"><i style="width:${U.phase==="upload"?U.pct:100}%" class="${U.phase!=="upload"?"busy":""}"></i></div><div class="small mut">${U.phase==="upload"?U.pct+"%":"قد يستغرق التحويل حتى دقيقة للملفات الكبيرة"}</div>`:""}
+  ${U.phase==="error"?`<div class="note small" style="margin-top:6px">${esc(U.msg||"")}</div><div class="row" style="gap:6px;margin-top:6px">${U.file?`<button class="btn sm pri" data-alretry>🔁 إعادة المحاولة</button>`:""}<button class="btn sm" data-alpick>📁 اختيار ملف آخر</button></div><p class="mut small">بياناتك وإعداداتك في النموذج محفوظة.</p>`:""}</div>`:"";
+ const det=has&&F.kind!=="template"?`<div class="al-info">${[["النوع",AL_KINDS[F.kind]||F.kind],["المدة",alFmtDur(m.duration)||"—"],["الدقة",m.w?m.w+"×"+m.h:"—"],["معدل الإطارات",m.fps?m.fps+" fps":"—"],["الصوت",m.hasAudio==null?"—":m.hasAudio?"🔊 يوجد صوت":"🔇 بدون صوت"],["الشفافية",m.alpha==null?"—":m.alpha?"◩ شفاف":"▣ بخلفية"],["الحجم",alFmtSize(m.size)||"—"],["الترميز",m.codec||m.mime||"—"]].map(([k,v])=>`<div><span>${k}</span><b>${esc(v)}</b></div>`).join("")}</div>${m.converted?`<p class="small">🔄 حُوِّل الملف تلقائياً إلى صيغة يشغّلها المتصفح وOBS${m.alpha?" مع الحفاظ على الشفافية":""}.</p>`:""}`:"";
+ const grpOpts=Object.entries(AL_EVENT_GROUPS).map(([g,[gl,evs]])=>`<optgroup label="${esc(gl)}">${evs.map(k=>{ const e=AL_EVENTS[k]; return e?`<option value="${k}" ${F.event===k?"selected":""} ${e.avail.tiktok===false?"disabled":""}>${e.icon} ${esc(e.label)}${e.avail.tiktok===false?" (غير متوفر)":""}</option>`:"" }).join("")}</optgroup>`).join("");
+ const sug=F.sugStyle&&F.sugStyle!==F.category?`<button class="btn sm" data-alsug="${F.sugStyle}">💡 مقترح: ${esc(AL_STYLES[F.sugStyle])}</button>`:"";
+ return `<div class="grid g2" style="align-items:start"><div>
+ <div class="card"><h3>${ed?"✏️ تعديل الآيرت":"1️⃣ ملف الآيرت"}</h3>
+  <button type="button" id="al-drop" class="al-drop ${has?"has":""}" data-alpick>${cov?`<img src="${esc(cov)}" alt="">`:has&&F.kind==="audio"?`<div class="al-acov"><span>🔊</span><b>${esc(F.name||"آيرت صوتي")}</b></div>`:""}
+   <div class="al-drop-t"><b>${has?"🔁 استبدال الملف":"⬇️ اسحب ملف الآيرت وأفلته هنا"}</b><span>أو اضغط لاختيار ملف من جهازك</span><span class="mut small">MP4 · WebM (يدعم الشفافية) · MOV · GIF · APNG · PNG · WebP · MP3 · WAV · OGG · Lottie JSON — حتى ${Math.round(AL_LIMITS.media/1048576)}MB${CFG?"":" (3MB في وضع التجربة)"}</span></div></button>
+  <input type="file" id="al-file" accept="${AL_ACCEPT}" data-almain style="display:none">${status}${det}
+  ${has&&F.kind!=="template"&&F.kind!=="audio"?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="small">صورة المعاينة: ${F.coverAuto!==false?"تلقائية من الملف ✓":"مخصصة"}</span><label class="btn sm">🖼️ تغيير الغلاف (اختياري)<input type="file" accept=".png,.jpg,.jpeg,.webp,.gif" data-alfile="cover" style="display:none"></label></div>`:""}
+  ${F.kind!=="audio"?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><label class="btn sm">🎵 ${F.audioId||F.audioData?"✅ صوت مرفق — استبدال":"إضافة صوت منفصل (اختياري)"}<input type="file" accept=".mp3,.wav,.ogg,.m4a,.aac" data-alfile="audio" style="display:none"></label>${F.audioId||F.audioData?`<button class="btn sm" data-alfx="audio">إزالة الصوت</button>`:""}${!has||F.kind==="template"?`<button class="btn sm" data-altpl>🏛️ ${F.kind==="template"?"قالب رسمي مختار":"أو استخدم قالباً رسمياً"}</button>`:""}</div>`:""}
+  ${F.kind==="template"?fi("tpl","القالب الرسمي",`<select class="inp" data-alff="config.template">${FA_DESIGNS.map(d=>`<option value="${d.id}" ${c.template===d.id?"selected":""}>#${d.n} ${esc(d.name)}</option>`).join("")}</select>`):""}</div>
+ <div class="card"><h3>2️⃣ معلومات الآيرت</h3>
+ <div class="grid g2" style="gap:8px">${fi("name","اسم الآيرت *",tx("name",F.name,"مثال: Enemy Legendary"))}${fi("event","نوع الحدث *",`<select class="inp" data-alff="event">${grpOpts}</select>`)}
+ ${fi("cat","تصنيف التصميم * "+sug,`<select class="inp" data-alff="category"><option value="">— اختر الطابع —</option>${o(AL_STYLES,F.category)}${F.category&&!AL_STYLES[F.category]&&AL_CATS[F.category]?`<option value="${F.category}" selected>${esc(AL_CATS[F.category])} (قديم)</option>`:""}</select>`)}
+ ${fi("dur","مدة العرض: "+F.durationSec+" ث"+(F.durAuto?` <span class="mut">(من الملف ${F.durAuto} ث)</span>`:""),nm("durationSec",F.durationSec,1,30))}
+ ${F.kind==="video"||F.kind==="audio"||F.audioId||F.audioData?fi("snd","الصوت",`<select class="inp" data-alff="config.videoSound"><option value="1">🔊 تشغيل</option><option value="0" ${c.videoSound?"":"selected"}>🔇 كتم</option></select>`):""}
+ ${fi("designerName","اسم المصمم",tx("designerName",F.designerName,CFG?CFG.profile.name:""))}</div>
+ ${fi("description","وصف الآيرت (اختياري)",`<textarea class="inp" rows="2" data-alff="description" maxlength="400">${esc(F.description)}</textarea>`)}${fi("tags","الكلمات المفتاحية (اختيارية)",tx("tags",Array.isArray(F.tags)?F.tags.join("، "):F.tags,"فخم، ملكي، ذهبي"))}</div>
+ <div class="card"><h3>🧩 اسم وصورة صاحب الحدث والطبقات</h3><p class="mut small">تظهر بيانات الشخص الحقيقي الذي شغّل الآيرت. إذا لم يرسل المصدر صورته تظهر صورة افتراضية واضحة.</p>${lay("avatar","🖼️ صورة المستخدم")}${lay("title","🔤 عبارة الشكر")}${lay("sub","🔡 النص الثاني")}
+ <div class="row" style="gap:4px;flex-wrap:wrap">${AL_EVENT_TEXT[F.event]?`<button class="btn sm" data-altxt>✍️ استخدم العبارة المقترحة: ${esc(AL_EVENT_TEXT[F.event])}</button>`:""}</div>
+ <div class="grid g3" style="gap:6px;margin-top:8px">${fi("enter","حركة الظهور",`<select class="inp" data-alff="config.enter">${lo(AL_IN,c.enter)}</select>`)}${fi("exit","حركة الخروج",`<select class="inp" data-alff="config.exit">${lo(AL_OUT,c.exit)}</select>`)}${fi("fx","تأثير",`<select class="inp" data-alff="config.fx">${lo(AL_FX,c.fx)}</select>`)}
+ ${fi("fit","ملاءمة الملف",`<select class="inp" data-alff="config.fit"><option value="contain" ${c.fit==="contain"?"selected":""}>احتواء</option><option value="cover" ${c.fit==="cover"?"selected":""}>ملء</option></select>`)}${fi("vol","مستوى الصوت "+Math.round(c.volume*100)+"%",nm("config.volume",c.volume,0,1,.05))}
+ ${fi("spd","سرعة الحركة "+c.speed+"×",nm("config.speed",c.speed,.25,3,.25))}${fi("fa","حركة الإطار",`<select class="inp" data-alff="config.frameAnim"><option value="1">متحركة</option><option value="0" ${c.frameAnim?"":"selected"}>ثابتة</option></select>`)}${fi("lo","ترتيب صورة المستخدم",`<select class="inp" data-alff="config.layerOrder"><option value="front">أمام الفيديو</option><option value="behind" ${c.layerOrder==="behind"?"selected":""}>خلف الفيديو</option></select>`)}
+ ${fi("ad","تأخير الصوت (مللي ث)",`<input class="inp" type="number" min="0" max="10000" data-alff="config.audioDelay" value="${c.audioDelay}">`)}
+ ${F.kind==="video"?fi("ck","إزالة الخلفية",`<select class="inp" data-alff="config.chroma.on"><option value="0">متوقف (أو WebM شفاف)</option><option value="1" ${c.chroma.on?"selected":""}>مفعّل</option></select>`):""}${F.kind==="video"&&c.chroma.on?fi("ckm","النوع",`<select class="inp" data-alff="config.chroma.mode"><option value="green">Chroma — لون محدد (أخضر)</option><option value="luma" ${c.chroma.mode==="luma"?"selected":""}>Luma — خلفية سوداء</option></select>`)+(c.chroma.mode==="green"?fi("ckc","لون الخلفية",`<input type="color" data-alff="config.chroma.color" value="${c.chroma.color}">`):"")+fi("ckt","الحساسية "+c.chroma.tol,nm("config.chroma.tol",c.chroma.tol,5,200)):""}</div>
+ <p class="mut small">المتغيرات: ${AL_VARS.map(v=>"{"+v+"}").join(" ")}</p>${miss.length?`<p class="note small">⚠️ حدث «${esc(AL_EVENTS[F.event].label)}» لا يرسل: ${miss.map(x=>"{"+x+"}").join(" ")}</p>`:""}</div></div>
+ <div><div class="card"><h3>المعاينة <span class="tag">بيانات تجريبية</span></h3><div id="al-fpv" class="al-stage" style="height:300px"></div><button class="btn" style="margin-top:8px" data-alfplay>🔁 تشغيل المعاينة</button></div>
+ <div class="card"><h3>3️⃣ الخصوصية</h3>
+  <label class="row" style="gap:6px;align-items:flex-start"><input type="radio" name="alvis" data-alff="visibility" value="private" ${F.visibility!=="public"?"checked":""}><span><b>🔒 خاص (افتراضي)</b><br><span class="mut small">يظهر لك فقط ويعمل في بثك. لا يظهر في البحث ولا الأقسام العامة، وملفاته لا تُفتح لغيرك.</span></span></label>
+  <label class="row" style="gap:6px;align-items:flex-start;margin-top:8px"><input type="radio" name="alvis" data-alff="visibility" value="public" ${F.visibility==="public"?"checked":""} ${CFG?"":"disabled"}><span><b>🌍 عام</b><br><span class="mut small">${CFG?"يظهر للجميع في المكتبة بعد مراجعة الإدارة، ويستطيع الآخرون استخدامه بإعداداتهم المستقلة.":"النشر العام متاح بعد تسجيل الدخول على المنصة."}</span></span></label>
+  ${F.visibility==="public"?`<label class="row" style="gap:6px;margin-top:8px"><input type="checkbox" data-alff="rightsConfirmed" ${F.rightsConfirmed?"checked":""}><span class="small">أؤكد أنني أملك حقوق هذه الملفات أو لدي إذن بنشرها، ولا تحتوي محتوى مخالفاً *</span></label>`:""}
+  <div class="row" style="gap:6px;margin-top:12px"><button class="btn pri" data-alsave ${U&&["read","upload","process","cover"].includes(U.phase)?"disabled":""}>${ed?"💾 حفظ التعديلات":"💾 حفظ الآيرت"}</button>${ed?`<button class="btn" data-alcancel>إلغاء</button>`:""}</div>${A.ferr?`<div class="note small" style="margin-top:6px">${A.ferr.map(esc).join("<br>")}</div>`:""}</div></div></div>` }
+
+/** قراءة الملف في المتصفح: المدة، الأبعاد، الصوت، الشفافية، وغلاف من إطار غير أسود */
+function alWait(el,ev,ms){ return new Promise((ok,no)=>{ const t=setTimeout(()=>no(new Error("timeout")),ms); el.addEventListener(ev,()=>{ clearTimeout(t); ok() },{once:true}); el.addEventListener("error",()=>{ clearTimeout(t); no(new Error("error")) },{once:true}) }) }
+function alFrameStats(cv){ const g=cv.getContext("2d",{willReadFrequently:true}), d=g.getImageData(0,0,cv.width,cv.height).data; let lum=0,n=0,tr=0; for(let i=0;i<d.length;i+=16){ if(d[i+3]<250) tr++; if(d[i+3]>30){ lum+=d[i]*.3+d[i+1]*.59+d[i+2]*.11; n++ } } return {lum:n?lum/n:0,opaque:n,alpha:tr>4} }
+async function alAnalyze(file,ins){ const out={meta:{size:file.size,mime:ins.mime,alpha:ins.alpha,animated:ins.animated},cover:null,playable:true}; const url=URL.createObjectURL(file);
+ try{
+  if(ins.family==="video"){ const v=document.createElement("video"); v.muted=true; v.playsInline=true; v.preload="auto"; v.src=url;
+   try{ await alWait(v,"loadeddata",9000) }catch(e){ out.playable=false; return out }
+   Object.assign(out.meta,{duration:isFinite(v.duration)?v.duration:null,w:v.videoWidth,h:v.videoHeight});
+   if(!v.videoWidth){ out.playable=false; return out }
+   try{ await v.play(); await new Promise(r=>setTimeout(r,350)); v.pause() }catch(e){}
+   out.meta.hasAudio=v.mozHasAudio!==undefined?!!v.mozHasAudio:v.audioTracks?v.audioTracks.length>0:v.webkitAudioDecodedByteCount!==undefined?v.webkitAudioDecodedByteCount>0:null;
+   const W=Math.min(400,v.videoWidth), H=Math.round(W*v.videoHeight/v.videoWidth), cv=document.createElement("canvas"); cv.width=W; cv.height=H; const g=cv.getContext("2d");
+   const d=out.meta.duration||1, times=[Math.min(1.5,d*.25),d*.5,d*.75,.05]; let best=null, alpha=false;
+   for(const t of times){ try{ v.currentTime=t; await alWait(v,"seeked",4000); g.clearRect(0,0,W,H); g.drawImage(v,0,0,W,H); const st=alFrameStats(cv); alpha=alpha||st.alpha; const score=st.lum+(st.opaque>10?5:0); if(!best||score>best.score){ best={score,url:cv.toDataURL("image/png")} } if(st.lum>28&&st.opaque>10) break }catch(e){} }
+   out.meta.alpha=ins.mime==="video/webm"||ins.mime==="video/quicktime"?alpha:false; out.cover=best&&best.url; v.removeAttribute("src"); v.load() }
+  else if(ins.family==="image"){ const im=new Image(); im.src=url; await alWait(im,"load",8000); Object.assign(out.meta,{w:im.naturalWidth,h:im.naturalHeight});
+   if(ins.animated){ const W=Math.min(400,im.naturalWidth), cv=document.createElement("canvas"); cv.width=W; cv.height=Math.round(W*im.naturalHeight/im.naturalWidth); cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height); out.cover=cv.toDataURL("image/png") } }
+  else if(ins.family==="audio"){ const a=document.createElement("audio"); a.preload="metadata"; a.src=url; try{ await alWait(a,"loadedmetadata",8000); out.meta.duration=isFinite(a.duration)?a.duration:null; out.meta.hasAudio=true }catch(e){ out.playable=false } }
+  else if(ins.family==="lottie"){ const j=JSON.parse(await file.text()); Object.assign(out.meta,{w:j.w,h:j.h,fps:j.fr,duration:j.fr?(j.op-j.ip)/j.fr:null,alpha:true}) }
+ }finally{ URL.revokeObjectURL(url) }
+ return out }
+const alDataBlob=u=>fetch(u).then(r=>r.blob());
+/** رفع مع شريط نسبة (XHR) */
+function alXhr(fd,onPct){ return new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/alerts/upload"); x.responseType="json"; x.upload.onprogress=e=>{ if(e.lengthComputable) onPct(Math.round(e.loaded/e.total*100)) }; x.upload.onload=()=>onPct(100,true);
+ x.onload=()=>{ const j=x.response||{}; if(x.status>=400&&!j.error) j.error="HTTP "+x.status; res(j) }; x.onerror=()=>res({error:"network"}); x.ontimeout=()=>res({error:"network"}); x.timeout=600000; x.send(fd) }) }
+function alUpSet(p){ const A=ALS(); A.up={...(A.up||{}),...p}; if(S.page==="alerts"&&A.tab==="create"){ const st=document.querySelector(".al-up"); if(p.pct!=null&&st&&A.up.phase==="upload"){ const i=st.querySelector(".al-bar i"), s=st.querySelector(".small.mut:last-child"); if(i) i.style.width=A.up.pct+"%"; if(s) s.textContent=A.up.pct+"%"; return } renderPage(true) } }
+async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
+ alUpSet({phase:"read",pct:0,name:f.name,size:f.size,file:f,msg:""});
+ const buf=new Uint8Array(await f.arrayBuffer()); const chk=alCheckFile("media",buf);
+ if(!chk.ok) return alUpSet({phase:"error",msg:(AL_ERR[chk.error]||chk.error)+(chk.error==="too_large"?` (${alFmtSize(f.size)} — الحد ${alFmtSize(chk.max)})`:"")});
+ const ins=alInspect(buf); let an={meta:{},cover:null,playable:true}; try{ an=await alAnalyze(f,ins) }catch(e){}
+ if(!F.category){ const s=alSuggestStyle(f.name); if(s){ F.sugStyle=s } }
+ if(!F.name) F.name=f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").slice(0,60);
+ const setDur=d=>{ if(d){ F.durAuto=Math.round(d*10)/10; F.durationSec=Math.max(1,Math.min(30,Math.round(d))) } };
+ if(!CFG){ // وضع التجربة: لا خادم ولا تحويل — نقبل ما يشغّله المتصفح فقط
+  if(f.size>3*1024*1024) return alUpSet({phase:"error",msg:"في وضع التجربة الحد 3MB — سجّل الدخول على المنصة للرفع حتى "+alFmtSize(AL_LIMITS.media)});
+  if(!an.playable) return alUpSet({phase:"error",msg:ins.family==="video"?"المتصفح لا يستطيع تشغيل ترميز هذا الفيديو. على المنصة (بعد تسجيل الدخول) يحوّله الخادم تلقائياً — أو صدّره MP4 (H.264) أو WebM":AL_ERR.corrupt});
+  const data=await new Promise(r=>{ const fr=new FileReader(); fr.onload=()=>r(fr.result); fr.readAsDataURL(f) });
+  if(ins.family==="audio"){ F.kind="audio"; F.audioData=data; F.audioId="local"; F.mediaData=""; F.mediaId="" } else { F.kind=ins.kind; F.mediaData=data; F.mediaId="local"; F.mediaMime=ins.mime }
+  F.meta=alMeta(an.meta); if(an.cover&&F.coverAuto!==false){ F.coverData=an.cover; F.coverId="local" } setDur(an.meta.duration);
+  return alUpSet({phase:"done",file:null}) }
+ alUpSet({phase:"upload",pct:0}); const fd=new FormData(); fd.append("slot","media"); fd.append("file",f);
+ const j=await alXhr(fd,(p,done)=>alUpSet(done?{phase:"process",pct:100}:{pct:p}));
+ if(j.error) return alUpSet({phase:"error",msg:(j.message||AL_ERR[j.error]||"تعذر رفع الملف ("+j.error+")")+(j.detail?" — "+j.detail:"")});
+ if(j.slot==="audio"){ F.kind="audio"; F.audioId=j.id; F.audioUrl=j.url; F.mediaId=""; F.mediaUrl="" } else { F.kind=j.kind; F.mediaId=j.id; F.mediaUrl=j.url; F.mediaMime=j.mime }
+ F.meta=j.meta||{}; F.previewId=j.previewId||""; F.previewUrl=j.previewUrl||""; setDur(F.meta.duration);
+ if(F.coverAuto!==false){ if(j.coverId){ F.coverId=j.coverId; F.coverUrl=j.coverUrl } else if(an.cover){ alUpSet({phase:"cover"}); const cf=new FormData(); cf.append("slot","cover"); cf.append("file",await alDataBlob(an.cover),"cover.png"); const c=await alXhr(cf,()=>{}); if(!c.error){ F.coverId=c.id; F.coverUrl=c.url } } else if(F.kind!=="audio"){ F.coverId=""; F.coverUrl="" } }
+ A.quota=null; alUpSet({phase:"done",file:null}) }
+/** ملفات إضافية: الصوت المنفصل وتغيير الغلاف */
+async function alUpload(slot,t){ const A=ALS(), F=A.form, f=t.files&&t.files[0]; if(!f||!F) return;
+ const buf=new Uint8Array(await f.arrayBuffer()); const chk=alCheckFile(slot,buf); if(!chk.ok) return toast("❌ "+(AL_ERR[chk.error]||chk.error));
+ if(!CFG){ if(f.size>3*1024*1024) return toast("في وضع التجربة الحد 3MB"); const r=new FileReader(); r.onload=()=>{ F[slot+"Data"]=r.result; F[slot+"Id"]="local"; if(slot==="cover") F.coverAuto=false; renderPage(true) }; r.readAsDataURL(f); return }
+ toast("⏳ جاري الرفع…"); const fd=new FormData(); fd.append("slot",slot); fd.append("file",f);
+ const j=await alXhr(fd,()=>{}); if(j.error) return toast("❌ "+(j.message||AL_ERR[j.error]||j.error));
+ F[slot+"Id"]=j.id; F[slot+"Url"]=j.url; if(slot==="cover") F.coverAuto=false; A.quota=null; toast("✅ تم رفع الملف"); renderPage(true) }
+async function alSaveForm(){ const A=ALS(), F=A.form; const body={name:F.name,description:F.description,kind:F.kind,event:F.event,durationSec:+F.durationSec,category:F.category,tags:F.tags,designerName:F.designerName,visibility:F.visibility,rightsConfirmed:!!F.rightsConfirmed,mediaId:F.mediaId||null,audioId:F.audioId||null,coverId:F.coverId||null,previewId:F.previewId||null,meta:F.meta,config:F.config};
+ const v=alValidate(body,{legacy:!!F.id}); if(!v.ok){ A.ferr=v.errors; return renderPage(true) } A.ferr=null;
+ if(!CFG){ const list=alLocal(); const rec={...v.value,id:F.id||"loc_"+Date.now().toString(36),ownerId:"me",visibility:"private",review:"none",mediaData:F.mediaData||"",audioData:F.audioData||"",coverData:F.coverData||"",createdAt:new Date().toISOString()}; const i=list.findIndex(x=>x.id===rec.id); if(i>=0) list[i]=rec; else list.unshift(rec); if(!alLocalSave(list)) return; toast("✅ حُفظ الآيرت (خاص)"); A.form=null; A.up=null; A.tab="lib"; A.sec="mine"; A.key=""; alSyncDefs(); return renderPage(true) }
+ const j=await alApi(F.id?"/api/alerts/"+F.id:"/api/alerts",{method:F.id?"PUT":"POST",body}); if(j.error){ A.ferr=j.errors||[({rights_required:"يجب تأكيد حقوق الملفات للنشر العام",bad_file:"ملف غير صالح أو ليس ملكك",limit:j.message}[j.error])||"تعذر الحفظ: "+j.error]; return renderPage(true) }
+ A.cache[j.alert.id]=j.alert; toast(j.alert.visibility==="public"?(j.alert.review==="approved"?"✅ نُشر للجميع":"⏳ حُفظ وأُرسل للمراجعة قبل الظهور العام"):"✅ حُفظ الآيرت (خاص)"); A.form=null; A.up=null; A.tab="lib"; A.sec="mine"; A.key=""; A.usableAt=0; alSyncDefs(); renderPage(true) }
+
 /** يحمّل آيرتاتي وما أستخدمه لمحرر القواعد */
 async function alLoadUsable(){ const A=ALS(); if(A.usableAt&&Date.now()-A.usableAt<30000) return; A.usableAt=Date.now(); if(!CFG){ alSyncDefs(); return } const [m,u]=await Promise.all([alApi("/api/alerts?section=mine"),alApi("/api/alerts?section=using")]); for(const a of [...(m.items||[]),...(u.items||[])]) if(a.id) A.cache[a.id]=a; alSyncDefs(); if(S.page==="alerts"&&A.tab==="rules") softRefresh() }
 function alUsable(){ const A=ALS(), m=new Map(); for(const a of alLocal()) m.set(a.id,a); for(const a of Object.values(A.cache)) if((a.mine||a.using)&&!a.unavailable) m.set(a.id,a); return [...m.values()] }
 function alName(id){ if(alIsOfficial(id)){ const d=FA_DESIGNS.find(x=>"tpl:"+x.id===id); return "🏛️ "+(d?d.name:"قالب رسمي") } const a=alUsable().find(x=>x.id===id)||ALS().cache[id]; return a?a.name:(id?"⚠️ آيرت غير متاح":"— اختر آيرت —") }
 function alBoxW(){ return L().widgets.find(x=>x.type==="abox") }
 
-function alHTML(){ const A=ALS(), adm=!!(CFG&&CFG.profile&&CFG.profile.isAdmin);
+function alHTML(){ alHoverStop(); const A=ALS(), adm=!!(CFG&&CFG.profile&&CFG.profile.isAdmin);
  const tabs=[["lib","📚 المكتبة"],["rules","🔔 صندوق الآيرتات والقواعد"],["create",A.form&&A.form.id?"✏️ تعديل آيرت":"➕ رفع آيرت جديد"],...(adm?[["admin","🛡️ المراجعة"]]:[])];
  return head("🔔 مكتبة الآيرتات",`سوق آيرتات المجتمع: ارفع آيرتاتك، خليها خاصة أو انشرها للجميع، واستخدم آيرتات المصممين بإعداداتك المستقلة`)+
  `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">${tabs.map(([k,n])=>`<button class="btn ${A.tab===k?"pri":""}" data-altab="${k}">${n}</button>`).join("")}</div>`+
  (A.tab==="rules"?alRulesHTML():A.tab==="create"?alFormHTML():A.tab==="admin"&&adm?alAdminHTML():alLibHTML()) }
-
-function alCard(a){ const off=a.official, b=a.mine&&a.badge?a.badge:null, ev=AL_EVENTS[a.event]||{};
- const thumb=a.coverUrl||a.coverData?`<img src="${esc(a.coverUrl||a.coverData)}" alt="" loading="lazy">`:(a.kind==="image"||a.kind==="gif")&&(a.mediaUrl||a.mediaData)?`<img src="${esc(a.mediaUrl||a.mediaData)}" alt="" loading="lazy">`:a.kind==="video"&&(a.mediaUrl||a.mediaData)?`<video src="${esc(a.mediaUrl||a.mediaData)}" muted preload="metadata"></video>`:`<span style="font-size:40px">${off?"🦆":a.kind==="lottie"?"✨":a.kind==="audio"?"🔊":"🔔"}</span>`;
- const my=a.my||{}, d=a.designer||{};
- return `<div class="card al-card" style="padding:10px"><div class="al-th" data-alpv="${esc(a.id)}" title="معاينة">${thumb}<span class="al-play">▶</span></div>
- <div style="margin-top:6px;font-weight:800">${esc(a.name||"")}</div>
- <div class="mut small">${ev.icon||""} ${esc(ev.label||a.event||"")} · ${esc(AL_KINDS[a.kind]||a.kind||"")}${a.durationSec?" · "+a.durationSec+"ث":""}</div>
- <div class="small" style="margin-top:2px">${off?"🏛️ رسمي":`🎨 ${esc(d.name||a.designerName||"")}${d.verified?" ✔️":""}`}${b?` · <span class="tag" title="${esc(b[1])}">${b[0]} ${esc(b[1])}</span>`:""}</div>
- ${off||a.mine&&!a.badge?"":`<div class="mut small">▶️ ${a.uses|0} استخدام · ❤️ ${a.likes|0} · ⭐ ${a.rating||0} (${a.ratingCount|0})</div>`}
- ${a.mine&&a.reviewNote&&(a.review==="rejected"||a.removed)?`<div class="note small">ملاحظة الإدارة: ${esc(a.reviewNote)}</div>`:""}
- <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:6px">
-  <button class="btn sm pri" data-aluse="${esc(a.id)}">${a.using&&!off?"✅ أضفه كقاعدة":"➕ استخدام"}</button>
-  ${a.mine?`<button class="btn sm" data-alman="${esc(a.id)}">⚙️ إدارة الآيرت</button>`:""}
-  ${!off&&!a.mine&&CFG?`<button class="btn sm ${my.like?"on":""}" data-alact="like" data-alid="${esc(a.id)}">❤️</button><button class="btn sm ${my.fav?"on":""}" data-alact="fav" data-alid="${esc(a.id)}">🔖</button>
-  <select class="inp" style="width:auto;padding:2px 4px" data-alrate="${esc(a.id)}"><option value="0">⭐ قيّم</option>${[1,2,3,4,5].map(n=>`<option value="${n}" ${my.rating===n?"selected":""}>${"★".repeat(n)}</option>`).join("")}</select>
-  <button class="btn sm" data-alrep="${esc(a.id)}" title="إبلاغ">🚩</button>${a.using?`<button class="btn sm" data-alunuse="${esc(a.id)}" title="إزالة من آيرتاتي المستخدمة">✖</button>`:""}`:""}
-  ${!off&&!a.mine&&d.id&&CFG?`<button class="btn sm" data-aldes="${esc(d.id)}">👤 أعماله</button>`:""}</div></div>` }
-
-function alLibHTML(){ const A=ALS(); alLoad();
- const secs=AL_SECTIONS.filter(([k])=>CFG||["all","official","mine","using"].includes(k));
- const opt=(o,v,all)=>`<option value="">${all}</option>`+Object.entries(o).map(([k,n])=>`<option value="${k}" ${v===k?"selected":""}>${esc(typeof n==="string"?n:n.label)}</option>`).join("");
- const sub=A.sec==="mine"?`<div class="row" style="gap:4px;flex-wrap:wrap;margin:6px 0">${[["all","الكل"],["public","🌍 العامة"],["private","🔒 الخاصة"],["pending","⏳ بانتظار المراجعة"],["rejected","❌ مرفوضة/محذوفة"]].map(([k,n])=>`<button class="btn sm ${A.vis===k?"on":""}" data-alvisf="${k}">${n}</button>`).join("")}<select class="inp" style="width:auto;padding:2px 6px" data-alsort><option value="date" ${A.sort==="date"?"selected":""}>الأحدث</option><option value="name" ${A.sort==="name"?"selected":""}>الاسم</option><option value="kind" ${A.sort==="kind"?"selected":""}>النوع</option></select>${CFG&&A.quota?`<span class="mut small">مساحتك: ${(A.quota.used/1048576).toFixed(1)} / ${Math.round(A.quota.quota/1048576)} MB</span>`:""}</div>`:"";
- let body;
- if(A.sec==="packs") body=`<div class="row" style="margin-bottom:8px"><button class="btn pri" data-alpknew ${CFG?"":"disabled"}>➕ إنشاء حزمة</button>${CFG?"":`<span class="mut small">الحزم متاحة بعد تسجيل الدخول</span>`}</div>`+(!A.packs?`<div class="empty">جاري التحميل…</div>`:!A.packs.length?`<div class="empty">لا توجد حزم بعد — اجمع آيرتاتك المتناسقة (فولو، لايك، هدية، دونيشن…) في حزمة واحدة</div>`:`<div class="grid g3">${A.packs.map(p=>`<div class="card"><h3>📦 ${esc(p.name)}</h3><p class="mut small">${esc(p.description||"")}</p><p class="small">${p.alertIds.length} آيرت${p.mine?` · ${p.visibility==="public"?"🌍 عامة":"🔒 خاصة"}`:""}</p><div class="row" style="gap:4px;flex-wrap:wrap"><button class="btn sm pri" data-alpkadd="${esc(p.id)}">➕ إضافة الحزمة كاملة</button>${p.mine?`<button class="btn sm" data-alpkdel="${esc(p.id)}">🗑️</button>`:""}</div></div>`).join("")}</div>`);
- else if(A.sec==="designers") body=!A.designers?`<div class="empty">جاري التحميل…</div>`:!A.designers.length?`<div class="empty">لا يوجد مصممون بآيرتات عامة معتمدة بعد</div>`:`<div class="grid g3">${A.designers.map(d=>`<div class="card"><h3>🎨 ${esc(d.name)}</h3><div class="row" style="gap:4px;flex-wrap:wrap">${d.badges.map(b=>`<span class="tag">${esc(b[1])}</span>`).join("")}</div><p class="mut small">${d.count} آيرت · ${d.uses} استخدام · ⭐ ${d.rating} · ${d.followers} متابع</p><div class="row" style="gap:4px"><button class="btn sm pri" data-aldes="${esc(d.id)}">عرض الآيرتات</button><button class="btn sm ${d.following?"on":""}" data-alfol="${esc(d.id)}">${d.following?"✔ تتابعه":"➕ متابعة"}</button></div></div>`).join("")}</div>`;
- else body=A.busy?`<div class="empty">جاري التحميل…</div>`:A.err?`<div class="empty">${esc(A.err)}</div>`:!A.items.length?`<div class="empty">${A.sec==="mine"?"لم ترفع آيرتات بعد — ابدأ من «رفع آيرت جديد»":!CFG&&!["official"].includes(A.sec)?"آيرتات المجتمع متاحة بعد تسجيل الدخول على المنصة":"لا توجد آيرتات هنا بعد"}</div>`:`<div class="grid g4">${A.items.map(alCard).join("")}</div>`;
- return `<div class="card" style="margin-bottom:12px"><div class="row" style="gap:4px;flex-wrap:wrap">${secs.map(([k,n])=>`<button class="btn sm ${A.sec===k||A.sec==="designer"&&k==="designers"?"pri":""}" data-alsec="${k}">${n}</button>`).join("")}</div>
- <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><input class="inp" style="flex:1;min-width:180px" placeholder="🔍 ابحث بالاسم أو الوسم أو المصمم" data-alq value="${esc(A.q)}">
- <select class="inp" style="width:auto" data-alf="cat">${opt(AL_CATS,A.cat,"كل التصنيفات")}</select><select class="inp" style="width:auto" data-alf="kind">${opt(AL_KINDS,A.kind,"كل الأنواع")}</select><select class="inp" style="width:auto" data-alf="event">${opt(AL_EVENTS,A.event,"كل الأحداث")}</select></div>${sub}
- <p class="mut small" style="margin-top:6px">🔒 الآيرت الخاص يراه صاحبه فقط ولا يظهر في البحث أو الأقسام العامة. 🌍 العام يظهر للجميع بعد المراجعة. عند استخدام آيرت غيرك تحصل على إعداداتك المستقلة — لا يتغير الأصل.</p></div>${body}` }
 
 /* ---------------- صندوق الآيرتات والقواعد ---------------- */
 function alRulesHTML(){ const C=alCfgS(), w=alBoxW(); alLoadUsable(); const us=alUsable(), off=alOfficial();
@@ -1855,62 +2027,13 @@ let alPv=null;
 function alPreviewMount(id){ const box=document.getElementById(id); if(!box) return null; box.innerHTML=""; if(alPv) liveViews.delete(alPv);
  const cv={w:Math.max(320,box.clientWidth),h:box.clientHeight||300}; const stg=document.createElement("div"); stg.className="stage"; stg.style.cssText=`width:${cv.w}px;height:${cv.h}px;background:none;position:absolute;left:0;top:0`; box.appendChild(stg);
  const v=new View(newWidget("abox",{id:"pv_ab",x:.02,y:.03,w:.96,h:.94}),cv,{data:SRC,mute:true}); stg.appendChild(v.el); return v }
-function alAfter(){ const A=ALS(); alSyncDefs(); if(A.tab==="rules"){ alPv=alPreviewMount("al-pv"); if(alPv) liveViews.add(alPv) } if(A.tab==="create") alFormPreview(false); if(CFG&&A.tab==="lib"&&A.sec==="mine"&&!A.quota) alApi("/api/alerts/upload").then(j=>{ if(!j.error){ A.quota=j; softRefresh() } }) }
+function alAfter(){ const A=ALS(); alSyncDefs(); alHoverWire();
+ const dz=document.getElementById("al-drop"); if(dz&&!dz.__w){ dz.__w=1; dz.addEventListener("dragover",e=>{ e.preventDefault(); dz.classList.add("over") }); dz.addEventListener("dragleave",()=>dz.classList.remove("over")); dz.addEventListener("drop",e=>{ e.preventDefault(); dz.classList.remove("over"); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) alPickFile(f) }) } if(A.tab==="rules"){ alPv=alPreviewMount("al-pv"); if(alPv) liveViews.add(alPv) } if(A.tab==="create") alFormPreview(false); if(CFG&&A.tab==="lib"&&A.sec==="mine"&&!A.quota) alApi("/api/alerts/upload").then(j=>{ if(!j.error){ A.quota=j; softRefresh() } }) }
 /** معاينة آيرت واحد في نافذة منبثقة */
-function alPreviewModal(id){ const a=ALS().cache[id]||alLocal().find(x=>x.id===id)||alOfficial().find(x=>x.id===id); if(!a) return; AB_DEFS[a.id]=alDef(a);
- const m=modal(`<h3>▶️ ${esc(a.name||"")}</h3><p class="mut small">${esc(a.description||"")}</p><div id="al-mpv" style="position:relative;width:min(560px,80vw);height:320px;border-radius:12px;background:repeating-conic-gradient(#1a1f2e 0 25%,#141826 0 50%) 0 0/24px 24px;overflow:hidden"></div><div class="row" style="margin-top:10px;gap:6px"><button class="btn pri" data-alreplay>🔁 إعادة</button><button class="btn" data-close>إغلاق</button></div>`);
- const play=()=>{ const v=alPreviewMount("al-mpv"); if(v) v.aboxPush([{id:"pv"+Date.now(),alertId:a.id,event:a.event,vars:{...AL_TEST_VARS,avatar:simUser(true).avatar||""},priority:10,test:true}]) };
- setTimeout(play,60); m.addEventListener("click",e=>{ if(e.target.closest("[data-alreplay]")) play() }) }
-
 /* ---------------- رفع/تعديل آيرت ---------------- */
-function alNewForm(){ return {id:"",name:"",description:"",kind:"",event:"follow",durationSec:6,category:"celebrate",tags:"",designerName:"",visibility:"private",rightsConfirmed:false,mediaId:"",mediaUrl:"",mediaMime:"",audioId:"",audioUrl:"",coverId:"",coverUrl:"",config:alConfig({title:{text:"{display_name}"},sub:{text:"شكراً على الدعم 💛"}})} }
-function alFormHTML(){ const A=ALS(), F=A.form||(A.form=alNewForm()), c=F.config, ed=!!F.id;
- const o=(obj,v)=>Object.entries(obj).map(([k,n])=>`<option value="${k}" ${v===k?"selected":""}>${esc(typeof n==="string"?n:n.icon+" "+n.label)}</option>`).join("");
- const lo=(list,v)=>list.map(([k,n])=>`<option value="${k}" ${v===k?"selected":""}>${esc(n)}</option>`).join("");
- const fi=(k,l,inner)=>`<div class="fld"><label>${l}</label>${inner}</div>`;
- const tx=(k,v,ph)=>`<input class="inp" data-alff="${k}" value="${esc(v??"")}" placeholder="${esc(ph||"")}">`;
- const nm=(k,v,a,b,st)=>`<input type="range" min="${a}" max="${b}" step="${st||1}" data-alff="${k}" value="${v}">`;
- const lay=(k,l)=>`<div class="ttl" style="margin:8px 0 4px">${l}</div><div class="grid g3" style="gap:6px">${fi(k,"إظهار",`<select class="inp" data-alff="config.${k}.show"><option value="1" ${c[k].show?"selected":""}>ظاهر</option><option value="0" ${c[k].show?"":"selected"}>مخفي</option></select>`)}
-  ${k!=="avatar"?fi(k,"النص",tx("config."+k+".text",c[k].text,"{display_name}")):fi(k,"الإطار (32)",`<select class="inp" data-alff="config.avatar.frame">${lo(AL_FRAMES,c.avatar.frame)}</select>`)}
-  ${fi(k,"اللون",`<input type="color" data-alff="config.${k}.color" value="${c[k].color}">`)}${fi(k,"أفقي "+c[k].x+"%",nm("config."+k+".x",c[k].x,0,100))}${fi(k,"عمودي "+c[k].y+"%",nm("config."+k+".y",c[k].y,0,100))}${fi(k,"الحجم "+c[k].size,nm("config."+k+".size",c[k].size,4,k==="avatar"?60:20,.5))}</div>`;
- const file=(slot,l,acc,cur)=>`<div class="fld"><label>${l}</label><input type="file" accept="${acc}" data-alfile="${slot}">${cur?`<div class="small">✅ مرفوع <button class="btn sm" data-alfx="${slot}">إزالة</button></div>`:""}</div>`;
- const miss=alMissing(c.title.text+" "+c.sub.text+" "+(c.tts.text||""),F.event);
- return `<div class="grid g2" style="align-items:start"><div>
- <div class="card"><h3>${ed?"✏️ تعديل الآيرت":"➕ رفع آيرت جديد"}</h3><p class="mut small">الحقول المعلَّمة * إلزامية. الملفات تُفحص على الخادم (النوع الحقيقي والحجم) قبل الحفظ.</p>
- <div class="grid g2" style="gap:8px">${fi("name","اسم الآيرت *",tx("name",F.name,"مثال: تاج ذهبي"))}${fi("designerName","اسم المصمم",tx("designerName",F.designerName,CFG?CFG.profile.name:""))}
- ${fi("kind","نوع الآيرت *",`<select class="inp" data-alff="kind"><option value="">— اختر —</option>${o(AL_KINDS,F.kind)}</select>`)}${fi("event","الحدث *",`<select class="inp" data-alff="event">${Object.entries(AL_EVENTS).map(([k,e])=>`<option value="${k}" ${F.event===k?"selected":""} ${e.avail.tiktok===false?"disabled":""}>${e.icon} ${esc(e.label)}</option>`).join("")}</select>`)}
- ${fi("dur","المدة: "+F.durationSec+" ث *",nm("durationSec",F.durationSec,1,30))}${fi("cat","التصنيف",`<select class="inp" data-alff="category">${o(AL_CATS,F.category)}</select>`)}</div>
- ${fi("description","الوصف *",`<textarea class="inp" rows="2" data-alff="description" maxlength="400">${esc(F.description)}</textarea>`)}${fi("tags","الوسوم (افصل بفاصلة)",tx("tags",Array.isArray(F.tags)?F.tags.join("، "):F.tags,"فخم، ملكي، ذهبي"))}
- <div class="grid g3" style="gap:8px">${F.kind==="template"?fi("tpl","القالب الرسمي",`<select class="inp" data-alff="config.template">${FA_DESIGNS.map(d=>`<option value="${d.id}" ${c.template===d.id?"selected":""}>#${d.n} ${esc(d.name)}</option>`).join("")}</select>`):F.kind&&F.kind!=="audio"?file("media","ملف الآيرت * (حتى 15MB)",".mp4,.webm,.gif,.png,.jpg,.jpeg,.webp,.json",F.mediaId||F.mediaData):""}
- ${file("audio","الصوت"+(F.kind==="audio"?" *":"")+" (حتى 5MB)",".mp3,.wav,.ogg,.m4a",F.audioId||F.audioData)}${file("cover","صورة الغلاف/المعاينة"+(["template","image","gif"].includes(F.kind)?"":" *")+" (حتى 2MB)",".png,.jpg,.jpeg,.webp,.gif",F.coverId||F.coverData)}</div></div>
- <div class="card"><h3>🧩 الطبقات والحركة</h3>${lay("avatar","🖼️ صورة المستخدم")}${lay("title","🔤 النص الأول")}${lay("sub","🔡 النص الثاني")}
- <div class="grid g3" style="gap:6px;margin-top:8px">${fi("enter","حركة الظهور",`<select class="inp" data-alff="config.enter">${lo(AL_IN,c.enter)}</select>`)}${fi("exit","حركة الخروج",`<select class="inp" data-alff="config.exit">${lo(AL_OUT,c.exit)}</select>`)}${fi("fx","تأثير",`<select class="inp" data-alff="config.fx">${lo(AL_FX,c.fx)}</select>`)}
- ${fi("fit","ملاءمة الملف",`<select class="inp" data-alff="config.fit"><option value="contain" ${c.fit==="contain"?"selected":""}>احتواء</option><option value="cover" ${c.fit==="cover"?"selected":""}>ملء</option></select>`)}${fi("vol","مستوى الصوت "+Math.round(c.volume*100)+"%",nm("config.volume",c.volume,0,1,.05))}
- ${fi("spd","سرعة الحركة "+c.speed+"×",nm("config.speed",c.speed,.25,3,.25))}${fi("fa","حركة الإطار",`<select class="inp" data-alff="config.frameAnim"><option value="1">متحركة</option><option value="0" ${c.frameAnim?"":"selected"}>ثابتة</option></select>`)}${fi("lo","ترتيب صورة المستخدم",`<select class="inp" data-alff="config.layerOrder"><option value="front">أمام الفيديو</option><option value="behind" ${c.layerOrder==="behind"?"selected":""}>خلف الفيديو</option></select>`)}
- ${F.kind==="video"?fi("vs","صوت الفيديو الأصلي",`<select class="inp" data-alff="config.videoSound"><option value="1">مفعّل</option><option value="0" ${c.videoSound?"":"selected"}>مكتوم</option></select>`):""}${fi("ad","تأخير الصوت (مللي ث)",`<input class="inp" type="number" min="0" max="10000" data-alff="config.audioDelay" value="${c.audioDelay}">`)}
- ${F.kind==="video"?fi("ck","إزالة الخلفية",`<select class="inp" data-alff="config.chroma.on"><option value="0">متوقف (أو WebM شفاف)</option><option value="1" ${c.chroma.on?"selected":""}>مفعّل</option></select>`):""}${F.kind==="video"&&c.chroma.on?fi("ckm","النوع",`<select class="inp" data-alff="config.chroma.mode"><option value="green">Chroma — لون محدد (أخضر)</option><option value="luma" ${c.chroma.mode==="luma"?"selected":""}>Luma — خلفية سوداء</option></select>`)+(c.chroma.mode==="green"?fi("ckc","لون الخلفية",`<input type="color" data-alff="config.chroma.color" value="${c.chroma.color}">`):"")+fi("ckt","الحساسية "+c.chroma.tol,nm("config.chroma.tol",c.chroma.tol,5,200)):""}</div>
- <p class="mut small">المتغيرات: ${AL_VARS.map(v=>"{"+v+"}").join(" ")}</p>${miss.length?`<p class="note small">⚠️ حدث «${esc(AL_EVENTS[F.event].label)}» لا يرسل: ${miss.map(x=>"{"+x+"}").join(" ")}</p>`:""}</div></div>
- <div><div class="card"><h3>المعاينة <span class="tag">بيانات تجريبية</span></h3><div id="al-fpv" style="position:relative;height:300px;border-radius:12px;background:repeating-conic-gradient(#1a1f2e 0 25%,#141826 0 50%) 0 0/24px 24px;overflow:hidden"></div><button class="btn" style="margin-top:8px" data-alfplay>🔁 تشغيل المعاينة</button></div>
- <div class="card"><h3>🔐 الخصوصية</h3>
-  <label class="row" style="gap:6px;align-items:flex-start"><input type="radio" name="alvis" data-alff="visibility" value="private" ${F.visibility!=="public"?"checked":""}><span><b>🔒 خاص (افتراضي)</b><br><span class="mut small">يظهر لك فقط ويعمل في بثك. لا يظهر في البحث ولا الأقسام العامة، وملفاته لا تُفتح لغيرك.</span></span></label>
-  <label class="row" style="gap:6px;align-items:flex-start;margin-top:8px"><input type="radio" name="alvis" data-alff="visibility" value="public" ${F.visibility==="public"?"checked":""} ${CFG?"":"disabled"}><span><b>🌍 عام</b><br><span class="mut small">${CFG?"يظهر للجميع في المكتبة بعد مراجعة الإدارة، ويستطيع الآخرون استخدامه بإعداداتهم المستقلة.":"النشر العام متاح بعد تسجيل الدخول على المنصة."}</span></span></label>
-  ${F.visibility==="public"?`<label class="row" style="gap:6px;margin-top:8px"><input type="checkbox" data-alff="rightsConfirmed" ${F.rightsConfirmed?"checked":""}><span class="small">أؤكد أنني أملك حقوق هذه الملفات أو لدي إذن بنشرها، ولا تحتوي محتوى مخالفاً *</span></label>`:""}
-  <div class="row" style="gap:6px;margin-top:12px"><button class="btn pri" data-alsave>${ed?"💾 حفظ التعديلات":"💾 حفظ الآيرت"}</button>${ed?`<button class="btn" data-alcancel>إلغاء</button>`:""}</div>${A.ferr?`<div class="note small" style="margin-top:6px">${A.ferr.map(esc).join("<br>")}</div>`:""}</div></div></div>` }
 let alFpv=null;
 function alFormPreview(play){ const F=ALS().form; if(!F) return; if(alFpv) liveViews.delete(alFpv); alFpv=alPreviewMount("al-fpv"); if(!alFpv) return; const id="draft"; AB_DEFS[id]={...alDef({...F,id}),config:alConfig(F.config),kind:F.kind||"image"}; if(play!==false||true) setTimeout(()=>alFpv&&alFpv.aboxPush([{id:"f"+Date.now(),alertId:id,event:F.event,vars:{...AL_TEST_VARS,avatar:simUser(true).avatar||""},priority:1,test:true}]),80) }
 function alSetPath(o,path,v){ const k=path.split("."); let x=o; for(let i=0;i<k.length-1;i++) x=x[k[i]]=x[k[i]]||{}; x[k[k.length-1]]=v }
-async function alUpload(slot,t){ const A=ALS(), F=A.form, f=t.files&&t.files[0]; if(!f||!F) return;
- if(!CFG){ const max=Math.min(AL_LIMITS[slot],3*1024*1024); if(f.size>max) return toast("في وضع التجربة الحد 3MB — سجّل الدخول للرفع حتى 15MB"); const buf=new Uint8Array(await f.arrayBuffer()); const chk=alCheckFile(slot,buf); if(!chk.ok) return toast("❌ ملف غير مدعوم: "+chk.error);
-  const r=new FileReader(); r.onload=()=>{ F[slot+"Data"]=r.result; F[slot+"Mime"]=chk.mime; F[slot+"Id"]="local"; if(slot==="media"&&!F.kind) F.kind=alKindOf(chk.mime); renderPage(true) }; r.readAsDataURL(f); return }
- toast("⏳ جاري الرفع…"); const fd=new FormData(); fd.append("slot",slot); fd.append("file",f);
- const j=await alApi("/api/alerts/upload",{method:"POST",body:fd}); if(j.error) return toast("❌ "+(j.message||j.error));
- F[slot+"Id"]=j.id; F[slot+"Url"]=j.url; F[slot+"Mime"]=j.mime; if(slot==="media"){ const k=alKindOf(j.mime); if(k&&(!F.kind||F.kind!=="template")) F.kind=k } A.quota=null; toast("✅ تم رفع الملف"); renderPage(true) }
-async function alSaveForm(){ const A=ALS(), F=A.form; const body={name:F.name,description:F.description,kind:F.kind,event:F.event,durationSec:+F.durationSec,category:F.category,tags:F.tags,designerName:F.designerName,visibility:F.visibility,rightsConfirmed:!!F.rightsConfirmed,mediaId:F.mediaId||null,audioId:F.audioId||null,coverId:F.coverId||null,config:F.config};
- const v=alValidate(body); if(!v.ok){ A.ferr=v.errors; return renderPage(true) } A.ferr=null;
- if(!CFG){ const list=alLocal(); const rec={...v.value,id:F.id||"loc_"+Date.now().toString(36),ownerId:"me",visibility:"private",review:"none",mediaData:F.mediaData||"",audioData:F.audioData||"",coverData:F.coverData||"",createdAt:new Date().toISOString()}; const i=list.findIndex(x=>x.id===rec.id); if(i>=0) list[i]=rec; else list.unshift(rec); if(!alLocalSave(list)) return; toast("✅ حُفظ الآيرت (خاص)"); A.form=null; A.tab="lib"; A.sec="mine"; A.key=""; alSyncDefs(); return renderPage(true) }
- const j=await alApi(F.id?"/api/alerts/"+F.id:"/api/alerts",{method:F.id?"PUT":"POST",body}); if(j.error){ A.ferr=j.errors||[({rights_required:"يجب تأكيد حقوق الملفات للنشر العام",bad_file:"ملف غير صالح أو ليس ملكك",limit:j.message}[j.error])||"تعذر الحفظ: "+j.error]; return renderPage(true) }
- A.cache[j.alert.id]=j.alert; toast(j.alert.visibility==="public"?(j.alert.review==="approved"?"✅ نُشر للجميع":"⏳ حُفظ وأُرسل للمراجعة قبل الظهور العام"):"✅ حُفظ الآيرت (خاص)"); A.form=null; A.tab="lib"; A.sec="mine"; A.key=""; A.usableAt=0; alSyncDefs(); renderPage(true) }
-
 /* ---------------- المراجعة (للمشرفين) ---------------- */
 function alAdminHTML(){ const A=ALS(); if(!A.adm||A.adm.tab!==A.admTab){ A.adm={tab:A.admTab,loading:true}; alApi("/api/admin/alerts?tab="+A.admTab).then(j=>{ A.adm={tab:A.admTab,...j}; for(const a of j.items||[]) A.cache[a.id]={...a,mine:false}; alSyncDefs(); softRefresh() }) }
  const D=A.adm, c=D.counts||{};
@@ -1932,6 +2055,16 @@ function alClick(t,d){ const A=ALS();
  if(d.aldes){ A.tab="lib"; A.sec="designer"; A.desId=d.aldes; renderPage(true); alLoad(true); return true }
  if(d.alfol){ alApi("/api/alerts/designers",{method:"POST",body:{designerId:d.alfol}}).then(j=>{ if(j.error) return toast("تعذر: "+j.error); const x=(A.designers||[]).find(y=>y.id===d.alfol); if(x){ x.following=j.following; x.followers+=j.following?1:-1 } renderPage(true) }); return true }
  if(d.alpv){ alPreviewModal(d.alpv); return true }
+ if(d.alsnd){ const th=t.closest(".al-th"); if(th){ if(AH.el!==th) alHoverStart(th,true); else alHoverSound(!AH.snd) } return true }
+ if(d.altp){ const th=t.closest(".al-th"); if(th){ if(AH.el===th) alHoverStop(); else alHoverStart(th) } return true }
+ if(t.closest&&t.closest(".al-th[data-alhv]")&&!matchMedia("(hover:hover)").matches){ const th=t.closest(".al-th"); if(AH.el===th) alHoverStop(); else alHoverStart(th); return true }
+ if(d.algrp!==undefined){ A.grp=d.algrp; renderPage(true); alLoad(true); return true }
+ if(d.alsty!==undefined){ A.cat=d.alsty; renderPage(true); alLoad(true); return true }
+ if(t.hasAttribute("data-alpick")||t.closest&&t.closest("[data-alpick]")){ const i=document.getElementById("al-file"); if(i) i.click(); return true }
+ if(t.hasAttribute("data-alretry")){ const f=A.up&&A.up.file; if(f) alPickFile(f); return true }
+ if(d.alsug){ A.form.category=d.alsug; renderPage(true); return true }
+ if(t.hasAttribute("data-altxt")){ A.form.config.title.text=AL_EVENT_TEXT[A.form.event]; renderPage(true); return true }
+ if(t.hasAttribute("data-altpl")){ const F=A.form; F.kind="template"; F.config.template=F.config.template||FA_DESIGNS[0].id; F.category=F.category||"b6o6"; renderPage(true); return true }
  if(d.aluse){ const id=d.aluse, a=A.cache[id]||alOfficial().find(x=>x.id===id)||alLocal().find(x=>x.id===id); const go=()=>{ alAddRule(id,a&&a.event||"follow"); A.tab="rules"; renderPage(true); toast("✅ أُضيفت قاعدة — عدّل الشرط ثم جرّبها") };
   if(CFG&&!alIsOfficial(id)&&a&&!a.mine&&!a.using) alApi("/api/alerts/"+id+"/act",{method:"POST",body:{act:"use"}}).then(j=>{ if(j.error) return toast(j.error==="not_available"?"هذا الآيرت لم يعد متاحاً":"تعذر: "+j.error); a.using=true; A.usableAt=0; alSyncDefs(); go() }); else go(); return true }
  if(d.alunuse){ alApi("/api/alerts/"+d.alunuse+"/act",{method:"POST",body:{act:"unuse"}}).then(()=>{ const a=A.cache[d.alunuse]; if(a) a.using=false; A.key=""; alLoad(true) }); return true }
@@ -1976,6 +2109,7 @@ function alInput(t,d,e){ const A=ALS();
  if(t.hasAttribute("data-alq")){ clearTimeout(alQT); alQT=setTimeout(()=>{ A.q=t.value; alLoad(true) },350); return true }
  if(d.alf&&e.type==="change"){ A[d.alf]=t.value; alLoad(true); return true }
  if(d.alfile&&e.type==="change"){ alUpload(d.alfile,t); return true }
+ if(t.hasAttribute("data-almain")&&e.type==="change"){ const f=t.files&&t.files[0]; t.value=""; if(f) alPickFile(f); return true }
  if(t.hasAttribute("data-alauto")&&e.type==="change"){ alApi("/api/admin/alerts",{method:"PATCH",body:{autoApprove:t.checked}}).then(j=>{ toast(j.error?"تعذر":"✅ حُفظ"); A.adm=null }); return true }
  if(d.alrate&&e.type==="change"){ alApi("/api/alerts/"+d.alrate+"/act",{method:"POST",body:{act:"rate",value:+t.value}}).then(j=>{ if(j.error) return toast(j.message||"تعذر"); const a=A.cache[d.alrate]; if(a){ const p=(a.my&&a.my.rating)||0; a.ratingSum=(a.ratingSum||0)+j.my.rating-p; a.ratingCount=(a.ratingCount||0)+(j.my.rating?1:0)-(p?1:0); a.rating=a.ratingCount?Math.round(a.ratingSum/a.ratingCount*10)/10:0; a.my=j.my } toast("⭐ شكراً على التقييم"); renderPage(true) }); return true }
  if(d.alff!==undefined&&A.form){ const k=d.alff; let v=t.type==="checkbox"?t.checked:t.value; if(t.type==="radio"&&!t.checked) return true;

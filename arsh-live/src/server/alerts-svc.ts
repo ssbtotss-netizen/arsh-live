@@ -1,7 +1,7 @@
 // خدمات سوق الآيرتات على الخادم: المشاهد الحالي، إعدادات المراجعة، تحويل الآيرت لعرض آمن
 import { prisma } from "@/lib/db";
 import { currentUser, isAdmin } from "@/lib/auth";
-import { alPublicView, alBadge, alCanEdit } from "@/engine/alerts.js";
+import { alPublicView, alBadge, alCanEdit, alEventGroup } from "@/engine/alerts.js";
 
 export async function viewer() {
   const u = await currentUser();
@@ -25,7 +25,7 @@ export function toClient(a: any, v: any, extra: any = {}) {
   const mine = alCanEdit(a, v);
   const base: any = mine ? { ...a, mine: true, badge: alBadge(a) } : { ...alPublicView(a), mine: false };
   delete base.reports; if (!mine) delete base.reviewNote;
-  base.mediaUrl = mediaPath(a.mediaId); base.audioUrl = mediaPath(a.audioId); base.coverUrl = mediaPath(a.coverId);
+  base.mediaUrl = mediaPath(a.mediaId); base.audioUrl = mediaPath(a.audioId); base.coverUrl = mediaPath(a.coverId); base.previewUrl = mediaPath(a.previewId); base.group = alEventGroup(a.event);
   base.rating = a.ratingCount ? Math.round((a.ratingSum / a.ratingCount) * 10) / 10 : 0;
   base.designer = a.owner ? { id: a.ownerId, name: a.designerName || a.owner.name, verified: !!a.owner.designerVerified } : { id: a.ownerId, name: a.designerName };
   delete base.owner;

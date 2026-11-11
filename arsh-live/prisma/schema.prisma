@@ -283,7 +283,8 @@ model AlertAsset {
   id        String   @id @default(cuid())
   ownerId   String
   owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
-  slot      String   // media | audio | cover
+  slot      String   // media | audio | cover | preview
+  meta      Json     @default("{}") // المدة، الأبعاد، الصوت، الشفافية، الترميز (من FFmpeg)
   mime      String   // من فحص البايتات الفعلي (لا من الامتداد)
   size      Int
   sha256    String
@@ -303,6 +304,8 @@ model Alert {
   mediaId         String?
   audioId         String?
   coverId         String?
+  previewId       String?   // نسخة معاينة خفيفة (تلقائية)
+  meta            Json      @default("{}")
   config          Json      @default("{}")
   visibility      String    @default("private") // الافتراضي خاص
   review          String    @default("none")    // none | pending | approved | rejected

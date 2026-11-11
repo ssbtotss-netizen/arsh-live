@@ -9,6 +9,7 @@ export function aboxSetDefs(map){ for(const k of Object.keys(AB_DEFS)) delete AB
 const abWait=ms=>new Promise(r=>setTimeout(r,ms));
 const abEsc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 let abCss=false;
+export const AB_DEFAULT_AV="data:image/svg+xml,"+encodeURIComponent('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#2a2f45"/><circle cx="50" cy="38" r="18" fill="#8a93b8"/><path d="M18 92c4-20 18-30 32-30s28 10 32 30z" fill="#8a93b8"/></svg>');
 /** حركات الدخول والخروج (Web Animations) */
 const ab0={opacity:0}, ab1={opacity:1,transform:"none",filter:"none"};
 export const AB_IN_KF={cinema:[{...ab0,transform:"scale(1.25)",filter:"blur(12px) brightness(2)"},{opacity:1,filter:"blur(0) brightness(1.2)",offset:.6},ab1],fadeIn:[ab0,ab1],zoomIn:[{...ab0,transform:"scale(.3)"},ab1],popIn:[{...ab0,transform:"scale(.5)"},{opacity:1,transform:"scale(1.12)",offset:.7},ab1],slideUp:[{...ab0,transform:"translateY(60%)"},ab1],slideDown:[{...ab0,transform:"translateY(-60%)"},ab1],slideRight:[{...ab0,transform:"translateX(60%)"},ab1],slideLeft:[{...ab0,transform:"translateX(-60%)"},ab1],
@@ -78,7 +79,7 @@ Object.assign(View.prototype,{
     if(c.chroma.on){ media=this.aboxChroma(v,c); r.appendChild(media) } else { media=v; r.appendChild(v) } v.play().catch(()=>{ v.muted=true; v.play().catch(()=>{}) }) }
    else { const im=document.createElement("img"); im.className="ab-media"+(c.fit==="cover"?" cover":""); im.src=d.mediaUrl; im.alt=""; media=im; r.appendChild(im) } }
   const V=it.vars||{};
-  if(c.avatar.show&&V.avatar){ const a=document.createElement("div"); a.className="ab-av abf-"+c.avatar.frame+(c.frameAnim?"":" ab-noanim"); if(c.layerOrder==="behind") a.style.zIndex="-1"; const sz=c.avatar.size/100*H; Object.assign(a.style,{left:c.avatar.x+"%",top:c.avatar.y+"%",width:sz+"px",fontSize:sz/10+"px",backgroundImage:`url("${String(V.avatar).replace(/"/g,"")}")`}); r.appendChild(a) }
+  if(c.avatar.show&&(V.avatar||V.display_name||V.username)){ /* بدون صورة من المصدر: صورة افتراضية واضحة (لا نختلق صورة شخص) */ const a=document.createElement("div"); a.className="ab-av abf-"+c.avatar.frame+(c.frameAnim?"":" ab-noanim"); if(c.layerOrder==="behind") a.style.zIndex="-1"; const sz=c.avatar.size/100*H; Object.assign(a.style,{left:c.avatar.x+"%",top:c.avatar.y+"%",width:sz+"px",fontSize:sz/10+"px",backgroundImage:`url("${String(V.avatar||AB_DEFAULT_AV).replace(/"/g,"")}")`}); r.appendChild(a) }
   for(const k of ["title","sub"]){ const L=c[k]; if(!L.show) continue; const tpl=(it.over&&it.over[k])||L.text; const txt=alFill(tpl,V); if(!txt) continue; const t=document.createElement("div"); t.className="ab-tx"; t.textContent=txt; Object.assign(t.style,{left:L.x+"%",top:L.y+"%",fontSize:L.size/100*H+"px",color:L.color}); r.appendChild(t) }
   if(c.fx!=="none"&&!(this.opts.lowPerf)) this.aboxFx(r,c.fx,dur);
   if(it.test&&ed) r.insertAdjacentHTML("beforeend",`<div class="ab-test">تجربة</div>`);

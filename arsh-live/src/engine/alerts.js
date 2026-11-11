@@ -27,8 +27,18 @@ export const AL_EVENTS={
 };
 export const AL_OPS={eq:"يساوي",gt:"أكبر من",gte:"أكبر أو يساوي",lt:"أقل من",lte:"أقل أو يساوي",between:"بين",every:"كل",any:"أي قيمة"};
 export const AL_KINDS={video:"فيديو (MP4/WebM)",gif:"GIF متحرك",image:"صورة (PNG/JPG/WebP)",lottie:"Lottie (JSON)",audio:"صوت فقط",template:"قالب جاهز من المنصة"};
-export const AL_CATS={celebrate:"احتفال",funny:"مضحك",gaming:"ألعاب",royal:"ملكي",anime:"أنمي",minimal:"بسيط",saudi:"سعودي",neon:"نيون",cute:"لطيف",other:"أخرى"};
-export const AL_LIMITS={media:15*1024*1024,audio:5*1024*1024,cover:2*1024*1024,quota:200*1024*1024,name:60,desc:400,tags:8,durMin:1,durMax:30};
+/** طابع التصميم (مستقل عن نوع الحدث): Follow + Enemy = «Enemy Follow Alert» */
+export const AL_STYLES={enemy:"👾 Enemy",money:"💰 Money",fire:"🔥 Fire",diamond:"💎 Diamond",royal:"👑 Royal",butterfly:"🦋 Butterfly",flowers:"🌸 Flowers",lightning:"⚡ Lightning",ice:"❄️ Ice",gaming:"🎮 Gaming",robot:"🤖 Robot",galaxy:"🌌 Galaxy",hearts:"❤️ Hearts",animals:"🦁 Animals",saudi:"🇸🇦 Saudi",stars:"✨ Stars",anime:"🎭 Anime",funny:"😂 Funny",cinematic:"🎬 Cinematic",minimal:"🫧 Minimal",b6o6:"🦆 B6O6 Exclusive"};
+/** مجموعات نوع الحدث للمكتبة */
+export const AL_EVENT_GROUPS={follow:["❤️ متابعة",["follow"]],likes:["👍 تكبيس",["like_user","like_total"]],gifts:["🎁 هدايا",["gift","gift_value","first_gift"]],donations:["💸 دونيشن",["donation"]],join:["🚪 دخول البث",["join","vip_join"]],share:["🔁 مشاركة",["share"]],comment:["💬 تعليق",["comment","first_comment","comment_count"]],subscription:["⭐ اشتراك",["subscribe","resub"]],subathon:["⏱️ سابثون",["time_added","time_removed"]],goals:["🏆 تحقيق الأهداف",["viewer_goal"]],custom:["🔔 تنبيهات مخصصة",["manual","live_start","stream_end"]]};
+export function alEventGroup(ev){ for(const [k,[,list]] of Object.entries(AL_EVENT_GROUPS)) if(list.includes(ev)) return k; return "custom" }
+/** اقتراح الطابع من اسم الملف فقط (اقتراح يعدّله المستخدم — لا نعتمد عليه لتحديد نوع الحدث) */
+const AL_STYLE_KW={enemy:["enemy","عدو","monster","وحش"],money:["money","cash","coin","dollar","فلوس","عملة","مال"],fire:["fire","flame","نار"],diamond:["diamond","gem","الماس","ألماس"],royal:["royal","king","crown","ملك","تاج"],butterfly:["butterfl","فراش"],flowers:["flower","rose","ورد","زهر"],lightning:["lightning","thunder","bolt","برق"],ice:["ice","snow","frozen","ثلج","جليد"],gaming:["game","gaming","pixel","العاب","قيم"],robot:["robot","cyber","روبوت"],galaxy:["galaxy","space","star","مجرة","فضاء"],hearts:["heart","love","قلب"],animals:["lion","tiger","cat","dog","animal","اسد","أسد","حيوان"],saudi:["saudi","ksa","سعود"],anime:["anime","انمي","أنمي"],funny:["funny","meme","lol","ضحك"],cinematic:["cinema","epic","movie","سينما"],minimal:["minimal","simple","basic","بسيط"],b6o6:["b6o6","btot","بطوط"]};
+export function alSuggestStyle(name){ const n=String(name||"").toLowerCase(); for(const [k,kw] of Object.entries(AL_STYLE_KW)) if(kw.some(w=>n.includes(w))) return k; return "" }
+/** رسائل أخطاء الرفع الواضحة (للخادم والواجهة) */
+export const AL_ERR={empty:"الملف فارغ أو تالف",too_large:"الملف أكبر من الحد المسموح",bad_type:"صيغة غير مدعومة أو ملف تالف — المدعوم: MP4, WebM, MOV, GIF, APNG, PNG, WebP, MP3, WAV, OGG, Lottie JSON",quota:"امتلأت مساحة ملفاتك — احذف آيرتات قديمة",bad_lottie:"ملف Lottie غير صالح (ليس JSON صحيحاً أو بنيته ناقصة)",lottie_expressions:"ملف Lottie يحتوي تعابير برمجية — غير مسموح لأسباب أمنية",lottie_external:"ملف Lottie يحمّل ملفات من الإنترنت — غير مسموح",too_complex:"ملف Lottie معقد جداً",not_playable:"الفيديو بترميز لا يشغّله المتصفح/OBS ولم ينجح تحويله",convert_failed:"فشل تحويل الفيديو إلى صيغة قابلة للتشغيل",no_converter:"هذا الترميز يحتاج تحويلاً والمحوّل غير متوفر على الخادم حالياً — صدّر الملف بصيغة MP4 (H.264) أو WebM",corrupt:"الملف تالف — لم يمكن قراءة الفيديو",too_long:"المقطع أطول من 60 ثانية",rate_limited:"رفعت ملفات كثيرة — انتظر دقيقة",bad_form:"لم يصل الملف — أعد المحاولة",unauthorized:"سجّل الدخول أولاً",network:"انقطع الاتصال أثناء الرفع — أعد المحاولة"};
+export const AL_CATS={celebrate:"احتفال",funny:"مضحك",gaming:"ألعاب",royal:"ملكي",anime:"أنمي",minimal:"بسيط",saudi:"سعودي",neon:"نيون",cute:"لطيف",other:"أخرى",...AL_STYLES}; // التصنيفات القديمة تبقى صالحة للآيرتات القديمة
+export const AL_LIMITS={media:30*1024*1024,audio:5*1024*1024,cover:2*1024*1024,quota:200*1024*1024,name:60,desc:400,tags:8,durMin:1,durMax:30};
 export const AL_VARS=["username","display_name","avatar","likes","total_likes","gift_name","gift_image","gift_count","diamonds","amount","currency","message","platform","rank","level","time_added","time_removed","goal","progress"];
 /** إطارات الصورة الشخصية (32) */
 export const AL_FRAMES=[["none","شفاف بالكامل"],["circle","دائرة بسيطة"],["ring","حلقة"],["gold","ذهبي"],["silver","فضي"],["neon","نيون"],["fire","ناري"],["ice","جليدي"],["crown","تاج"],["hex","سداسي"],["square","مربع"],["rounded","مربع ناعم"],["diamond","ماسي"],["star","نجمة"],["heart","قلب"],["shield","درع"],["rainbow","قوس قزح"],["pulse","نابض"],["glitch","جليتش"],["spin","دوار"],["double","حلقتان"],["dash","متقطع"],["glow","توهج"],["shadow","ظل"],["leaf","أوراق"],["galaxy","مجرة"],["pixel","بكسل"],["royal","ملكي"],["saudi","أخضر سعودي"],["pink","وردي"],["cyber","سايبربنك"],["b6o6","B6O6"],["butterfly","فراشات"],["lightning","برق"],["rose","ورد"],["wings","أجنحة"],["crystal","كريستال"],["chrome","كروم"],["cloud","سحابي"],["crescent","هلال"],["sun","شمس"],["emerald","زمرد"],["pearl","لؤلؤ"],["falcon","صقر"],["lion","أسد"],["dragon","تنين"]];
@@ -51,8 +61,8 @@ export function alCanModerate(viewer){ return !!(viewer&&viewer.admin) }
 /** opt.adopted: المستخدم أضافه سابقاً وهو عام — يحتفظ بنسخته المرخصة حتى لو أصبح خاصاً، ما لم يُحذف لمخالفة أو يُرفض */
 export function alCanUse(a,viewer,opt={}){ if(!a||a.removed) return false; if(viewer&&viewer.id&&a.ownerId===viewer.id) return true; if(alIsListed(a)) return true; return !!(opt.adopted&&a.review!=="rejected") }
 /** ما يراه الآخرون من الآيرت العام: بدون أي حقل داخلي */
-export function alPublicView(a){ if(!a) return null; const {id,name,description,kind,event,durationSec,category,tags,designerName,ownerId,uses,likes,favs,ratingSum,ratingCount,publishedAt,createdAt,coverId,mediaId,audioId,config}=a;
- return {id,name,description,kind,event,durationSec,category,tags,designerName,ownerId,uses:uses|0,likes:likes|0,favs:favs|0,rating:ratingCount?Math.round(ratingSum/ratingCount*10)/10:0,ratingCount:ratingCount|0,publishedAt,createdAt,coverId,mediaId,audioId,config} }
+export function alPublicView(a){ if(!a) return null; const {id,name,description,kind,event,durationSec,category,tags,designerName,ownerId,uses,likes,favs,ratingSum,ratingCount,publishedAt,createdAt,coverId,mediaId,audioId,previewId,meta,config}=a;
+ return {id,name,description,kind,event,durationSec,category,tags,designerName,ownerId,previewId,meta:alMeta(meta),uses:uses|0,likes:likes|0,favs:favs|0,rating:ratingCount?Math.round(ratingSum/ratingCount*10)/10:0,ratingCount:ratingCount|0,publishedAt,createdAt,coverId,mediaId,audioId,config} }
 /** تغيير الخصوصية: العام يحتاج تأكيد الحقوق ويدخل المراجعة؛ الخاص يُسحب من العرض العام فوراً */
 export function alVisibilityPatch(a,to,opt={}){
  if(to==="private") return {ok:true,patch:{visibility:"private",review:"none",publishedAt:null}};
@@ -67,18 +77,17 @@ export function alPublicList(list){ return (list||[]).filter(alIsListed).map(alP
 
 /* ------------------------------------------------------------------ التحقق من المدخلات والملفات */
 export function alValidate(b,opt={}){ const e=[]; const name=alS(b.name,AL_LIMITS.name).trim(), description=alS(b.description,AL_LIMITS.desc).trim();
- if(!name) e.push("الاسم مطلوب"); if(!description) e.push("الوصف مطلوب");
+ if(!name) e.push("اسم الآيرت مطلوب"); // الوصف اختياري
  const kind=AL_KINDS[b.kind]?b.kind:""; if(!kind) e.push("نوع الآيرت مطلوب");
  const event=AL_EVENTS[b.event]?b.event:""; if(!event) e.push("الحدث مطلوب");
  const durationSec=Math.round(alN(b.durationSec,5)); if(durationSec<AL_LIMITS.durMin||durationSec>AL_LIMITS.durMax) e.push("المدة بين 1 و30 ثانية");
- if(kind&&kind!=="template"&&kind!=="audio"&&!b.mediaId) e.push("ملف الآيرت مطلوب"); if(kind==="audio"&&!b.audioId) e.push("الملف الصوتي مطلوب");
+ if(kind&&kind!=="template"&&kind!=="audio"&&!b.mediaId) e.push("ملف الآيرت مطلوب"); if(kind==="audio"&&!b.audioId&&!b.mediaId) e.push("الملف الصوتي مطلوب");
  if(kind==="template"&&!alS(b.config&&b.config.template,40)) e.push("اختر القالب");
- if(kind&&!["template","image","gif"].includes(kind)&&!b.coverId) e.push("صورة الغلاف/المعاينة مطلوبة");
- const category=AL_CATS[b.category]?b.category:"other";
+ const category=AL_CATS[b.category]?b.category:""; if(!AL_STYLES[b.category]&&!(opt.legacy&&category)) e.push("تصنيف التصميم مطلوب");
  const tags=[...new Set((Array.isArray(b.tags)?b.tags:String(b.tags||"").split(/[,،#\s]+/)).map(t=>alS(t,24).trim()).filter(Boolean))].slice(0,AL_LIMITS.tags);
  const visibility=b.visibility==="public"?"public":"private"; // الافتراضي خاص
  if(visibility==="public"&&!b.rightsConfirmed) e.push("للنشر العام يجب تأكيد أنك تملك حقوق الملفات");
- return {ok:!e.length,errors:e,value:{name,description,kind,event,durationSec,category,tags,visibility,rightsConfirmed:!!b.rightsConfirmed,designerName:alS(b.designerName,40).trim(),mediaId:b.mediaId||null,audioId:b.audioId||null,coverId:b.coverId||null,config:alConfig(b.config)}} }
+ return {ok:!e.length,errors:e,value:{name,description,kind,event,durationSec,category,tags,visibility,rightsConfirmed:!!b.rightsConfirmed,designerName:alS(b.designerName,40).trim(),previewId:b.previewId||null,meta:alMeta(b.meta),mediaId:b.mediaId||null,audioId:b.audioId||null,coverId:b.coverId||null,config:alConfig(b.config)}} }
 /** إعدادات العرض (الطبقات) — قيم محصورة فقط */
 export function alConfig(c){ c=c&&typeof c==="object"?c:{}; const lay=(o,d)=>{ o=o&&typeof o==="object"?o:{}; return {show:o.show!==undefined?!!o.show:d.show,x:Math.max(0,Math.min(100,alN(o.x,d.x))),y:Math.max(0,Math.min(100,alN(o.y,d.y))),size:Math.max(4,Math.min(100,alN(o.size,d.size))),color:/^#[0-9a-f]{3,8}$/i.test(o.color||"")?o.color:d.color,text:alS(o.text??d.text,140)} };
  const pick=(v,list,d)=>list.some(x=>x[0]===v)?v:d;
@@ -101,16 +110,29 @@ export function alSniff(b){ if(!b||b.length<4) return ""; const h=(i)=>b[i];
  if(h(0)===0x47&&h(1)===0x49&&h(2)===0x46&&h(3)===0x38) return "image/gif";
  if(b.length>12&&h(0)===0x52&&h(1)===0x49&&h(2)===0x46&&h(3)===0x46){ const t=String.fromCharCode(b[8],b[9],b[10],b[11]); if(t==="WEBP") return "image/webp"; if(t==="WAVE") return "audio/wav" }
  if(h(0)===0x1a&&h(1)===0x45&&h(2)===0xdf&&h(3)===0xa3) return "video/webm";
- if(b.length>12&&String.fromCharCode(b[4],b[5],b[6],b[7])==="ftyp"){ const br=String.fromCharCode(b[8],b[9],b[10],b[11]); return /^M4A/.test(br)?"audio/mp4":"video/mp4" }
+ if(b.length>12&&String.fromCharCode(b[4],b[5],b[6],b[7])==="ftyp"){ const br=String.fromCharCode(b[8],b[9],b[10],b[11]); return /^M4A/.test(br)?"audio/mp4":br==="qt  "?"video/quicktime":"video/mp4" }
+ if(b.length>12&&String.fromCharCode(b[4],b[5],b[6],b[7])==="moov"||String.fromCharCode(b[4],b[5],b[6],b[7])==="wide"||String.fromCharCode(b[4],b[5],b[6],b[7])==="mdat") return "video/quicktime";
+ if(h(0)===0xff&&(h(1)===0xf1||h(1)===0xf9)) return "audio/aac";
  if(h(0)===0x4f&&h(1)===0x67&&h(2)===0x67&&h(3)===0x53) return "audio/ogg";
  if(h(0)===0x49&&h(1)===0x44&&h(2)===0x33||h(0)===0xff&&(h(1)&0xe0)===0xe0) return "audio/mpeg";
  let i=0; while(i<b.length&&i<64&&(b[i]===0x20||b[i]===0x0a||b[i]===0x0d||b[i]===0x09||b[i]===0xef||b[i]===0xbb||b[i]===0xbf)) i++; if(b[i]===0x7b) return "application/json";
  return "" }
-export const AL_SLOT_MIMES={media:["video/mp4","video/webm","image/gif","image/png","image/jpeg","image/webp","application/json"],audio:["audio/mpeg","audio/wav","audio/ogg","audio/mp4"],cover:["image/png","image/jpeg","image/webp","image/gif"]};
+export const AL_SLOT_MIMES={media:["video/mp4","video/webm","video/quicktime","audio/mpeg","audio/wav","audio/ogg","audio/mp4","audio/aac","image/gif","image/png","image/jpeg","image/webp","application/json"],audio:["audio/mpeg","audio/wav","audio/ogg","audio/mp4","audio/aac"],cover:["image/png","image/jpeg","image/webp","image/gif"]};
 export function alCheckFile(slot,bytes){ const lim=AL_LIMITS[slot]; if(!lim) return {ok:false,error:"bad_slot"}; if(!bytes||!bytes.length) return {ok:false,error:"empty"}; if(bytes.length>lim) return {ok:false,error:"too_large",max:lim};
  const mime=alSniff(bytes); if(!mime||!AL_SLOT_MIMES[slot].includes(mime)) return {ok:false,error:"bad_type"};
  if(mime==="application/json"){ let j; try{ j=JSON.parse(typeof TextDecoder!=="undefined"?new TextDecoder().decode(bytes):String(bytes)) }catch(e){ return {ok:false,error:"bad_lottie"} } const r=alLottieSafe(j); if(!r.ok) return r }
  return {ok:true,mime} }
+/** فحص سريع لخصائص الملف من البايتات: الحركة والشفافية للصور (الفيديو يُفحص بـ FFmpeg/المتصفح) */
+export function alInspect(b){ const mime=alSniff(b), r={mime,family:/^video/.test(mime)?"video":/^audio/.test(mime)?"audio":mime==="application/json"?"lottie":/^image/.test(mime)?"image":"",animated:false,alpha:null,size:b?b.length:0};
+ const str=(i,n)=>String.fromCharCode(...b.slice(i,i+n));
+ if(mime==="image/png"){ r.alpha=b[25]===6||b[25]===4; let i=8; while(i+8<b.length&&i<4e6){ const len=(b[i]<<24|b[i+1]<<16|b[i+2]<<8|b[i+3])>>>0, t=str(i+4,4); if(t==="acTL") r.animated=true; if(t==="tRNS") r.alpha=true; if(t==="IDAT") break; i+=12+len } if(r.animated) r.apng=true }
+ if(mime==="image/webp"&&str(12,4)==="VP8X"){ r.animated=!!(b[20]&2); r.alpha=!!(b[20]&16) } else if(mime==="image/webp") r.alpha=str(12,4)==="VP8L"?null:false;
+ if(mime==="image/gif"){ let n=0; for(let i=13;i<b.length-1&&n<3;i++) if(b[i]===0x21&&b[i+1]===0xf9){ n++; if(b[i+3]&1) r.alpha=true } r.animated=n>1; if(r.alpha===null) r.alpha=false }
+ if(r.family==="image") r.kind=mime==="image/gif"||r.animated?"gif":"image"; else r.kind=r.family==="video"?"video":r.family==="lottie"?"lottie":r.family==="audio"?"audio":"";
+ return r }
+/** وصف الوسائط المحفوظ مع الآيرت (أرقام محصورة فقط) */
+export function alMeta(m){ m=m&&typeof m==="object"?m:{}; const n=(v,mx)=>Number.isFinite(+v)&&+v>=0?Math.min(+v,mx):null;
+ return {w:n(m.w,10000),h:n(m.h,10000),duration:n(m.duration,3600),fps:n(m.fps,240),size:n(m.size,1e9),hasAudio:m.hasAudio==null?null:!!m.hasAudio,alpha:m.alpha==null?null:!!m.alpha,codec:alS(m.codec,30),mime:alS(m.mime,40),converted:!!m.converted,animated:m.animated==null?null:!!m.animated} }
 /** Lottie آمن: بنية صحيحة، بدون تعابير برمجية (expressions) ولا روابط خارجية ولا حجم مبالغ */
 export function alLottieSafe(j){ if(!j||typeof j!=="object"||!Array.isArray(j.layers)||!(alN(j.w)>0)||!(alN(j.h)>0)) return {ok:false,error:"bad_lottie"};
  let bad=null, n=0; const walk=(o,d)=>{ if(bad||d>60) return; if(++n>400000){ bad="too_complex"; return } if(Array.isArray(o)){ for(const x of o) walk(x,d+1); return } if(o&&typeof o==="object"){ for(const k in o){ const v=o[k]; if(k==="x"&&typeof v==="string"){ bad="lottie_expressions"; return } if(k==="u"&&typeof v==="string"&&/^(https?:|\/\/|javascript:)/i.test(v)){ bad="lottie_external"; return } if(k==="p"&&typeof v==="string"&&/^(https?:|\/\/|javascript:)/i.test(v)){ bad="lottie_external"; return } walk(v,d+1) } } };
@@ -203,7 +225,7 @@ export function alQueuePush(Q,it,opt={}){ if(!it||!it.id) return false; if(Q.see
 export function alQueueNext(Q){ const it=Q.q.shift(); if(it) Q.played++; return it||null }
 
 /* ------------------------------------------------------------------ الترتيب والأقسام والشارات */
-export const AL_SECTIONS=[["all","الكل"],["official","الرسمية"],["community","المجتمع"],["new","الأحدث"],["used","الأكثر استخداماً"],["rated","الأعلى تقييماً"],["trending","الرائج"],["week","أفضل الأسبوع"],["month","أفضل الشهر"],["packs","📦 الحزم"],["favs","المفضلة"],["mine","آيرتاتي"],["using","أستخدمها"],["designers","المصممون"]];
+export const AL_SECTIONS=[["all","الكل"],["official","الرسمية"],["community","المجتمع"],["new","الأحدث"],["used","الأكثر استخداماً"],["liked","الأكثر إعجاباً"],["rated","الأعلى تقييماً"],["trending","الرائج"],["week","أفضل الأسبوع"],["month","أفضل الشهر"],["packs","📦 الحزم"],["favs","المفضلة"],["mine","آيرتاتي"],["using","أستخدمها"],["designers","المصممون"]];
 export function alRating(a){ return a.ratingCount?a.ratingSum/a.ratingCount:0 }
 /** الرائج: نشاط حديث مع تخفيف زمني (لا يكفي العدد الكلي القديم) — التقييم بمتوسط بايزي حتى لا يتصدر تقييم واحد */
 export function alScore(a,now,mode){ const age=Math.max(1,(now-new Date(a.publishedAt||a.createdAt||now).getTime())/36e5);
@@ -211,11 +233,12 @@ export function alScore(a,now,mode){ const age=Math.max(1,(now-new Date(a.publis
  if(mode==="rated") return bayes; if(mode==="used") return a.uses|0;
  return ((a.uses|0)*3+(a.likes|0)*2+(a.favs|0)*2+bayes*(a.ratingCount|0))/Math.pow(age+2,1.4) }
 export function alSort(list,mode,now=Date.now()){ const L=[...list], t=a=>new Date(a.publishedAt||a.createdAt||0).getTime();
+ if(mode==="liked") return L.sort((a,b)=>(b.likes|0)-(a.likes|0)||(b.favs|0)-(a.favs|0));
  if(mode==="new") return L.sort((a,b)=>t(b)-t(a));
  if(mode==="week"||mode==="month"){ const lim=now-(mode==="week"?7:30)*864e5; return L.filter(a=>t(a)>=lim).sort((a,b)=>alScore(b,now,"used")+alScore(b,now,"rated")-alScore(a,now,"used")-alScore(a,now,"rated")) }
  if(mode==="used"||mode==="rated"||mode==="trending") return L.sort((a,b)=>alScore(b,now,mode)-alScore(a,now,mode));
  return L }
-export function alSearch(list,q){ q=lc(q).trim(); if(!q) return list; return list.filter(a=>lc(a.name).includes(q)||lc(a.description).includes(q)||lc(a.designerName).includes(q)||(a.tags||[]).some(t=>lc(t).includes(q))) }
+export function alSearch(list,q){ q=lc(q).trim(); if(!q) return list; return list.filter(a=>lc(a.name).includes(q)||lc(a.description).includes(q)||lc(a.designerName).includes(q)||lc(a.category).includes(q)||lc(AL_CATS[a.category]).includes(q)||(a.tags||[]).some(t=>lc(t).includes(q))) }
 export function alDesignerBadges(d){ const b=[]; if(d.verified) b.push(["verified","✔️ مصمم موثّق"]); if((d.uses|0)>=100) b.push(["popular","🔥 الأكثر استخداماً"]); if((d.count|0)>=10) b.push(["prolific","🎨 مصمم نشِط"]); if(d.rating>=4.5&&(d.ratingCount|0)>=10) b.push(["top","⭐ تقييم ممتاز"]); if(d.since&&Date.now()-new Date(d.since).getTime()<30*864e5) b.push(["new","🆕 جديد"]); return b }
 /** شارات الخصوصية/المراجعة في "آيرتاتي" */
 export function alBadge(a){ if(a.removed) return ["❌","محذوف من الإدارة","removed"]; if(a.visibility!=="public") return ["🔒","خاص","private"]; if(a.review==="pending") return ["⏳","بانتظار المراجعة","pending"]; if(a.review==="rejected") return ["❌","مرفوض","rejected"]; return ["🌍","عام","public"] }

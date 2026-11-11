@@ -23,11 +23,12 @@ const leak=A.alPublicList([priv,pend,pub,rej,rem]); ok(leak.length===1&&leak[0].
 ok(A.alEditNeedsReview(pub,{mediaId:"m2"})&&!A.alEditNeedsReview(priv,{mediaId:"m2"}),"editing media of an approved alert sends it back to review");
 function alv(a:any,v:any){ return A.alCanView(a,v) }
 // ---- التحقق من المدخلات
-const bad=A.alValidate({}); ok(!A.alValidate({name:"a",description:"b",kind:"video",event:"follow",durationSec:6,mediaId:"m"}).ok,"validation: cover/preview image required for video");
-ok(!bad.ok&&bad.errors.length>=4,"validation: name, description, type, event required");
-const good=A.alValidate({name:"احتفال",description:"وصف",kind:"video",event:"follow",durationSec:6,mediaId:"m1",coverId:"c1",tags:"#فخم, ملكي"});
+const bad=A.alValidate({}); ok(A.alValidate({name:"a",kind:"video",event:"follow",category:"enemy",durationSec:6,mediaId:"m"}).ok,"validation: no separate cover image and no description required");
+ok(!A.alValidate({name:"a",kind:"video",event:"follow",durationSec:6,mediaId:"m"}).ok&&A.alValidate({name:"a",kind:"video",event:"follow",category:"celebrate",durationSec:6,mediaId:"m"},{legacy:true}).ok,"validation: design style required; old categories kept for old alerts");
+ok(!bad.ok&&bad.errors.length>=4,"validation: name, type, event, style required");
+const good=A.alValidate({name:"احتفال",description:"وصف",kind:"video",event:"follow",category:"money",durationSec:6,mediaId:"m1",tags:"#فخم, ملكي"});
 ok(good.ok&&good.value.visibility==="private"&&good.value.tags.length===2,"validation: default visibility is private; tags parsed");
-ok(!A.alValidate({name:"a",description:"b",kind:"video",event:"follow",durationSec:6,mediaId:"m",coverId:"c",visibility:"public"}).ok,"validation: public without rights confirmation is rejected");
+ok(!A.alValidate({name:"a",description:"b",kind:"video",event:"follow",category:"fire",durationSec:6,mediaId:"m",visibility:"public"}).ok,"validation: public without rights confirmation is rejected");
 // ---- فحص الملفات الحقيقي
 const png=new Uint8Array([0x89,0x50,0x4e,0x47,0,0,0,0]); const mp4=new Uint8Array([0,0,0,0x18,0x66,0x74,0x79,0x70,0x69,0x73,0x6f,0x6d,0,0]);
 const exe=new Uint8Array([0x4d,0x5a,0x90,0,3,0,0,0]); const html=new TextEncoder().encode("<script>alert(1)</script>");
