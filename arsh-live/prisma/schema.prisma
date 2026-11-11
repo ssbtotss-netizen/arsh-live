@@ -288,9 +288,19 @@ model AlertAsset {
   mime      String   // من فحص البايتات الفعلي (لا من الامتداد)
   size      Int
   sha256    String
-  data      Bytes
+  data      Bytes?   // الملفات الصغيرة (الأغلفة) — الكبيرة تُحفظ أجزاءً في AlertAssetChunk
+  chunks    Int      @default(0)
   createdAt DateTime @default(now())
+  parts     AlertAssetChunk[]
   @@index([ownerId])
+}
+/** أجزاء 1MB للملفات الكبيرة: الكتابة والقراءة جزءاً جزءاً حتى لا يُحمَّل الفيديو كاملاً في ذاكرة الخادم */
+model AlertAssetChunk {
+  assetId String
+  asset   AlertAsset @relation(fields: [assetId], references: [id], onDelete: Cascade)
+  idx     Int
+  data    Bytes
+  @@id([assetId, idx])
 }
 model Alert {
   id              String    @id @default(cuid())

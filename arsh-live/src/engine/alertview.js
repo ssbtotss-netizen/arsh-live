@@ -69,13 +69,13 @@ Object.assign(View.prototype,{
   try{ await this.aboxPlay(it,A.cur) }catch(e){} A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
-  const c=alConfig(d.config), dur=Math.max(1,Math.min(30,+(it.over&&it.over.durationSec)||+d.durationSec||5))*1000;
+  const c=alConfig(d.config), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى: الآيرت يأخذ مدته كاملة
   this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r);
   if(d.kind==="template"){ return this.aboxTemplate(d,c,it,r,dur,cur) }
-  let media=null, lot=null;
+  let media=null, lot=null, vid=null;
   if(d.mediaUrl&&d.kind!=="audio"){
    if(d.kind==="lottie"){ media=document.createElement("div"); media.className="ab-media"; r.appendChild(media); try{ const L=await abLottie(); lot=L.loadAnimation({container:media,renderer:"svg",loop:true,autoplay:true,path:d.mediaUrl}) }catch(e){} }
-   else if(d.kind==="video"){ const v=document.createElement("video"); v.className="ab-media"+(c.fit==="cover"?" cover":""); v.src=d.mediaUrl; v.playsInline=true; v.muted=!!(ed||this.opts.mute||!c.videoSound); v.volume=c.volume; v.crossOrigin="anonymous";
+   else if(d.kind==="video"){ const v=document.createElement("video"); v.className="ab-media"+(c.fit==="cover"?" cover":""); v.src=d.mediaUrl; v.playsInline=true; vid=v; v.muted=!!(ed||this.opts.mute||!c.videoSound); v.volume=c.volume; v.crossOrigin="anonymous";
     if(c.chroma.on){ media=this.aboxChroma(v,c); r.appendChild(media) } else { media=v; r.appendChild(v) } v.play().catch(()=>{ v.muted=true; v.play().catch(()=>{}) }) }
    else { const im=document.createElement("img"); im.className="ab-media"+(c.fit==="cover"?" cover":""); im.src=d.mediaUrl; im.alt=""; media=im; r.appendChild(im) } }
   const V=it.vars||{};
@@ -85,7 +85,9 @@ Object.assign(View.prototype,{
   if(it.test&&ed) r.insertAdjacentHTML("beforeend",`<div class="ab-test">تجربة</div>`);
   if(d.audioUrl&&!ed&&!this.opts.mute){ try{ const a=new Audio(d.audioUrl); a.volume=it.over&&it.over.volume!=null?it.over.volume:c.volume; cur.audio=a; setTimeout(()=>{ if(!cur.skip) a.play().catch(()=>{}) },c.audioDelay) }catch(e){} }
   await r.animate(AB_IN_KF[c.enter]||AB_IN_KF.popIn,{duration:650/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}).finished.catch(()=>{});
-  const t0=Date.now(); while(Date.now()-t0<dur-1000&&!cur.skip) await abWait(100);
+  // لا يُقطع المقطع: يبقى الآيرت حتى تنتهي المدة المحددة وحتى ينتهي الفيديو/الصوت نفسه
+  const mediaLeft=el=>!!(el&&!el.ended&&!el.error&&isFinite(el.duration)&&el.duration-el.currentTime>.45&&(!el.paused||el.currentTime===0)&&Date.now()-t0<el.duration*1000+4000);
+  const t0=Date.now(); while(!cur.skip&&(Date.now()-t0<dur-1000||mediaLeft(vid)||mediaLeft(cur.audio))) await abWait(100);
   await r.animate(AB_OUT_KF[c.exit]||AB_OUT_KF.fadeOut,{duration:450/c.speed,easing:"ease-in",fill:"forwards"}).finished.catch(()=>{});
   try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
   r.remove(); if(ed) this.applyAbox(w,this.abW,this.abH) },

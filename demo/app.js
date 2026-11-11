@@ -1895,7 +1895,7 @@ function alFormHTML(){ const A=ALS(), F=A.form||(A.form=alNewForm()), c=F.config
  <div class="card"><h3>2️⃣ معلومات الآيرت</h3>
  <div class="grid g2" style="gap:8px">${fi("name","اسم الآيرت *",tx("name",F.name,"مثال: Enemy Legendary"))}${fi("event","نوع الحدث *",`<select class="inp" data-alff="event">${grpOpts}</select>`)}
  ${fi("cat","تصنيف التصميم * "+sug,`<select class="inp" data-alff="category"><option value="">— اختر الطابع —</option>${o(AL_STYLES,F.category)}${F.category&&!AL_STYLES[F.category]&&AL_CATS[F.category]?`<option value="${F.category}" selected>${esc(AL_CATS[F.category])} (قديم)</option>`:""}</select>`)}
- ${fi("dur","مدة العرض: "+F.durationSec+" ث"+(F.durAuto?` <span class="mut">(من الملف ${F.durAuto} ث)</span>`:""),nm("durationSec",F.durationSec,1,30))}
+ ${fi("dur","مدة العرض (ثانية)"+(F.durAuto?` <span class="mut">— طول الملف ${F.durAuto} ث${F.durAuto>F.durationSec?" ⚠️ أقصر من المقطع":""}</span>`:""),`<div class="row" style="gap:6px"><input class="inp" type="number" min="1" step="1" data-alff="durationSec" value="${F.durationSec}" style="width:110px">${F.durAuto?`<button class="btn sm" data-aldurfull>⏱️ طول المقطع كاملاً</button>`:""}</div>`)}
  ${F.kind==="video"||F.kind==="audio"||F.audioId||F.audioData?fi("snd","الصوت",`<select class="inp" data-alff="config.videoSound"><option value="1">🔊 تشغيل</option><option value="0" ${c.videoSound?"":"selected"}>🔇 كتم</option></select>`):""}
  ${fi("designerName","اسم المصمم",tx("designerName",F.designerName,CFG?CFG.profile.name:""))}</div>
  ${fi("description","وصف الآيرت (اختياري)",`<textarea class="inp" rows="2" data-alff="description" maxlength="400">${esc(F.description)}</textarea>`)}${fi("tags","الكلمات المفتاحية (اختيارية)",tx("tags",Array.isArray(F.tags)?F.tags.join("، "):F.tags,"فخم، ملكي، ذهبي"))}</div>
@@ -1937,8 +1937,8 @@ async function alAnalyze(file,ins){ const out={meta:{size:file.size,mime:ins.mim
  return out }
 const alDataBlob=u=>fetch(u).then(r=>r.blob());
 /** رفع مع شريط نسبة (XHR) */
-function alXhr(fd,onPct){ return new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/alerts/upload"); x.responseType="json"; x.upload.onprogress=e=>{ if(e.lengthComputable) onPct(Math.round(e.loaded/e.total*100)) }; x.upload.onload=()=>onPct(100,true);
- x.onload=()=>{ const j=x.response||{}; if(x.status>=400&&!j.error) j.error="HTTP "+x.status; res(j) }; x.onerror=()=>res({error:"network"}); x.ontimeout=()=>res({error:"network"}); x.timeout=600000; x.send(fd) }) }
+function alXhr(file,slot,onPct){ return new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/alerts/upload"); x.responseType="json"; x.setRequestHeader("x-slot",slot); x.setRequestHeader("x-filename",encodeURIComponent(file.name||"file")); x.setRequestHeader("content-type","application/octet-stream"); x.upload.onprogress=e=>{ if(e.lengthComputable) onPct(Math.round(e.loaded/e.total*100)) }; x.upload.onload=()=>onPct(100,true);
+ x.onload=()=>{ const j=x.response||{}; if(x.status>=400&&!j.error){ j.error=[502,503,504].includes(x.status)?"gateway":"HTTP "+x.status; j.status=x.status } res(j) }; x.onerror=()=>res({error:"network"}); x.ontimeout=()=>res({error:"network"}); x.timeout=20*60000; x.send(file) }) } // الملف يُرسل خاماً (بدون FormData) فيكتبه الخادم مباشرة على القرص
 function alUpSet(p){ const A=ALS(); A.up={...(A.up||{}),...p}; if(S.page==="alerts"&&A.tab==="create"){ const st=document.querySelector(".al-up"); if(p.pct!=null&&st&&A.up.phase==="upload"){ const i=st.querySelector(".al-bar i"), s=st.querySelector(".small.mut:last-child"); if(i) i.style.width=A.up.pct+"%"; if(s) s.textContent=A.up.pct+"%"; return } renderPage(true) } }
 async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
  alUpSet({phase:"read",pct:0,name:f.name,size:f.size,file:f,msg:""});
@@ -1947,7 +1947,7 @@ async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
  const ins=alInspect(buf); let an={meta:{},cover:null,playable:true}; try{ an=await alAnalyze(f,ins) }catch(e){}
  if(!F.category){ const s=alSuggestStyle(f.name); if(s){ F.sugStyle=s } }
  if(!F.name) F.name=f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").slice(0,60);
- const setDur=d=>{ if(d){ F.durAuto=Math.round(d*10)/10; F.durationSec=Math.max(1,Math.min(30,Math.round(d))) } };
+ const setDur=d=>{ if(d){ F.durAuto=Math.round(d*10)/10; F.durationSec=Math.max(1,Math.ceil(d-.05)) } }; // مدة الفيديو كاملة — بدون حد أعلى
  if(!CFG){ // وضع التجربة: لا خادم ولا تحويل — نقبل ما يشغّله المتصفح فقط
   if(f.size>3*1024*1024) return alUpSet({phase:"error",msg:"في وضع التجربة الحد 3MB — سجّل الدخول على المنصة للرفع حتى "+alFmtSize(AL_LIMITS.media)});
   if(!an.playable) return alUpSet({phase:"error",msg:ins.family==="video"?"المتصفح لا يستطيع تشغيل ترميز هذا الفيديو. على المنصة (بعد تسجيل الدخول) يحوّله الخادم تلقائياً — أو صدّره MP4 (H.264) أو WebM":AL_ERR.corrupt});
@@ -1955,19 +1955,19 @@ async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
   if(ins.family==="audio"){ F.kind="audio"; F.audioData=data; F.audioId="local"; F.mediaData=""; F.mediaId="" } else { F.kind=ins.kind; F.mediaData=data; F.mediaId="local"; F.mediaMime=ins.mime }
   F.meta=alMeta(an.meta); if(an.cover&&F.coverAuto!==false){ F.coverData=an.cover; F.coverId="local" } setDur(an.meta.duration);
   return alUpSet({phase:"done",file:null}) }
- alUpSet({phase:"upload",pct:0}); const fd=new FormData(); fd.append("slot","media"); fd.append("file",f);
- const j=await alXhr(fd,(p,done)=>alUpSet(done?{phase:"process",pct:100}:{pct:p}));
+ alUpSet({phase:"upload",pct:0});
+ const j=await alXhr(f,"media",(p,done)=>alUpSet(done?{phase:"process",pct:100}:{pct:p}));
  if(j.error) return alUpSet({phase:"error",msg:(j.message||AL_ERR[j.error]||"تعذر رفع الملف ("+j.error+")")+(j.detail?" — "+j.detail:"")});
  if(j.slot==="audio"){ F.kind="audio"; F.audioId=j.id; F.audioUrl=j.url; F.mediaId=""; F.mediaUrl="" } else { F.kind=j.kind; F.mediaId=j.id; F.mediaUrl=j.url; F.mediaMime=j.mime }
  F.meta=j.meta||{}; F.previewId=j.previewId||""; F.previewUrl=j.previewUrl||""; setDur(F.meta.duration);
- if(F.coverAuto!==false){ if(j.coverId){ F.coverId=j.coverId; F.coverUrl=j.coverUrl } else if(an.cover){ alUpSet({phase:"cover"}); const cf=new FormData(); cf.append("slot","cover"); cf.append("file",await alDataBlob(an.cover),"cover.png"); const c=await alXhr(cf,()=>{}); if(!c.error){ F.coverId=c.id; F.coverUrl=c.url } } else if(F.kind!=="audio"){ F.coverId=""; F.coverUrl="" } }
+ if(F.coverAuto!==false){ if(j.coverId){ F.coverId=j.coverId; F.coverUrl=j.coverUrl } else if(an.cover){ alUpSet({phase:"cover"}); const cb=await alDataBlob(an.cover); const c=await alXhr(new File([cb],"cover.png",{type:"image/png"}),"cover",()=>{}); if(!c.error){ F.coverId=c.id; F.coverUrl=c.url } } else if(F.kind!=="audio"){ F.coverId=""; F.coverUrl="" } }
  A.quota=null; alUpSet({phase:"done",file:null}) }
 /** ملفات إضافية: الصوت المنفصل وتغيير الغلاف */
 async function alUpload(slot,t){ const A=ALS(), F=A.form, f=t.files&&t.files[0]; if(!f||!F) return;
  const buf=new Uint8Array(await f.arrayBuffer()); const chk=alCheckFile(slot,buf); if(!chk.ok) return toast("❌ "+(AL_ERR[chk.error]||chk.error));
  if(!CFG){ if(f.size>3*1024*1024) return toast("في وضع التجربة الحد 3MB"); const r=new FileReader(); r.onload=()=>{ F[slot+"Data"]=r.result; F[slot+"Id"]="local"; if(slot==="cover") F.coverAuto=false; renderPage(true) }; r.readAsDataURL(f); return }
- toast("⏳ جاري الرفع…"); const fd=new FormData(); fd.append("slot",slot); fd.append("file",f);
- const j=await alXhr(fd,()=>{}); if(j.error) return toast("❌ "+(j.message||AL_ERR[j.error]||j.error));
+ toast("⏳ جاري الرفع…");
+ const j=await alXhr(f,slot,()=>{}); if(j.error) return toast("❌ "+(j.message||AL_ERR[j.error]||j.error));
  F[slot+"Id"]=j.id; F[slot+"Url"]=j.url; if(slot==="cover") F.coverAuto=false; A.quota=null; toast("✅ تم رفع الملف"); renderPage(true) }
 async function alSaveForm(){ const A=ALS(), F=A.form; const body={name:F.name,description:F.description,kind:F.kind,event:F.event,durationSec:+F.durationSec,category:F.category,tags:F.tags,designerName:F.designerName,visibility:F.visibility,rightsConfirmed:!!F.rightsConfirmed,mediaId:F.mediaId||null,audioId:F.audioId||null,coverId:F.coverId||null,previewId:F.previewId||null,meta:F.meta,config:F.config};
  const v=alValidate(body,{legacy:!!F.id}); if(!v.ok){ A.ferr=v.errors; return renderPage(true) } A.ferr=null;
@@ -2063,6 +2063,7 @@ function alClick(t,d){ const A=ALS();
  if(t.hasAttribute("data-alpick")||t.closest&&t.closest("[data-alpick]")){ const i=document.getElementById("al-file"); if(i) i.click(); return true }
  if(t.hasAttribute("data-alretry")){ const f=A.up&&A.up.file; if(f) alPickFile(f); return true }
  if(d.alsug){ A.form.category=d.alsug; renderPage(true); return true }
+ if(t.hasAttribute("data-aldurfull")){ A.form.durationSec=Math.max(1,Math.ceil(A.form.durAuto-.05)); renderPage(true); return true }
  if(t.hasAttribute("data-altxt")){ A.form.config.title.text=AL_EVENT_TEXT[A.form.event]; renderPage(true); return true }
  if(t.hasAttribute("data-altpl")){ const F=A.form; F.kind="template"; F.config.template=F.config.template||FA_DESIGNS[0].id; F.category=F.category||"b6o6"; renderPage(true); return true }
  if(d.aluse){ const id=d.aluse, a=A.cache[id]||alOfficial().find(x=>x.id===id)||alLocal().find(x=>x.id===id); const go=()=>{ alAddRule(id,a&&a.event||"follow"); A.tab="rules"; renderPage(true); toast("✅ أُضيفت قاعدة — عدّل الشرط ثم جرّبها") };

@@ -2,6 +2,7 @@
 // لا ندّعي النجاح: أي فشل يرجع برمز خطأ واضح (AL_ERR) ولا يُحفظ شيء.
 import { spawn, spawnSync } from "child_process";
 import { mkdtemp, writeFile, readFile, rm, stat } from "fs/promises";
+import { readFileSync } from "fs";
 import { tmpdir } from "os";
 import { join } from "path";
 
@@ -17,14 +18,27 @@ export function ffmpegPath(): string | null {
   return (FF = null);
 }
 
-function run(args: string[], ms = 120_000): Promise<{ code: number; err: string }> {
+/** حد الذاكرة: من cgroup (Render) أو MEM_LIMIT_MB (افتراضي 512) */
+function memLimit(): number {
+  for (const f of ["/sys/fs/cgroup/memory.max", "/sys/fs/cgroup/memory/memory.limit_in_bytes"]) { try { const v = +readFileSync(f, "utf8").trim(); if (v > 0 && v < 1e13) return v; } catch {} }
+  return (+(process.env.MEM_LIMIT_MB || 512)) * 1048576;
+}
+/** الذاكرة الفعلية (RSS) للخادم + FFmpeg — لا نعتمد memory.current لأنه يشمل ذاكرة التخزين المؤقت القابلة للتحرير */
+function memUsed(pid?: number): number {
+  let ff = 0; try { if (pid) ff = +((/VmRSS:\s+(\d+)/.exec(readFileSync(`/proc/${pid}/status`, "utf8")) || [])[1] || 0) * 1024; } catch {}
+  return process.memoryUsage().rss + ff;
+}
+/** حارس الذاكرة: إن اقترب الخادم من حده يُوقف FFmpeg فوراً (بدل أن يُقتل الخادم كله ويظهر 502) */
+function run(args: string[], ms = 120_000): Promise<{ code: number; err: string; oom?: boolean }> {
   return new Promise(res => {
     const ff = ffmpegPath(); if (!ff) return res({ code: -1, err: "no ffmpeg" });
-    const p = spawn(ff, ["-hide_banner", "-nostdin", ...args]); let err = "";
+    const p = spawn(ff, ["-hide_banner", "-nostdin", "-y", ...args]); let err = "", oom = false;
+    const lim = memLimit() * 0.85;
     const t = setTimeout(() => { try { p.kill("SIGKILL"); } catch {} }, ms);
+    const g = setInterval(() => { if (memUsed(p.pid) > lim) { oom = true; try { p.kill("SIGKILL"); } catch {} } }, 120);
     p.stderr.on("data", d => { if (err.length < 200_000) err += d; });
-    p.on("close", code => { clearTimeout(t); res({ code: code ?? -1, err }); });
-    p.on("error", e => { clearTimeout(t); res({ code: -1, err: String(e) }); });
+    p.on("close", code => { clearTimeout(t); clearInterval(g); res({ code: oom ? -2 : code ?? -1, err, oom }); });
+    p.on("error", e => { clearTimeout(t); clearInterval(g); res({ code: -1, err: String(e) }); });
   });
 }
 
@@ -53,63 +67,86 @@ export function browserPlayable(p: Probe) {
 }
 
 export type Out = { bytes: Uint8Array; mime: string };
+export type FOut = { path: string; mime: string; size: number };
+export type ProcessedFile = { ok: true; main: FOut; cover?: Out; preview?: FOut; meta: any; kind: string } | { ok: false; error: string; detail?: string };
 export type Processed = { ok: true; main: Out; cover?: Out; preview?: Out; meta: any; kind: string } | { ok: false; error: string; detail?: string };
 
+/** معالجة واحدة في كل مرة: خادم Render (512MB) لا يتحمل أكثر من FFmpeg واحد مع Next */
+let chain: Promise<any> = Promise.resolve();
+export function serial<T>(fn: () => Promise<T>): Promise<T> { const r = chain.then(fn, fn); chain = r.catch(() => {}); return r; }
+// خيوط قليلة = ذاكرة أقل (السبب الحقيقي لخطأ 502 كان نفاد الذاكرة)
+const LOW = ["-threads", "1", "-filter_threads", "1"];
+
 /**
- * family: video | image | audio | lottie (من فحص البايتات). يعيد الملف الأساسي (قد يكون محوَّلاً) + غلاف + معاينة خفيفة.
+ * يعمل على ملف في القرص (لا يحمّل الفيديو في الذاكرة). dir: مجلد مؤقت يملكه المستدعي.
+ * family: video | image | audio | lottie. يعيد الملف الأساسي (قد يكون محوَّلاً) + غلاف صغير + معاينة خفيفة.
  */
-export async function processMedia(bytes: Uint8Array, insp: any): Promise<Processed> {
-  const fam = insp.family;
-  if (fam === "lottie") return { ok: true, main: { bytes, mime: insp.mime }, meta: { size: bytes.length, mime: insp.mime, alpha: true, animated: true }, kind: "lottie" };
+export async function processFile(src: string, dir: string, insp: any, size: number): Promise<ProcessedFile> {
+  const fam = insp.family, keep = (): FOut => ({ path: src, mime: insp.mime, size });
+  if (fam === "lottie") return { ok: true, main: keep(), meta: { size, mime: insp.mime, alpha: true, animated: true }, kind: "lottie" };
   const ff = ffmpegPath();
   if (!ff) {
-    // بدون محوّل: نقبل فقط ما يشغّله المتصفح مباشرة (الغلاف يولّده المتصفح عند الرفع)
     if (insp.mime === "video/quicktime") return { ok: false, error: "no_converter" };
-    return { ok: true, main: { bytes, mime: insp.mime }, meta: { size: bytes.length, mime: insp.mime, alpha: insp.alpha, animated: insp.animated }, kind: insp.kind };
+    return { ok: true, main: keep(), meta: { size, mime: insp.mime, alpha: insp.alpha, animated: insp.animated }, kind: insp.kind };
   }
+  const p = await probeFile(src);
+  if (!p.ok) return { ok: false, error: fam === "image" ? "bad_type" : "corrupt", detail: p.container };
+  const meta: any = { size, mime: insp.mime, w: p.w, h: p.h, duration: p.duration, fps: p.fps, hasAudio: p.hasAudio, alpha: fam === "image" ? !!insp.alpha || p.alpha : p.alpha, codec: [p.vcodec, p.acodec].filter(Boolean).join("+"), animated: fam === "video" || !!insp.animated };
+  if (fam === "audio") { if (!p.hasAudio) return { ok: false, error: "corrupt" }; return { ok: true, main: keep(), meta: { ...meta, w: null, h: null }, kind: "audio" }; }
+  if (fam === "image") {
+    let cover: Out | undefined;
+    if (insp.animated && insp.mime !== "image/webp") { const c = join(dir, "c.png"); const r = await run([...LOW, "-i", src, "-vf", "scale='min(360,iw)':-2", "-frames:v", "1", c], 30_000); if (r.code === 0) cover = { bytes: await readFile(c), mime: "image/png" }; }
+    return { ok: true, main: keep(), cover, meta, kind: insp.kind };
+  }
+  // ---------------- الفيديو (بدون حد للمدة)
+  if (!p.vcodec) return { ok: false, error: "corrupt" };
+  let main: FOut = keep();
+  const alpha = p.alpha, dec = p.vcodec === "vp9" && alpha ? ["-c:v", "libvpx-vp9"] : p.vcodec === "vp8" && alpha ? ["-c:v", "libvpx"] : [];
+  if (!browserPlayable(p) || insp.mime === "video/quicktime") { // MOV يُحوَّل دائماً لـ MP4/WebM
+    const h264Mov = /mov|mp4/.test(p.container) && p.vcodec === "h264" && !/10le|12le|yuv4(22|44)/.test(p.pix) && (!p.hasAudio || ["aac", "mp3"].includes(p.acodec));
+    const out = join(dir, alpha ? "m.webm" : "m.mp4");
+    const aud = (opus: boolean) => (p.hasAudio ? (opus ? ["-c:a", "libopus", "-b:a", "96k"] : ["-c:a", "aac", "-b:a", "128k"]) : ["-an"]);
+    // الشفاف ← WebM VP8 alpha (يشغّله Chrome وOBS، وذاكرته أقل بكثير من VP9 alpha). غير الشفاف ← H.264 بإعدادات ذاكرة منخفضة
+    const mk = (maxH: number) => h264Mov ? ["-i", src, "-c", "copy", "-movflags", "+faststart", out]
+      : alpha ? [...LOW, ...dec, "-i", src, "-vf", `scale=-2:'min(${maxH},ih)'`, "-c:v", "libvpx", "-threads", "1", "-pix_fmt", "yuva420p", "-b:v", maxH > 720 ? "6M" : "3M", "-crf", "10", "-deadline", "realtime", "-cpu-used", "8", "-lag-in-frames", "0", "-auto-alt-ref", "0", ...aud(true), out]
+        : [...LOW, "-i", src, "-vf", `scale=-2:'min(${maxH},ih)',scale=trunc(iw/2)*2:trunc(ih/2)*2`, "-c:v", "libx264", "-preset", "veryfast", "-tune", "zerolatency", "-threads", "1", "-crf", "21", "-pix_fmt", "yuv420p", "-movflags", "+faststart", ...aud(false), out];
+    let r = await run(mk(1080), 15 * 60_000);
+    if (r.oom && !h264Mov) { meta.downscaled = true; r = await run(mk(720), 15 * 60_000); } // لم تكفِ الذاكرة لـ 1080p: إعادة المحاولة بـ 720p
+    const st = await stat(out).catch(() => null);
+    if (r.oom) return { ok: false, error: "too_heavy" };
+    if (r.code !== 0 || !st?.size) return { ok: false, error: "convert_failed", detail: r.err.split("\n").slice(-3).join(" ").slice(0, 200) };
+    main = { path: out, mime: alpha ? "video/webm" : "video/mp4", size: st.size }; meta.converted = true; meta.mime = main.mime;
+  }
+  // غلاف تلقائي: 3 إطارات صغيرة عند أوقات مختلفة، نختار الأغنى تفاصيلاً (أكبر PNG = ليس أسود/فارغاً). بدون فلتر thumbnail الذي يحجز عشرات الإطارات في الذاكرة
+  const mdec = meta.converted && alpha ? ["-c:v", "libvpx"] : dec, d = p.duration || 1;
+  let cover: Out | undefined;
+  for (const [i, t] of [Math.min(1.5, d * 0.25), d * 0.5, Math.min(0.1, d * 0.05)].entries()) {
+    const c = join(dir, `c${i}.png`);
+    const r = await run(["-ss", t.toFixed(2), ...LOW, ...mdec, "-i", main.path, "-vf", "scale='min(400,iw)':-2", "-frames:v", "1", c], 60_000);
+    if (r.code === 0) { const b = await readFile(c).catch(() => null); if (b && (!cover || b.length > cover.bytes.length)) cover = { bytes: b, mime: "image/png" }; if (b && b.length > 40_000) break; }
+  }
+  // نسخة معاينة خفيفة للمكتبة: 360p وأول 8 ثوانٍ فقط (الآيرت نفسه يُعرض كاملاً في البث)
+  let preview: FOut | undefined;
+  // الشفاف (VP9 alpha) لا نصنع له نسخة: فك ترميزه يستهلك ~160MB — المعاينة تستخدم الملف نفسه عبر Range (المتصفح يجلب ما يحتاجه فقط)
+  if (!alpha && (main.size > 3 * 1024 * 1024 || (p.w || 0) > 720)) {
+    const pv = join(dir, alpha ? "p.webm" : "p.mp4");
+    const pa = alpha ? ["-t", "8", ...LOW, ...mdec, "-i", main.path, "-t", "8", "-vf", "scale=-2:'min(360,ih)'", "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "42", "-deadline", "realtime", "-cpu-used", "8", "-lag-in-frames", "0", "-auto-alt-ref", "0", ...(p.hasAudio ? ["-c:a", "libopus", "-b:a", "48k"] : ["-an"]), pv]
+      : ["-t", "8", ...LOW, "-i", main.path, "-t", "8", "-vf", "scale=-2:'min(360,ih)'", "-c:v", "libx264", "-preset", "veryfast", "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", ...(p.hasAudio ? ["-c:a", "aac", "-b:a", "64k"] : ["-an"]), pv];
+    const q = await run(pa, 5 * 60_000); const st = await stat(pv).catch(() => null);
+    if (q.code === 0 && st && st.size < main.size) preview = { path: pv, mime: alpha ? "video/webm" : "video/mp4", size: st.size };
+  }
+  meta.size = main.size; meta.origSize = size;
+  return { ok: true, main, cover, preview, meta, kind: "video" };
+}
+
+/** واجهة بالبايتات (للاختبارات وللملفات الصغيرة) */
+export async function processMedia(bytes: Uint8Array, insp: any): Promise<Processed> {
   const dir = await mkdtemp(join(tmpdir(), "al-"));
   try {
     const src = join(dir, "src"); await writeFile(src, bytes);
-    const p = await probeFile(src);
-    if (!p.ok) return { ok: false, error: fam === "image" ? "bad_type" : "corrupt", detail: p.container };
-    const meta: any = { size: bytes.length, mime: insp.mime, w: p.w, h: p.h, duration: p.duration, fps: p.fps, hasAudio: p.hasAudio, alpha: fam === "image" ? !!insp.alpha || p.alpha : p.alpha, codec: [p.vcodec, p.acodec].filter(Boolean).join("+"), animated: fam === "video" || !!insp.animated };
-    if (fam === "audio") { if (!p.hasAudio) return { ok: false, error: "corrupt" }; return { ok: true, main: { bytes, mime: insp.mime }, meta: { ...meta, w: null, h: null }, kind: "audio" }; }
-    if (fam === "image") {
-      // الصور المتحركة: غلاف من أول إطار. (WebP المتحرك لا يفكّه FFmpeg — يولّد المتصفح غلافه)
-      let cover: Out | undefined;
-      if (insp.animated && insp.mime !== "image/webp") { const c = join(dir, "c.png"); const r = await run(["-i", src, "-vf", "scale='min(360,iw)':-2", "-frames:v", "1", c], 30_000); if (r.code === 0) cover = { bytes: await readFile(c), mime: "image/png" }; }
-      return { ok: true, main: { bytes, mime: insp.mime }, cover, meta, kind: insp.kind };
-    }
-    // ---------------- الفيديو
-    if (p.duration != null && p.duration > 60) return { ok: false, error: "too_long" };
-    if (!p.vcodec) return { ok: false, error: "corrupt" };
-    let main: Out = { bytes, mime: insp.mime }, mainFile = src;
-    const alpha = p.alpha, dec = p.vcodec === "vp9" && alpha ? ["-c:v", "libvpx-vp9"] : p.vcodec === "vp8" && alpha ? ["-c:v", "libvpx"] : [];
-    if (!browserPlayable(p) || insp.mime === "video/quicktime") { // MOV يُحوَّل دائماً لـ MP4/WebM (نوع quicktime لا يُشغَّل بثبات في المتصفح)
-      const h264Mov = /mov|mp4/.test(p.container) && p.vcodec === "h264" && !/10le|12le|yuv4(22|44)/.test(p.pix) && (!p.hasAudio || ["aac", "mp3"].includes(p.acodec));
-      const out = join(dir, alpha ? "m.webm" : "m.mp4");
-      const args = h264Mov ? ["-i", src, "-c", "copy", "-movflags", "+faststart", out] // MOV بترميز H.264: إعادة تغليف فقط بدون فقد جودة
-        : alpha ? [...dec, "-i", src, "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "32", "-deadline", "realtime", "-cpu-used", "8", "-row-mt", "1", "-auto-alt-ref", "0", ...(p.hasAudio ? ["-c:a", "libopus", "-b:a", "96k"] : ["-an"]), out] // الشفافية تُحفظ في WebM VP9
-          : ["-i", src, "-c:v", "libx264", "-preset", "veryfast", "-crf", "23", "-pix_fmt", "yuv420p", "-vf", "scale=trunc(iw/2)*2:trunc(ih/2)*2", "-movflags", "+faststart", ...(p.hasAudio ? ["-c:a", "aac", "-b:a", "128k"] : ["-an"]), out];
-      const r = await run(args, 240_000);
-      if (r.code !== 0 || !(await stat(out).catch(() => null))?.size) return { ok: false, error: "convert_failed", detail: r.err.split("\n").slice(-3).join(" ").slice(0, 200) };
-      main = { bytes: await readFile(out), mime: alpha ? "video/webm" : "video/mp4" }; mainFile = out; meta.converted = true; meta.mime = main.mime;
-    }
-    // غلاف تلقائي: إطار ممثِّل غير أسود (فلتر thumbnail) بعد بداية المقطع، بحجم صغير — PNG ليحفظ الشفافية
-    const c = join(dir, "c.png"), mdec = alpha && main.mime === "video/webm" ? ["-c:v", "libvpx-vp9"] : dec;
-    const ss = p.duration ? String(Math.min(1.5, p.duration * 0.25).toFixed(2)) : "0";
-    let r = await run(["-ss", ss, ...mdec, "-i", mainFile, "-vf", "thumbnail=40,scale='min(400,iw)':-2", "-frames:v", "1", c], 60_000);
-    if (r.code !== 0) r = await run([...mdec, "-i", mainFile, "-vf", "scale='min(400,iw)':-2", "-frames:v", "1", c], 60_000);
-    const cover = r.code === 0 ? { bytes: await readFile(c), mime: "image/png" } : undefined;
-    // نسخة معاينة خفيفة للمكتبة (عند الحاجة فقط): 360p، 8 ثوانٍ كحد أقصى، مع الصوت لزر «تجربة الصوت»
-    let preview: Out | undefined;
-    if (main.bytes.length > 2.5 * 1024 * 1024 || (p.w || 0) > 720) {
-      const pv = join(dir, alpha ? "p.webm" : "p.mp4");
-      const pa = alpha ? [...mdec, "-i", mainFile, "-t", "8", "-vf", "scale=-2:'min(360,ih)'", "-c:v", "libvpx-vp9", "-pix_fmt", "yuva420p", "-b:v", "0", "-crf", "40", "-deadline", "realtime", "-cpu-used", "8", "-auto-alt-ref", "0", ...(p.hasAudio ? ["-c:a", "libopus", "-b:a", "48k"] : ["-an"]), pv]
-        : ["-i", mainFile, "-t", "8", "-vf", "scale=-2:'min(360,ih)'", "-c:v", "libx264", "-preset", "veryfast", "-crf", "30", "-pix_fmt", "yuv420p", "-movflags", "+faststart", ...(p.hasAudio ? ["-c:a", "aac", "-b:a", "64k"] : ["-an"]), pv];
-      const q = await run(pa, 120_000); if (q.code === 0) { const b = await readFile(pv); if (b.length < main.bytes.length) preview = { bytes: b, mime: alpha ? "video/webm" : "video/mp4" }; }
-    }
-    meta.size = main.bytes.length; meta.origSize = bytes.length;
-    return { ok: true, main, cover, preview, meta, kind: "video" };
+    const r = await processFile(src, dir, insp, bytes.length);
+    if (!r.ok) return r;
+    const rd = async (f?: FOut) => (f ? { bytes: new Uint8Array(await readFile(f.path)), mime: f.mime } : undefined);
+    return { ok: true, main: (await rd(r.main))!, cover: r.cover, preview: await rd(r.preview), meta: r.meta, kind: r.kind };
   } finally { rm(dir, { recursive: true, force: true }).catch(() => {}); }
 }

@@ -6680,9 +6680,9 @@ function alEventGroup(ev){ for(const [k,[,list]] of Object.entries(AL_EVENT_GROU
 const AL_STYLE_KW={enemy:["enemy","عدو","monster","وحش"],money:["money","cash","coin","dollar","فلوس","عملة","مال"],fire:["fire","flame","نار"],diamond:["diamond","gem","الماس","ألماس"],royal:["royal","king","crown","ملك","تاج"],butterfly:["butterfl","فراش"],flowers:["flower","rose","ورد","زهر"],lightning:["lightning","thunder","bolt","برق"],ice:["ice","snow","frozen","ثلج","جليد"],gaming:["game","gaming","pixel","العاب","قيم"],robot:["robot","cyber","روبوت"],galaxy:["galaxy","space","star","مجرة","فضاء"],hearts:["heart","love","قلب"],animals:["lion","tiger","cat","dog","animal","اسد","أسد","حيوان"],saudi:["saudi","ksa","سعود"],anime:["anime","انمي","أنمي"],funny:["funny","meme","lol","ضحك"],cinematic:["cinema","epic","movie","سينما"],minimal:["minimal","simple","basic","بسيط"],b6o6:["b6o6","btot","بطوط"]};
 function alSuggestStyle(name){ const n=String(name||"").toLowerCase(); for(const [k,kw] of Object.entries(AL_STYLE_KW)) if(kw.some(w=>n.includes(w))) return k; return "" }
 /** رسائل أخطاء الرفع الواضحة (للخادم والواجهة) */
-const AL_ERR={empty:"الملف فارغ أو تالف",too_large:"الملف أكبر من الحد المسموح",bad_type:"صيغة غير مدعومة أو ملف تالف — المدعوم: MP4, WebM, MOV, GIF, APNG, PNG, WebP, MP3, WAV, OGG, Lottie JSON",quota:"امتلأت مساحة ملفاتك — احذف آيرتات قديمة",bad_lottie:"ملف Lottie غير صالح (ليس JSON صحيحاً أو بنيته ناقصة)",lottie_expressions:"ملف Lottie يحتوي تعابير برمجية — غير مسموح لأسباب أمنية",lottie_external:"ملف Lottie يحمّل ملفات من الإنترنت — غير مسموح",too_complex:"ملف Lottie معقد جداً",not_playable:"الفيديو بترميز لا يشغّله المتصفح/OBS ولم ينجح تحويله",convert_failed:"فشل تحويل الفيديو إلى صيغة قابلة للتشغيل",no_converter:"هذا الترميز يحتاج تحويلاً والمحوّل غير متوفر على الخادم حالياً — صدّر الملف بصيغة MP4 (H.264) أو WebM",corrupt:"الملف تالف — لم يمكن قراءة الفيديو",too_long:"المقطع أطول من 60 ثانية",rate_limited:"رفعت ملفات كثيرة — انتظر دقيقة",bad_form:"لم يصل الملف — أعد المحاولة",unauthorized:"سجّل الدخول أولاً",network:"انقطع الاتصال أثناء الرفع — أعد المحاولة"};
+const AL_ERR={empty:"الملف فارغ أو تالف",too_large:"الملف أكبر من الحد المسموح",bad_type:"صيغة غير مدعومة أو ملف تالف — المدعوم: MP4, WebM, MOV, GIF, APNG, PNG, WebP, MP3, WAV, OGG, Lottie JSON",quota:"امتلأت مساحة ملفاتك — احذف آيرتات قديمة",bad_lottie:"ملف Lottie غير صالح (ليس JSON صحيحاً أو بنيته ناقصة)",lottie_expressions:"ملف Lottie يحتوي تعابير برمجية — غير مسموح لأسباب أمنية",lottie_external:"ملف Lottie يحمّل ملفات من الإنترنت — غير مسموح",too_complex:"ملف Lottie معقد جداً",not_playable:"الفيديو بترميز لا يشغّله المتصفح/OBS ولم ينجح تحويله",convert_failed:"فشل تحويل الفيديو إلى صيغة قابلة للتشغيل",no_converter:"هذا الترميز يحتاج تحويلاً والمحوّل غير متوفر على الخادم حالياً — صدّر الملف بصيغة MP4 (H.264) أو WebM",corrupt:"الملف تالف — لم يمكن قراءة الفيديو",too_long:"المقطع أطول من 60 ثانية",rate_limited:"رفعت ملفات كثيرة — انتظر دقيقة",bad_form:"لم يصل الملف — أعد المحاولة",unauthorized:"سجّل الدخول أولاً",network:"انقطع الاتصال أثناء الرفع — أعد المحاولة",too_heavy:"الفيديو أثقل من قدرة الخادم الحالي على التحويل — صدّره WebM أو MP4 (H.264) بدقة 1080p أو أقل، أو رقِّ خطة الخادم",server_error:"خطأ في الخادم أثناء حفظ الملف — أعد المحاولة",gateway:"الخادم لم يرد (HTTP 502/504) — غالباً أُعيد تشغيله، أعد المحاولة بعد دقيقة"};
 const AL_CATS={celebrate:"احتفال",funny:"مضحك",gaming:"ألعاب",royal:"ملكي",anime:"أنمي",minimal:"بسيط",saudi:"سعودي",neon:"نيون",cute:"لطيف",other:"أخرى",...AL_STYLES}; // التصنيفات القديمة تبقى صالحة للآيرتات القديمة
-const AL_LIMITS={media:30*1024*1024,audio:5*1024*1024,cover:2*1024*1024,quota:200*1024*1024,name:60,desc:400,tags:8,durMin:1,durMax:30};
+const AL_LIMITS={media:50*1024*1024,audio:5*1024*1024,cover:2*1024*1024,quota:200*1024*1024,name:60,desc:400,tags:8,durMin:1,durMax:24*3600}; // لا حد عملي لمدة الآيرت — مدة الفيديو كاملة
 const AL_VARS=["username","display_name","avatar","likes","total_likes","gift_name","gift_image","gift_count","diamonds","amount","currency","message","platform","rank","level","time_added","time_removed","goal","progress"];
 /** إطارات الصورة الشخصية (32) */
 const AL_FRAMES=[["none","شفاف بالكامل"],["circle","دائرة بسيطة"],["ring","حلقة"],["gold","ذهبي"],["silver","فضي"],["neon","نيون"],["fire","ناري"],["ice","جليدي"],["crown","تاج"],["hex","سداسي"],["square","مربع"],["rounded","مربع ناعم"],["diamond","ماسي"],["star","نجمة"],["heart","قلب"],["shield","درع"],["rainbow","قوس قزح"],["pulse","نابض"],["glitch","جليتش"],["spin","دوار"],["double","حلقتان"],["dash","متقطع"],["glow","توهج"],["shadow","ظل"],["leaf","أوراق"],["galaxy","مجرة"],["pixel","بكسل"],["royal","ملكي"],["saudi","أخضر سعودي"],["pink","وردي"],["cyber","سايبربنك"],["b6o6","B6O6"],["butterfly","فراشات"],["lightning","برق"],["rose","ورد"],["wings","أجنحة"],["crystal","كريستال"],["chrome","كروم"],["cloud","سحابي"],["crescent","هلال"],["sun","شمس"],["emerald","زمرد"],["pearl","لؤلؤ"],["falcon","صقر"],["lion","أسد"],["dragon","تنين"]];
@@ -6724,7 +6724,7 @@ function alValidate(b,opt={}){ const e=[]; const name=alS(b.name,AL_LIMITS.name)
  if(!name) e.push("اسم الآيرت مطلوب"); // الوصف اختياري
  const kind=AL_KINDS[b.kind]?b.kind:""; if(!kind) e.push("نوع الآيرت مطلوب");
  const event=AL_EVENTS[b.event]?b.event:""; if(!event) e.push("الحدث مطلوب");
- const durationSec=Math.round(alN(b.durationSec,5)); if(durationSec<AL_LIMITS.durMin||durationSec>AL_LIMITS.durMax) e.push("المدة بين 1 و30 ثانية");
+ const durationSec=Math.round(alN(b.durationSec,5)); if(durationSec<AL_LIMITS.durMin||durationSec>AL_LIMITS.durMax) e.push("مدة العرض يجب أن تكون ثانية أو أكثر");
  if(kind&&kind!=="template"&&kind!=="audio"&&!b.mediaId) e.push("ملف الآيرت مطلوب"); if(kind==="audio"&&!b.audioId&&!b.mediaId) e.push("الملف الصوتي مطلوب");
  if(kind==="template"&&!alS(b.config&&b.config.template,40)) e.push("اختر القالب");
  const category=AL_CATS[b.category]?b.category:""; if(!AL_STYLES[b.category]&&!(opt.legacy&&category)) e.push("تصنيف التصميم مطلوب");
@@ -6776,7 +6776,7 @@ function alInspect(b){ const mime=alSniff(b), r={mime,family:/^video/.test(mime)
  return r }
 /** وصف الوسائط المحفوظ مع الآيرت (أرقام محصورة فقط) */
 function alMeta(m){ m=m&&typeof m==="object"?m:{}; const n=(v,mx)=>Number.isFinite(+v)&&+v>=0?Math.min(+v,mx):null;
- return {w:n(m.w,10000),h:n(m.h,10000),duration:n(m.duration,3600),fps:n(m.fps,240),size:n(m.size,1e9),hasAudio:m.hasAudio==null?null:!!m.hasAudio,alpha:m.alpha==null?null:!!m.alpha,codec:alS(m.codec,30),mime:alS(m.mime,40),converted:!!m.converted,animated:m.animated==null?null:!!m.animated} }
+ return {w:n(m.w,10000),h:n(m.h,10000),duration:n(m.duration,86400),fps:n(m.fps,240),size:n(m.size,1e9),hasAudio:m.hasAudio==null?null:!!m.hasAudio,alpha:m.alpha==null?null:!!m.alpha,codec:alS(m.codec,30),mime:alS(m.mime,40),converted:!!m.converted,animated:m.animated==null?null:!!m.animated} }
 /** Lottie آمن: بنية صحيحة، بدون تعابير برمجية (expressions) ولا روابط خارجية ولا حجم مبالغ */
 function alLottieSafe(j){ if(!j||typeof j!=="object"||!Array.isArray(j.layers)||!(alN(j.w)>0)||!(alN(j.h)>0)) return {ok:false,error:"bad_lottie"};
  let bad=null, n=0; const walk=(o,d)=>{ if(bad||d>60) return; if(++n>400000){ bad="too_complex"; return } if(Array.isArray(o)){ for(const x of o) walk(x,d+1); return } if(o&&typeof o==="object"){ for(const k in o){ const v=o[k]; if(k==="x"&&typeof v==="string"){ bad="lottie_expressions"; return } if(k==="u"&&typeof v==="string"&&/^(https?:|\/\/|javascript:)/i.test(v)){ bad="lottie_external"; return } if(k==="p"&&typeof v==="string"&&/^(https?:|\/\/|javascript:)/i.test(v)){ bad="lottie_external"; return } walk(v,d+1) } } };
@@ -6787,7 +6787,7 @@ function alRule(r){ r=r&&typeof r==="object"?r:{}; const c=r.cond||{};
  return {id:alS(r.id||"r"+Math.random().toString(36).slice(2,8),40),alertId:alS(r.alertId,40),event:AL_EVENTS[r.event]?r.event:"follow",enabled:r.enabled!==false,label:alS(r.label,40),level:alS(r.level,30),
   cond:{op:AL_OPS[c.op]?c.op:"any",value:alN(c.value,0),value2:alN(c.value2,0),user:alS(c.user,60).trim().replace(/^@/,"").toLowerCase(),gift:alS(c.gift,60).trim().toLowerCase(),keyword:alS(c.keyword,60).trim().toLowerCase(),platform:alS(c.platform,20),role:["","mod","sub","follower"].includes(c.role)?c.role:""},
   once:["none","user","session"].includes(r.once)?r.once:"none",priority:Math.max(0,Math.min(100,Math.round(alN(r.priority,10)))),cooldownSec:Math.max(0,Math.min(3600,alN(r.cooldownSec,0))),also:!!r.also,
-  over:{title:alS(r.over&&r.over.title,140),sub:alS(r.over&&r.over.sub,140),volume:r.over&&r.over.volume!=null?Math.max(0,Math.min(1,alN(r.over.volume,.8))):null,durationSec:r.over&&r.over.durationSec?Math.max(1,Math.min(30,alN(r.over.durationSec,5))):null,tts:!!(r.over&&r.over.tts),ttsText:alS(r.over&&r.over.ttsText,200)}} }
+  over:{title:alS(r.over&&r.over.title,140),sub:alS(r.over&&r.over.sub,140),volume:r.over&&r.over.volume!=null?Math.max(0,Math.min(1,alN(r.over.volume,.8))):null,durationSec:r.over&&r.over.durationSec?Math.max(1,Math.min(AL_LIMITS.durMax,alN(r.over.durationSec,5))):null,tts:!!(r.over&&r.over.tts),ttsText:alS(r.over&&r.over.ttsText,200)}} }
 function alCfg(c){ c=c&&typeof c==="object"?c:{}; return {enabled:c.enabled!==false,rules:(Array.isArray(c.rules)?c.rules:[]).slice(0,200).map(alRule),gapMs:Math.max(0,Math.min(10000,alN(c.gapMs,600))),maxQueue:Math.max(1,Math.min(100,alN(c.maxQueue,30))),mergeLikes:c.mergeLikes!==false,tts:!!c.tts} }
 function alNewState(){ return {once:{},last:{},ul:{},tl:0,gifted:{},commented:{},uc:{},n:0} }
 const cmpOp=(op,x,a,b)=>op==="any"||op==="eq"&&x===a||op==="gt"&&x>a||op==="gte"&&x>=a||op==="lt"&&x<a||op==="lte"&&x<=a||op==="between"&&x>=Math.min(a,b)&&x<=Math.max(a,b);
@@ -6965,13 +6965,13 @@ Object.assign(View.prototype,{
   try{ await this.aboxPlay(it,A.cur) }catch(e){} A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
-  const c=alConfig(d.config), dur=Math.max(1,Math.min(30,+(it.over&&it.over.durationSec)||+d.durationSec||5))*1000;
+  const c=alConfig(d.config), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى: الآيرت يأخذ مدته كاملة
   this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r);
   if(d.kind==="template"){ return this.aboxTemplate(d,c,it,r,dur,cur) }
-  let media=null, lot=null;
+  let media=null, lot=null, vid=null;
   if(d.mediaUrl&&d.kind!=="audio"){
    if(d.kind==="lottie"){ media=document.createElement("div"); media.className="ab-media"; r.appendChild(media); try{ const L=await abLottie(); lot=L.loadAnimation({container:media,renderer:"svg",loop:true,autoplay:true,path:d.mediaUrl}) }catch(e){} }
-   else if(d.kind==="video"){ const v=document.createElement("video"); v.className="ab-media"+(c.fit==="cover"?" cover":""); v.src=d.mediaUrl; v.playsInline=true; v.muted=!!(ed||this.opts.mute||!c.videoSound); v.volume=c.volume; v.crossOrigin="anonymous";
+   else if(d.kind==="video"){ const v=document.createElement("video"); v.className="ab-media"+(c.fit==="cover"?" cover":""); v.src=d.mediaUrl; v.playsInline=true; vid=v; v.muted=!!(ed||this.opts.mute||!c.videoSound); v.volume=c.volume; v.crossOrigin="anonymous";
     if(c.chroma.on){ media=this.aboxChroma(v,c); r.appendChild(media) } else { media=v; r.appendChild(v) } v.play().catch(()=>{ v.muted=true; v.play().catch(()=>{}) }) }
    else { const im=document.createElement("img"); im.className="ab-media"+(c.fit==="cover"?" cover":""); im.src=d.mediaUrl; im.alt=""; media=im; r.appendChild(im) } }
   const V=it.vars||{};
@@ -6981,7 +6981,9 @@ Object.assign(View.prototype,{
   if(it.test&&ed) r.insertAdjacentHTML("beforeend",`<div class="ab-test">تجربة</div>`);
   if(d.audioUrl&&!ed&&!this.opts.mute){ try{ const a=new Audio(d.audioUrl); a.volume=it.over&&it.over.volume!=null?it.over.volume:c.volume; cur.audio=a; setTimeout(()=>{ if(!cur.skip) a.play().catch(()=>{}) },c.audioDelay) }catch(e){} }
   await r.animate(AB_IN_KF[c.enter]||AB_IN_KF.popIn,{duration:650/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}).finished.catch(()=>{});
-  const t0=Date.now(); while(Date.now()-t0<dur-1000&&!cur.skip) await abWait(100);
+  // لا يُقطع المقطع: يبقى الآيرت حتى تنتهي المدة المحددة وحتى ينتهي الفيديو/الصوت نفسه
+  const mediaLeft=el=>!!(el&&!el.ended&&!el.error&&isFinite(el.duration)&&el.duration-el.currentTime>.45&&(!el.paused||el.currentTime===0)&&Date.now()-t0<el.duration*1000+4000);
+  const t0=Date.now(); while(!cur.skip&&(Date.now()-t0<dur-1000||mediaLeft(vid)||mediaLeft(cur.audio))) await abWait(100);
   await r.animate(AB_OUT_KF[c.exit]||AB_OUT_KF.fadeOut,{duration:450/c.speed,easing:"ease-in",fill:"forwards"}).finished.catch(()=>{});
   try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
   r.remove(); if(ed) this.applyAbox(w,this.abW,this.abH) },
@@ -9333,7 +9335,7 @@ function alFormHTML(){ const A=ALS(), F=A.form||(A.form=alNewForm()), c=F.config
  <div class="card"><h3>2️⃣ معلومات الآيرت</h3>
  <div class="grid g2" style="gap:8px">${fi("name","اسم الآيرت *",tx("name",F.name,"مثال: Enemy Legendary"))}${fi("event","نوع الحدث *",`<select class="inp" data-alff="event">${grpOpts}</select>`)}
  ${fi("cat","تصنيف التصميم * "+sug,`<select class="inp" data-alff="category"><option value="">— اختر الطابع —</option>${o(AL_STYLES,F.category)}${F.category&&!AL_STYLES[F.category]&&AL_CATS[F.category]?`<option value="${F.category}" selected>${esc(AL_CATS[F.category])} (قديم)</option>`:""}</select>`)}
- ${fi("dur","مدة العرض: "+F.durationSec+" ث"+(F.durAuto?` <span class="mut">(من الملف ${F.durAuto} ث)</span>`:""),nm("durationSec",F.durationSec,1,30))}
+ ${fi("dur","مدة العرض (ثانية)"+(F.durAuto?` <span class="mut">— طول الملف ${F.durAuto} ث${F.durAuto>F.durationSec?" ⚠️ أقصر من المقطع":""}</span>`:""),`<div class="row" style="gap:6px"><input class="inp" type="number" min="1" step="1" data-alff="durationSec" value="${F.durationSec}" style="width:110px">${F.durAuto?`<button class="btn sm" data-aldurfull>⏱️ طول المقطع كاملاً</button>`:""}</div>`)}
  ${F.kind==="video"||F.kind==="audio"||F.audioId||F.audioData?fi("snd","الصوت",`<select class="inp" data-alff="config.videoSound"><option value="1">🔊 تشغيل</option><option value="0" ${c.videoSound?"":"selected"}>🔇 كتم</option></select>`):""}
  ${fi("designerName","اسم المصمم",tx("designerName",F.designerName,CFG?CFG.profile.name:""))}</div>
  ${fi("description","وصف الآيرت (اختياري)",`<textarea class="inp" rows="2" data-alff="description" maxlength="400">${esc(F.description)}</textarea>`)}${fi("tags","الكلمات المفتاحية (اختيارية)",tx("tags",Array.isArray(F.tags)?F.tags.join("، "):F.tags,"فخم، ملكي، ذهبي"))}</div>
@@ -9375,8 +9377,8 @@ async function alAnalyze(file,ins){ const out={meta:{size:file.size,mime:ins.mim
  return out }
 const alDataBlob=u=>fetch(u).then(r=>r.blob());
 /** رفع مع شريط نسبة (XHR) */
-function alXhr(fd,onPct){ return new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/alerts/upload"); x.responseType="json"; x.upload.onprogress=e=>{ if(e.lengthComputable) onPct(Math.round(e.loaded/e.total*100)) }; x.upload.onload=()=>onPct(100,true);
- x.onload=()=>{ const j=x.response||{}; if(x.status>=400&&!j.error) j.error="HTTP "+x.status; res(j) }; x.onerror=()=>res({error:"network"}); x.ontimeout=()=>res({error:"network"}); x.timeout=600000; x.send(fd) }) }
+function alXhr(file,slot,onPct){ return new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/alerts/upload"); x.responseType="json"; x.setRequestHeader("x-slot",slot); x.setRequestHeader("x-filename",encodeURIComponent(file.name||"file")); x.setRequestHeader("content-type","application/octet-stream"); x.upload.onprogress=e=>{ if(e.lengthComputable) onPct(Math.round(e.loaded/e.total*100)) }; x.upload.onload=()=>onPct(100,true);
+ x.onload=()=>{ const j=x.response||{}; if(x.status>=400&&!j.error){ j.error=[502,503,504].includes(x.status)?"gateway":"HTTP "+x.status; j.status=x.status } res(j) }; x.onerror=()=>res({error:"network"}); x.ontimeout=()=>res({error:"network"}); x.timeout=20*60000; x.send(file) }) } // الملف يُرسل خاماً (بدون FormData) فيكتبه الخادم مباشرة على القرص
 function alUpSet(p){ const A=ALS(); A.up={...(A.up||{}),...p}; if(S.page==="alerts"&&A.tab==="create"){ const st=document.querySelector(".al-up"); if(p.pct!=null&&st&&A.up.phase==="upload"){ const i=st.querySelector(".al-bar i"), s=st.querySelector(".small.mut:last-child"); if(i) i.style.width=A.up.pct+"%"; if(s) s.textContent=A.up.pct+"%"; return } renderPage(true) } }
 async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
  alUpSet({phase:"read",pct:0,name:f.name,size:f.size,file:f,msg:""});
@@ -9385,7 +9387,7 @@ async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
  const ins=alInspect(buf); let an={meta:{},cover:null,playable:true}; try{ an=await alAnalyze(f,ins) }catch(e){}
  if(!F.category){ const s=alSuggestStyle(f.name); if(s){ F.sugStyle=s } }
  if(!F.name) F.name=f.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").slice(0,60);
- const setDur=d=>{ if(d){ F.durAuto=Math.round(d*10)/10; F.durationSec=Math.max(1,Math.min(30,Math.round(d))) } };
+ const setDur=d=>{ if(d){ F.durAuto=Math.round(d*10)/10; F.durationSec=Math.max(1,Math.ceil(d-.05)) } }; // مدة الفيديو كاملة — بدون حد أعلى
  if(!CFG){ // وضع التجربة: لا خادم ولا تحويل — نقبل ما يشغّله المتصفح فقط
   if(f.size>3*1024*1024) return alUpSet({phase:"error",msg:"في وضع التجربة الحد 3MB — سجّل الدخول على المنصة للرفع حتى "+alFmtSize(AL_LIMITS.media)});
   if(!an.playable) return alUpSet({phase:"error",msg:ins.family==="video"?"المتصفح لا يستطيع تشغيل ترميز هذا الفيديو. على المنصة (بعد تسجيل الدخول) يحوّله الخادم تلقائياً — أو صدّره MP4 (H.264) أو WebM":AL_ERR.corrupt});
@@ -9393,19 +9395,19 @@ async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
   if(ins.family==="audio"){ F.kind="audio"; F.audioData=data; F.audioId="local"; F.mediaData=""; F.mediaId="" } else { F.kind=ins.kind; F.mediaData=data; F.mediaId="local"; F.mediaMime=ins.mime }
   F.meta=alMeta(an.meta); if(an.cover&&F.coverAuto!==false){ F.coverData=an.cover; F.coverId="local" } setDur(an.meta.duration);
   return alUpSet({phase:"done",file:null}) }
- alUpSet({phase:"upload",pct:0}); const fd=new FormData(); fd.append("slot","media"); fd.append("file",f);
- const j=await alXhr(fd,(p,done)=>alUpSet(done?{phase:"process",pct:100}:{pct:p}));
+ alUpSet({phase:"upload",pct:0});
+ const j=await alXhr(f,"media",(p,done)=>alUpSet(done?{phase:"process",pct:100}:{pct:p}));
  if(j.error) return alUpSet({phase:"error",msg:(j.message||AL_ERR[j.error]||"تعذر رفع الملف ("+j.error+")")+(j.detail?" — "+j.detail:"")});
  if(j.slot==="audio"){ F.kind="audio"; F.audioId=j.id; F.audioUrl=j.url; F.mediaId=""; F.mediaUrl="" } else { F.kind=j.kind; F.mediaId=j.id; F.mediaUrl=j.url; F.mediaMime=j.mime }
  F.meta=j.meta||{}; F.previewId=j.previewId||""; F.previewUrl=j.previewUrl||""; setDur(F.meta.duration);
- if(F.coverAuto!==false){ if(j.coverId){ F.coverId=j.coverId; F.coverUrl=j.coverUrl } else if(an.cover){ alUpSet({phase:"cover"}); const cf=new FormData(); cf.append("slot","cover"); cf.append("file",await alDataBlob(an.cover),"cover.png"); const c=await alXhr(cf,()=>{}); if(!c.error){ F.coverId=c.id; F.coverUrl=c.url } } else if(F.kind!=="audio"){ F.coverId=""; F.coverUrl="" } }
+ if(F.coverAuto!==false){ if(j.coverId){ F.coverId=j.coverId; F.coverUrl=j.coverUrl } else if(an.cover){ alUpSet({phase:"cover"}); const cb=await alDataBlob(an.cover); const c=await alXhr(new File([cb],"cover.png",{type:"image/png"}),"cover",()=>{}); if(!c.error){ F.coverId=c.id; F.coverUrl=c.url } } else if(F.kind!=="audio"){ F.coverId=""; F.coverUrl="" } }
  A.quota=null; alUpSet({phase:"done",file:null}) }
 /** ملفات إضافية: الصوت المنفصل وتغيير الغلاف */
 async function alUpload(slot,t){ const A=ALS(), F=A.form, f=t.files&&t.files[0]; if(!f||!F) return;
  const buf=new Uint8Array(await f.arrayBuffer()); const chk=alCheckFile(slot,buf); if(!chk.ok) return toast("❌ "+(AL_ERR[chk.error]||chk.error));
  if(!CFG){ if(f.size>3*1024*1024) return toast("في وضع التجربة الحد 3MB"); const r=new FileReader(); r.onload=()=>{ F[slot+"Data"]=r.result; F[slot+"Id"]="local"; if(slot==="cover") F.coverAuto=false; renderPage(true) }; r.readAsDataURL(f); return }
- toast("⏳ جاري الرفع…"); const fd=new FormData(); fd.append("slot",slot); fd.append("file",f);
- const j=await alXhr(fd,()=>{}); if(j.error) return toast("❌ "+(j.message||AL_ERR[j.error]||j.error));
+ toast("⏳ جاري الرفع…");
+ const j=await alXhr(f,slot,()=>{}); if(j.error) return toast("❌ "+(j.message||AL_ERR[j.error]||j.error));
  F[slot+"Id"]=j.id; F[slot+"Url"]=j.url; if(slot==="cover") F.coverAuto=false; A.quota=null; toast("✅ تم رفع الملف"); renderPage(true) }
 async function alSaveForm(){ const A=ALS(), F=A.form; const body={name:F.name,description:F.description,kind:F.kind,event:F.event,durationSec:+F.durationSec,category:F.category,tags:F.tags,designerName:F.designerName,visibility:F.visibility,rightsConfirmed:!!F.rightsConfirmed,mediaId:F.mediaId||null,audioId:F.audioId||null,coverId:F.coverId||null,previewId:F.previewId||null,meta:F.meta,config:F.config};
  const v=alValidate(body,{legacy:!!F.id}); if(!v.ok){ A.ferr=v.errors; return renderPage(true) } A.ferr=null;
@@ -9501,6 +9503,7 @@ function alClick(t,d){ const A=ALS();
  if(t.hasAttribute("data-alpick")||t.closest&&t.closest("[data-alpick]")){ const i=document.getElementById("al-file"); if(i) i.click(); return true }
  if(t.hasAttribute("data-alretry")){ const f=A.up&&A.up.file; if(f) alPickFile(f); return true }
  if(d.alsug){ A.form.category=d.alsug; renderPage(true); return true }
+ if(t.hasAttribute("data-aldurfull")){ A.form.durationSec=Math.max(1,Math.ceil(A.form.durAuto-.05)); renderPage(true); return true }
  if(t.hasAttribute("data-altxt")){ A.form.config.title.text=AL_EVENT_TEXT[A.form.event]; renderPage(true); return true }
  if(t.hasAttribute("data-altpl")){ const F=A.form; F.kind="template"; F.config.template=F.config.template||FA_DESIGNS[0].id; F.category=F.category||"b6o6"; renderPage(true); return true }
  if(d.aluse){ const id=d.aluse, a=A.cache[id]||alOfficial().find(x=>x.id===id)||alLocal().find(x=>x.id===id); const go=()=>{ alAddRule(id,a&&a.event||"follow"); A.tab="rules"; renderPage(true); toast("✅ أُضيفت قاعدة — عدّل الشرط ثم جرّبها") };
