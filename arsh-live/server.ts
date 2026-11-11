@@ -13,6 +13,9 @@ import { createConnectors } from "./src/server/donations/connectors";
 
 const dev = process.env.NODE_ENV !== "production";
 const port = Number(process.env.PORT || 3000);
+// لا نُسقط الخادم بسبب خطأ اتصال واحد — نسجله فقط
+process.on("uncaughtException", e => console.error("[uncaught]", e?.message || e));
+process.on("unhandledRejection", e => console.error("[unhandled]", (e as any)?.message || e));
 const app = next({ dev });
 const handle = app.getRequestHandler();
 const prisma = new PrismaClient();
@@ -26,7 +29,7 @@ async function userIdOf(room: string) {
 
 app.prepare().then(() => {
   const server = createServer((req, res) => handle(req, res, parse(req.url!, true)));
-  const wss = new WebSocketServer({ noServer: true, maxPayload: 512 * 1024 });
+  const wss = new WebSocketServer({ noServer: true, maxPayload: 8 * 1024 * 1024 });
   const nextUpgrade = (app as any).getUpgradeHandler?.();
   server.on("upgrade", (req, socket, head) => {
     if (parse(req.url!).pathname === "/ws") wss.handleUpgrade(req, socket, head, ws => wss.emit("connection", ws, req));

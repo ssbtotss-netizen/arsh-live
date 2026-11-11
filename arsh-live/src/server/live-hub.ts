@@ -62,6 +62,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   wss.on("connection", (ws: Client) => {
     ws.alive = true;
     ws.on("pong", () => (ws.alive = true));
+    ws.on("error", e => console.error("[ws]", (e as any)?.code || e?.message));
     ws.on("message", async raw => {
       let m: any; try { m = JSON.parse(String(raw)); } catch { return; }
       if (!m || typeof m !== "object") return;

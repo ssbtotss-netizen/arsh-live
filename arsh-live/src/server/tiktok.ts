@@ -51,7 +51,10 @@ export function startTikTok(
     const connect = async () => {
       if (stopped) return;
       try { conn?.disconnect(); } catch {}
-      conn = new Conn(username, { enableExtendedGiftInfo: true, processInitialData: false });
+      // مفتاح خدمة التوقيع (Euler Stream) يُضبط في إعدادات الخادم فقط: TIKTOK_SIGN_API_KEY — يرفع حدود الاتصال من خوادم الاستضافة
+      const opts: any = { enableExtendedGiftInfo: true, processInitialData: false };
+      if (process.env.TIKTOK_SIGN_API_KEY) opts.signApiKey = process.env.TIKTOK_SIGN_API_KEY;
+      conn = new Conn(username, opts);
 
       // معرّف الرسالة من TikTok يُستخدم لمنع احتساب نفس الحدث مرتين
       const mid = (d: any, kind: string) => { const x = d?.msgId ?? d?.common?.msgId ?? d?.event?.msgId; return x ? `${kind}:${x}` : undefined; };
@@ -105,7 +108,9 @@ export function startTikTok(
         } catch {}
       } catch (e: any) {
         handle.connected = false;
-        cb.onStatus(false, `تعذر الاتصال بـ @${username}: تأكد أن الحساب في بث مباشر الآن`);
+        const msg = String(e?.message || e || "").slice(0, 300);
+        console.error(`[tiktok] connect @${username} failed:`, msg, e?.exception?.message || e?.cause?.message || "");
+        cb.onStatus(false, `تعذر الاتصال بـ @${username}: ${tiktokReason(msg)}`);
         schedule();
       }
     };
@@ -126,4 +131,14 @@ export function startTikTok(
 
   handle.stop = () => { stopped = true; clearTimeout(retry); };
   return handle;
+}
+
+/** سبب مفهوم بالعربي من رسالة خطأ المكتبة (بدون اختلاق: غير المعروف يُعرض كما هو مختصراً) */
+export function tiktokReason(m: string) {
+  const x = m.toLowerCase();
+  if (/offline|not live|isn't online|no live|ended/.test(x)) return "الحساب ليس في بث مباشر الآن (أو البث خاص)";
+  if (/rate ?limit|429|too many/.test(x)) return "تجاوز حد خدمة التوقيع — حاول بعد دقيقة (أو أضف مفتاح TIKTOK_SIGN_API_KEY)";
+  if (/sign|euler|api key|unauthori[sz]ed|401/.test(x)) return "خدمة التوقيع رفضت الطلب — يلزم مفتاح TIKTOK_SIGN_API_KEY على الخادم";
+  if (/403|captcha|blocked|forbidden|room ?id|user_not_found|not found/.test(x)) return "TikTok رفض الطلب من الخادم أو لم يجد غرفة البث — تأكد من اسم المستخدم وأن البث عام";
+  return "تأكد أن الحساب في بث مباشر الآن" + (m ? ` (${m.slice(0, 90)})` : "");
 }

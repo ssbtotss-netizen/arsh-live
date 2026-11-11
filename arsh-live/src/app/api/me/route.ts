@@ -43,7 +43,7 @@ export async function PUT(req: Request) {
     if (over) return NextResponse.json({ error: over, code: "plan_limit" }, { status: 402 });
     const ids: string[] = [];
     body.layouts.forEach((l: any, i: number) => {
-      if (typeof l?.id !== "string" || !Array.isArray(l.widgets) || l.widgets.length > 60 || JSON.stringify(l.widgets).length > 200000) return;
+      if (typeof l?.id !== "string" || !Array.isArray(l.widgets) || l.widgets.length > 60 || JSON.stringify(l.widgets).length > 6_000_000) return;
       ids.push(l.id);
       const data = { name: String(l.name || "تخطيط").slice(0, 80), canvas: canvasValid(l.canvas) ? l.canvas : "vertical", widgets: l.widgets, sort: i };
       ops.push(prisma.layout.upsert({ where: { id: l.id }, create: { id: l.id, userId: u.id, ...data }, update: data }));
