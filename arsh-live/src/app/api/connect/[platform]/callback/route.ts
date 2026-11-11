@@ -2,7 +2,8 @@ import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { currentUser } from "@/lib/auth";
 
-export async function GET(req: Request, { params }: { params: { platform: string } }) {
+export async function GET(req: Request, ctx: { params: Promise<{ platform: string }> }) {
+  const params = await ctx.params;
   const u = await currentUser(); const url = new URL(req.url); const origin = process.env.PUBLIC_URL || url.origin;
   const back = (q: string) => NextResponse.redirect(`${origin}/dashboard?page=connections&${q}`);
   if (!u) return back("error=unauthorized");

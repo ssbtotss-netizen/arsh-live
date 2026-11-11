@@ -4,11 +4,13 @@ import { prisma } from "@/lib/db";
 import { bioHTML, BIO_CSS } from "@/engine/bio.js";
 
 export const dynamic = "force-dynamic";
-export async function generateMetadata({ params }: { params: { handle: string } }) {
+export async function generateMetadata(props: { params: Promise<{ handle: string }> }) {
+  const params = await props.params;
   const u = await prisma.user.findUnique({ where: { bioHandle: params.handle.toLowerCase() }, select: { bio: true } });
   const b: any = u?.bio || {}; return { title: (b.name || params.handle) + " — B6O6", description: b.about || "رابط البايو" };
 }
-export default async function BioPage({ params }: { params: { handle: string } }) {
+export default async function BioPage(props: { params: Promise<{ handle: string }> }) {
+  const params = await props.params;
   const h = params.handle.toLowerCase();
   const u = await prisma.user.findUnique({ where: { bioHandle: h }, select: { id: true, bio: true } });
   if (!u) notFound();

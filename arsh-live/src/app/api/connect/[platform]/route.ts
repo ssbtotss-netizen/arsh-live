@@ -4,7 +4,8 @@ import { randomBytes, createHash } from "crypto";
 import { currentUser } from "@/lib/auth";
 import { oauthUrl, oauthMissing, OAUTH } from "@/engine/platforms.js";
 
-export async function GET(req: Request, { params }: { params: { platform: string } }) {
+export async function GET(req: Request, ctx: { params: Promise<{ platform: string }> }) {
+  const params = await ctx.params;
   const u = await currentUser(); if (!u) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   const p = params.platform; if (!(OAUTH as any)[p]) return NextResponse.json({ error: "unknown_platform" }, { status: 404 });
   const env = process.env as any; const missing = oauthMissing(p, env);
