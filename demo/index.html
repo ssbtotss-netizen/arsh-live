@@ -7486,7 +7486,7 @@ function bootOverlay(q){
 // عند التشغيل داخل المنصة (Next.js) يحقن الخادم B6O6_CONFIG: الحساب، الغرفة، مفتاح التعديل، الحفظ في قاعدة البيانات
 const CFG=window.B6O6_CONFIG||null;
 const st=CFG?{layouts:CFG.layouts,active:CFG.activeLayoutId,settings:CFG.settings,profile:CFG.profile}:(ls("arsh.app")||{});
-const S={layouts:st.layouts||defaultLayouts(),active:st.active,settings:Object.assign({fx:true,bigGift:1000,wsUrl:"",room:"",key:"",tiktok:"",bg:"stream"},st.settings||{}),profile:Object.assign({name:"عبدالرحمن",plan:"تجريبي"},st.profile||{}),page:"home",sel:null,libTab:"boards",scope:"likes"};
+const S={layouts:st.layouts||defaultLayouts(),active:st.active,settings:Object.assign({fx:true,bigGift:1000,wsUrl:"",room:"",key:"",tiktok:"",bg:"stream"},st.settings||{}),profile:Object.assign({name:"صانع المحتوى",plan:"تجريبي"},st.profile||{}),page:"home",sel:null,libTab:"boards",scope:"likes"};
 window.__arshPM=S.settings.perfMode||"hq";
 S.layouts.forEach(l=>l.widgets.forEach(migrateWidget));
 S.providers=CFG?(CFG.providers||{}):{};
