@@ -169,7 +169,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","مكتبة الآيرتات","🔔"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","مكتبة الآيرتات","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -263,7 +263,7 @@ function renderPage(soft){
    <button class="btn pri" data-go="studio">🎬 رتّب عناصر شاشتك</button><button class="btn" data-go="subathon">⏳ جهّز السبثون</button><button class="btn" data-go="obs">🔗 انسخ روابط OBS</button></div>
    <p class="mut small" style="margin-top:12px">التخطيط النشط: <b style="color:var(--tx)">${esc(l.name)}</b> — ${l.widgets.length} عناصر على ${CV().label}</p></div>
   <div class="card"><h3>المتصدرون الآن</h3><div class="grid g2">${miniTop("❤️ التكبيس",sorted(D.likes).slice(0,3))}${miniTop("🎁 الدعم",sorted(D.gifts).slice(0,3))}</div></div></div>
-  <div class="card" style="margin-top:14px"><h3>كل ما في المنصة</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[["studio","🎬 استوديو البث"],["falerts","🦆 تنبيهات المتابعين"],["alerts","🔔 مكتبة الآيرتات"],["followers","👥 عداد المتابعين"],["latest","✨ آخر التفاعلات"],["library","🏆 قوائم الداعمين"],["subathon","⏳ السبثون"],["bots","🤖 البوتات والقارئ الصوتي"],["actions","⚡ الإجراءات التلقائية"],["music","🎵 طلبات الأغاني"],["poststats","📊 إحصائيات نهاية البث"],["community","📣 Discord وTelegram"],["bio","🔗 رابط البايو"]].map(([g,n])=>`<button class="btn sm" data-go="${g}">${n}</button>`).join("")}</div></div></div>`+testBar();
+  <div class="card" style="margin-top:14px"><h3>كل ما في المنصة</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[["studio","🎬 استوديو البث"],["falerts","🦆 تنبيهات المتابعين"],["alerts","🔔 مكتبة الآيرتات"],["donalerts","💸 الدونيشن والآيرتات"],["followers","👥 عداد المتابعين"],["latest","✨ آخر التفاعلات"],["library","🏆 قوائم الداعمين"],["subathon","⏳ السبثون"],["bots","🤖 البوتات والقارئ الصوتي"],["actions","⚡ الإجراءات التلقائية"],["music","🎵 طلبات الأغاني"],["poststats","📊 إحصائيات نهاية البث"],["community","📣 Discord وTelegram"],["bio","🔗 رابط البايو"]].map(([g,n])=>`<button class="btn sm" data-go="${g}">${n}</button>`).join("")}</div></div></div>`+testBar();
  }
  else if(p==="live"){
   const s=S.settings;
@@ -335,6 +335,7 @@ function renderPage(soft){
  else if(p==="billing"){ h=billHTML() }
  else if(p==="falerts"){ h=faHTML() }
  else if(p==="alerts"){ h=alHTML() }
+ else if(p==="donalerts"){ h=dnHTML() }
  else if(p==="music"){ h=musicHTML() }
  else if(p==="socials"){ h=socialsHTML() }
  else if(p==="donations"){ h=donationsHTML() }
@@ -382,6 +383,7 @@ function renderPage(soft){
  if(p==="poststats") psPreview();
  if(p==="falerts") faPreview();
  if(p==="alerts") alAfter();
+ if(p==="donalerts") dnAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
  if(p==="subathon") mountClockPreview("sa-pv",l.widgets.find(w=>w.type==="subathon")||newWidget("subathon"));
@@ -930,6 +932,7 @@ function onClick(e){
  if(psClick(t,d)) return;
  if(billClick(t,d)) return;
  if(faClick(t,d)) return;
+ if(dnClick(t,d)) return;
  if(alClick(t,d)) return;
  if(musicClick(t,d)) return;
  if(dtClick(t,d)) return;
@@ -1005,7 +1008,7 @@ function onClick(e){
  if(t.hasAttribute("data-wipe")){ return ask("سيتم حذف التخطيطات والبيانات من هذا المتصفح").then(ok=>{ if(!ok) return; try{["arsh.app","arsh.room"].forEach(k=>localStorage.removeItem(k))}catch(_){} location.reload() }) }
  if(d.preview!==undefined) return previewOverlay(d.preview||null);
 }
-function modal(html){ const m=document.createElement("div"); m.className="modal"; m.innerHTML=`<div class="mbox">${html}</div>`; document.body.appendChild(m); return m }
+function modal(html){ const m=document.createElement("div"); m.className="modal"; m.innerHTML=`<div class="mbox">${html}</div>`; document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m||(e.target.closest&&e.target.closest("[data-close]"))){ if(typeof alHoverStop==="function") alHoverStop(); m.remove() } }); return m }
 function ask(msg,def){ return new Promise(res=>{ const m=modal(`<p>${esc(msg)}</p>${def!==undefined?`<input class="inp" id="askv" value="${esc(def)}">`:""}<div class="row" style="margin-top:12px"><button class="btn pri sm" data-ok>تأكيد</button><button class="btn sm" data-no>إلغاء</button></div>`); const inp=m.querySelector("#askv"); if(inp){inp.focus();inp.select()}
  m.onclick=e=>{ if(e.target.closest("[data-ok]")){ const v=inp?inp.value.trim():true; m.remove(); res(v||null) } else if(e.target.closest("[data-no]")||e.target===m){ m.remove(); res(null) } } }) }
 function previewOverlay(only){
@@ -1022,6 +1025,7 @@ function onInput(e){
  if(d.wgroup!==undefined){ if(e.type!=="change") return; const w=findW(d.wgroup); if(!w) return; if(t.value==="@new") return ask("اسم المجموعة","مجموعة "+(new Set(L().widgets.map(x=>x.group).filter(Boolean)).size+1)).then(n=>{ if(n){ w.group=n.slice(0,30) } save(); renderProps() }); w.group=t.value||""; save(); pushLayout(); return renderProps() }
  if(d.leimg){ if(e.type==="change") leImgInput(t); return }
  if(musicInput(t,d,e)) return;
+ if(dnInput(t,d,e)) return;
  if(alInput(t,d,e)) return;
  if(actInput(t,d,e)) return;
  if(commInput(t,d,e)) return;
@@ -1751,6 +1755,234 @@ function faInput(t,d,e){
  if(t.hasAttribute("data-fattstext")&&e.type==="change"){ S.bots.falert={...(S.bots.falert||{}),text:t.value.slice(0,200)}; save(); pushLayout(); return true }
  return false }
 
+// ====== 💸 الدونيشن والآيرتات — Smart Donation Alert Builder ======
+const DN_PRESETS=[2,5,10,20,30,50,100];
+const DN_HELP={
+ connect:["ربط حساب الدونيشن","اربط حسابك في خدمة الدونيشن عشان توصلنا أحداث الدعم المؤكدة وتشتغل الآيرتات تلقائياً.","مثال: تربط Streamlabs، وإذا أحد دعمك بـ $10 يطلع آيرت $10 في البث."],
+ min:["الحد الأدنى للدعم","حدد أقل مبلغ تبي يشتغل عنده آيرت الدونيشن.","مثال: لو حطيت $2 ووصلك $1، ينحسب الدعم عادي لكن ما يطلع آيرت. (منع الدفع نفسه يكون من إعدادات خدمة الدفع)"],
+ tiers:["الشرائح الذكية","كل مبلغ له آيرت. المنصة تختار أعلى شريحة يغطيها مبلغ الدعم.","مثال: عندك $10 و$20 — دعم $17 يشغّل آيرت $10، ودعم $25 يشغّل آيرت $20."],
+ alert:["اختيار الآيرت","اختر المقطع اللي تبيه يطلع للمشاهدين إذا وصلك دعم.","تقدر تختار من آيرتات المنصة أو المجتمع أو ترفع مقطعك الخاص."],
+ duration:["مدة الآيرت","المنصة تضبط مدة الآيرت تلقائياً على طول المقطع.","مثال: فيديو 40 ثانية = آيرت 40 ثانية. وإذا تبي مدة ثانية اختر «مدة مخصصة»."],
+ sound:["الصوت","شغّل أو طفّ صوت الآيرت، وتحكم بمستوى الصوت.","مثال: 70% مناسب إذا صوت البث عالي."],
+ texts:["اسم الداعم والمبلغ","اسحب النصوص فوق المقطع وحطها في المكان اللي يناسبك.","المتغيرات: {display_name} الاسم، {amount} المبلغ، {currency} العملة، {message} رسالة الداعم."],
+ obs:["رابط OBS","انسخ الرابط وحطه في مصدر المتصفح داخل برنامج البث.","OBS: Sources ← + ← Browser ← الصق الرابط ← العرض 1920 والارتفاع 1080."],
+ test:["تجربة الدعم","جرّب الآيرت قبل البث وتأكد من شكله وصوته.","التجربة ما تنحسب في إحصائيات الدعم الحقيقي."],
+ currency:["العملات","الشرائح بعملة واحدة. الدعم بعملة ثانية يتحول بسعر صرف موثوق، ويظهر للمشاهد بعملته الأصلية.","مثال: 75 ريال = 20 دولار (سعر الربط الرسمي 3.75) فيشغّل شريحة $20."],
+ advanced:["الوضع المتقدم","قواعد دقيقة: يساوي، أكبر من، بين قيمتين، أو عملة معيّنة — بأولوية تقدر ترتبها.","مثال: دعم 7$ بالضبط يشغّل آيرت خاص، وأي دعم بالريال فوق 100 يشغّل آيرت سعودي."],
+};
+function DNS(){ return S.dn||(S.dn={open:"",prov:null,oauth:{},fx:null,testAmt:10,testName:"بطوط",testCur:"",steps:ls("b6o6.dn.steps")||{}}) }
+const dnCur=()=>alCfgS().don&&alCfgS().don.base||"USD";
+function dnDon(){ const C=alCfgS(); C.don=alDonCfg(C.don); return C.don }
+const dnIsTier=r=>r.event==="donation"&&r.cond&&r.cond.op==="gte"&&!r.cond.currency&&!r.also;
+function dnTiers(){ return alCfgS().rules.filter(r=>r.event==="donation") }
+/** الوضع البسيط: أولوية الشرائح تتبع المبلغ (الأعلى يغلب)، والقواعد المتقدمة فوقها حسب ترتيبك */
+function dnReprio(){ const C=alCfgS(); const simple=C.rules.filter(dnIsTier).sort((a,b)=>a.cond.value-b.cond.value); simple.forEach((r,i)=>r.priority=Math.min(60,10+i)); const adv=C.rules.filter(r=>r.event==="donation"&&!dnIsTier(r)); adv.forEach((r,i)=>r.priority=Math.max(61,99-i)) }
+const dnSym=c=>AL_CUR_SYM[c]||c;
+const dnLbl=r=>r.cond.op==="gte"&&!r.cond.currency?`${dnSym(dnCur())}${r.cond.value}`:r.cond.op==="eq"?`= ${r.cond.value} ${r.cond.currency||dnCur()}`:r.cond.op==="between"?`${r.cond.value}–${r.cond.value2} ${r.cond.currency||dnCur()}`:r.cond.op==="gt"?`> ${r.cond.value} ${r.cond.currency||dnCur()}`:`≥ ${r.cond.value} ${r.cond.currency||dnCur()}`;
+const DN_DEF_TXT={title:"شكراً يا {display_name} ❤️",sub:"دعمك: {amount} {currency}",msg:"{message}"};
+function dnNewTier(v){ const r=alRule({id:"dn"+Date.now().toString(36)+Math.random().toString(36).slice(2,5),event:"donation",alertId:"",label:"$"+v,cond:{op:"gte",value:v},over:{cfg:{title:{text:DN_DEF_TXT.title},sub:{text:DN_DEF_TXT.sub,color:"#ffd76a"},msg:{text:DN_DEF_TXT.msg,show:true}}}}); return r }
+function dnSave(msg){ dnReprio(); alSaveCfg(); const e=document.getElementById("dn-saved"); if(e){ e.textContent="✓ تم الحفظ تلقائياً"+(msg?" — "+msg:""); e.classList.add("on"); clearTimeout(e._t); e._t=setTimeout(()=>e.classList.remove("on"),1800) } }
+const dnQ=k=>`<button class="dn-q" data-dnhelp="${k}" title="شرح">؟</button>`;
+const dnHint=k=>`<p class="dn-hint">${esc(DN_HELP[k][1])}</p>`;
+function dnLoadProv(){ const D=DNS(); if(!CFG||D.provAt&&Date.now()-D.provAt<15000) return; D.provAt=Date.now(); CFG.api("/api/donations/providers").then(r=>{ if(r&&r.providers){ D.prov=r.providers; D.oauth=r.oauth||{}; S.providers=r.providers; if(S.page==="donalerts") softRefresh() } }).catch(()=>{}) }
+function dnConnected(){ const P=DNS().prov||{}; return Object.entries(P).filter(([k,p])=>p.enabled&&p.connected).map(([k])=>k) }
+const dnAgo=t=>{ if(!t) return "—"; const s=Math.round((Date.now()-new Date(t).getTime())/1000); return s<60?"الآن":s<3600?`قبل ${Math.round(s/60)} دقيقة`:s<86400?`قبل ${Math.round(s/3600)} ساعة`:new Date(t).toLocaleDateString("ar-SA") };
+function dnBoxW(){ return L().widgets.find(w=>w.type==="abox"&&Array.isArray(w.abEvents)&&w.abEvents.length===1&&w.abEvents[0]==="donation") }
+
+function dnHTML(){ const D=DNS(), C=alCfgS(), don=dnDon(); dnLoadProv(); alLoadUsable(); alHoverStop();
+ const tiers=dnTiers(), conn=dnConnected(), okAlerts=tiers.length&&tiers.filter(r=>r.enabled).every(r=>r.alertId&&AB_DEFS[r.alertId]);
+ const steps=[["🔌","ربط حساب الدونيشن",conn.length>0,conn.length?"متصل: "+conn.map(k=>AL_SERVICES[k]||k).join("، "):CFG?"لم يتم الربط بعد":"يتطلب حساباً على المنصة"],["💵","تحديد مبالغ الدعم",tiers.length>0,tiers.length?tiers.length+" شريحة":"اختر المبالغ"],["🎬","اختيار آيرت لكل مبلغ",!!okAlerts,okAlerts?"كل الشرائح جاهزة":"شرائح بدون آيرت"],["🧪","تجربة الآيرت ونسخ رابط OBS",!!(D.steps.tested&&D.steps.copied),(D.steps.tested?"✓ جُرّب":"لم يُجرّب")+" · "+(D.steps.copied?"✓ نُسخ الرابط":"لم يُنسخ")]];
+ const sorted=[...tiers].sort((a,b)=>dnIsTier(a)&&dnIsTier(b)?b.cond.value-a.cond.value:(b.priority-a.priority));
+ return head("💸 الدونيشن والآيرتات","يربط حسابك ← يحدد المبالغ ← يختار آيرت لكل مبلغ ← يجرب ← ينسخ رابط OBS",`<button class="btn" data-dnguide>📖 كيف أضبط الدونيشن؟</button>`)+
+ `<div class="dn-steps">${steps.map(([ic,t,done,sub],i)=>`<div class="dn-step ${done?"done":""}"><div class="dn-n">${done?"✓":i+1}</div><div><b>${ic} ${t}</b><span>${esc(sub)}</span></div></div>`).join("")}</div>
+ <div class="dn-grid"><div>
+ <div class="card"><h3>1️⃣ ربط حساب الدونيشن ${dnQ("connect")}</h3>${dnHint("connect")}
+  ${CFG?`<div class="dn-provs">${["streamlabs","streamelements","moyasar"].map(k=>{ const p=(D.prov||{})[k]||{}, st=p.needsRelink?["⚠️","يحتاج إعادة ربط","warn"]:p.enabled&&p.connected?["🟢","متصل","ok"]:p.enabled?["🟡","جاري الاتصال…","wait"]:["⚪","غير متصل",""]; return `<div class="dn-prov ${st[2]}"><b>${esc(AL_SERVICES[k]||k)}</b><span>${st[0]} ${st[1]}</span>${p.enabled?`<small>آخر دعم: ${dnAgo(p.lastEventAt)} · آخر مزامنة: ${dnAgo(p.lastSyncAt)}</small>`:""}</div>` }).join("")}</div>`:`<div class="note small">ربط خدمات الدونيشن يتم على المنصة بعد تسجيل الدخول — المفاتيح تُحفظ مشفّرة على الخادم ولا تظهر في المتصفح.</div>`}
+  <button class="btn pri" style="margin-top:8px" data-dnconnect ${CFG?"":"disabled"}>🔗 ربط حساب الدونيشن</button></div>
+ <div class="card"><div class="row" style="justify-content:space-between;gap:8px;flex-wrap:wrap"><h3 style="margin:0">2️⃣ مبالغ الدعم والآيرتات ${dnQ("tiers")}</h3><span id="dn-saved" class="dn-saved">الحفظ تلقائي</span></div>${dnHint("tiers")}
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0">${DN_PRESETS.map(v=>{ const has=tiers.some(r=>dnIsTier(r)&&r.cond.value===v); return `<button class="dn-chip ${has?"on":""}" data-dnpreset="${v}">${has?"✓ ":"+ "}${dnSym(don.base)}${v}</button>` }).join("")}<button class="dn-chip add" data-dncustom>+ إضافة مبلغ مخصص</button></div>
+  <div class="row" style="gap:8px;align-items:center;flex-wrap:wrap"><label class="small"><b>الحد الأدنى لتشغيل آيرت الدونيشن</b> ${dnQ("min")}</label><input class="inp" type="number" min="0" step="0.5" data-dnmin value="${don.min}" style="width:90px"><span class="small mut">${esc(don.base)}</span></div>
+  <p class="dn-hint">${esc(DN_HELP.min[1])}</p></div>
+ ${sorted.length?sorted.map(r=>dnTierCard(r)).join(""):`<div class="card"><div class="empty">اختر مبلغاً من الأعلى (مثلاً $5) ثم اختر له آيرت 👆</div></div>`}
+ <details class="card dn-adv" ${D.advOpen?"open":""}><summary data-dnadvt><b>⚙️ خيارات متقدمة</b> <span class="mut small">العملات والقواعد الدقيقة</span></summary>
+  <div class="fld"><label>عملة الشرائح ${dnQ("currency")}</label><select class="inp" data-dnbase style="width:auto">${["USD","SAR","AED","KWD","QAR","EUR","GBP"].map(c=>`<option ${don.base===c?"selected":""}>${c}</option>`).join("")}</select></div>
+  <label class="row small" style="gap:6px"><input type="checkbox" data-dnconv ${don.convert?"checked":""}> تحويل الدعم بالعملات الأخرى إلى ${esc(don.base)} بسعر صرف موثوق</label>
+  <p class="dn-hint">${don.convert?(don.ratesSrc?`المصدر: ${esc(don.ratesSrc)}${don.ratesAt?" — آخر تحديث: "+esc(don.ratesAt):""}`:"بدون أسعار محدّثة: تُستخدم أسعار الربط الرسمية بالدولار فقط (ريال 3.75، درهم 3.6725…). العملات الأخرى لا تُحوَّل.")+(CFG?` <button class="btn sm" data-dnfx>🔄 تحديث الأسعار</button>`:""):"الدعم بعملة مختلفة لا يطابق الشرائح إلا بقاعدة متقدمة لعملته."}</p>
+  <label class="row small" style="gap:6px;margin-top:6px"><input type="checkbox" data-dnmulti ${C.rules.some(r=>r.event==="donation"&&r.also)?"checked":""} disabled> آيرتين لنفس الدعم: فعّلها لكل قاعدة متقدمة بخيار «يعمل إضافة للأعلى»</label>
+  <div class="row" style="justify-content:space-between;margin-top:10px"><b>قواعد متقدمة ${dnQ("advanced")}</b><button class="btn sm" data-dnadv>➕ قاعدة متقدمة</button></div><p class="dn-hint">القواعد المتقدمة تتقدم على الشرائح. رتّبها بالسحب — الأعلى يغلب.</p>
+ </details></div>
+ <div class="dn-side"><div class="card dn-sticky"><h3>🧪 تجربة الدعم ${dnQ("test")}</h3>${dnHint("test")}
+  <div class="row" style="gap:5px;flex-wrap:wrap">${[...DN_PRESETS].map(v=>`<button class="dn-chip ${+D.testAmt===v?"on":""}" data-dntamt="${v}">${dnSym(don.base)}${v}</button>`).join("")}<input class="inp" type="number" min="0.5" step="0.5" data-dntcustom placeholder="مبلغ مخصص" value="${DN_PRESETS.includes(+D.testAmt)?"":esc(D.testAmt)}" style="width:110px"></div>
+  <div class="row" style="gap:6px;margin-top:6px"><input class="inp" data-dntname value="${esc(D.testName)}" placeholder="اسم الداعم التجريبي" style="flex:1"><select class="inp" data-dntcur style="width:auto">${[don.base,...["USD","SAR","AED","EUR"].filter(c=>c!==don.base)].map(c=>`<option ${D.testCur===c?"selected":""}>${c}</option>`).join("")}</select></div>
+  <input class="inp" data-dntmsg placeholder="رسالة تجريبية (اختياري)" value="${esc(D.testMsg||"")}" style="margin-top:6px">
+  <button class="btn pri" style="width:100%;margin-top:8px" data-dntest>▶ تشغيل التجربة</button>
+  <div id="dn-pv" class="al-stage" style="margin-top:10px"></div><p class="mut small" id="dn-pvnote">المعاينة هنا بنفس شكل OBS. التجربة لا تُحسب في إحصائيات الدعم.</p>
+  <h3 style="margin-top:14px">🔗 رابط OBS — Donation Alert Box ${dnQ("obs")}</h3>${dnHint("obs")}
+  ${dnBoxW()?`<button class="btn pri" style="width:100%" data-dncopy>📋 نسخ رابط OBS</button>`:`<button class="btn pri" style="width:100%" data-dnaddbox>➕ إنشاء رابط Donation Alert Box</button>`}
+  <p class="mut small">رابط واحد لكل الشرائح · خلفية شفافة 100% · يعمل في OBS وTikTok LIVE Studio (مصدر متصفح).</p></div></div></div>` }
+
+function dnTierCard(r){ const D=DNS(), a=r.alertId?alFind(r.alertId):null, i=alCfgS().rules.indexOf(r), open=D.open===r.id, oc=(r.over&&r.over.cfg)||{}, U=D.upTier===r.id&&ALS().up;
+ const def=a?alDef(a):null, autoDur=!(r.over&&r.over.durationSec), m=a&&a.meta||{};
+ const thumb=a?(a.coverUrl||a.coverData||((a.kind==="image"||a.kind==="gif")?(a.mediaUrl||a.mediaData):"")):"";
+ return `<div class="card dn-tier ${r.enabled?"":"off"} ${dnIsTier(r)?"":"adv"}" draggable="true" data-dndrag="${esc(r.id)}">
+ <div class="dn-th-row"><span class="dn-grip" title="اسحب لإعادة الترتيب">⋮⋮</span><div class="dn-amt">${esc(dnLbl(r))}${dnIsTier(r)?`<small>وأكثر</small>`:`<small>متقدم</small>`}</div>
+  <div class="al-th dn-mini" ${a?`data-alhv="${esc(a.id)}"`:""}>${thumb?`<img src="${esc(thumb)}" alt="">`:`<div class="al-acov"><span>${a?(a.kind==="audio"?"🔊":"🎬"):"➕"}</span><b>${a?esc(a.name):"بدون آيرت"}</b></div>`}${a?`<button class="al-tp" data-altp="${esc(a.id)}">▶</button>`:""}</div>
+  <div class="dn-meta"><b>${a?esc(a.name):"اختر آيرت"}</b><span class="mut small">${a?`${esc(AL_CATS[a.category]||"")} · ${autoDur?"⏱ تلقائي"+(m.duration?" ("+Math.round(m.duration)+" ث)":a.durationSec?" ("+a.durationSec+" ث)":""):"⏱ "+r.over.durationSec+" ث"}`:"لم يُختر آيرت بعد"}</span></div>
+  <label class="dn-sw" title="تفعيل/تعطيل"><input type="checkbox" data-dnon="${esc(r.id)}" ${r.enabled?"checked":""}><i></i></label></div>
+ ${U&&U.phase!=="done"?`<div class="al-up ${U.phase}"><b>${{read:"📖 قراءة الملف…",upload:"⬆️ جاري الرفع "+(U.pct||0)+"%",process:"⚙️ معالجة الفيديو…",cover:"🖼️ صورة المعاينة…",error:"❌ "+esc(U.msg||"")}[U.phase]||""}</b>${U.phase==="upload"?`<div class="al-bar"><i style="width:${U.pct}%"></i></div>`:U.phase==="process"?`<div class="al-bar"><i class="busy" style="width:100%"></i></div>`:""}${U.phase==="error"&&U.file?` <button class="btn sm" data-dnretry="${esc(r.id)}">🔁 إعادة المحاولة</button>`:""}</div>`:""}
+ <div class="row dn-acts"><button class="btn sm pri" data-dnpick="${esc(r.id)}">🎬 ${a?"تغيير الآيرت":"اختيار آيرت"}</button><label class="btn sm">⬆️ رفع مقطع خاص<input type="file" accept="${AL_ACCEPT}" data-dnup="${esc(r.id)}" style="display:none"></label>
+  ${a?`<button class="btn sm" data-dnplay="${esc(r.id)}">▶ معاينة</button>`:""}<button class="btn sm" data-dnedit="${esc(r.id)}">${open?"▲ إغلاق":"✏️ تخصيص"}</button>
+  <button class="btn sm" data-dnamt="${esc(r.id)}" title="تعديل المبلغ">💵</button><button class="btn sm" data-dncopyto="${esc(r.id)}" title="نسخ الإعدادات لمبلغ آخر">⧉</button><button class="btn sm" data-dndel="${esc(r.id)}" title="حذف">🗑️</button></div>
+ ${open?dnEditor(r,a,oc,autoDur):""}</div>` }
+
+function dnEditor(r,a,oc,autoDur){ const c=a?alMergeCfg(a.config,oc):alMergeCfg({},oc), i=r.id;
+ const lay=(k,l)=>`<div class="dn-lay"><label class="row small" style="gap:6px"><input type="checkbox" data-dnshow="${k}" data-r="${i}" ${c[k].show?"checked":""}> <b>${l}</b></label>${k!=="avatar"?`<input class="inp" data-dntxt="${k}" data-r="${i}" value="${esc(c[k].text)}">`:`<select class="inp" data-dnframe data-r="${i}">${AL_FRAMES.map(([f,n])=>`<option value="${f}" ${c.avatar.frame===f?"selected":""}>${esc(n)}</option>`).join("")}</select>`}
+  <div class="row" style="gap:6px;align-items:center"><input type="color" data-dncol="${k}" data-r="${i}" value="${c[k].color}" title="اللون"><input type="range" min="2" max="${k==="avatar"?45:14}" step=".5" data-dnsize="${k}" data-r="${i}" value="${c[k].size}" title="الحجم" style="flex:1"></div></div>`;
+ return `<div class="dn-editor">
+ <div class="dn-sub">⏱ مدة الآيرت ${dnQ("duration")}</div><div class="row" style="gap:10px;flex-wrap:wrap"><label class="row small" style="gap:4px"><input type="radio" name="dur${i}" data-dndur="auto" data-r="${i}" ${autoDur?"checked":""}> مدة الفيديو كاملة — تلقائي</label><label class="row small" style="gap:4px"><input type="radio" name="dur${i}" data-dndur="custom" data-r="${i}" ${autoDur?"":"checked"}> مدة مخصصة</label>${autoDur?"":`<input class="inp" type="number" min="1" data-dndursec="${i}" value="${r.over.durationSec}" style="width:90px"> ث`}</div>
+ <div class="dn-sub">🔊 الصوت ${dnQ("sound")}</div><div class="row" style="gap:10px;align-items:center;flex-wrap:wrap"><label class="row small" style="gap:4px"><input type="checkbox" data-dnsnd="${i}" ${c.videoSound!==false?"checked":""}> تشغيل صوت الآيرت</label><input type="range" min="0" max="1" step=".05" data-dnvol="${i}" value="${c.volume}" style="width:160px"><span class="small">${Math.round(c.volume*100)}%</span></div>
+ <div class="dn-sub">✍️ اسم الداعم والمبلغ — اسحب النصوص فوق المقطع ${dnQ("texts")}</div>
+ <div class="dn-canvas" data-dncanvas="${i}">${a&&(a.coverUrl||a.coverData||a.mediaUrl||a.mediaData)&&a.kind!=="audio"?`<img src="${esc(a.coverUrl||a.coverData||((a.kind==="image"||a.kind==="gif")?(a.mediaUrl||a.mediaData):""))}" alt="">`:""}
+  ${c.avatar.show?`<div class="dn-drag dn-av abf-${c.avatar.frame}" data-dnlay="avatar" style="left:${c.avatar.x}%;top:${c.avatar.y}%;width:${c.avatar.size}%;"></div>`:""}
+  ${["title","sub","msg"].filter(k=>c[k].show).map(k=>`<div class="dn-drag dn-t" data-dnlay="${k}" style="left:${c[k].x}%;top:${c[k].y}%;color:${c[k].color};font-size:${c[k].size*0.42}cqh;font-family:${AL_FONT_CSS[c.font]}">${esc(alFill(c[k].text,{display_name:"بطوط",amount:"10",currency:dnCur(),currency_symbol:dnSym(dnCur()),message:"استمر يا بطل 🔥",service:"Streamlabs"})||c[k].text)}</div>`).join("")}</div>
+ <div class="grid g2" style="gap:8px;margin-top:8px">${lay("title","🔤 سطر الشكر (الاسم)")}${lay("sub","💵 سطر المبلغ")}${lay("msg","💬 رسالة الداعم")}${lay("avatar","🖼️ صورة الداعم (إن وُجدت)")}</div>
+ <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:6px"><label class="small">الخط <select class="inp" data-dnfont="${i}" style="width:auto">${AL_FONTS.map(([f,n])=>`<option value="${f}" ${c.font===f?"selected":""}>${esc(n)}</option>`).join("")}</select></label><label class="small">حركة دخول النص <select class="inp" data-dntenter="${i}" style="width:auto">${AL_IN.map(([f,n])=>`<option value="${f}" ${c.textEnter===f?"selected":""}>${esc(n)}</option>`).join("")}</select></label>
+  <button class="btn sm" data-dnreset="${i}">↺ إعادة ضبط الإعدادات</button><button class="btn sm" data-dnplay="${i}">▶ معاينة التعديلات</button></div>
+ ${!dnIsTier(r)?`<div class="dn-sub">⚙️ القاعدة المتقدمة</div><div class="row" style="gap:6px;flex-wrap:wrap"><select class="inp" data-dnop="${i}" style="width:auto">${[["eq","يساوي"],["gt","أكبر من"],["gte","أكبر أو يساوي"],["between","بين"]].map(([o,n])=>`<option value="${o}" ${r.cond.op===o?"selected":""}>${n}</option>`).join("")}</select><input class="inp" type="number" data-dnv1="${i}" value="${r.cond.value}" style="width:90px">${r.cond.op==="between"?`<input class="inp" type="number" data-dnv2="${i}" value="${r.cond.value2}" style="width:90px">`:""}
+  <select class="inp" data-dncur="${i}" style="width:auto"><option value="">عملة الشرائح (${dnCur()})</option>${["USD","SAR","AED","KWD","QAR","EUR","GBP"].map(c=>`<option ${r.cond.currency===c?"selected":""}>${c}</option>`).join("")}</select><label class="row small" style="gap:4px"><input type="checkbox" data-dnalso="${i}" ${r.also?"checked":""}> يعمل إضافة للآيرت الأعلى</label></div>`:""}</div>` }
+
+/* ---------- اختيار آيرت من المكتبة ---------- */
+async function dnPicker(tierId){ const D=DNS(), r=alCfgS().rules.find(x=>x.id===tierId); if(!r) return; let sec=CFG?"all":"mine", cat="", items=[], q="";
+ const m=modal(`<div class="dn-pick"><div class="row" style="justify-content:space-between"><h3 style="margin:0">🎬 اختر آيرت لـ ${esc(dnLbl(r))}</h3><button class="btn sm" data-close>✖</button></div><p class="dn-hint">${esc(DN_HELP.alert[1])}</p>
+  <div class="row" style="gap:4px;flex-wrap:wrap" id="dnp-secs"></div><div class="al-chips" id="dnp-cats"></div><input class="inp" id="dnp-q" placeholder="🔍 ابحث"><div id="dnp-list" class="al-grid" style="margin-top:8px;max-height:56vh;overflow:auto"></div></div>`);
+ alHoverWireEl(m);
+ const SECS=[["all","الكل"],["official","آيرتات المنصة"],["community","المجتمع"],["mine","آيرتاتي الخاصة"],["favs","المفضلة"],["used","الأكثر استخداماً"],["new","الأحدث"]].filter(([k])=>CFG||["official","mine"].includes(k));
+ const CATS=[["","الكل"],["money","💰 فلوس وعملات"],["diamond","💎 ألماس"],["fire","🔥 نار"],["royal","👑 ملكي"],["gaming","🎮 ألعاب"],["anime","🎭 أنمي"],["butterfly","🦋 فراشات"],["stars","✨ نجوم"],["funny","😂 كوميدي"],["saudi","🇸🇦 سعودي"],["cinematic","🎬 سينمائي"],["alpha","◩ شفاف"],["minimal","🫧 بيسك"],["b6o6","🦆 حصري B6O6"]];
+ const draw=()=>{ m.querySelector("#dnp-secs").innerHTML=SECS.map(([k,n])=>`<button class="btn sm ${sec===k?"pri":""}" data-ps="${k}">${n}</button>`).join(""); m.querySelector("#dnp-cats").innerHTML=CATS.map(([k,n])=>`<button class="al-chip ${cat===k?"on":""}" data-pc="${k}">${n}</button>`).join("");
+  const L2=items.filter(a=>(!cat||(cat==="alpha"?alIsAlpha(a):a.category===cat))&&(!q||alSearch([a],q).length));
+  m.querySelector("#dnp-list").innerHTML=L2.length?L2.map(a=>{ const cov=a.coverUrl||a.coverData||((a.kind==="image"||a.kind==="gif")?(a.mediaUrl||a.mediaData):""), mm=a.meta||{}; return `<div class="card al-card"><div class="al-th" data-alhv="${esc(a.id)}">${cov?`<img src="${esc(cov)}" alt="" loading="lazy">`:`<div class="al-acov"><span>${a.official?"🦆":a.kind==="audio"?"🔊":"🎬"}</span><b>${esc(a.name)}</b></div>`}<div class="al-tags">${alIsAlpha(a)?"<span>◩ شفاف</span>":""}${mm.duration||a.durationSec?`<span>${Math.round(mm.duration||a.durationSec)}ث</span>`:""}</div><button class="al-snd" data-alsnd="${esc(a.id)}">🔊</button><button class="al-tp" data-altp="${esc(a.id)}">▶</button></div><div class="al-nm">${esc(a.name)}</div><div class="mut small">${esc(AL_CATS[a.category]||"")}</div><button class="btn sm pri" style="margin-top:6px" data-pick="${esc(a.id)}">✓ اختيار</button></div>` }).join(""):`<div class="empty">لا توجد آيرتات هنا${sec==="mine"?" — ارفع مقطعك من زر «رفع مقطع خاص»":""}</div>` };
+ const load=async()=>{ m.querySelector("#dnp-list").innerHTML=`<div class="empty">جاري التحميل…</div>`; if(sec==="official") items=alOfficial(); else if(!CFG) items=alLocal().map(a=>({...a,mine:true})); else { const j=await alApi("/api/alerts?section="+sec); items=(j.items||[]).concat(sec==="all"?alOfficial():[]); for(const a of items) if(a.id&&!a.official) ALS().cache[a.id]=a } alSyncDefs(); draw() };
+ m.addEventListener("click",async e=>{ const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.ps){ sec=b.dataset.ps; load() } else if(b.dataset.pc!==undefined){ cat=b.dataset.pc; draw() }
+  else if(b.dataset.alsnd||b.dataset.altp){ const th=b.closest(".al-th"); if(b.dataset.alsnd){ if(AH.el!==th) alHoverStart(th,true); else alHoverSound(!AH.snd) } else { if(AH.el===th) alHoverStop(); else alHoverStart(th) } }
+  else if(b.dataset.pick){ const id=b.dataset.pick, a=items.find(x=>x.id===id); if(CFG&&a&&!a.official&&!a.mine&&!a.using){ const j=await alApi("/api/alerts/"+id+"/act",{method:"POST",body:{act:"use"}}); if(j.error) return toast(j.error==="not_available"?"هذا الآيرت لم يعد متاحاً":"تعذر: "+j.error); a.using=true; ALS().cache[id]=a; ALS().usableAt=0 }
+   r.alertId=id; alHoverStop(); m.remove(); alSyncDefs(); dnSave("اختير «"+(a?a.name:"")+"»"); renderPage(true) } });
+ m.querySelector("#dnp-q").addEventListener("input",e=>{ q=e.target.value; draw() });
+ load() }
+function alHoverWireEl(el){ if(!el||el.__alhv) return; el.__alhv=1; const canHover=()=>matchMedia("(hover:hover)").matches;
+ el.addEventListener("mouseover",e=>{ if(!canHover()) return; const th=e.target.closest&&e.target.closest(".al-th[data-alhv]"); if(th) alHoverStart(th) });
+ el.addEventListener("mouseout",e=>{ if(!canHover()||!AH.el) return; const to=e.relatedTarget; if(!to||!AH.el.contains(to)){ const from=e.target.closest&&e.target.closest(".al-th"); if(from===AH.el) alHoverStop() } }) }
+
+/* ---------- رفع مقطع خاص لشريحة ---------- */
+async function dnUpload(tierId,f){ const D=DNS(), A=ALS(), r=alCfgS().rules.find(x=>x.id===tierId); if(!r||!f) return; D.upTier=tierId; const prevForm=A.form;
+ A.form=alNewForm(); Object.assign(A.form,{event:"donation",category:"money",name:"آيرت دعم "+dnLbl(r),designerName:CFG?CFG.profile.name:""}); A.form.config=alConfig({title:{text:DN_DEF_TXT.title},sub:{text:DN_DEF_TXT.sub}});
+ await alPickFile(f); const F=A.form, U=A.up||{};
+ if(U.phase!=="done"){ D.upForm=F; A.form=prevForm; return renderPage(true) }
+ const body={name:F.name,description:"",kind:F.kind,event:"donation",durationSec:+F.durationSec,category:F.category||"money",tags:"",designerName:F.designerName,visibility:"private",mediaId:F.mediaId||null,audioId:F.audioId||null,coverId:F.coverId||null,previewId:F.previewId||null,meta:F.meta,config:F.config};
+ const v=alValidate(body); if(!v.ok){ A.up={...U,phase:"error",msg:v.errors.join("، ")}; A.form=prevForm; return renderPage(true) }
+ let id;
+ if(!CFG){ const list=alLocal(); const rec={...v.value,id:"loc_"+Date.now().toString(36),ownerId:"me",visibility:"private",review:"none",mediaData:F.mediaData||"",audioData:F.audioData||"",coverData:F.coverData||"",createdAt:new Date().toISOString()}; list.unshift(rec); if(!alLocalSave(list)){ A.form=prevForm; return } id=rec.id }
+ else { const j=await alApi("/api/alerts",{method:"POST",body}); if(j.error){ A.up={...U,phase:"error",msg:(j.errors||[j.error]).join("، ")}; A.form=prevForm; return renderPage(true) } id=j.alert.id; A.cache[id]=j.alert; A.usableAt=0 }
+ r.alertId=id; A.form=prevForm; D.upTier=""; alSyncDefs(); dnSave("رُفع المقطع وارتبط بـ "+dnLbl(r)+" (خاص)"); toast("✅ رُفع المقطع وحُفظ كآيرت خاص وارتبط بـ "+dnLbl(r)); renderPage(true) }
+
+/* ---------- المعاينة والتجربة ---------- */
+let dnPv=null;
+function dnMountPv(){ const box=document.getElementById("dn-pv"); if(!box) return null; if(dnPv) liveViews.delete(dnPv); dnPv=alPreviewMountEl(box,{mute:false}); if(dnPv){ dnPv.w.abEvents=["donation"]; liveViews.add(dnPv) } return dnPv }
+function dnPreview(r){ const v=dnMountPv(); if(!v||!r.alertId) return; alSyncDefs(); const nr=alRule(r); v.aboxPush([{id:"dp"+Date.now(),alertId:r.alertId,event:"donation",vars:{display_name:DNS().testName||"بطوط",amount:String(nr.cond.value||10),currency:dnCur(),currency_symbol:dnSym(dnCur()),message:DNS().testMsg||"استمر يا بطل 🔥",service:"تجربة"},over:{title:nr.over.title,sub:nr.over.sub,durationSec:nr.over.durationSec,cfg:nr.over.cfg},priority:1,test:true}]); document.getElementById("dn-pv").scrollIntoView({block:"nearest",behavior:"smooth"}) }
+function dnRunTest(){ const D=DNS(), amt=+D.testAmt||0; if(!(amt>0)) return toast("اختر مبلغ التجربة"); dnMountPv(); syncBots(); alSyncDefs();
+ send({t:"clock-op",target:"alerts",op:"testdon",amount:amt,currency:D.testCur||dnCur(),name:D.testName||"بطوط",message:D.testMsg||""});
+ D.steps.tested=1; ls("b6o6.dn.steps",D.steps); const n=document.getElementById("dn-pvnote"); if(n) n.textContent=`🧪 تجربة ${amt} ${D.testCur||dnCur()} باسم «${D.testName||"بطوط"}» — تظهر أيضاً في رابط OBS بعلامة تجربة ولا تُحسب في الإحصائيات.` }
+
+/* ---------- الربط ---------- */
+function dnConnectModal(){ const D=DNS(), P=D.prov||{}, oauth=D.oauth||{};
+ const m=modal(`<div class="dn-pick"><div class="row" style="justify-content:space-between"><h3 style="margin:0">🔗 ربط حساب الدونيشن</h3><button class="btn sm" data-close>✖</button></div><p class="dn-hint">اختر الخدمة. لا نطلب كلمة مرور الخدمة أبداً — الرموز تُحفظ مشفّرة على الخادم.</p>
+ <div class="dn-svc"><h4>Streamlabs ${P.streamlabs&&P.streamlabs.connected?"🟢 متصل":""}</h4><p class="small">اربط حساب Streamlabs لاستقبال أحداث الدعم وتشغيل الآيرتات تلقائياً عند وصول دونيشن جديد.</p>
+  ${oauth.streamlabs?`<a class="btn pri" href="/api/donations/oauth/streamlabs">اتصال بـ Streamlabs</a><p class="mut small">ستُفتح صفحة Streamlabs الرسمية لتسجيل الدخول والموافقة، ثم ترجع هنا تلقائياً.</p>`:`<details><summary class="small"><b>الربط بـ Socket API Token</b> (الطريقة المتاحة حالياً)</summary><ol class="small dn-ol"><li>افتح <b>streamlabs.com/dashboard</b> وسجّل الدخول.</li><li>Settings ← <b>API Settings</b> ← تبويب <b>API Tokens</b>.</li><li>انسخ <b>Your Socket API Token</b>.</li><li>الصقه هنا واضغط «اتصال».</li></ol><input class="inp" type="password" id="dn-sltok" placeholder="Socket API Token" autocomplete="off"><button class="btn pri" style="margin-top:6px" data-dnsl>اتصال بـ Streamlabs</button><p class="mut small">زر «تسجيل الدخول بحساب Streamlabs» المباشر (OAuth) يتفعّل عندما يضيف مالك المنصة مفاتيح تطبيق Streamlabs على الخادم.</p></details>`}
+  ${P.streamlabs&&P.streamlabs.enabled?`<button class="btn sm" data-dnoff="streamlabs">فصل</button>`:""}</div>
+ <div class="dn-svc"><h4>StreamElements ${P.streamelements&&P.streamelements.connected?"🟢 متصل":""}</h4><p class="small">يستقبل الدعم المؤكد (tips) من StreamElements مباشرة.</p>
+  <details><summary class="small"><b>طريقة الربط (JWT Token)</b></summary><ol class="small dn-ol"><li>افتح <b>streamelements.com/dashboard/account/channels</b>.</li><li>فعّل «Show secrets» وانسخ <b>JWT Token</b>.</li><li>الصقه هنا واضغط «اتصال».</li></ol><input class="inp" type="password" id="dn-setok" placeholder="JWT Token" autocomplete="off"><button class="btn pri" style="margin-top:6px" data-dnse>اتصال بـ StreamElements</button></details>
+  ${P.streamelements&&P.streamelements.enabled?`<button class="btn sm" data-dnoff="streamelements">فصل</button>`:""}</div>
+ <div class="dn-svc"><h4>ميسّر Moyasar (مدى، Apple Pay، STC Pay)</h4><p class="small">صفحة دعم سعودية خاصة بك. تُضبط من صفحة الدونيشن ← المزوّدون (تحتاج مفاتيح حساب ميسّر).</p><button class="btn sm" data-dngo="donations">فتح إعدادات ميسّر</button></div>
+ <div class="dn-svc off"><h4>PayPal مباشر · Ko-fi · StreamPay</h4><p class="small mut">غير مدعومة حالياً — لا يوجد تكامل رسمي مفعّل لها في المنصة. يمكن استقبال PayPal عبر Streamlabs أو StreamElements.</p></div></div>`);
+ m.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return;
+  const put=(kind,config)=>CFG.api("/api/donations/providers",{method:"PUT",body:{kind,enabled:true,config}}).then(r=>{ if(r.error) return toast("❌ "+r.error); D.prov=r.providers; D.provAt=0; toast("⏳ جاري الاتصال… ستتغير الحالة إلى «متصل» عند نجاح الاتصال"); m.remove(); renderPage(true); setTimeout(()=>{ D.provAt=0; dnLoadProv() },4000) });
+  if(b.hasAttribute("data-dnsl")){ const v=m.querySelector("#dn-sltok").value.trim(); if(!v) return toast("الصق الـ Token"); put("streamlabs",{socketToken:v}) }
+  if(b.hasAttribute("data-dnse")){ const v=m.querySelector("#dn-setok").value.trim(); if(!v) return toast("الصق الـ JWT"); put("streamelements",{token:v,tokenType:"jwt"}) }
+  if(b.dataset.dnoff) CFG.api("/api/donations/providers",{method:"PUT",body:{kind:b.dataset.dnoff,enabled:false}}).then(r=>{ D.prov=r.providers; m.remove(); renderPage(true) });
+  if(b.dataset.dngo){ m.remove(); S.donTab="providers"; go(b.dataset.dngo) } }) }
+function dnGuide(){ const st=[["🔗","اضغط «ربط حساب الدونيشن»","من أعلى الصفحة."],["🟣","اختر Streamlabs",DNS().oauth&&DNS().oauth.streamlabs?"ثم «اتصال بـ Streamlabs».":"ثم افتح «الربط بـ Socket API Token»."],["🔐",DNS().oauth&&DNS().oauth.streamlabs?"سجّل الدخول من صفحة Streamlabs الرسمية":"انسخ Socket API Token من Streamlabs",DNS().oauth&&DNS().oauth.streamlabs?"ووافق على الصلاحيات، وترجع تلقائياً.":"Settings ← API Settings ← API Tokens."],["🟢","تأكد من ظهور «متصل»","تحت اسم الخدمة."],["💵","اختر مبالغ الدعم","مثلاً $5 و$10 و$50."],["🎬","اختر آيرت لكل مبلغ","من المكتبة أو ارفع مقطعك الخاص."],["🧪","جرّب الآيرت","اكتب اسم «بطوط» واختر المبلغ واضغط «تشغيل التجربة»."],["📋","انسخ رابط OBS","وأضفه مصدر متصفح (Browser) بحجم 1920×1080."]];
+ modal(`<div class="dn-pick"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📖 كيف أضبط الدونيشن؟</h3><button class="btn sm" data-close>✖</button></div><div class="dn-guide">${st.map(([i,t,d],n)=>`<div class="dn-gs"><div class="dn-gi">${i}<span>${n+1}</span></div><div><b>${esc(t)}</b><p class="small mut">${esc(d)}</p></div></div>`).join("")}</div><button class="btn pri" data-close style="margin-top:10px">فهمت 👍</button></div>`) }
+
+/* ---------- الأحداث ---------- */
+function dnFind(id){ return alCfgS().rules.find(x=>x.id===id) }
+function dnOv(r){ r.over=r.over||{}; r.over.cfg=r.over.cfg||{}; return r.over.cfg }
+function dnClick(t,d){ if(S.page!=="donalerts") return false; const D=DNS(), C=alCfgS();
+ if(d.dnhelp){ const h=DN_HELP[d.dnhelp]; modal(`<h3>❓ ${esc(h[0])}</h3><p>${esc(h[1])}</p><p class="note small">💡 ${esc(h[2])}</p><button class="btn pri" data-close>تمام</button>`); return true }
+ if(t.hasAttribute("data-dnguide")){ dnGuide(); return true }
+ if(t.hasAttribute("data-dnconnect")){ if(CFG) dnConnectModal(); return true }
+ if(d.dnpreset){ const v=+d.dnpreset, ex=C.rules.find(r=>dnIsTier(r)&&r.cond.value===v); if(ex){ D.open=ex.id; renderPage(true); return true } const r=dnNewTier(v); C.rules.push(r); D.open=""; dnSave("أُضيفت شريحة "+dnSym(dnCur())+v); renderPage(true); return true }
+ if(t.hasAttribute("data-dncustom")){ ask("المبلغ (مثلاً 150 أو 250 أو 500)","").then(v=>{ v=+String(v||"").replace(/[^\d.]/g,""); if(!(v>0)) return; if(C.rules.some(r=>dnIsTier(r)&&r.cond.value===v)) return toast("هذا المبلغ موجود"); C.rules.push(dnNewTier(v)); dnSave(); renderPage(true) }); return true }
+ if(d.dnpick){ dnPicker(d.dnpick); return true }
+ if(d.dnplay){ const r=dnFind(d.dnplay); if(r) dnPreview(r); return true }
+ if(d.dnedit){ D.open=D.open===d.dnedit?"":d.dnedit; renderPage(true); return true }
+ if(d.dnamt){ const r=dnFind(d.dnamt); ask("المبلغ الجديد",String(r.cond.value)).then(v=>{ v=+String(v||"").replace(/[^\d.]/g,""); if(!(v>0)) return; r.cond.value=v; r.label=dnSym(dnCur())+v; dnSave(); renderPage(true) }); return true }
+ if(d.dncopyto){ const r=dnFind(d.dncopyto); ask("انسخ الآيرت والإعدادات إلى مبلغ (مثلاً 200)","").then(v=>{ v=+String(v||"").replace(/[^\d.]/g,""); if(!(v>0)) return; let tg=C.rules.find(x=>dnIsTier(x)&&x.cond.value===v); if(!tg){ tg=dnNewTier(v); C.rules.push(tg) } tg.alertId=r.alertId; tg.over=JSON.parse(JSON.stringify(r.over||{})); tg.enabled=true; dnSave("نُسخت الإعدادات إلى "+dnSym(dnCur())+v); renderPage(true) }); return true }
+ if(d.dndel){ const r=dnFind(d.dndel); if(!confirm("حذف شريحة "+dnLbl(r)+"؟")) return true; C.rules.splice(C.rules.indexOf(r),1); dnSave(); renderPage(true); return true }
+ if(d.dnreset){ const r=dnFind(d.dnreset); r.over={cfg:dnNewTier(1).over.cfg}; dnSave("أُعيد الضبط"); renderPage(true); return true }
+ if(d.dnretry){ const f=ALS().up&&ALS().up.file; if(f) dnUpload(d.dnretry,f); return true }
+ if(d.dntamt){ D.testAmt=+d.dntamt; renderPage(true); return true }
+ if(t.hasAttribute("data-dntest")){ dnRunTest(); return true }
+ if(t.hasAttribute("data-dnaddbox")){ const n=addWidget("abox",{name:"Donation Alert Box",abEvents:["donation"]}); applyPreset(n,"mc",CV()); save(); pushLayout(); renderPage(true); toast("✅ أُنشئ Donation Alert Box — انسخ الرابط"); return true }
+ if(t.hasAttribute("data-dncopy")){ copy(overlayURL(L(),dnBoxW().id)); D.steps.copied=1; ls("b6o6.dn.steps",D.steps); toast("🔗 نُسخ رابط OBS — Donation Alert Box"); renderPage(true); return true }
+ if(t.hasAttribute("data-dnfx")){ alApi("/api/fx").then(j=>{ if(j.error) return toast("تعذر جلب الأسعار"); const don=dnDon(); don.rates=j.rates; don.ratesAt=j.updatedAt||""; don.ratesSrc=j.source; dnSave("حُدّثت أسعار الصرف"); renderPage(true) }); return true }
+ if(t.hasAttribute("data-dnadv")){ const r=alRule({id:"dn"+Date.now().toString(36),event:"donation",alertId:"",cond:{op:"eq",value:7},over:{cfg:dnNewTier(1).over.cfg}}); C.rules.push(r); D.open=r.id; D.advOpen=true; dnSave("أُضيفت قاعدة متقدمة"); renderPage(true); return true }
+ return false }
+function dnInput(t,d,e){ if(S.page!=="donalerts") return false; const D=DNS(), C=alCfgS(); const R=id=>dnFind(id);
+ if(t.hasAttribute("data-dnmin")){ if(e.type==="change"){ dnDon().min=Math.max(0,+t.value||0); dnSave("الحد الأدنى "+t.value) } return true }
+ if(t.hasAttribute("data-dnbase")&&e.type==="change"){ dnDon().base=t.value; C.rules.filter(dnIsTier).forEach(r=>r.label=dnSym(t.value)+r.cond.value); dnSave(); renderPage(true); return true }
+ if(t.hasAttribute("data-dnconv")&&e.type==="change"){ dnDon().convert=t.checked; dnSave(); renderPage(true); return true }
+ if(d.dnon&&e.type==="change"){ R(d.dnon).enabled=t.checked; dnSave(t.checked?"فُعّلت":"عُطّلت"); renderPage(true); return true }
+ if(d.dnup&&e.type==="change"){ const f=t.files&&t.files[0]; t.value=""; if(f) dnUpload(d.dnup,f); return true }
+ if(t.hasAttribute("data-dntname")){ D.testName=t.value.slice(0,40); return true }
+ if(t.hasAttribute("data-dntmsg")){ D.testMsg=t.value.slice(0,200); return true }
+ if(t.hasAttribute("data-dntcustom")){ if(+t.value>0) D.testAmt=+t.value; return true }
+ if(t.hasAttribute("data-dntcur")&&e.type==="change"){ D.testCur=t.value; return true }
+ const r=d.r?R(d.r):null;
+ if(d.dndur&&e.type==="change"){ r.over=r.over||{}; r.over.durationSec=d.dndur==="auto"?null:(r.over.durationSec||Math.round((alFind(r.alertId)||{}).durationSec||10)); dnSave(); renderPage(true); return true }
+ if(d.dndursec&&e.type==="change"){ const x=R(d.dndursec); x.over.durationSec=Math.max(1,+t.value||1); dnSave(); return true }
+ if(d.dnsnd&&e.type==="change"){ dnOv(R(d.dnsnd)).videoSound=t.checked; dnSave(); return true }
+ if(d.dnvol&&e.type==="change"){ dnOv(R(d.dnvol)).volume=+t.value; dnSave(); renderPage(true); return true }
+ if(d.dnshow&&e.type==="change"){ const o=dnOv(r); o[d.dnshow]={...(o[d.dnshow]||{}),show:t.checked}; dnSave(); renderPage(true); return true }
+ if(d.dntxt&&e.type==="change"){ const o=dnOv(r); o[d.dntxt]={...(o[d.dntxt]||{}),text:t.value.slice(0,140)}; dnSave(); renderPage(true); return true }
+ if(d.dncol&&e.type==="change"){ const o=dnOv(r); o[d.dncol]={...(o[d.dncol]||{}),color:t.value}; dnSave(); renderPage(true); return true }
+ if(d.dnsize&&e.type==="change"){ const o=dnOv(r); o[d.dnsize]={...(o[d.dnsize]||{}),size:+t.value}; dnSave(); renderPage(true); return true }
+ if(t.hasAttribute("data-dnframe")&&e.type==="change"){ const o=dnOv(r); o.avatar={...(o.avatar||{}),frame:t.value}; dnSave(); renderPage(true); return true }
+ if(d.dnfont&&e.type==="change"){ dnOv(R(d.dnfont)).font=t.value; dnSave(); renderPage(true); return true }
+ if(d.dntenter&&e.type==="change"){ dnOv(R(d.dntenter)).textEnter=t.value; dnSave(); return true }
+ if(d.dnop&&e.type==="change"){ R(d.dnop).cond.op=t.value; dnSave(); renderPage(true); return true }
+ if(d.dnv1&&e.type==="change"){ R(d.dnv1).cond.value=+t.value; dnSave(); return true }
+ if(d.dnv2&&e.type==="change"){ R(d.dnv2).cond.value2=+t.value; dnSave(); return true }
+ if(d.dncur&&e.type==="change"){ R(d.dncur).cond.currency=t.value; dnSave(); renderPage(true); return true }
+ if(d.dnalso&&e.type==="change"){ R(d.dnalso).also=t.checked; dnSave(); return true }
+ return false }
+/** بعد الرسم: السحب والإفلات للبطاقات + سحب النصوص فوق المقطع */
+function dnAfter(){ const pg=document.getElementById("pg"); alSyncDefs(); alHoverWire(); dnMountPv();
+ const hs=location.hash; if(/sl=/.test(hs)){ const k=(/sl=(\w+)/.exec(hs)||[])[1]; toast({connected:"✅ تم ربط Streamlabs",denied:"أُلغي الربط من Streamlabs",not_configured:"OAuth غير مفعّل على الخادم",bad_state:"انتهت صلاحية طلب الربط — أعد المحاولة",token_failed:"رفضت Streamlabs الطلب — أعد المحاولة",socket_failed:"تعذر جلب Socket Token",network:"تعذر الاتصال بـ Streamlabs"}[k]||k); history.replaceState(null,"","#/donalerts"); DNS().provAt=0; dnLoadProv() }
+ pg.querySelectorAll("[data-dndrag]").forEach(card=>{
+  card.addEventListener("dragstart",e=>{ if(e.target.closest(".dn-canvas")){ e.preventDefault(); return } e.dataTransfer.setData("text/plain",card.dataset.dndrag); card.classList.add("dragging") });
+  card.addEventListener("dragend",()=>card.classList.remove("dragging"));
+  card.addEventListener("dragover",e=>{ e.preventDefault(); card.classList.add("over") }); card.addEventListener("dragleave",()=>card.classList.remove("over"));
+  card.addEventListener("drop",e=>{ e.preventDefault(); card.classList.remove("over"); const from=e.dataTransfer.getData("text/plain"), to=card.dataset.dndrag; if(!from||from===to) return; dnReorder(from,to) }) });
+ pg.querySelectorAll("[data-dncanvas]").forEach(cv=>{ const r=dnFind(cv.dataset.dncanvas); let drag=null;
+  cv.addEventListener("pointerdown",e=>{ const el=e.target.closest("[data-dnlay]"); if(!el) return; drag=el; el.setPointerCapture(e.pointerId); e.preventDefault() });
+  cv.addEventListener("pointermove",e=>{ if(!drag) return; const b=cv.getBoundingClientRect(); const x=Math.max(0,Math.min(100,(e.clientX-b.left)/b.width*100)), y=Math.max(0,Math.min(100,(e.clientY-b.top)/b.height*100)); drag.style.left=x+"%"; drag.style.top=y+"%"; drag._x=x; drag._y=y });
+  const end=()=>{ if(!drag) return; const k=drag.dataset.dnlay; if(drag._x!=null){ const o=dnOv(r); o[k]={...(o[k]||{}),x:Math.round(drag._x*10)/10,y:Math.round(drag._y*10)/10}; dnSave("تم تحريك "+({title:"الاسم",sub:"المبلغ",msg:"الرسالة",avatar:"الصورة"}[k]||k)) } drag=null };
+  cv.addEventListener("pointerup",end); cv.addEventListener("pointercancel",end) }) }
+/** إعادة الترتيب: في الوضع البسيط المنطق يبقى بالمبالغ (الترتيب للعرض)، والقواعد المتقدمة يحدد ترتيبها الأولوية */
+function dnReorder(fromId,toId){ const C=alCfgS(), a=dnFind(fromId), b=dnFind(toId); if(!a||!b) return; const i=C.rules.indexOf(a); C.rules.splice(i,1); C.rules.splice(C.rules.indexOf(b),0,a);
+ if(!dnIsTier(a)||!dnIsTier(b)){ const adv=C.rules.filter(r=>r.event==="donation"&&!dnIsTier(r)); adv.forEach((r,k)=>r.priority=Math.max(61,99-k)); alSaveCfg(); const e=document.getElementById("dn-saved"); if(e) e.textContent="✓ رُتّبت الأولوية"; return renderPage(true) }
+ dnSave("الشرائح تُختار حسب المبلغ دائماً"); renderPage(true) }
+
 // ====== سوق آيرتات المجتمع + صندوق الآيرتات الشامل ======
 const AL_TEST_VARS={username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"5",diamonds:"5",amount:"10",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%",level:"",rank:"1"};
 function ALS(){ return S.al||(S.al={tab:"lib",sec:"all",q:"",cat:"",kind:"",event:"",items:[],total:0,at:0,key:"",vis:"all",cache:{},form:null,designers:null,adm:null,admTab:"pending",busy:false,quota:null}) }
@@ -1939,7 +2171,7 @@ const alDataBlob=u=>fetch(u).then(r=>r.blob());
 /** رفع مع شريط نسبة (XHR) */
 function alXhr(file,slot,onPct){ return new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/alerts/upload"); x.responseType="json"; x.setRequestHeader("x-slot",slot); x.setRequestHeader("x-filename",encodeURIComponent(file.name||"file")); x.setRequestHeader("content-type","application/octet-stream"); x.upload.onprogress=e=>{ if(e.lengthComputable) onPct(Math.round(e.loaded/e.total*100)) }; x.upload.onload=()=>onPct(100,true);
  x.onload=()=>{ const j=x.response||{}; if(x.status>=400&&!j.error){ j.error=[502,503,504].includes(x.status)?"gateway":"HTTP "+x.status; j.status=x.status } res(j) }; x.onerror=()=>res({error:"network"}); x.ontimeout=()=>res({error:"network"}); x.timeout=20*60000; x.send(file) }) } // الملف يُرسل خاماً (بدون FormData) فيكتبه الخادم مباشرة على القرص
-function alUpSet(p){ const A=ALS(); A.up={...(A.up||{}),...p}; if(S.page==="alerts"&&A.tab==="create"){ const st=document.querySelector(".al-up"); if(p.pct!=null&&st&&A.up.phase==="upload"){ const i=st.querySelector(".al-bar i"), s=st.querySelector(".small.mut:last-child"); if(i) i.style.width=A.up.pct+"%"; if(s) s.textContent=A.up.pct+"%"; return } renderPage(true) } }
+function alUpSet(p){ const A=ALS(); A.up={...(A.up||{}),...p}; if(S.page==="donalerts"){ softRefresh(); return } if(S.page==="alerts"&&A.tab==="create"){ const st=document.querySelector(".al-up"); if(p.pct!=null&&st&&A.up.phase==="upload"){ const i=st.querySelector(".al-bar i"), s=st.querySelector(".small.mut:last-child"); if(i) i.style.width=A.up.pct+"%"; if(s) s.textContent=A.up.pct+"%"; return } renderPage(true) } }
 async function alPickFile(f){ const A=ALS(), F=A.form; if(!f||!F) return;
  alUpSet({phase:"read",pct:0,name:f.name,size:f.size,file:f,msg:""});
  const buf=new Uint8Array(await f.arrayBuffer()); const chk=alCheckFile("media",buf);
@@ -2159,6 +2391,7 @@ function lbPvAll(fn){ for(const v of liveViews) if(v.w&&v.w.type==="lb"&&String(
   document.title=(b.name||"B6O6")+" — رابط البايو"; document.body.innerHTML=`<style>html,body{margin:0;height:100%}${BIO_CSS}</style>`+bioHTML(b,{visits:b.stats.visits});
   document.body.addEventListener("click",e=>{ const a=e.target.closest("[data-bl]"); if(!a) return; const k=a.dataset.bl; b.stats.clicks[k]=(b.stats.clicks[k]||0)+1; ls("b6o6.bio",b) }); return }
  if(h.startsWith("#/overlay")){ const qq=new URLSearchParams(h.split("?")[1]||""); bootOverlay(qq); if(qq.get("voice")==="1") vpInit(2); return }
+ if(h.startsWith("#/donalerts")) S.page="donalerts";
  shell(); renderPage(); vpInit(1);
  if(S.settings.wsUrl) startWS();
  window.__arsh={faW,S,R:()=>R,send,L,SIM,clockOp,addWidget,save,pushLayout,overlayURL,receive,psCur,psBlob,psDraw};

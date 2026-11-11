@@ -39,7 +39,7 @@ export function alSuggestStyle(name){ const n=String(name||"").toLowerCase(); fo
 export const AL_ERR={empty:"الملف فارغ أو تالف",too_large:"الملف أكبر من الحد المسموح",bad_type:"صيغة غير مدعومة أو ملف تالف — المدعوم: MP4, WebM, MOV, GIF, APNG, PNG, WebP, MP3, WAV, OGG, Lottie JSON",quota:"امتلأت مساحة ملفاتك — احذف آيرتات قديمة",bad_lottie:"ملف Lottie غير صالح (ليس JSON صحيحاً أو بنيته ناقصة)",lottie_expressions:"ملف Lottie يحتوي تعابير برمجية — غير مسموح لأسباب أمنية",lottie_external:"ملف Lottie يحمّل ملفات من الإنترنت — غير مسموح",too_complex:"ملف Lottie معقد جداً",not_playable:"الفيديو بترميز لا يشغّله المتصفح/OBS ولم ينجح تحويله",convert_failed:"فشل تحويل الفيديو إلى صيغة قابلة للتشغيل",no_converter:"هذا الترميز يحتاج تحويلاً والمحوّل غير متوفر على الخادم حالياً — صدّر الملف بصيغة MP4 (H.264) أو WebM",corrupt:"الملف تالف — لم يمكن قراءة الفيديو",too_long:"المقطع أطول من 60 ثانية",rate_limited:"رفعت ملفات كثيرة — انتظر دقيقة",bad_form:"لم يصل الملف — أعد المحاولة",unauthorized:"سجّل الدخول أولاً",network:"انقطع الاتصال أثناء الرفع — أعد المحاولة",too_heavy:"الفيديو أثقل من قدرة الخادم الحالي على التحويل — صدّره WebM أو MP4 (H.264) بدقة 1080p أو أقل، أو رقِّ خطة الخادم",server_error:"خطأ في الخادم أثناء حفظ الملف — أعد المحاولة",gateway:"الخادم لم يرد (HTTP 502/504) — غالباً أُعيد تشغيله، أعد المحاولة بعد دقيقة"};
 export const AL_CATS={celebrate:"احتفال",funny:"مضحك",gaming:"ألعاب",royal:"ملكي",anime:"أنمي",minimal:"بسيط",saudi:"سعودي",neon:"نيون",cute:"لطيف",other:"أخرى",...AL_STYLES}; // التصنيفات القديمة تبقى صالحة للآيرتات القديمة
 export const AL_LIMITS={media:50*1024*1024,audio:5*1024*1024,cover:2*1024*1024,quota:200*1024*1024,name:60,desc:400,tags:8,durMin:1,durMax:24*3600}; // لا حد عملي لمدة الآيرت — مدة الفيديو كاملة
-export const AL_VARS=["username","display_name","avatar","likes","total_likes","gift_name","gift_image","gift_count","diamonds","amount","currency","message","platform","rank","level","time_added","time_removed","goal","progress"];
+export const AL_VARS=["currency_symbol","service","donor_total","username","display_name","avatar","likes","total_likes","gift_name","gift_image","gift_count","diamonds","amount","currency","message","platform","rank","level","time_added","time_removed","goal","progress"];
 /** إطارات الصورة الشخصية (32) */
 export const AL_FRAMES=[["none","شفاف بالكامل"],["circle","دائرة بسيطة"],["ring","حلقة"],["gold","ذهبي"],["silver","فضي"],["neon","نيون"],["fire","ناري"],["ice","جليدي"],["crown","تاج"],["hex","سداسي"],["square","مربع"],["rounded","مربع ناعم"],["diamond","ماسي"],["star","نجمة"],["heart","قلب"],["shield","درع"],["rainbow","قوس قزح"],["pulse","نابض"],["glitch","جليتش"],["spin","دوار"],["double","حلقتان"],["dash","متقطع"],["glow","توهج"],["shadow","ظل"],["leaf","أوراق"],["galaxy","مجرة"],["pixel","بكسل"],["royal","ملكي"],["saudi","أخضر سعودي"],["pink","وردي"],["cyber","سايبربنك"],["b6o6","B6O6"],["butterfly","فراشات"],["lightning","برق"],["rose","ورد"],["wings","أجنحة"],["crystal","كريستال"],["chrome","كروم"],["cloud","سحابي"],["crescent","هلال"],["sun","شمس"],["emerald","زمرد"],["pearl","لؤلؤ"],["falcon","صقر"],["lion","أسد"],["dragon","تنين"]];
 /** حركات الظهور (24) والخروج (18) والتأثيرات المصاحبة (8) = 50 حركة */
@@ -88,6 +88,9 @@ export function alValidate(b,opt={}){ const e=[]; const name=alS(b.name,AL_LIMIT
  const visibility=b.visibility==="public"?"public":"private"; // الافتراضي خاص
  if(visibility==="public"&&!b.rightsConfirmed) e.push("للنشر العام يجب تأكيد أنك تملك حقوق الملفات");
  return {ok:!e.length,errors:e,value:{name,description,kind,event,durationSec,category,tags,visibility,rightsConfirmed:!!b.rightsConfirmed,designerName:alS(b.designerName,40).trim(),previewId:b.previewId||null,meta:alMeta(b.meta),mediaId:b.mediaId||null,audioId:b.audioId||null,coverId:b.coverId||null,config:alConfig(b.config)}} }
+/** تخصيص مستقل لكل قاعدة (مكان/لون/خط النصوص) يُدمج فوق إعدادات الآيرت دون تعديل الأصل */
+export function alOverCfg(o){ const out={}; for(const k of ["avatar","title","sub","msg"]) if(o[k]&&typeof o[k]==="object") out[k]=o[k]; for(const k of ["font","textEnter","fx","volume","videoSound"]) if(o[k]!=null) out[k]=o[k]; return JSON.parse(JSON.stringify(out)) }
+export function alMergeCfg(base,over){ if(!over) return alConfig(base); const b=JSON.parse(JSON.stringify(base||{})); for(const [k,v] of Object.entries(over)) b[k]=v&&typeof v==="object"&&!Array.isArray(v)?{...(b[k]||{}),...v}:v; return alConfig(b) }
 /** إعدادات العرض (الطبقات) — قيم محصورة فقط */
 export function alConfig(c){ c=c&&typeof c==="object"?c:{}; const lay=(o,d)=>{ o=o&&typeof o==="object"?o:{}; return {show:o.show!==undefined?!!o.show:d.show,x:Math.max(0,Math.min(100,alN(o.x,d.x))),y:Math.max(0,Math.min(100,alN(o.y,d.y))),size:Math.max(4,Math.min(100,alN(o.size,d.size))),color:/^#[0-9a-f]{3,8}$/i.test(o.color||"")?o.color:d.color,text:alS(o.text??d.text,140)} };
  const pick=(v,list,d)=>list.some(x=>x[0]===v)?v:d;
@@ -95,13 +98,17 @@ export function alConfig(c){ c=c&&typeof c==="object"?c:{}; const lay=(o,d)=>{ o
   avatar:{...lay(c.avatar,{show:true,x:50,y:30,size:22,color:"#ffffff",text:""}),frame:pick(c.avatar&&c.avatar.frame,AL_FRAMES,"ring")},
   title:lay(c.title,{show:true,x:50,y:66,size:7,color:"#ffffff",text:"{display_name}"}),
   sub:lay(c.sub,{show:true,x:50,y:80,size:4.5,color:"#ffd76a",text:AL_DEFAULT_SUB}),
+  msg:lay(c.msg,{show:false,x:50,y:91,size:3.5,color:"#ffffff",text:"{message}"}),
+  textEnter:pick(c.textEnter,AL_IN,"rise"),
   enter:pick(c.enter,AL_IN,"popIn"),exit:pick(c.exit,AL_OUT,"fadeOut"),fx:pick(c.fx,AL_FX,"none"),
   fit:c.fit==="cover"?"cover":"contain",volume:Math.max(0,Math.min(1,alN(c.volume,.8))),
   chroma:{on:!!(c.chroma&&c.chroma.on),mode:c.chroma&&c.chroma.mode==="luma"?"luma":"green",color:/^#[0-9a-f]{6}$/i.test(c.chroma&&c.chroma.color||"")?c.chroma.color:"#00ff00",tol:Math.max(5,Math.min(200,alN(c.chroma&&c.chroma.tol,90)))},
   tts:{on:!!(c.tts&&c.tts.on),text:alS(c.tts&&c.tts.text||"",160)},
   videoSound:c.videoSound!==false,audioDelay:Math.max(0,Math.min(10000,alN(c.audioDelay,0))),speed:Math.max(.25,Math.min(3,alN(c.speed,1))),frameAnim:c.frameAnim!==false,
   layerOrder:c.layerOrder==="behind"?"behind":"front",
-  font:alS(c.font||"default",24)} }
+  font:AL_FONTS.some(f=>f[0]===c.font)?c.font:"default"} }
+export const AL_FONTS=[["default","افتراضي"],["kufi","كوفي عريض"],["naskh","نسخ أنيق"],["mono","أحادي"],["serif","كلاسيكي"],["round","دائري"]];
+export const AL_FONT_CSS={default:"inherit",kufi:"'Segoe UI Black','Arial Black',Tahoma,sans-serif",naskh:"'Traditional Arabic','Times New Roman',serif",mono:"ui-monospace,Consolas,monospace",serif:"Georgia,'Times New Roman',serif",round:"'Trebuchet MS','Segoe UI',sans-serif"};
 const AL_DEFAULT_SUB="";
 /** فحص البايتات الحقيقية للملف (لا نثق بالامتداد أو نوع المتصفح) */
 export function alSniff(b){ if(!b||b.length<4) return ""; const h=(i)=>b[i];
@@ -141,10 +148,13 @@ export function alLottieSafe(j){ if(!j||typeof j!=="object"||!Array.isArray(j.la
 /* ------------------------------------------------------------------ القواعد (الشروط) لكل مستخدم */
 export function alRule(r){ r=r&&typeof r==="object"?r:{}; const c=r.cond||{};
  return {id:alS(r.id||"r"+Math.random().toString(36).slice(2,8),40),alertId:alS(r.alertId,40),event:AL_EVENTS[r.event]?r.event:"follow",enabled:r.enabled!==false,label:alS(r.label,40),level:alS(r.level,30),
-  cond:{op:AL_OPS[c.op]?c.op:"any",value:alN(c.value,0),value2:alN(c.value2,0),user:alS(c.user,60).trim().replace(/^@/,"").toLowerCase(),gift:alS(c.gift,60).trim().toLowerCase(),keyword:alS(c.keyword,60).trim().toLowerCase(),platform:alS(c.platform,20),role:["","mod","sub","follower"].includes(c.role)?c.role:""},
+  cond:{currency:/^[A-Z]{3}$/.test(String(c.currency||"").toUpperCase())?String(c.currency).toUpperCase():"",op:AL_OPS[c.op]?c.op:"any",value:alN(c.value,0),value2:alN(c.value2,0),user:alS(c.user,60).trim().replace(/^@/,"").toLowerCase(),gift:alS(c.gift,60).trim().toLowerCase(),keyword:alS(c.keyword,60).trim().toLowerCase(),platform:alS(c.platform,20),role:["","mod","sub","follower"].includes(c.role)?c.role:""},
   once:["none","user","session"].includes(r.once)?r.once:"none",priority:Math.max(0,Math.min(100,Math.round(alN(r.priority,10)))),cooldownSec:Math.max(0,Math.min(3600,alN(r.cooldownSec,0))),also:!!r.also,
-  over:{title:alS(r.over&&r.over.title,140),sub:alS(r.over&&r.over.sub,140),volume:r.over&&r.over.volume!=null?Math.max(0,Math.min(1,alN(r.over.volume,.8))):null,durationSec:r.over&&r.over.durationSec?Math.max(1,Math.min(AL_LIMITS.durMax,alN(r.over.durationSec,5))):null,tts:!!(r.over&&r.over.tts),ttsText:alS(r.over&&r.over.ttsText,200)}} }
-export function alCfg(c){ c=c&&typeof c==="object"?c:{}; return {enabled:c.enabled!==false,rules:(Array.isArray(c.rules)?c.rules:[]).slice(0,200).map(alRule),gapMs:Math.max(0,Math.min(10000,alN(c.gapMs,600))),maxQueue:Math.max(1,Math.min(100,alN(c.maxQueue,30))),mergeLikes:c.mergeLikes!==false,tts:!!c.tts} }
+  over:{title:alS(r.over&&r.over.title,140),sub:alS(r.over&&r.over.sub,140),volume:r.over&&r.over.volume!=null?Math.max(0,Math.min(1,alN(r.over.volume,.8))):null,durationSec:r.over&&r.over.durationSec?Math.max(1,Math.min(AL_LIMITS.durMax,alN(r.over.durationSec,5))):null,tts:!!(r.over&&r.over.tts),ttsText:alS(r.over&&r.over.ttsText,200),cfg:r.over&&r.over.cfg&&typeof r.over.cfg==="object"?alOverCfg(r.over.cfg):null}} }
+/** إعدادات الدونيشن: الحد الأدنى، عملة الشرائح، التحويل بأسعار موثوقة */
+export function alDonCfg(d){ d=d&&typeof d==="object"?d:{}; const rates={}; if(d.rates&&typeof d.rates==="object") for(const [k,v] of Object.entries(d.rates)) if(/^[A-Z]{3}$/.test(k)&&+v>0) rates[k]=+v;
+ return {mode:d.mode==="advanced"?"advanced":"simple",min:Math.max(0,alN(d.min,0)),base:/^[A-Z]{3}$/.test(d.base||"")?d.base:"USD",convert:d.convert!==false,rates,ratesAt:alS(d.ratesAt,40),ratesSrc:alS(d.ratesSrc,80),multi:!!d.multi} }
+export function alCfg(c){ c=c&&typeof c==="object"?c:{}; return {don:alDonCfg(c.don),enabled:c.enabled!==false,rules:(Array.isArray(c.rules)?c.rules:[]).slice(0,200).map(alRule),gapMs:Math.max(0,Math.min(10000,alN(c.gapMs,600))),maxQueue:Math.max(1,Math.min(100,alN(c.maxQueue,30))),mergeLikes:c.mergeLikes!==false,tts:!!c.tts} }
 export function alNewState(){ return {once:{},last:{},ul:{},tl:0,gifted:{},commented:{},uc:{},n:0} }
 const cmpOp=(op,x,a,b)=>op==="any"||op==="eq"&&x===a||op==="gt"&&x>a||op==="gte"&&x>=a||op==="lt"&&x<a||op==="lte"&&x<=a||op==="between"&&x>=Math.min(a,b)&&x<=Math.max(a,b);
 /** هل القيمة تعبر العتبة الآن؟ (للايكات: من prev إلى cur) — حتى لا يتكرر الآيرت عند كل لايك */
@@ -156,10 +166,18 @@ export function alVars(ev,x={}){ const u=(ev&&ev.user)||{}, v={};
  if(u.id) v.username=String(u.id); if(u.name) v.display_name=String(u.name); if(u.avatar) v.avatar=String(u.avatar);
  if(ev){ if(ev.platform) v.platform=ev.platform==="tiktok"?"TikTok":String(ev.platform);
   if(ev.type==="gift"){ if(ev.gift) v.gift_name=String(ev.gift); if(ev.giftImage||ev.image) v.gift_image=String(ev.giftImage||ev.image); v.gift_count=String(ev.count||1); if(ev.value) v.diamonds=String(ev.value) }
-  if(ev.type==="donation"){ v.amount=String(ev.amount); if(ev.currency) v.currency=ev.currency; if(ev.message) v.message=alS(ev.message,200); if(!v.display_name&&ev.name) v.display_name=String(ev.name) }
+  if(ev.type==="donation"){ if(!v.display_name) v.display_name=ev.anonymous||!ev.name?"داعم مجهول":String(ev.name); if(!v.avatar&&ev.avatar&&!ev.anonymous) v.avatar=String(ev.avatar); v.amount=alAmt(ev.amount); v.currency_symbol=AL_CUR_SYM[String(ev.currency||"").toUpperCase()]||String(ev.currency||""); if(ev.provider) v.service=AL_SERVICES[ev.provider]||String(ev.provider); v.platform=v.service||"دونيشن"; if(ev.currency) v.currency=ev.currency; if(ev.message) v.message=alS(ev.message,200); if(!v.display_name&&ev.name) v.display_name=String(ev.name) }
   if(ev.type==="comment"&&ev.text) v.message=alS(ev.text,200) }
  for(const k of AL_VARS) if(x[k]!=null&&x[k]!=="") v[k]=String(x[k]);
  return v }
+export const AL_CUR_SYM={USD:"$",SAR:"ر.س",EUR:"€",GBP:"£",AED:"د.إ",KWD:"د.ك",QAR:"ر.ق",BHD:"د.ب",OMR:"ر.ع",EGP:"ج.م",TRY:"₺",CAD:"C$",AUD:"A$",JPY:"¥"};
+export const AL_SERVICES={streamlabs:"Streamlabs",streamelements:"StreamElements",moyasar:"ميسّر",test:"تجربة"};
+const alAmt=a=>{ const n=+a||0; return Number.isInteger(n)?String(n):n.toFixed(2) };
+/** العملات المربوطة رسمياً بالدولار (سعر ثابت من البنوك المركزية) — تُستخدم إن لم تتوفر أسعار محدّثة */
+export const AL_PEGGED={USD:1,SAR:3.75,AED:3.6725,QAR:3.64,OMR:0.3845,BHD:0.376};
+/** تحويل مبلغ إلى عملة الشرائح. يرجع null إن لم يتوفر سعر موثوق (لا نفترض أن العملات متساوية) */
+export function alConvert(amount,from,to,rates){ from=String(from||"").toUpperCase(); to=String(to||"USD").toUpperCase(); const a=+amount||0; if(from===to) return a;
+ const R={...AL_PEGGED,...(rates||{})}; if(!(R[from]>0)||!(R[to]>0)) return null; return Math.round(a/R[from]*R[to]*100)/100 }
 export function alFill(t,v){ return String(t||"").replace(/\{([a-z_]+)\}/g,(m,k)=>AL_VARS.includes(k)?(v&&v[k]!=null?v[k]:""):m).replace(/\s{2,}/g," ").trim() }
 /** المتغيرات المطلوبة في النص وغير المتوفرة لهذا الحدث — للتنبيه في المحرر */
 export function alMissing(t,event){ const have=new Set(["username","display_name","avatar","platform","level","rank"]); const by={like_user:["likes","total_likes"],like_total:["total_likes","goal","progress"],gift:["gift_name","gift_image","gift_count","diamonds"],gift_value:["gift_name","gift_image","gift_count","diamonds"],first_gift:["gift_name","gift_image","gift_count","diamonds"],donation:["amount","currency","message"],comment:["message"],time_added:["time_added"],time_removed:["time_removed"]};
@@ -180,7 +198,8 @@ function emit(cfg,st,cands,now,base){ if(!cands.length) return []; cands.sort((a
   if(r.cooldownSec&&st.last[r.id]&&now-st.last[r.id]<r.cooldownSec*1000) continue;
   if(r.once==="user") st.once[r.id+":"+uid]=1; if(r.once==="session") st.once[r.id]=1; st.last[r.id]=now; st.n++;
   if(r.level) vars.level=r.level;
-  out.push({id:(base.id||"a"+now)+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars,priority:r.priority,at:now,test:!!base.test,mergeKey:r.event==="like_user"?r.id+":"+uid:r.event==="like_total"?r.id:""}); if(!r.also) taken[r.event]=1 }
+  const ov=r.over&&(r.over.title||r.over.sub||r.over.volume!=null||r.over.durationSec||r.over.cfg)?{title:r.over.title,sub:r.over.sub,volume:r.over.volume,durationSec:r.over.durationSec,cfg:r.over.cfg||null}:undefined;
+  out.push({id:(base.id||"a"+now)+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars,over:ov,priority:r.priority,at:now,test:!!base.test,mergeKey:r.event==="like_user"?r.id+":"+uid:r.event==="like_total"?r.id:""}); if(!r.also) taken[r.event]=1 }
  return out }
 export function alertsOnEvent(cfg,st,ev,now){ if(!cfg||!cfg.enabled||!ev) return []; const rules=cfg.rules.filter(r=>r.enabled&&r.alertId&&AL_EVENTS[r.event]&&AL_EVENTS[r.event].avail[ev.platform==="donation"?"donation":"tiktok"]!==false); if(!rules.length&&ev.type!=="like") return [];
  const cands=[], u=ev.user||{}, uid=lc(u.id||u.name);
@@ -198,7 +217,12 @@ export function alertsOnEvent(cfg,st,ev,now){ if(!cfg||!cfg.enabled||!ev) return
   else if(r.event==="gift"&&ev.type==="gift"){ if(cmpOp(c.op,+ev.count||1,c.value,c.value2)) cands.push({r,vars:alVars(ev)}) }
   else if(r.event==="gift_value"&&ev.type==="gift"){ if(cmpOp(c.op,+ev.value||0,c.value,c.value2)) cands.push({r,vars:alVars(ev)}) }
   else if(r.event==="first_gift"&&ev.type==="gift"){ if(!st.gifted[uid]) cands.push({r,vars:alVars(ev)}) }
-  else if(r.event==="donation"&&ev.type==="donation"&&ev.verified&&!ev.refunded){ if(cmpOp(c.op,+ev.amount||0,c.value,c.value2)) cands.push({r,vars:alVars(ev)}) } }
+  else if(r.event==="donation"&&ev.type==="donation"&&(ev.verified||ev.test)&&!ev.refunded){ // دعم مؤكد من المزوّد فقط (أو تجربة معلّمة)
+   const D=cfg.don, cur=String(ev.currency||"").toUpperCase();
+   let amt; if(c.currency) amt=cur===c.currency?+ev.amount||0:null; // قاعدة لعملة محددة
+   else amt=D.convert?alConvert(ev.amount,cur,D.base,D.rates):(cur===D.base||!cur?+ev.amount||0:null);
+   if(amt==null) continue; if(D.min>0&&!c.currency&&amt<D.min) continue; // الحد الأدنى لتشغيل الآيرت (لا يمنع الدفع نفسه)
+   if(cmpOp(c.op,amt,c.value,c.value2)) cands.push({r,vars:alVars(ev,{donor_total:ev.donorTotal})}) } }
  if(ev.type==="gift"&&uid) st.gifted[uid]=1; if(ev.type==="comment"&&uid){ st.commented[uid]=1; st.uc[uid]=(st.uc[uid]||0)+1 }
  return emit(cfg,st,cands,now,{id:ev.id,test:ev.test}) }
 /** سجلات السبثون (وقت مضاف/مخصوم) */

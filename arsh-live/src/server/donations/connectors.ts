@@ -10,7 +10,7 @@ type Conn = { stop(): void };
 export function createConnectors(prisma: PrismaClient, svc: DonationService) {
   const active = new Map<string, Conn>();
   const setStatus = (userId: string, kind: string, status: string) =>
-    prisma.donationProvider.update({ where: { userId_kind: { userId, kind } }, data: { status } }).catch(() => {});
+    prisma.donationProvider.update({ where: { userId_kind: { userId, kind } }, data: { status, ...(status === "connected" ? { lastSyncAt: new Date() } : {}) } }).catch(() => {});
 
   function streamlabs(userId: string, token: string): Conn {
     let sock: any, stopped = false;

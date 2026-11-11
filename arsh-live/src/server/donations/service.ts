@@ -18,8 +18,9 @@ export function createDonationService(prisma: PrismaClient, hub: Hub) {
       await prisma.donation.create({ data: { id, userId, provider: d.provider, providerId: String(d.providerId), name: String(d.name || "").slice(0, 60), anonymous: !!d.anonymous, avatar: String(d.avatar || "").slice(0, 500), amount, currency, message: String(d.message || "").slice(0, 300), status: "confirmed", createdAt: d.t ? new Date(d.t) : undefined } });
     } catch (e: any) { if (e?.code === "P2002") return false; throw e; } // مكرر
     audit(userId, "donation.confirmed", { id, amount, currency, provider: d.provider });
+    prisma.donationProvider.updateMany({ where: { userId, kind: d.provider }, data: { lastEventAt: new Date() } }).catch(() => {});
     const room = await roomOf(userId);
-    if (room) hub.dispatch(room, { type: "donation", id, provider: d.provider, name: d.name, anonymous: !!d.anonymous, avatar: d.avatar || "", amount, currency, message: d.message || "", t: d.t || Date.now() });
+    if (room) hub.dispatch(room, { type: "donation", verified: true, id, provider: d.provider, name: d.name, anonymous: !!d.anonymous, avatar: d.avatar || "", amount, currency, message: d.message || "", t: d.t || Date.now() });
     return true;
   }
   /** استرجاع كلي أو جزئي: يُخصم من الإحصائيات والأهداف والقوائم ويبقى في السجل */

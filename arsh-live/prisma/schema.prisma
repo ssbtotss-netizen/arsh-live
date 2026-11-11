@@ -154,6 +154,8 @@ model DonationProvider {
   publicCfg Json     @default("{}")
   secretEnc String   @default("")
   status    String   @default("")
+  lastEventAt DateTime? // آخر دعم حقيقي استُقبل
+  lastSyncAt  DateTime? // آخر اتصال ناجح بالمزوّد
   updatedAt DateTime @updatedAt
 
   @@id([userId, kind])

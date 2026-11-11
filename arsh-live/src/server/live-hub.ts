@@ -84,7 +84,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (!ws.canEdit) return send(ws, { t: "status", text: "هذا الاتصال للقراءة فقط" });
 
       if (m.t === "sim" && m.ev) {
-        m.ev.sim = true;
+        m.ev.sim = true; delete m.ev.verified; // «مؤكد» يأتي من الخادم فقط (خدمة الدونيشن) — لا من المتصفح
         // التبرعات من لوحة التجربة تُعلَّم تجريبية دائماً ولا تُحفظ في قاعدة البيانات
         if (m.ev.type === "donation") { m.ev.test = true; m.ev.provider = "test"; m.ev.id = "test:" + String(m.ev.id || Date.now()); }
         if (m.ev.type === "donation_refund" && !String(m.ev.id || "").startsWith("test:") && !String(m.ev.id || "").startsWith("sim_")) return;

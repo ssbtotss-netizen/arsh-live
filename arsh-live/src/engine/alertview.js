@@ -1,7 +1,7 @@
 // صندوق الآيرتات الشامل (Universal Alert Box): رابط OBS واحد يعرض كل آيرتات المستخدم بالترتيب وبخلفية شفافة 100%
 import { View } from "./view.js";
 import { newWidget } from "./defs.js";
-import { alQueue, alQueuePush, alQueueNext, alFill, alConfig, AL_FX } from "./alerts.js";
+import { alQueue, alQueuePush, alQueueNext, alFill, alConfig, alMergeCfg, AL_FX, AL_FONT_CSS } from "./alerts.js";
 
 /** تعريفات الآيرتات المتاحة لهذا الرابط: {id:{id,name,kind,durationSec,mediaUrl,mediaMime,audioUrl,config}} — يملؤها رابط OBS من الخادم (روابط موقّعة) أو اللوحة */
 export const AB_DEFS={};
@@ -69,7 +69,7 @@ Object.assign(View.prototype,{
   try{ await this.aboxPlay(it,A.cur) }catch(e){} A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
-  const c=alConfig(d.config), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى: الآيرت يأخذ مدته كاملة
+  const c=alMergeCfg(d.config,it.over&&it.over.cfg), fixed=!!(it.over&&it.over.durationSec), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى. «مدة مخصصة» = مدة ثابتة؛ التلقائي = طول المقطع كاملاً
   this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r);
   if(d.kind==="template"){ return this.aboxTemplate(d,c,it,r,dur,cur) }
   let media=null, lot=null, vid=null;
@@ -80,20 +80,23 @@ Object.assign(View.prototype,{
    else { const im=document.createElement("img"); im.className="ab-media"+(c.fit==="cover"?" cover":""); im.src=d.mediaUrl; im.alt=""; media=im; r.appendChild(im) } }
   const V=it.vars||{};
   if(c.avatar.show&&(V.avatar||V.display_name||V.username)){ /* بدون صورة من المصدر: صورة افتراضية واضحة (لا نختلق صورة شخص) */ const a=document.createElement("div"); a.className="ab-av abf-"+c.avatar.frame+(c.frameAnim?"":" ab-noanim"); if(c.layerOrder==="behind") a.style.zIndex="-1"; const sz=c.avatar.size/100*H; Object.assign(a.style,{left:c.avatar.x+"%",top:c.avatar.y+"%",width:sz+"px",fontSize:sz/10+"px",backgroundImage:`url("${String(V.avatar||AB_DEFAULT_AV).replace(/"/g,"")}")`}); r.appendChild(a) }
-  for(const k of ["title","sub"]){ const L=c[k]; if(!L.show) continue; const tpl=(it.over&&it.over[k])||L.text; const txt=alFill(tpl,V); if(!txt) continue; const t=document.createElement("div"); t.className="ab-tx"; t.textContent=txt; Object.assign(t.style,{left:L.x+"%",top:L.y+"%",fontSize:L.size/100*H+"px",color:L.color}); r.appendChild(t) }
+  const texts=[]; for(const k of ["title","sub","msg"]){ const L=c[k]; if(!L.show) continue; const tpl=(it.over&&it.over[k])||L.text; const txt=alFill(tpl,V); if(!txt) continue; const t=document.createElement("div"); t.className="ab-tx ab-tx-"+k; t.textContent=txt; Object.assign(t.style,{left:L.x+"%",top:L.y+"%",fontSize:L.size/100*H+"px",color:L.color,fontFamily:AL_FONT_CSS[c.font]||"inherit"}); if(k==="msg") Object.assign(t.style,{whiteSpace:"normal",width:"86%",fontWeight:"700"}); r.appendChild(t); texts.push(t) }
   if(c.fx!=="none"&&!(this.opts.lowPerf)) this.aboxFx(r,c.fx,dur);
   if(it.test&&ed) r.insertAdjacentHTML("beforeend",`<div class="ab-test">تجربة</div>`);
   if(d.audioUrl&&!ed&&!this.opts.mute){ try{ const a=new Audio(d.audioUrl); a.volume=it.over&&it.over.volume!=null?it.over.volume:c.volume; cur.audio=a; setTimeout(()=>{ if(!cur.skip) a.play().catch(()=>{}) },c.audioDelay) }catch(e){} }
+  texts.forEach((t,i)=>{ try{ t.animate((AB_IN_KF[c.textEnter]||AB_IN_KF.rise).map(f=>({...f,transform:"translate(-50%,-50%) "+(f.transform&&f.transform!=="none"?f.transform:"")})),{duration:600/c.speed,delay:(250+i*180)/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}) }catch(e){} });
   await r.animate(AB_IN_KF[c.enter]||AB_IN_KF.popIn,{duration:650/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}).finished.catch(()=>{});
   // لا يُقطع المقطع: يبقى الآيرت حتى تنتهي المدة المحددة وحتى ينتهي الفيديو/الصوت نفسه
   const mediaLeft=el=>!!(el&&!el.ended&&!el.error&&isFinite(el.duration)&&el.duration-el.currentTime>.45&&(!el.paused||el.currentTime===0)&&Date.now()-t0<el.duration*1000+4000);
-  const t0=Date.now(); while(!cur.skip&&(Date.now()-t0<dur-1000||mediaLeft(vid)||mediaLeft(cur.audio))) await abWait(100);
+  const t0=Date.now(); while(!cur.skip&&(Date.now()-t0<dur-1000||!fixed&&(mediaLeft(vid)||mediaLeft(cur.audio)))) await abWait(100);
   await r.animate(AB_OUT_KF[c.exit]||AB_OUT_KF.fadeOut,{duration:450/c.speed,easing:"ease-in",fill:"forwards"}).finished.catch(()=>{});
   try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
   r.remove(); if(ed) this.applyAbox(w,this.abW,this.abH) },
  /** القوالب الرسمية: تصاميم تنبيهات المتابعين الجاهزة داخل الصندوق */
- async aboxTemplate(d,c,it,r,dur,cur){ const V=it.vars||{}; const sub=new View(newWidget("falert",{id:"abt",design:c.template||"duck_classic",x:0,y:0,w:1,h:1,z:1,holdMs:Math.max(1200,dur-1800),sound:""}),{w:this.abW||400,h:this.abH||300},{mute:true,refW:this.abW});
+ async aboxTemplate(d,c,it,r,dur,cur){ const V=it.vars||{}; const sub=new View(newWidget("falert",{id:"abt",design:c.template||"duck_classic",x:0,y:0,w:1,h:1,z:1,holdMs:Math.max(1200,dur-1800),sound:"",...(it.event==="donation"?{msgs:"💸 شكراً يا {username} على دعمك",sub:""}:{})}),{w:this.abW||400,h:this.abH||300},{mute:true,refW:this.abW});
   r.appendChild(sub.el); sub.el.style.left="0"; sub.el.style.top="0"; const name=V.display_name||V.username||"";
+  // في الدونيشن: القالب يعرض الاسم، ونضيف فوقه سطر المبلغ ورسالة الداعم
+  if(it.event==="donation"){ const H=this.abH||300; for(const k of ["sub","msg"]){ const L=c[k]; if(!L.show) continue; const txt=alFill((it.over&&it.over[k])||L.text,V); if(!txt) continue; const t=document.createElement("div"); t.className="ab-tx ab-tx-"+k; t.textContent=txt; Object.assign(t.style,{left:L.x+"%",top:L.y+"%",fontSize:L.size/100*H+"px",color:L.color,fontFamily:AL_FONT_CSS[c.font]||"inherit",zIndex:5}); if(k==="msg") Object.assign(t.style,{whiteSpace:"normal",width:"86%"}); r.appendChild(t) } }
   try{ await sub.faPlay({id:it.id,name,av:V.avatar||"",test:!!it.test}) }catch(e){} r.remove(); if(this.opts.editor) this.applyAbox(this.w,this.abW,this.abH) },
  /** إزالة لون الخلفية (Chroma/Green screen) على canvas — شفافية حقيقية في OBS */
  aboxChroma(v,c){ const cv=document.createElement("canvas"); cv.className="ab-media"; const g=cv.getContext("2d",{willReadFrequently:true}); const hex=c.chroma.color, kr=parseInt(hex.slice(1,3),16), kg=parseInt(hex.slice(3,5),16), kb=parseInt(hex.slice(5,7),16), tol=c.chroma.tol, luma=c.chroma.mode==="luma"; // luma: إزالة الخلفية السوداء حسب الإضاءة

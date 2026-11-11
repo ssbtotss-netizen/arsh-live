@@ -14,13 +14,13 @@ async function list(userId: string) {
   const out: any = {};
   for (const r of rows) {
     const sec = decrypt<any>(r.secretEnc) || {};
-    out[r.kind] = { enabled: r.enabled, connected: r.status === "connected", status: r.status, masked: Object.fromEntries(Object.entries({ ...sec, ...(r.publicCfg as any) }).map(([k, v]) => [k, k === "publishableKey" || k === "tokenType" ? String(v) : mask(String(v))])) };
+    out[r.kind] = { enabled: r.enabled, connected: r.status === "connected", status: r.status, lastEventAt: r.lastEventAt, lastSyncAt: r.lastSyncAt, via: (r.publicCfg as any)?.via || "token", needsRelink: r.enabled && /unauth|401|403|invalid|expired|خطأ/i.test(r.status || ""), masked: Object.fromEntries(Object.entries({ ...sec, ...(r.publicCfg as any) }).map(([k, v]) => [k, k === "publishableKey" || k === "tokenType" ? String(v) : mask(String(v))])) };
   }
   return out;
 }
 export async function GET() {
   const u = await currentUser(); if (!u) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
-  return NextResponse.json({ providers: await list(u.id) });
+  return NextResponse.json({ providers: await list(u.id), oauth: { streamlabs: !!(process.env.STREAMLABS_CLIENT_ID && process.env.STREAMLABS_CLIENT_SECRET) } });
 }
 export async function PUT(req: Request) {
   const u = await currentUser(); if (!u) return NextResponse.json({ error: "unauthorized" }, { status: 401 });
