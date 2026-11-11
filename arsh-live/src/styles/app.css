@@ -128,3 +128,4 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .bio-phone{position:sticky;top:12px;border-radius:38px;padding:12px;background:#0b0d14;border:2px solid #2a2f3d;box-shadow:0 20px 50px #0008}
 .bio-screen{height:700px;border-radius:28px;overflow:auto}.bio-screen .bio{min-height:100%}
 @media(max-width:1000px){.bio-ed{grid-template-columns:1fr}.bio-phone{position:relative}}
+.lib.pv-still .pv *,.lib.pv-still .pv *::before,.lib.pv-still .pv *::after{animation-play-state:paused!important}

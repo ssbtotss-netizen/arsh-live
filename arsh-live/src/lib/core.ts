@@ -37,6 +37,7 @@ export * from "../engine/qr.js";
 export * from "../engine/plans.js";
 export * from "../engine/fc_designs.js";
 export * from "../engine/fachars.js";
+export * from "../engine/lb_art.js";
 export * from "../engine/faview.js";
 export * from "../engine/chatview.js";
 export * from "../engine/musicview.js";
