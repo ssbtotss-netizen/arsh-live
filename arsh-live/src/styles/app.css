@@ -208,3 +208,16 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .dn-gi{position:relative;flex:none;width:52px;height:52px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:26px;background:linear-gradient(135deg,#ffcc0033,#ff7a0022)}
 .dn-gi span{position:absolute;top:-6px;inset-inline-end:-6px;width:20px;height:20px;border-radius:50%;background:#ffcc00;color:#111;font:900 11px system-ui;display:flex;align-items:center;justify-content:center}
 @media (max-width:900px){.dn-grid{grid-template-columns:1fr}.dn-steps{grid-template-columns:repeat(2,1fr)}.dn-sticky{position:static}.dn-mini{width:92px}.dn-amt{min-width:58px;font-size:17px}}
+/* 🎬 مشاركة واستيراد تصاميم البث */
+.ly-m{width:min(860px,92vw)}
+.ly-scs{display:flex;flex-direction:column;gap:4px;max-height:160px;overflow:auto;padding:6px;border-radius:10px;background:#ffffff08}
+.ly-res{margin-top:10px;padding:12px;border-radius:14px;background:linear-gradient(135deg,#ffcc0014,#ff7a000d);border:1px solid #ffcc0044}
+.ly-code{font:900 26px ui-monospace,Consolas,monospace;letter-spacing:2px;text-align:center;margin-bottom:8px;direction:ltr;user-select:all}
+.ly-pv{margin-top:8px;min-height:200px}.ly-pv-info{margin-top:10px}
+.ly-steps{display:flex;flex-direction:column;gap:8px}.ly-st{display:flex;gap:10px;align-items:center;padding:10px;border-radius:12px;background:#ffffff08}.ly-st>div{flex:1}.ly-st p{margin:2px 0 0}
+.ly-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ly-card{display:flex;flex-direction:column;padding:10px;gap:3px}
+.ly-thumb{height:190px;border-radius:12px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#ffffff06}
+.ly-th-ph{opacity:.6;text-align:center;font-size:13px}
+.ly-el{margin:6px 0 10px;padding:8px;border-radius:10px;background:#ffcc000d;border:1px dashed #ffcc0044}
+.ly-dom{background:linear-gradient(135deg,#ffcc0022,#7b5cff18);border-color:#ffcc0066}

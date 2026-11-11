@@ -2,7 +2,7 @@
 import re, pathlib
 root=pathlib.Path(__file__).resolve().parent; src=root.parent/'arsh-live'/'src'
 eng=''
-for f in ['defs','leaderboard','clock','donations','latest','tops','poststats','events','platforms','notify','plans','room','bio','socials','lb','lb_bars','lb_art','bots','chat','music','actions','followers','view','lbview','rboard','vgoal','vgoal80','botview','fcview','fc_designs','leview','le5','le_nature','le_royal','le_space','le_fire','le_kit','le_crystal','le_gaming','le_saudi','le_b6o6','qr','fachars','faview','alerts','alertview','dtext','chatview','musicview','actview']:
+for f in ['defs','leaderboard','clock','donations','latest','tops','poststats','events','platforms','notify','plans','room','bio','socials','lb','lb_bars','lb_art','bots','chat','music','actions','followers','view','lbview','rboard','vgoal','vgoal80','botview','fcview','fc_designs','leview','le5','le_nature','le_royal','le_space','le_fire','le_kit','le_crystal','le_gaming','le_saudi','le_b6o6','qr','fachars','faview','alerts','alertview','layoutshare','dtext','chatview','musicview','actview']:
     t=(src/'engine'/f'{f}.js').read_text(encoding='utf-8')
     t=re.sub(r'^import .*?;\s*$','',t,flags=re.M)
     t=re.sub(r'^export (?=const|function|class|let)','',t,flags=re.M)

@@ -169,7 +169,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","مكتبة الآيرتات","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","مكتبة الآيرتات","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -263,7 +263,7 @@ function renderPage(soft){
    <button class="btn pri" data-go="studio">🎬 رتّب عناصر شاشتك</button><button class="btn" data-go="subathon">⏳ جهّز السبثون</button><button class="btn" data-go="obs">🔗 انسخ روابط OBS</button></div>
    <p class="mut small" style="margin-top:12px">التخطيط النشط: <b style="color:var(--tx)">${esc(l.name)}</b> — ${l.widgets.length} عناصر على ${CV().label}</p></div>
   <div class="card"><h3>المتصدرون الآن</h3><div class="grid g2">${miniTop("❤️ التكبيس",sorted(D.likes).slice(0,3))}${miniTop("🎁 الدعم",sorted(D.gifts).slice(0,3))}</div></div></div>
-  <div class="card" style="margin-top:14px"><h3>كل ما في المنصة</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[["studio","🎬 استوديو البث"],["falerts","🦆 تنبيهات المتابعين"],["alerts","🔔 مكتبة الآيرتات"],["donalerts","💸 الدونيشن والآيرتات"],["followers","👥 عداد المتابعين"],["latest","✨ آخر التفاعلات"],["library","🏆 قوائم الداعمين"],["subathon","⏳ السبثون"],["bots","🤖 البوتات والقارئ الصوتي"],["actions","⚡ الإجراءات التلقائية"],["music","🎵 طلبات الأغاني"],["poststats","📊 إحصائيات نهاية البث"],["community","📣 Discord وTelegram"],["bio","🔗 رابط البايو"]].map(([g,n])=>`<button class="btn sm" data-go="${g}">${n}</button>`).join("")}</div></div></div>`+testBar();
+  <div class="card" style="margin-top:14px"><h3>كل ما في المنصة</h3><div class="row" style="gap:6px;flex-wrap:wrap">${[["studio","🎬 استوديو البث"],["falerts","🦆 تنبيهات المتابعين"],["alerts","🔔 مكتبة الآيرتات"],["donalerts","💸 الدونيشن والآيرتات"],["layouts","🎨 مكتبة تصاميم البث"],["followers","👥 عداد المتابعين"],["latest","✨ آخر التفاعلات"],["library","🏆 قوائم الداعمين"],["subathon","⏳ السبثون"],["bots","🤖 البوتات والقارئ الصوتي"],["actions","⚡ الإجراءات التلقائية"],["music","🎵 طلبات الأغاني"],["poststats","📊 إحصائيات نهاية البث"],["community","📣 Discord وTelegram"],["bio","🔗 رابط البايو"]].map(([g,n])=>`<button class="btn sm" data-go="${g}">${n}</button>`).join("")}</div></div></div>`+testBar();
  }
  else if(p==="live"){
   const s=S.settings;
@@ -336,6 +336,7 @@ function renderPage(soft){
  else if(p==="falerts"){ h=faHTML() }
  else if(p==="alerts"){ h=alHTML() }
  else if(p==="donalerts"){ h=dnHTML() }
+ else if(p==="layouts"){ h=lyHTML() }
  else if(p==="music"){ h=musicHTML() }
  else if(p==="socials"){ h=socialsHTML() }
  else if(p==="donations"){ h=donationsHTML() }
@@ -384,6 +385,7 @@ function renderPage(soft){
  if(p==="falerts") faPreview();
  if(p==="alerts") alAfter();
  if(p==="donalerts") dnAfter();
+ if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
  if(p==="subathon") mountClockPreview("sa-pv",l.widgets.find(w=>w.type==="subathon")||newWidget("subathon"));
@@ -756,7 +758,7 @@ function socInput(t,d,e){
  return false }
 /* ---- الاستوديو ---- */
 function studioHTML(){ const l=L();
- return head("استوديو البث","اسحب أي عنصر لمكانه — المحاذاة الذكية تظهر تلقائياً، وتعديل عنصر لا يحرّك غيره",`<button class="btn sm" data-go="obs">🔗 روابط OBS</button>`)+
+ return head("استوديو البث","اسحب أي عنصر لمكانه — المحاذاة الذكية تظهر تلقائياً، وتعديل عنصر لا يحرّك غيره",`<button class="btn sm" data-lyimp>📥 استيراد تصميم</button><button class="btn sm pri" data-lyshare>📤 مشاركة التصميم</button>${LYS().undo?`<button class="btn sm" data-lyundo>↩ تراجع عن الاستيراد</button>`:""}<button class="btn sm" data-go="layouts">🎨 مكتبة التصاميم</button><button class="btn sm" data-go="obs">🔗 روابط OBS</button>`)+
  `<div class="st-bar">${layoutPicker()}<button class="btn sm" data-lay="new">+ مشهد جديد</button><button class="btn sm" data-lay="dup">نسخ</button><button class="btn sm" data-lay="ren">إعادة تسمية</button><button class="btn sm dng" data-lay="del">حذف</button>
  <span style="width:12px"></span>${Object.entries(CANVASES).map(([k,c])=>`<button class="btn sm ${l.canvas===k?"on":""}" data-canvas="${k}">${c.label}</button>`).join("")}<button class="btn sm ${String(l.canvas).startsWith("custom")?"on":""}" data-canvas="custom">${String(l.canvas).startsWith("custom")?canvasOf(l).label:"مقاس مخصص…"}</button>
  <span style="width:12px"></span><select class="inp" data-act="addW" style="width:auto"><option value="">+ إضافة عنصر…</option><option value="@rotation">🔄 الحسابات المتناوبة</option><option value="@single">🌐 حساب منفرد</option><option value="@panel-social">🗂️ عرض جميع الحسابات</option><option value="@lb3">🏆 قائمة Pro — أفضل 3</option><option value="@lb5">🏆 قائمة Pro — أفضل 5</option><option value="@lb10">🏆 قائمة Pro — أفضل 10</option><option value="@lb20">🏆 قائمة Pro — أفضل 20</option><option value="@lbLikes">❤️ قائمة التكبيس Pro</option>${Object.entries(TYPES).filter(([k])=>k!=="social"&&k!=="socialPanel").map(([k,t])=>`<option value="${k}">${t.icon} ${t.label}</option>`).join("")}</select>
@@ -793,7 +795,7 @@ function renderProps(){
  const t=TYPES[w.type], cv=CV(), ck=!!t.clock||w.type==="donGoal";
  const rng=(f,l,min,max,step,val,fmtv)=>`<div class="fld"><label><span>${l}</span><span id="v_${f}">${fmtv?fmtv(val):val}</span></label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}" data-wf="${f}" data-wid="${w.id}"></div>`;
  const sel=(f,l,opts,val)=>`<div class="fld"><label>${l}</label><select class="inp" data-wf="${f}" data-wid="${w.id}">${opts.map(o=>`<option value="${o[0]}" ${String(val)===String(o[0])?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;
- el.innerHTML=`<h3><span>${t.icon} ${esc(w.name)}</span><span class="tag" title="معرّف مستقل">${w.id}</span></h3>
+ el.innerHTML=`<h3><span>${t.icon} ${esc(w.name)}</span><span class="tag" title="معرّف مستقل">${w.id}</span></h3>${lyElementButtons(w)}
  <div class="fld"><label>اسم العنصر</label><input class="inp" data-wf="name" data-wid="${w.id}" value="${esc(w.name)}"></div>
  ${w.type!=="timer"?`<div class="fld"><label>العنوان الظاهر</label><input class="inp" data-wf="title" data-wid="${w.id}" value="${esc(w.title)}"></div>`:""}
  ${w.type==="timer"?sel("timerId","المؤقت المعروض",R.C.timers.map(x=>[x.id,x.name]),w.timerId):""}
@@ -932,6 +934,7 @@ function onClick(e){
  if(psClick(t,d)) return;
  if(billClick(t,d)) return;
  if(faClick(t,d)) return;
+ if(lyClick(t,d)) return;
  if(dnClick(t,d)) return;
  if(alClick(t,d)) return;
  if(musicClick(t,d)) return;
@@ -1025,6 +1028,7 @@ function onInput(e){
  if(d.wgroup!==undefined){ if(e.type!=="change") return; const w=findW(d.wgroup); if(!w) return; if(t.value==="@new") return ask("اسم المجموعة","مجموعة "+(new Set(L().widgets.map(x=>x.group).filter(Boolean)).size+1)).then(n=>{ if(n){ w.group=n.slice(0,30) } save(); renderProps() }); w.group=t.value||""; save(); pushLayout(); return renderProps() }
  if(d.leimg){ if(e.type==="change") leImgInput(t); return }
  if(musicInput(t,d,e)) return;
+ if(lyInput(t,d,e)) return;
  if(dnInput(t,d,e)) return;
  if(alInput(t,d,e)) return;
  if(actInput(t,d,e)) return;
@@ -1755,6 +1759,174 @@ function faInput(t,d,e){
  if(t.hasAttribute("data-fattstext")&&e.type==="change"){ S.bots.falert={...(S.bots.falert||{}),text:t.value.slice(0,200)}; save(); pushLayout(); return true }
  return false }
 
+// ====== 🎬 مشاركة واستيراد تصاميم البث + 🎨 مكتبة تصاميم البث ======
+const LY_HELP={share:"عجبك ترتيب بثك وتبي تعطيه لخويك؟ انسخ الكود وأرسله له.",import:"عندك كود تصميم؟ الصقه هنا وبيتركب لك المشهد كامل.",newScene:"بنضيف التصميم كمشهد جديد بدون ما نغير ترتيب بثك الحالي.",link:"التصميم جاهز، باقي تربط حساباتك عشان تظهر بيانات بثك.",element:"تبي تاخذ قائمة الداعمين بس؟ انسخ العنصر بدون بقية المشهد."};
+function LYS(){ return S.ly||(S.ly={sec:"official",cat:"",shape:"",q:"",items:null,designers:null,dom:null,undo:null,key:""}) }
+function lyLocal(){ return ls("b6o6.layoutlib")||[] }
+function lyLocalSave(list){ try{ localStorage.setItem("b6o6.layoutlib",JSON.stringify(list)); return true }catch(e){ toast("مساحة المتصفح ممتلئة"); return false } }
+function lyLocalCode(){ const a=new Uint8Array(8); crypto.getRandomValues(a); return lsCodeFrom(a) }
+const lyShareURL=code=>(CFG?location.origin+"/dashboard":location.href.split("#")[0])+"#/layouts?import="+encodeURIComponent(code);
+/** بيانات تجريبية للمعاينة — لا بيانات حقيقية لأي حساب */
+function lyDummy(){ return {D:emptyData(),H:[],C:newClockState(),skew:0,SO:{...defaultSocials(),accounts:[{id:"ac_demo1",platform:"tiktok",handle:"b6o6",name:"بطوط ستريم"},{id:"ac_demo2",platform:"instagram",handle:"b6o6",name:"بطوط"}]},DN:emptyDonations(),DC:S.donCfg,CHAT:[]} }
+/** يرسم مشهداً مصغّراً داخل box (نفس مكوّنات OBS) */
+function lyRender(box,layout,opt={}){ box.innerHTML=""; const cv=canvasOf(layout), bw=box.clientWidth||320, bh=opt.h||box.clientHeight||Math.round(bw*cv.h/cv.w); const sc=Math.min(bw/cv.w,bh/cv.h);
+ const outer=document.createElement("div"); outer.style.cssText=`position:relative;width:${cv.w*sc}px;height:${cv.h*sc}px;margin:auto;overflow:hidden;border-radius:10px;background:${opt.bg||"repeating-conic-gradient(#232838 0 25%,#1a1e2b 0 50%) 0 0/20px 20px"}`;
+ const stage=document.createElement("div"); stage.className="stage"; stage.style.cssText=`position:absolute;left:0;top:0;width:${cv.w}px;height:${cv.h}px;transform:scale(${sc});transform-origin:0 0;background:none`;
+ outer.appendChild(stage); box.appendChild(outer); const src=lyDummy(), vs=[];
+ for(const w of [...layout.widgets].sort((a,b)=>a.z-b.z)){ try{ const v=new View(JSON.parse(JSON.stringify(w)),cv,{refW:cv.w,data:()=>src,mute:true,lowPerf:!!opt.lite}); vs.push(v); stage.appendChild(v.el) }catch(e){} }
+ deliver(vs,{t:"snapshot"},src); return {views:vs,src,box} }
+/** «تجربة التصميم»: أحداث تجريبية بأسماء وهمية */
+function lyTest(P,kind){ if(!P) return; const now=Date.now(), n=["سارة","خالد","نورة","فهد","ريم"][Math.floor(Math.random()*5)], u={id:"demo_"+Math.random().toString(36).slice(2,6),name:n,avatar:""}, src=P.src;
+ const ev=kind==="gift"?{type:"gift",user:u,gift:"Rose",count:5,value:50,platform:"tiktok"}:kind==="follow"?{type:"follow",user:u,platform:"tiktok"}:kind==="likes"?{type:"like",user:u,count:150,platform:"tiktok"}:kind==="goal"?{type:"like",user:u,count:5000,platform:"tiktok"}:null;
+ if(ev){ ev.id="lyt_"+now+Math.random(); ev.t=now; ev.test=true; applyEvent(src.D,src.H,ev); deliver(P.views,{t:"event",ev},src); if(kind==="follow"||kind==="gift") deliver(P.views,{t:"alert",items:[{id:"lya"+now,alertId:"tpl:duck_classic",event:ev.type,vars:{display_name:n,username:n},priority:1,test:true}]},src) }
+ if(kind==="subathon"){ const logs=subathonOp(src.C.subathon,{op:"add",ms:5*60e3},now); deliver(P.views,{t:"clock",C:src.C,now,logs},src) } }
+
+/* ---------- مشاركة ---------- */
+function lyShareModal(){ const cur=L();
+ const m=modal(`<div class="ly-m"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📤 مشاركة التصميم</h3><button class="btn sm" data-close>✖</button></div><p class="dn-hint">${LY_HELP.share}</p>
+ <div class="fld"><label>المشاهد اللي تبي تشاركها (عدة مشاهد = حزمة واحدة)</label><div class="ly-scs">${S.layouts.map(l=>`<label class="row small" style="gap:6px"><input type="checkbox" value="${l.id}" ${l.id===cur.id?"checked":""}> ${esc(l.name)} <span class="mut">(${l.widgets.length} عنصر · ${esc(canvasOf(l).label)})</span></label>`).join("")}</div></div>
+ <div class="grid g2" style="gap:8px"><div class="fld"><label>اسم التصميم</label><input class="inp" id="lyn" value="${esc(cur.name)}"></div><div class="fld"><label>القسم</label><select class="inp" id="lyc"><option value="">— بدون —</option>${Object.entries(LS_CATS).map(([k,n])=>`<option value="${k}">${esc(n)}</option>`).join("")}</select></div></div>
+ <label class="row small" style="gap:6px"><input type="checkbox" id="lyr" checked> مشاركة قواعد الآيرتات القابلة للمشاركة (الرسمية والعامة فقط)</label>
+ <div class="fld" style="margin-top:8px"><label>الخصوصية</label><label class="row small" style="gap:6px"><input type="radio" name="lyv" value="link" checked> 🔗 <b>برابط</b> — أي أحد عنده الكود يقدر يستورده، وما يظهر في المكتبة</label><label class="row small" style="gap:6px"><input type="radio" name="lyv" value="private"> 🔒 <b>خاص</b> — لك وحدك (الكود يشتغل لك أنت فقط)</label><label class="row small" style="gap:6px"><input type="radio" name="lyv" value="public" ${CFG?"":"disabled"}> 🌍 <b>عام</b> — يظهر في مكتبة المجتمع بعد المراجعة</label><label class="row small" id="lyrc" style="gap:6px;display:none;margin-top:4px"><input type="checkbox" id="lyrights"> أؤكد أن التصميم من عملي أو لدي إذن بنشره</label></div>
+ <p class="note small">🔐 يُنسخ شكل المشهد وترتيبه فقط — بدون حساباتك، مفاتيحك، روابط OBS، أهدافك أو إحصائياتك. الملفات الخاصة بك لا تُشارك.</p>
+ <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn pri" data-ly="code">📋 نسخ كود التصميم</button><button class="btn" data-ly="link">🔗 نسخ رابط المشاركة</button><button class="btn" data-ly="save">💾 حفظ في مكتبتي</button><button class="btn" data-ly="pub" ${CFG?"":"disabled"}>🌍 نشر في مكتبة المجتمع</button><button class="btn" data-ly="file">⬇️ تصدير ملف التصميم</button></div>
+ <div id="lyres"></div></div>`);
+ m.querySelectorAll('[name="lyv"]').forEach(r=>r.addEventListener("change",()=>{ m.querySelector("#lyrc").style.display=m.querySelector('[name="lyv"]:checked').value==="public"?"flex":"none" }));
+ m.addEventListener("click",async e=>{ const b=e.target.closest("[data-ly]"); if(!b) return; const act=b.dataset.ly;
+  const ids=[...m.querySelectorAll(".ly-scs input:checked")].map(x=>x.value); if(!ids.length) return toast("اختر مشهداً واحداً على الأقل");
+  const name=m.querySelector("#lyn").value.trim()||"تصميم", pkg=lsExport(S.layouts.filter(l=>ids.includes(l.id)),{name,rules:m.querySelector("#lyr").checked?(alCfgS().rules||[]):[]});
+  if(act==="file"){ const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([JSON.stringify(pkg,null,1)],{type:"application/json"})); a.download=name.replace(/[^\w؀-ۿ-]+/g,"_")+".b6o6.json"; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),3000); toast("⬇️ صُدّر ملف التصميم"); return }
+  let vis=act==="save"?"private":act==="pub"?"public":m.querySelector('[name="lyv"]:checked').value; if(act==="pub"&&!m.querySelector("#lyrights").checked){ m.querySelector("#lyrc").style.display="flex"; return toast("أكّد ملكية التصميم للنشر العام") }
+  const res=m.querySelector("#lyres"); res.innerHTML=`<div class="empty">⏳ جاري الحفظ…</div>`;
+  let code="", note="";
+  if(CFG){ const j=await alApi("/api/layouts",{method:"POST",body:{pkg,name,category:m.querySelector("#lyc").value,visibility:vis,rightsConfirmed:vis==="public"}}); if(j.error){ res.innerHTML=`<div class="note small">❌ ${esc(j.message||j.error)}</div>`; return } code=j.layout.code; if(j.removed&&j.removed.length) note=`⚠️ لم تُشارك ${j.removed.length} من ملفاتك/آيرتاتك الخاصة — سيختار المستورد بديلاً.`; LYS().key="" }
+  else { const list=lyLocal(); code=lyLocalCode(); list.unshift({id:"lyl_"+uid(),code,name,category:m.querySelector("#lyc").value,visibility:vis==="public"?"link":vis,pkg,createdAt:new Date().toISOString(),mine:true}); if(!lyLocalSave(list)) return; note="وضع التجربة: الكود يعمل في هذا المتصفح فقط — لمشاركته مع شخص آخر انسخ «الكود الكامل» أو صدّر ملفاً، أو سجّل الدخول على المنصة." }
+  const full=lsInline(pkg);
+  res.innerHTML=`<div class="ly-res"><div class="ly-code">${esc(code)}</div><div class="row" style="gap:6px;flex-wrap:wrap;justify-content:center"><button class="btn sm pri" data-cp="${esc(code)}">📋 نسخ الكود</button><button class="btn sm" data-cp="${esc(lyShareURL(code))}">🔗 نسخ الرابط</button>${!CFG?`<button class="btn sm" data-cpfull>📦 نسخ الكود الكامل</button>`:""}${navigator.share?`<button class="btn sm" data-nshare="${esc(code)}">📲 مشاركة</button>`:""}</div><p class="small mut" style="text-align:center">${vis==="public"?"⏳ أُرسل للمراجعة — يظهر في المكتبة بعد الاعتماد. الكود يعمل من الآن.":vis==="private"?"🔒 خاص — الكود يعمل لك وحدك.":"🔗 أي أحد عنده الكود يقدر يستورده. تقدر تلغي المشاركة من «تصاميمي»."}</p>${note?`<p class="note small">${esc(note)}</p>`:""}</div>`;
+  if(act==="code") copy(code); else if(act==="link") copy(lyShareURL(code));
+  res.onclick=ev=>{ const c=ev.target.closest("[data-cp]"); if(c) copy(c.dataset.cp); if(ev.target.closest("[data-cpfull]")) copy(full); const sh=ev.target.closest("[data-nshare]"); if(sh) navigator.share({title:"تصميم بث B6O6",text:"كود التصميم: "+sh.dataset.nshare,url:lyShareURL(sh.dataset.nshare)}).catch(()=>{}) } }) }
+
+/* ---------- استيراد ---------- */
+async function lyResolve(input){ const s=String(input||"").trim(); if(!s) return {error:"الصق الكود أو الرابط أولاً"};
+ const inl=lsFromInline(s); if(inl){ const v=lsValidate(inl); return v.ok?{pkg:v.value,src:"inline"}:{error:"الكود الكامل غير صالح"} }
+ if(s.startsWith("{")){ const v=lsValidate(s); return v.ok?{pkg:v.value,src:"file"}:{error:({bad_json:"ملف غير صالح",bad_format:"ليس ملف تصميم B6O6",empty:"التصميم فارغ",too_large:"الملف كبير جداً"})[v.error]||v.error} }
+ const code=lsNormCode(decodeURIComponent(s)); if(!code) return {error:"صيغة الكود غير صحيحة — مثال: B6O6-7X92KQAB"};
+ const loc=lyLocal().find(x=>x.code===code); if(loc) return {pkg:loc.pkg,src:"local",meta:{name:loc.name,code}};
+ if(!CFG) return {error:"الكود غير موجود في هذا المتصفح — في وضع التجربة استخدم «الكود الكامل» أو ملف التصميم"};
+ const j=await alApi("/api/layouts/code/"+encodeURIComponent(code)); if(j.error) return {error:j.message||j.error};
+ const v=lsValidate(j.layout.data); return v.ok?{pkg:v.value,src:"server",meta:j.layout}:{error:"بيانات التصميم تالفة"} }
+function lyImportModal(pref,pre){ let R0=null, P=null;
+ const m=modal(`<div class="ly-m"><div class="row" style="justify-content:space-between"><h3 style="margin:0">📥 استيراد تصميم</h3><button class="btn sm" data-close>✖</button></div><p class="dn-hint">${LY_HELP.import}</p>
+ <textarea class="inp" id="lyin" rows="2" placeholder="B6O6-XXXXXXXX أو رابط المشاركة أو الكود الكامل">${esc(pref||"")}</textarea>
+ <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn pri" data-li="check">🔍 تحقق ومعاينة</button><label class="btn">📁 رفع ملف التصميم<input type="file" accept=".json,application/json" id="lyfile" style="display:none"></label></div>
+ <div id="lyout"></div></div>`);
+ const out=m.querySelector("#lyout");
+ const show=r=>{ if(r.error){ out.innerHTML=`<div class="note small" style="margin-top:8px">❌ ${esc(r.error)}</div>`; return } R0=r; const st=lsStats(r.pkg), isEl=r.pkg.kind==="element";
+  out.innerHTML=`<div class="ly-pv-info"><b>${esc(r.meta&&r.meta.name||r.pkg.name)}</b> <span class="mut small">${r.meta&&r.meta.designerName?"🎨 "+esc(r.meta.designerName)+" · ":""}${st.scenes} مشهد · ${st.widgets} عنصر · ${esc(LS_SHAPES[st.shape]||"")}</span></div>
+  ${r.pkg.scenes.length>1?`<div class="row" style="gap:4px;flex-wrap:wrap">${r.pkg.scenes.map((s,i)=>`<button class="btn sm ${i?"":"on"}" data-lsc="${i}">${esc(s.name)}</button>`).join("")}</div>`:""}
+  <div id="lypv" class="ly-pv"></div>
+  <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:6px"><span class="small mut">🧪 تجربة التصميم:</span>${[["gift","🎁 وصول داعم"],["follow","➕ وصول متابع"],["likes","❤️ زيادة التكبيس"],["subathon","⏱️ زيادة السابثون"],["goal","🏆 تحقيق هدف"]].map(([k,n])=>`<button class="btn sm" data-lt="${k}">${n}</button>`).join("")}</div>
+  <div class="fld" style="margin-top:10px">${isEl?`<label class="row small" style="gap:6px"><input type="radio" name="lym" value="add" checked> ➕ إضافة العنصر للمشهد الحالي «${esc(L().name)}» في نفس مكانه وحجمه</label><label class="row small" style="gap:6px"><input type="radio" name="lym" value="new"> 🆕 مشهد جديد يحتوي العنصر</label>`:`<label class="row small" style="gap:6px"><input type="radio" name="lym" value="new" checked> 🆕 <b>إنشاء مشهد جديد</b> (افتراضي) — ${LY_HELP.newScene}</label><label class="row small" style="gap:6px"><input type="radio" name="lym" value="replace"> ♻️ استبدال المشهد الحالي «${esc(L().name)}» — نحفظ نسخة احتياطية وتقدر تتراجع</label>`}
+  ${r.pkg.alertRules.length?`<label class="row small" style="gap:6px"><input type="checkbox" id="lyar" checked> استيراد ${r.pkg.alertRules.length} قاعدة آيرتات مع التصميم</label>`:""}</div>
+  <button class="btn pri" style="width:100%" data-li="use">✅ استخدام التصميم</button>`;
+  requestAnimationFrame(()=>{ P=lyRender(out.querySelector("#lypv"),lsImport(r.pkg).layouts[0],{h:320}) }) };
+ m.addEventListener("click",async e=>{ const b=e.target.closest("button"); if(!b) return;
+  if(b.dataset.li==="check"){ out.innerHTML=`<div class="empty">⏳ جاري التحقق…</div>`; show(await lyResolve(m.querySelector("#lyin").value)) }
+  if(b.dataset.lt) lyTest(P,b.dataset.lt);
+  if(b.dataset.lsc!==undefined){ m.querySelectorAll("[data-lsc]").forEach(x=>x.classList.toggle("on",x===b)); P=lyRender(out.querySelector("#lypv"),lsImport(R0.pkg).layouts[+b.dataset.lsc],{h:320}) }
+  if(b.dataset.li==="use"&&R0){ const mode=(m.querySelector('[name="lym"]:checked')||{}).value||"new"; if(mode==="replace"&&!confirm(`سيتم استبدال عناصر «${L().name}» بالتصميم.\nنحفظ نسخة احتياطية وتقدر تتراجع بزر «↩ تراجع».\nمتابعة؟`)) return; m.remove(); lyApply(R0,mode,!!(m.querySelector("#lyar")||{}).checked) } });
+ m.querySelector("#lyfile").addEventListener("change",async e=>{ const f=e.target.files[0]; if(!f) return; if(f.size>LS_MAX_BYTES) return show({error:"الملف كبير جداً"}); show(await lyResolve(await f.text())) });
+ if(pre){ m.querySelector("#lyin").style.display="none"; m.querySelector('[data-li="check"]').parentElement.style.display="none"; show(pre) }
+ else if(pref) setTimeout(()=>m.querySelector('[data-li="check"]').click(),50) }
+/** تركيب التصميم بضغطة: معرفات جديدة، بدون بيانات صاحب التصميم، مع نسخة احتياطية عند الاستبدال */
+function lyApply(r,mode,withRules){ const im=lsImport(r.pkg); if(!im.ok) return toast("❌ "+im.error); const Y=LYS();
+ if(mode==="add"&&r.pkg.kind==="element"){ const w=im.layouts[0].widgets[0]; w.z=Math.max(0,...L().widgets.map(x=>x.z))+1; Y.undo={kind:"add",layoutId:L().id,widgetId:w.id}; L().widgets.push(w); S.sel=w.id }
+ else if(mode==="replace"){ const {backup,next}=lsReplace(L(),im.layouts[0]); Y.undo={kind:"replace",backup}; Object.assign(L(),next) }
+ else { for(const l of im.layouts){ l.name=l.name+(S.layouts.some(x=>x.name===l.name)?" (مستورد)":""); S.layouts.push(l) } S.active=im.layouts[0].id; Y.undo={kind:"new",ids:im.layouts.map(l=>l.id)} }
+ let skipped=0; if(withRules&&im.rules.length){ const C=alCfgS(); for(const rr of im.rules){ if(!alIsOfficial(rr.alertId)&&!ALS().cache[rr.alertId]) skipped++; C.rules.push(alRule(rr)) } }
+ save(); pushLayout(); syncBots(); if(r.src==="server"&&r.meta&&r.meta.id) alApi("/api/layouts/"+r.meta.id+"/act",{method:"POST",body:{act:"use"}});
+ go("studio"); toast("✅ تركّب التصميم"+(Y.undo?" — تقدر تتراجع من زر «↩ تراجع عن الاستيراد»":""));
+ setTimeout(()=>lySetup(im.needs,skipped),350) }
+function lyUndo(){ const Y=LYS(), u=Y.undo; if(!u) return;
+ if(u.kind==="replace"){ const l=S.layouts.find(x=>x.id===u.backup.id); if(l) Object.assign(l,u.backup) }
+ else if(u.kind==="new"){ S.layouts=S.layouts.filter(l=>!u.ids.includes(l.id)); if(!S.layouts.length) S.layouts=defaultLayouts(); if(!S.layouts.some(l=>l.id===S.active)) S.active=S.layouts[0].id }
+ else if(u.kind==="add"){ const l=S.layouts.find(x=>x.id===u.layoutId); if(l) l.widgets=l.widgets.filter(w=>w.id!==u.widgetId) }
+ Y.undo=null; save(); pushLayout(); renderPage(); toast("↩ تم التراجع واستعادة المشهد السابق") }
+/** «أكمل إعداد تصميمك» */
+function lySetup(needs,skipped){ const m=modal(`<div class="ly-m"><h3>✨ أكمل إعداد تصميمك</h3><p class="dn-hint">${LY_HELP.link}</p>${skipped?`<p class="note small">⚠️ ${skipped} آيرت من التصميم غير متاح لك (خاص أو محذوف) — اختر بديلاً من «صندوق الآيرتات والقواعد».</p>`:""}
+ <div class="ly-steps">${needs.map((n,i)=>`<div class="ly-st"><span class="dn-n">${i+1}</span><div><b>${n.icon} ${esc(n.title)}</b><p class="small mut">${esc(n.desc)}</p></div>${n.key==="obs"?`<button class="btn sm pri" data-lyobs>📋 نسخ رابط OBS</button>`:`<button class="btn sm" data-lygo="${n.go}">ربط الحساب لتفعيل العنصر</button>`}</div>`).join("")}</div>
+ <button class="btn pri" data-close style="margin-top:8px">تمام 👍</button></div>`);
+ m.addEventListener("click",e=>{ const g=e.target.closest("[data-lygo]"); if(g){ m.remove(); go(g.dataset.lygo) } if(e.target.closest("[data-lyobs]")){ copy(overlayURL(L())); toast("🔗 نُسخ رابط OBS للمشهد «"+L().name+"»") } }) }
+
+/* ---------- عنصر واحد ---------- */
+function lyElementButtons(w){ return `<div class="ly-el"><span class="small mut">${LY_HELP.element}</span><div class="row" style="gap:4px;flex-wrap:wrap"><button class="btn sm" data-lyel="copy" data-wid="${w.id}">📋 نسخ العنصر</button><button class="btn sm" data-lyel="share" data-wid="${w.id}">🔗 مشاركة العنصر</button><button class="btn sm" data-lyel="save" data-wid="${w.id}">💾 حفظ في مكتبتي</button><button class="btn sm" data-lyimp>📥 استيراد عنصر</button></div></div>` }
+async function lyElement(act,w){ const pkg=lsExportWidget(w,L().canvas); if(!pkg) return;
+ if(act==="copy"){ copy(lsInline(pkg)); toast("📋 نُسخ العنصر — الصقه في «📥 استيراد تصميم» عند أي حساب"); return }
+ const vis=act==="save"?"private":"link";
+ if(CFG){ const j=await alApi("/api/layouts",{method:"POST",body:{pkg,name:pkg.name,visibility:vis}}); if(j.error) return toast("❌ "+(j.message||j.error)); if(act==="share"){ copy(j.layout.code); toast("🔗 نُسخ كود العنصر: "+j.layout.code) } else toast("💾 حُفظ العنصر في «تصاميمي»"); LYS().key=""; return }
+ const list=lyLocal(), code=lyLocalCode(); list.unshift({id:"lyl_"+uid(),code,name:pkg.name,visibility:vis,pkg,createdAt:new Date().toISOString(),mine:true}); lyLocalSave(list); if(act==="share"){ copy(code); toast("🔗 كود العنصر: "+code+" (في هذا المتصفح)") } else toast("💾 حُفظ العنصر في «تصاميمي»") }
+
+/* ---------- مكتبة تصاميم البث ---------- */
+const LY_SECS=[["official","🦆 تصاميم B6O6 الرسمية"],["all","الكل"],["new","الأحدث"],["used","الأكثر استخداماً"],["rated","الأعلى تقييماً"],["liked","الأكثر إعجاباً"],["week","🏅 أفضل تصاميم الأسبوع"],["favs","المفضلة"],["mine","تصاميمي"],["designers","🎨 المصممون المميزون"]];
+async function lyLoad(force){ const Y=LYS(), key=[Y.sec,Y.cat,Y.shape,Y.q,Y.desId||""].join("|"); if(!force&&Y.key===key&&Y.items) return; Y.key=key; Y.items=null; Y.designers=null;
+ const offi=()=>lsOfficial().map(t=>({...t,id:t.id,official:true,widgets:t.pkg.scenes[0].widgets.length,designerName:"بطوط ستريم",uses:0,likes:0}));
+ const filt=list=>list.filter(x=>(!Y.cat||x.category===Y.cat)&&(!Y.shape||x.shape===Y.shape)&&(!Y.q||String(x.name).toLowerCase().includes(Y.q.toLowerCase())||String(x.designerName||"").toLowerCase().includes(Y.q.toLowerCase())));
+ if(Y.sec==="official"){ Y.items=filt(offi()); return softRefresh() }
+ if(!CFG){ Y.items=Y.sec==="mine"?filt(lyLocal().map(x=>({...x,local:true,widgets:lsStats(x.pkg).widgets,shape:lsStats(x.pkg).shape,canvas:lsStats(x.pkg).canvas}))):Y.sec==="all"?filt(offi()):[]; return softRefresh() }
+ if(Y.sec==="designers"){ const j=await alApi("/api/layouts?section=designers"); Y.designers=j; Y.items=[]; return softRefresh() }
+ const p=new URLSearchParams({section:Y.sec==="designer"?"designer":Y.sec,cat:Y.cat,shape:Y.shape,q:Y.q}); if(Y.desId) p.set("id",Y.desId);
+ const j=await alApi("/api/layouts?"+p); Y.items=j.error?[]:(j.items||[]); Y.err=j.error?(j.status===401?"سجّل الدخول":"تعذر التحميل"):""; if(Y.sec==="all") Y.items=[...Y.items,...filt(offi())]; softRefresh() }
+function lyCard(x){ const vb={private:"🔒 خاص",link:"🔗 برابط",public:x.review==="approved"?"🌍 عام":x.review==="rejected"?"❌ مرفوض":"⏳ بانتظار المراجعة"}[x.visibility]||"";
+ return `<div class="card ly-card"><div class="ly-thumb" data-lypv="${esc(x.id)}" data-lyrender="${esc(x.id)}"></div>
+ <div class="al-nm">${esc(x.name)}</div><div class="mut small">${esc(LS_SHAPES[x.shape]||"")} · ${x.widgets||0} عنصر${x.category?" · "+esc(LS_CATS[x.category]||""):""}</div>
+ <div class="small">${x.official?"🦆 رسمي من B6O6":"🎨 "+esc(x.designerName||"")+(x.verified?" ✔️":"")}${x.mine&&vb?` · <span class="tag">${vb}</span>`:""}</div>
+ ${x.official||x.local?"":`<div class="mut small">📥 ${x.uses|0} استيراد · ❤️ ${x.likes|0}${x.rating?" · ⭐ "+x.rating:""}</div>`}
+ <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:auto;padding-top:6px"><button class="btn sm pri" data-lyuse="${esc(x.id)}">✅ استخدام</button><button class="btn sm" data-lypv="${esc(x.id)}">👁 معاينة</button>
+ ${!x.official&&!x.mine&&CFG?`<button class="btn sm ${x.my&&x.my.fav?"on":""}" data-lyact="fav" data-lyid="${esc(x.id)}">🔖</button><button class="btn sm ${x.my&&x.my.like?"on":""}" data-lyact="like" data-lyid="${esc(x.id)}">❤️</button><button class="btn sm" data-lyrep="${esc(x.id)}">🚩</button>`:""}
+ ${x.mine&&!x.local?`<select class="inp" data-lyvis="${esc(x.id)}" style="width:auto;padding:2px 4px"><option value="private" ${x.visibility==="private"?"selected":""}>🔒 خاص</option><option value="link" ${x.visibility==="link"?"selected":""}>🔗 برابط</option><option value="public" ${x.visibility==="public"?"selected":""}>🌍 عام</option></select>`:""}
+ ${x.mine&&x.code?`<button class="btn sm" data-lycopy="${esc(x.code)}" title="${esc(x.code)}">📋 الكود</button>`:""}${x.mine&&!x.local?`<button class="btn sm" data-lyrevoke="${esc(x.id)}" title="إلغاء المشاركة وإنشاء كود جديد">⛔ إلغاء الكود</button>`:""}${x.mine?`<button class="btn sm" data-lydel="${esc(x.id)}">🗑️</button>`:""}</div></div>` }
+function lyHTML(){ const Y=LYS(); lyLoad();
+ const chips=(attr,cur,list)=>`<div class="al-chips">${list.map(([k,n])=>`<button class="al-chip ${cur===k?"on":""}" ${attr}="${k}">${esc(n)}</button>`).join("")}</div>`;
+ let body;
+ if(Y.sec==="designers"){ const D=Y.designers; body=!D?`<div class="empty">جاري التحميل…</div>`:`${D.designerOfMonth?`<div class="card ly-dom"><h3>🏆 مصمم الشهر: ${esc(D.designerOfMonth.name)}</h3><p class="small">${D.designerOfMonth.month} استيراد حقيقي خلال 30 يوماً · ${D.designerOfMonth.count} تصميم</p><button class="btn sm pri" data-lydes="${esc(D.designerOfMonth.id)}">عرض تصاميمه</button></div>`:""}${!(D.designers||[]).length?`<div class="empty">لا يوجد مصممون بتصاميم عامة معتمدة بعد</div>`:`<div class="grid g3">${D.designers.map(d=>`<div class="card"><h3>🎨 ${esc(d.name)}${d.verified?" ✔️":""}</h3><div class="row" style="gap:4px;flex-wrap:wrap">${d.badges.map(b=>`<span class="tag">${esc(b[1])}</span>`).join("")}</div><p class="mut small">${d.count} تصميم · ${d.uses} استيراد · ❤️ ${d.likes} · ⭐ ${d.rating}</p><div class="row" style="gap:4px"><button class="btn sm pri" data-lydes="${esc(d.id)}">التصاميم</button><button class="btn sm" data-alfol="${esc(d.id)}">➕ متابعة</button></div></div>`).join("")}</div>`}` }
+ else body=!Y.items?`<div class="empty">جاري التحميل…</div>`:Y.err?`<div class="empty">${esc(Y.err)}</div>`:!Y.items.length?`<div class="empty">${Y.sec==="mine"?"ما حفظت تصاميم بعد — من الاستوديو اضغط «📤 مشاركة التصميم»":!CFG?"تصاميم المجتمع متاحة بعد تسجيل الدخول":"لا توجد تصاميم هنا بعد"}</div>`:`<div class="ly-grid">${Y.items.map(lyCard).join("")}</div>`;
+ return head("🎨 مكتبة تصاميم البث","ركّب ترتيب بث كامل بضغطة — الأماكن والأحجام والألوان والحركات، بدون بيانات أي حساب",`<button class="btn" data-lyimp>📥 استيراد تصميم</button><button class="btn pri" data-lyshare>📤 مشاركة تصميمي</button>`)+
+ `<div class="card al-hero"><div class="row" style="gap:4px;flex-wrap:wrap">${LY_SECS.filter(([k])=>CFG||["official","all","mine"].includes(k)).map(([k,n])=>`<button class="btn sm ${Y.sec===k||Y.sec==="designer"&&k==="designers"?"pri":""}" data-lysec="${k}">${n}</button>`).join("")}</div>
+ <input class="inp" style="margin-top:8px" placeholder="🔍 ابحث باسم التصميم أو المصمم" data-lyq value="${esc(Y.q)}">
+ <div class="small mut" style="margin-top:6px">نوع المحتوى والتصميم</div>${chips("data-lycat",Y.cat,[["","الكل"],...Object.entries(LS_CATS)])}
+ <div class="small mut">المقاس</div>${chips("data-lyshape",Y.shape,[["","الكل"],...Object.entries(LS_SHAPES)])}</div>${body}` }
+let lyIO=null;
+function lyAfter(){ const Y=LYS(); if(!("IntersectionObserver" in window)){ document.querySelectorAll("[data-lyrender]").forEach(lyThumb); return }
+ if(lyIO) lyIO.disconnect(); lyIO=new IntersectionObserver(es=>{ for(const e of es) if(e.isIntersecting){ lyIO.unobserve(e.target); lyThumb(e.target) } },{rootMargin:"200px"});
+ document.querySelectorAll("[data-lyrender]").forEach(el=>lyIO.observe(el));
+ const imp=/[#&?]import=([^&]+)/.exec(location.hash); if(imp){ history.replaceState(null,"","#/layouts"); lyImportModal(decodeURIComponent(imp[1])) } }
+const lyFindItem=id=>(LYS().items||[]).find(x=>x.id===id)||lsOfficial().find(x=>x.id===id);
+async function lyPkgOf(x){ if(x.pkg) return {pkg:x.pkg,src:x.official?"official":"local",meta:{name:x.name}}; const j=await alApi("/api/layouts/"+x.id); if(j.error) return {error:j.message||"غير متاح"}; const v=lsValidate(j.layout.data); return v.ok?{pkg:v.value,src:"server",meta:j.layout}:{error:"تالف"} }
+async function lyThumb(el){ const x=lyFindItem(el.dataset.lyrender); if(!x) return; let pkg=x.pkg; if(!pkg){ if(x.data) pkg=x.data; else { el.innerHTML=`<div class="ly-th-ph">${esc(LS_SHAPES[x.shape]||"")}<br>${x.widgets} عنصر</div>`; return } } try{ lyRender(el,lsImport(pkg).layouts[0],{lite:true}) }catch(e){} }
+function lyClick(t,d){
+ if(t.hasAttribute("data-lyshare")){ lyShareModal(); return true }
+ if(t.hasAttribute("data-lyimp")){ lyImportModal(""); return true }
+ if(t.hasAttribute("data-lyundo")){ lyUndo(); return true }
+ if(d.lyel){ const w=findW(d.wid); if(w) lyElement(d.lyel,w); return true }
+ if(S.page!=="layouts") return false; const Y=LYS();
+ if(d.lysec){ Y.sec=d.lysec; Y.desId=""; renderPage(true); lyLoad(true); return true }
+ if(d.lycat!==undefined){ Y.cat=d.lycat; renderPage(true); lyLoad(true); return true }
+ if(d.lyshape!==undefined){ Y.shape=d.lyshape; renderPage(true); lyLoad(true); return true }
+ if(d.lydes){ Y.sec="designer"; Y.desId=d.lydes; renderPage(true); lyLoad(true); return true }
+ if(d.lypv||d.lyuse){ const id=d.lypv||d.lyuse; const x=lyFindItem(id); if(!x) return true; lyPkgOf(x).then(r=>{ if(r.error) return toast("❌ "+r.error); lyPreviewModal(r) }); return true }
+ if(d.lyact){ alApi("/api/layouts/"+d.lyid+"/act",{method:"POST",body:{act:d.lyact}}).then(j=>{ if(j.error) return toast(j.message||"تعذر"); const x=lyFindItem(d.lyid); if(x){ const p=x.my||{}; if(d.lyact==="like") x.likes+=j.my.like?1:p.like?-1:0; if(d.lyact==="fav") x.favs+=j.my.fav?1:p.fav?-1:0; x.my=j.my } renderPage(true) }); return true }
+ if(d.lyrep){ ask("سبب البلاغ (حقوق / غير لائق / أخرى)","").then(n=>{ if(n===null||n===undefined) return; alApi("/api/layouts/"+d.lyrep+"/act",{method:"POST",body:{act:"report",reason:/حقوق/.test(n)?"copyright":/لائق/.test(n)?"inappropriate":"other",note:n}}).then(j=>toast(j.error?"تعذر":"✅ وصل البلاغ للإدارة")) }); return true }
+ if(d.lycopy){ copy(d.lycopy); toast("📋 نُسخ الكود "+d.lycopy); return true }
+ if(d.lyrevoke){ if(!confirm("إلغاء المشاركة؟ الكود الحالي سيتوقف فوراً ويُنشأ كود جديد.")) return true; alApi("/api/layouts/"+d.lyrevoke,{method:"PUT",body:{revoke:true}}).then(j=>{ toast(j.error?"تعذر":"⛔ أُلغي الكود القديم — الجديد: "+j.layout.code); lyLoad(true) }); return true }
+ if(d.lydel){ if(!confirm("حذف التصميم؟")) return true; if(String(d.lydel).startsWith("lyl_")){ lyLocalSave(lyLocal().filter(x=>x.id!==d.lydel)); lyLoad(true); return true } alApi("/api/layouts/"+d.lydel,{method:"DELETE"}).then(()=>lyLoad(true)); return true }
+ return false }
+function lyInput(t,d,e){ if(S.page!=="layouts") return false; const Y=LYS();
+ if(t.hasAttribute("data-lyq")){ clearTimeout(lyInput._t); lyInput._t=setTimeout(()=>{ Y.q=t.value; lyLoad(true) },350); return true }
+ if(d.lyvis&&e.type==="change"){ const to=t.value; const body={visibility:to,rightsConfirmed:to==="public"?confirm("أؤكد أن التصميم من عملي أو لدي إذن بنشره"):false}; if(to==="public"&&!body.rightsConfirmed){ lyLoad(true); return true } alApi("/api/layouts/"+d.lyvis,{method:"PUT",body}).then(j=>{ toast(j.error?"تعذر":to==="public"?(j.layout.review==="approved"?"🌍 نُشر":"⏳ أُرسل للمراجعة"):to==="link"?"🔗 صار برابط":"🔒 صار خاصاً — الكود لا يعمل لغيرك"); lyLoad(true) }); return true }
+ return false }
+/** معاينة تصميم من المكتبة (نفس نافذة الاستيراد مع التجربة والاستخدام) */
+function lyPreviewModal(r){ lyImportModal("",r) }
+
 // ====== 💸 الدونيشن والآيرتات — Smart Donation Alert Builder ======
 const DN_PRESETS=[2,5,10,20,30,50,100];
 const DN_HELP={
@@ -2392,6 +2564,7 @@ function lbPvAll(fn){ for(const v of liveViews) if(v.w&&v.w.type==="lb"&&String(
   document.body.addEventListener("click",e=>{ const a=e.target.closest("[data-bl]"); if(!a) return; const k=a.dataset.bl; b.stats.clicks[k]=(b.stats.clicks[k]||0)+1; ls("b6o6.bio",b) }); return }
  if(h.startsWith("#/overlay")){ const qq=new URLSearchParams(h.split("?")[1]||""); bootOverlay(qq); if(qq.get("voice")==="1") vpInit(2); return }
  if(h.startsWith("#/donalerts")) S.page="donalerts";
+ if(h.startsWith("#/layouts")) S.page="layouts";
  shell(); renderPage(); vpInit(1);
  if(S.settings.wsUrl) startWS();
  window.__arsh={faW,S,R:()=>R,send,L,SIM,clockOp,addWidget,save,pushLayout,overlayURL,receive,psCur,psBlob,psDraw};
