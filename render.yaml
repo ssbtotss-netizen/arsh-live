@@ -17,6 +17,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: "22"
+      - key: WS_NO_BUFFER_UTIL
+        value: "1"
+      - key: WS_NO_UTF_8_VALIDATE
+        value: "1"
       - key: DATABASE_URL
         fromDatabase: { name: b6o6-db, property: connectionString }
       - key: APP_SECRET
