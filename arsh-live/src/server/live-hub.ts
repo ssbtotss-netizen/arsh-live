@@ -104,6 +104,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "tiktok" && typeof m.username === "string") {
         const username = m.username.replace(/^@/, "").trim();
         if (!/^[\w.]{2,40}$/.test(username)) return send(ws, { t: "status", text: "اسم مستخدم غير صالح" });
+        console.log(`[tiktok] start @${username} room=${id.slice(0, 6)}… canEdit=${ws.canEdit}`);
         r.tiktok?.stop();
         broadcast(r, { t: "status", text: "جارٍ الاتصال ببث @" + username + " …", live: false });
         r.tiktok = startTikTok(username, {
