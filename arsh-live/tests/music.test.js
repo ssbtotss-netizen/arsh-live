@@ -1,0 +1,47 @@
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const fs=require('fs'), path=require('path'), os=require('os');
+const url='file:///home/claude/najd/demo/index.html';
+function wav(file,sec,hz){ const sr=8000,n=sr*sec,b=Buffer.alloc(44+n*2); b.write('RIFF',0); b.writeUInt32LE(36+n*2,4); b.write('WAVEfmt ',8); b.writeUInt32LE(16,16); b.writeUInt16LE(1,20); b.writeUInt16LE(1,22); b.writeUInt32LE(sr,24); b.writeUInt32LE(sr*2,28); b.writeUInt16LE(2,32); b.writeUInt16LE(16,34); b.write('data',36); b.writeUInt32LE(n*2,40); for(let i=0;i<n;i++) b.writeInt16LE(Math.round(Math.sin(i/sr*hz*2*Math.PI)*8000),44+i*2); fs.writeFileSync(file,b) }
+(async()=>{
+ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) process.exitCode=1};
+ const dir=fs.mkdtempSync(path.join(os.tmpdir(),'mu')); const f1=path.join(dir,'محمد عبده - فوق هام السحب.wav'), f2=path.join(dir,'The Weeknd - Blinding Lights.wav'), f3=path.join(dir,'Test - Third Song.wav');
+ wav(f1,3,440); wav(f2,30,550); wav(f3,30,660);
+ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+ const ctx=await b.newContext({viewport:{width:1440,height:1000}}); const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ await p.goto(url); await p.evaluate(()=>{ localStorage.clear(); indexedDB.deleteDatabase("b6o6-music") }); await p.goto(url);
+ await p.click('.nav [data-go="music"]'); await p.waitForTimeout(200);
+ await p.setInputFiles('[data-mimport]',[f1,f2,f3].map(f=>({name:path.basename(f),mimeType:'audio/wav',buffer:fs.readFileSync(f)}))); await p.waitForTimeout(1200);
+ const lib=await p.evaluate(()=>({ui:S.musicLib.map(t=>[t.title,t.artist,t.dur]),room:window.__arsh.R().C.music.lib.length}));
+ ok(lib.ui.length===3&&lib.room===3&&lib.ui[0][0]==="فوق هام السحب"&&lib.ui[0][1]==="محمد عبده"&&lib.ui[0][2]===3,'upload: title/artist from filename, real duration, synced to room');
+ await p.click('[data-mpon]'); await p.waitForTimeout(200);
+ const send=ev=>p.evaluate(ev=>window.__arsh.send({t:"sim",ev}),ev);
+ await send({id:"c1",type:"comment",user:{id:"v1",name:"زائر"},text:"!اغنية فوق هام"}); await p.waitForTimeout(900);
+ ok(await p.evaluate(()=>window.__arsh.R().C.music.current?.track.title)==="فوق هام السحب",'viewer request from chat → now playing');
+ ok(await p.evaluate(()=>MP.audio&&!MP.audio.paused&&MP.audio.currentTime>0),'audio actually playing in the dashboard tab');
+ await send({id:"c2",type:"comment",platform:"youtube",user:{id:"v2",name:"Sara"},text:"!song blinding"}); await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>{ const q=window.__arsh.R().C.music.queue; return q.length===1&&q[0].by.platform==="youtube" }),'YouTube viewer request queued with platform');
+ await p.waitForTimeout(3000);
+ ok(await p.evaluate(()=>window.__arsh.R().C.music.current?.track.title)==="Blinding Lights",'track ended → next track starts automatically');
+ await send({id:"c3",type:"comment",user:{id:"v3",name:"عادي"},text:"!skip"}); await p.waitForTimeout(300);
+ ok(await p.evaluate(()=>window.__arsh.R().C.music.current?.track.title)==="Blinding Lights",'viewer cannot skip (no permission)');
+ await send({id:"c4",type:"comment",user:{id:"v4",name:"x"},text:"!اغنية third"}); await p.waitForTimeout(200);
+ for(const [i,id] of [["a","u1"],["b","u1"],["c","u2"],["d","u3"]].entries()) await send({id:"vs"+i,type:"comment",user:{id:id[1],name:id[1]},text:"!voteskip"});
+ await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>window.__arsh.R().C.music.current?.track.title)==="Third Song",'vote skip (3 distinct voters, duplicate ignored) → skipped');
+ await send({id:"c5",type:"comment",user:{id:"m1",name:"مشرف",mod:true},text:"!صوت 30"}); await p.waitForTimeout(400);
+ ok(await p.evaluate(()=>window.__arsh.R().C.music.volume===30&&Math.abs(MP.audio.volume-.3)<.01),'moderator sets volume via chat → player volume');
+ // ودجت الأغنية الحالية + OBS
+ await p.click('[data-addw="nowplay"]'); await p.waitForTimeout(200);
+ const wid=await p.evaluate(()=>window.__arsh.L().widgets.find(w=>w.type==="nowplay").id);
+ await p.click('.nav [data-go="obs"]'); await p.waitForTimeout(200);
+ const href=await p.evaluate(()=>document.querySelector('a[href*="#/overlay"]').href);
+ const o=await ctx.newPage(); o.on('pageerror',e=>errs.push('ov '+e.message)); await o.goto(href+'&only='+wid); await o.reload(); await o.waitForTimeout(900);
+ ok(await o.evaluate(()=>document.querySelector('.np-ti')?.textContent)==="Third Song"&&await o.evaluate(()=>document.querySelector('.np-by').textContent.includes('x')),'OBS now-playing shows title + requester');
+ const bg=await o.evaluate(()=>{const c=getComputedStyle(document.querySelector('.npw')); return c.backgroundColor+'|'+c.backgroundImage}); ok(bg==='rgba(0, 0, 0, 0)|none','transparent widget background');
+ await p.evaluate(()=>window.__arsh.clockOp("music","next",{})); await o.waitForTimeout(700);
+ ok(await o.evaluate(()=>document.querySelector('.npw').classList.contains('np-empty')),'queue empty → widget hides (no fake track)');
+ await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="nowplay"]'); await p.waitForTimeout(500);
+ ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc .npw .np-ti').length)===10,'library: 10 now-playing designs with live previews');
+ ok(errs.length===0,'no page errors '+errs.join(' | '));
+ await b.close();
+})();

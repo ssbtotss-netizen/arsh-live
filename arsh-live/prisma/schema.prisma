@@ -1,0 +1,266 @@
+// قاعدة البيانات: المستخدمون، التخطيطات (كل عنصر بمعرّف وإعدادات مستقلة داخل data)، وسجل الهدايا
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String      @id @default(cuid())
+  email          String      @unique
+  name           String
+  passwordHash   String
+  overlayToken   String      @unique // يظهر في روابط OBS (قراءة فقط)
+  editKey        String      @unique // سري: يسمح للوحة التحكم بالتعديل والتجربة
+  settings       Json        @default("{}") // bigGift, fx, tiktok, snap
+  activeLayoutId String?
+  donCfg         Json        @default("{}") // إعدادات الدونيشن: الأهداف، الفئات، التنبيه، المنطقة الزمنية
+  donateSlug     String?     @unique // رابط صفحة التبرع العامة
+  socials        Json        @default("{}") // حساباتي: الحسابات، الألعاب، التدوير، القوالب
+  bots           Json        @default("{}") // مركز البوتات: الأوامر، الردود، الشكر، الدورية، القارئ، الفلترة (لكل مستخدم مستقل)
+  createdAt      DateTime    @default(now())
+  sessions       Session[]
+  layouts        Layout[]
+  gifts          GiftEvent[]
+  roomState      RoomState?
+  subathonLogs   SubathonLog[]
+  donations      Donation[]
+  donationIntents DonationIntent[]
+  donationProviders DonationProvider[]
+  auditLogs      AuditLog[]
+  connections    PlatformConnection[]
+  bio            Json        @default("{}")   // رابط البايو (التصميم والروابط والإحصائيات)
+  bioHandle      String?     @unique          // الرابط العام /u/<handle>
+  plan           String      @default("free")  // free | starter | pro | elite | legend
+  planUntil      DateTime?
+  disabled       Boolean     @default(false)   // إيقاف الحساب من لوحة الإدارة
+  lastSeenAt     DateTime?
+  subscriptions  Subscription[]
+  streamSessions StreamSession[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+}
+
+model Layout {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  name      String
+  canvas    String   @default("vertical")
+  widgets   Json // : [{id,type,design,x,y,w,h,z,...}] — إحداثيات نسبية 0..1 من مقاس شاشة البث
+  sort      Int      @default(0)
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model GiftEvent {
+  id         Int      @id @default(autoincrement())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  viewerKey  String
+  viewerName String
+  avatar     String   @default("")
+  value      Int
+  count      Int
+  createdAt  DateTime @default(now())
+
+  @@index([userId, createdAt])
+}
+
+// حالة السبثون والمؤقتات (توقيت الخادم: endsAt مطلق) — تُستعاد بعد إعادة تشغيل الخادم
+model RoomState {
+  userId    String   @id
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clock     Json
+  updatedAt DateTime @updatedAt
+}
+
+// سجل كل إضافة/خصم/تحكم في وقت السبثون. eventId يمنع احتساب نفس الحدث مرتين
+model SubathonLog {
+  id          Int      @id @default(autoincrement())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subathonId  String
+  seq         Int
+  deltaMs     Int
+  requestedMs Int
+  reason      String
+  source      String
+  eventId     String?
+  remainingMs Int
+  at          DateTime
+
+  @@unique([userId, eventId])
+  @@index([userId, at])
+}
+
+// تبرع مالي مؤكد. (provider, providerId) فريد = لا يُحتسب نفس التبرع مرتين حتى بعد إعادة التشغيل
+model Donation {
+  id         String   @id // "<provider>:<providerId>"
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  provider   String
+  providerId String
+  name       String
+  anonymous  Boolean  @default(false)
+  avatar     String   @default("")
+  amount     Decimal  @db.Decimal(14, 3)
+  currency   String
+  message    String   @default("")
+  status     String // confirmed | partially_refunded | refunded
+  refunded   Decimal  @default(0) @db.Decimal(14, 3)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([provider, providerId])
+  @@index([userId, createdAt])
+}
+
+// نية تبرع قبل الدفع عبر ميسّر — المبلغ يُثبَّت هنا ويُطابَق مع الدفع
+model DonationIntent {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  amount    Int // بالهللة
+  currency  String
+  name      String
+  anonymous Boolean  @default(false)
+  message   String   @default("")
+  paymentId String?  @unique
+  status    String   @default("initiated") // initiated | paid | failed
+  createdAt DateTime @default(now())
+}
+
+// إعدادات مزود التبرعات. المفاتيح السرية مشفّرة (AES-256-GCM) ولا تُرسل للمتصفح أبداً
+model DonationProvider {
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind      String // moyasar | streamlabs | streamelements
+  enabled   Boolean  @default(false)
+  publicCfg Json     @default("{}")
+  secretEnc String   @default("")
+  status    String   @default("")
+  updatedAt DateTime @updatedAt
+
+  @@id([userId, kind])
+}
+
+// سجل العمليات المالية والتعديلات الإدارية
+model AuditLog {
+  id     Int      @id @default(autoincrement())
+  userId String
+  user   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  kind   String
+  detail Json
+  at     DateTime @default(now())
+
+  @@index([userId, at])
+}
+
+
+// ===== V5 المرحلة الأولى: الجلسات والمنصات والأحداث الموحدة =====
+// اتصال منصة واحدة لكل مستخدم. الرموز (tokens) تُخزَّن مشفّرة على الخادم فقط ولا تُرسل للمتصفح.
+model PlatformConnection {
+  id           String    @id @default(cuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platform     String    // tiktok | youtube | kick | twitch
+  status       String    @default("disconnected") // disconnected | connecting | connected | error
+  accountId    String?
+  accountName  String?
+  avatarUrl    String?
+  tokenEnc     String?   // رمز OAuth مشفّر (AES-GCM) — null لـ TikTok (اسم المستخدم فقط)
+  refreshEnc   String?
+  scopes       String?
+  expiresAt    DateTime?
+  lastEventAt  DateTime?
+  lastError    String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  @@unique([userId, platform])
+}
+
+// جلسة بث بمعرّف فريد — تُفصل أحداثها وإحصاءاتها عن أي جلسة أخرى
+model StreamSession {
+  id          String         @id @default(cuid())
+  userId      String
+  user        User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  platforms   String         @default("tiktok") // قائمة مفصولة بفواصل
+  status      String         @default("live")   // live | ending | ended
+  startedAt   DateTime       @default(now())
+  endedAt     DateTime?
+  stats       Json           @default("{}") // الإجماليات النهائية (لكل وحدة قياس على حدة)
+  complete    Boolean        @default(false) // هل البيانات مكتملة أم انقطع الاتصال أثناء الجلسة
+  events      SessionEvent[]
+  @@index([userId, startedAt])
+}
+
+// الحدث بصيغته الموحدة (normalizeEvent). eventId فريد داخل الجلسة لمنع التكرار عند إعادة الاتصال.
+model SessionEvent {
+  id         String        @id @default(cuid())
+  sessionId  String
+  session    StreamSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  eventId    String
+  platform   String        // tiktok | youtube | kick | twitch | donation
+  type       String        // comment | like | gift | follow | share | join | subscribe | donation ...
+  unit       String        // likes | platform_coins | currency | platform_sub | count | message
+  userId     String?
+  userName   String?
+  value      Float         @default(0) // بوحدة النوع فقط — لا تُجمع وحدات مختلفة معاً
+  currency   String?
+  verified   Boolean       @default(true)
+  test       Boolean       @default(false)
+  at         DateTime
+  data       Json          @default("{}")
+  @@unique([sessionId, eventId])
+  @@index([sessionId, type])
+}
+
+// ===== المرحلة 6: إشعارات المجتمعات (Discord / Telegram) =====
+// الإعدادات السرية (رابط Webhook / رمز البوت) مشفّرة — لا تُرسل للمتصفح أبداً.
+model NotifyChannel {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String   // discord | telegram
+  enabled   Boolean  @default(true)
+  secretEnc String   // discord: webhook url · telegram: {token, chatId}
+  label     String?  // اسم القناة/المجموعة للعرض فقط
+  events    Json     @default("{}") // {live_start:{on,tpl}, live_end:{...}, stats, goal, big_support, custom}
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@unique([userId, kind])
+}
+model NotifyLog {
+  id      String   @id @default(cuid())
+  userId  String
+  kind    String
+  event   String
+  ok      Boolean
+  error   String?
+  at      DateTime @default(now())
+  @@index([userId, at])
+}
+
+// سجل الاشتراكات والمدفوعات — يُنشأ فقط بعد تأكيد بوابة الدفع (Webhook موقّع)
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  plan        String
+  months      Int      @default(1)
+  amountUsd   Float
+  provider    String   // stripe | admin
+  providerRef String   @unique // معرف جلسة الدفع — يمنع تفعيل الدفعة مرتين
+  status      String   @default("paid")
+  createdAt   DateTime @default(now())
+  @@index([userId, createdAt])
+}

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>B6O6 Streaming</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@300;400;500;600;700&family=Changa:wght@500;600;700;800&family=Orbitron:wght@600;800;900&family=Amiri:wght@700&display=swap">
+<style>
+/*@@APP_CSS@@*/
+/*@@OVERLAY_CSS@@*/
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+<script>
+"use strict";
+/* ================= Core definitions ================= */
+/*@@ENGINE@@*/
+/* ================= Live bus (same browser) + optional server ================= */
+const bus=("BroadcastChannel" in window)?new BroadcastChannel("arsh-live-v1"):null;
+let ws=null, wsReady=false;
+function connectWS(url,room,onMsg,onStatus){
+ try{ if(ws) ws.close() }catch(e){}
+ if(!url) return;
+ try{ ws=new WebSocket(url) }catch(e){ onStatus&&onStatus(false,"رابط غير صالح"); return }
+ ws.onopen=()=>{wsReady=true; ws.send(JSON.stringify({t:"join",room})); onStatus&&onStatus(true)};
+ ws.onclose=()=>{wsReady=false; onStatus&&onStatus(false)};
+ ws.onerror=()=>{wsReady=false; onStatus&&onStatus(false,"تعذر الاتصال")};
+ ws.onmessage=m=>{ try{ onMsg(JSON.parse(m.data)) }catch(e){} };
+}
+const b64e=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const b64d=s=>JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")))));
+
+/* ================= OVERLAY MODE (OBS / TikTok LIVE Studio) ================= */
+function bootOverlay(q){
+ document.body.className="ov";
+ let L; try{L=b64d(q.get("d"))}catch(e){document.body.innerHTML="<p style='color:#fff'>رابط غير صالح</p>";return}
+ const only=q.get("only"), room=q.get("room")||"", wsUrl=q.get("ws")||"";
+ const D=ls("arsh.data")||emptyData(); const H=ls("arsh.hist")||[];
+ if(!D.tot) Object.assign(D,emptyData());
+ const root=document.getElementById("root");
+ const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
+ let views=new Map(), cv;
+ function layout(){
+  const base=CANVASES[L.canvas]||CANVASES.vertical;
+  let ws_=L.widgets;
+  if(only){ const w=L.widgets.find(x=>x.id===only); if(!w){stage.innerHTML="";return} cv={w:Math.round(w.w*base.w),h:Math.round(w.h*base.h)}; ws_=[{...w,x:0,y:0,w:1,h:1}] } else cv=base;
+  stage.style.width=cv.w+"px"; stage.style.height=cv.h+"px";
+  const s=Math.min(innerWidth/cv.w,innerHeight/cv.h); stage.style.transform=`scale(${s})`;
+  const seen=new Set();
+  for(const w of ws_){ seen.add(w.id); let v=views.get(w.id); if(v){v.cv=cv;v.apply(w)} else { v=new View(w,cv,{data:()=>({D,H}),refW:base.w}); views.set(w.id,v); stage.appendChild(v.el); v.el.classList.add("w-in") } }
+  for(const [id,v] of views) if(!seen.has(id)){v.el.remove();views.delete(id)}
+ }
+ const bigT=+q.get("big")||1000;
+ function onEvent(ev){
+  if(ev.type==="gift"&&ev.big===undefined) ev.big=ev.value>=bigT;
+  applyEvent(D,H,ev);
+  const tp=ev.type;
+  for(const v of views.values()){
+   const lis=TYPES[v.w.type].listens;
+   if(tp==="reset"){ const s=ev.scope||"all"; if(s==="all"||({likes:"like",gifts:"gift",comments:"comment"})[s]===lis) v.refresh({D,H}); continue }
+   if(tp==="shuffle"){ if(({likes:"like",gifts:"gift",comments:"comment"})[ev.scope]===lis) v.refresh({D,H}); continue }
+   if(lis===tp) { v.refresh({D,H}); if(tp==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) }
+  }
+ }
+ layout(); addEventListener("resize",layout);
+ setInterval(()=>{for(const v of views.values()) if(v.w.type==="timer") v.refresh({D,H})},1000);
+ if(wsUrl){ connectWS(wsUrl,room,m=>{ if(m.t==="snapshot"){ for(const k of Object.keys(D)) delete D[k]; Object.assign(D,m.D); H.length=0; H.push(...(m.H||[])); views.forEach(v=>v.refresh({D,H},true)) } if(m.t==="event") onEvent(m.ev); if(m.t==="layout"&&m.layout&&m.layout.id===L.id){L=m.layout;layout()} }) }
+ else if(bus){ bus.onmessage=({data:m})=>{ if(m.t==="event") onEvent(m.ev); if(m.t==="layout"&&m.layout.id===L.id){L=m.layout;layout()} } }
+}
+
+/* ================= DASHBOARD APP ================= */
+const st=ls("arsh.app")||{};
+const S={layouts:st.layouts||defaultLayouts(),active:st.active,settings:Object.assign({fx:true,bigGift:1000,wsUrl:"",room:"",tiktok:"",bg:"stream"},st.settings||{}),profile:Object.assign({name:"عبدالرحمن",plan:"تجريبي"},st.profile||{}),page:"home",sel:null};
+if(!S.layouts.find(l=>l.id===S.active)) S.active=S.layouts[0].id;
+if(!S.settings.room) S.settings.room="room_"+uid();
+let D=ls("arsh.data")||emptyData(); if(!D.tot) D=emptyData(); let H=ls("arsh.hist")||[];
+const L=()=>S.layouts.find(l=>l.id===S.active);
+const CV=()=>CANVASES[L().canvas]||CANVASES.vertical;
+let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile});flash("تم الحفظ")},250)}
+addEventListener("pagehide",()=>{ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile});ls("arsh.data",D);ls("arsh.hist",H)});
+let saveDT; function saveData(){clearTimeout(saveDT);saveDT=setTimeout(()=>{ls("arsh.data",D);ls("arsh.hist",H)},300)}
+function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1600)}
+function flash(t){const e=document.getElementById("savedot");if(e){e.textContent="✓ "+t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=.5,900)}}
+function pushLayout(){ const l=L(); if(bus) bus.postMessage({t:"layout",layout:l}); if(wsReady) ws.send(JSON.stringify({t:"layout",room:S.settings.room,layout:l})) }
+
+/* ---- events: dashboard → engine → only listening widgets ---- */
+const views=new Map(); // studio views
+const liveViews=new Set(); // other live previews (library etc.)
+function emit(ev){
+ ev.t=ev.t||Date.now();
+ if(ev.type==="gift") ev.big=ev.value>=S.settings.bigGift;
+ if(wsReady){ ws.send(JSON.stringify({t:"sim",room:S.settings.room,ev})); return } // server echoes back to everyone
+ handle(ev); if(bus) bus.postMessage({t:"event",ev});
+}
+function handle(ev){
+ if(ev.type==="gift"&&ev.big===undefined) ev.big=ev.value>=S.settings.bigGift;
+ applyEvent(D,H,ev); saveData();
+ const map={likes:"like",gifts:"gift",comments:"comment"};
+ const touch=v=>{ const lis=TYPES[v.w.type].listens;
+  if(ev.type==="reset"){ if((ev.scope||"all")==="all"||map[ev.scope]===lis) v.refresh({D,H}); return }
+  if(ev.type==="shuffle"){ if(map[ev.scope]===lis) v.refresh({D,H}); return }
+  if(lis===ev.type){ v.refresh({D,H}); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } };
+ views.forEach(touch); liveViews.forEach(touch);
+ updateCounters(); if(["stats","likes","gifts","comments","home"].includes(S.page)) softRefresh();
+}
+let srT; function softRefresh(){clearTimeout(srT);srT=setTimeout(()=>{ const sc=document.getElementById("pg"); if(sc&&!document.activeElement.closest?.("#pg input,#pg select")) renderPage(true) },250)}
+const rnd=a=>a[Math.floor(Math.random()*a.length)];
+function simUser(fresh){ if(!fresh){ const pool=[...new Set([...Object.keys(D.likes),...Object.keys(D.gifts),...Object.keys(D.comments)])]; if(pool.length>2&&Math.random()<.6){ const k=rnd(pool); const r=D.likes[k]||D.gifts[k]||D.comments[k]; return {id:k,name:r.name,avatar:r.av} } }
+ let n=rnd(NAMES)+(Math.random()<.5?"_"+Math.floor(Math.random()*99):""); return {id:"u_"+n,name:n,avatar:avatar(n)} }
+const SIM={
+ like100:()=>emit({type:"like",user:simUser(),count:100}),
+ like1000:()=>emit({type:"like",user:simUser(),count:1000}),
+ gift:()=>{const g=rnd(GIFTS.slice(0,6));emit({type:"gift",user:simUser(),gift:g[0],value:g[1],count:1})},
+ biggift:()=>{const g=GIFTS[6];emit({type:"gift",user:simUser(),gift:g[0],value:g[1],count:1})},
+ supporter:()=>{const g=rnd(GIFTS.slice(1,5));emit({type:"gift",user:simUser(true),gift:g[0],value:g[1]*Math.ceil(Math.random()*5),count:1})},
+ comment:()=>emit({type:"comment",user:simUser(),text:rnd(["هلا والله 🔥","كفو!","أبدعت","مين جاي من تيك توك؟","❤️❤️","يا هلا بالجميع"])}),
+ shuffle:s=>emit({type:"shuffle",scope:s}),
+ reset:s=>emit({type:"reset",scope:s}),
+};
+function testBar(){return `<div class="testbar" id="testbar"><b style="color:var(--gold)">🧪 وضع التجربة</b>
+ <button class="btn sm" data-sim="like100">❤️ +100 إعجاب</button><button class="btn sm" data-sim="like1000">❤️ +1000 إعجاب</button>
+ <button class="btn sm" data-sim="gift">🎁 هدية تجريبية</button><button class="btn sm" data-sim="biggift">🦁 هدية كبيرة</button><button class="btn sm" data-sim="supporter">➕ داعم جديد</button><button class="btn sm" data-sim="comment">💬 تعليق</button>
+ <select class="inp" id="simScope" style="width:auto"><option value="likes">التكبيس</option><option value="gifts">الدعم</option><option value="comments">التعليقات</option><option value="all">الكل (للإعادة)</option></select>
+ <button class="btn sm" data-sim="shuffle">🔀 تغيير الترتيب</button><button class="btn sm dng" data-sim="reset">↺ إعادة ضبط</button></div>`}
+
+/* ---- links ---- */
+function baseURL(){return location.href.split("#")[0]}
+function overlayURL(l,only){ const p=new URLSearchParams(); p.set("d",b64e(l)); if(only)p.set("only",only); p.set("big",S.settings.bigGift); if(S.settings.wsUrl){p.set("ws",S.settings.wsUrl);p.set("room",S.settings.room)} return baseURL()+"#/overlay?"+p.toString() }
+function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم نسخ الرابط")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم نسخ الرابط")}catch(e){toast("انسخ الرابط يدوياً")}a.remove()}) }
+
+/* ---- shell ---- */
+const PAGES=[["home","الرئيسية","🏠"],["stats","لوحة الإحصائيات","📊"],["boards","قوائم الترتيب","🏆"],["library","مكتبة التصاميم","🎨"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["counters","العدادات والأهداف","⏱️"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+function shell(){
+ document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
+ <div class="app"><aside class="side"><div class="brand"><div class="lg">ع</div><div><b>عرش اللايف</b><small>قوائم ترتيب البث المباشر</small></div></div>
+ <nav class="nav" id="nav">${PAGES.map(p=>`<button data-go="${p[0]}"><span class="ic">${p[2]}</span>${p[1]}</button>`).join("")}</nav>
+ <div style="margin-top:18px" class="pill"><span class="dot" id="cdot"></span><span id="ctext">غير متصل بالخادم</span></div></aside>
+ <main class="main" id="pg"></main></div>`;
+ document.getElementById("root").addEventListener("click",onClick);
+ document.getElementById("root").addEventListener("input",onInput);
+ document.getElementById("root").addEventListener("change",onInput);
+}
+function go(p){ S.page=p; renderPage(); scrollTo(0,0) }
+function head(t,sub,extra=""){return `<div class="top"><div><h1>${t}</h1>${sub?`<p>${sub}</p>`:""}</div><div class="row">${extra}<span class="pill" id="savedot" style="opacity:.5">✓ محفوظ تلقائياً</span></div></div>`}
+function layoutPicker(){return `<select class="inp" data-act="pickLayout" style="width:auto">${S.layouts.map(l=>`<option value="${l.id}" ${l.id===S.active?"selected":""}>${esc(l.name)}</option>`).join("")}</select>`}
+function userTable(rows,cols){ if(!rows.length) return '<div class="empty">لا توجد بيانات بعد — جرّب أزرار وضع التجربة</div>';
+ return `<table><thead><tr><th>#</th><th>المستخدم</th>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td><img class="tav" src="${r.av||avatar(r.name)}">${esc(r.name)}</td>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</tbody></table>` }
+const sorted=(o,f="v")=>Object.values(o).sort((a,b)=>b[f]-a[f]);
+
+function renderPage(soft){
+ document.querySelectorAll("[data-go]").forEach(b=>b.classList.toggle("on",b.dataset.go===S.page));
+ const pg=document.getElementById("pg"); const p=S.page;
+ if(!soft){views.clear()} liveViews.clear();
+ let h="";
+ const l=L();
+ if(p==="home"){
+  h=head(`أهلاً ${esc(S.profile.name)} 👋`,"منصّتك لقوائم الترتيب والتكبيس والدعم على شاشة البث")+
+  `<div class="grid g4">${stat("إجمالي الإعجابات",fmt(D.tot.likes),1)}${stat("نقاط الدعم",fmt(D.tot.gifts),1)}${stat("عدد الهدايا",fmt(D.tot.giftCount))}${stat("التعليقات",fmt(D.tot.comments))}</div>
+  <div class="grid g2" style="margin-top:14px"><div class="card"><h3>ابدأ بسرعة</h3><div class="grid" style="gap:10px">
+   <button class="btn pri" data-go="studio">🎬 افتح استوديو البث ورتّب القوائم</button><button class="btn" data-go="library">🎨 اختر تصميماً لكل قائمة</button><button class="btn" data-go="obs">🔗 انسخ رابط OBS</button></div>
+   <p class="mut small" style="margin-top:12px">التخطيط النشط: <b style="color:var(--tx)">${esc(l.name)}</b> — ${l.widgets.length} عناصر على شاشة ${CV().label}</p></div>
+  <div class="card"><h3>المتصدرون الآن</h3><div class="grid g2">${miniTop("❤️ التكبيس",sorted(D.likes).slice(0,3))}${miniTop("🎁 الدعم",sorted(D.gifts).slice(0,3))}</div></div></div>`+testBar();
+ }
+ else if(p==="stats"){
+  const mins=[...Array(12)].map((_,i)=>{const end=Date.now()-(11-i)*60000;return H.filter(e=>e.t>end-60000&&e.t<=end).reduce((s,e)=>s+e.v,0)}); const mx=Math.max(1,...mins);
+  h=head("لوحة الإحصائيات","أرقام البث الحالي محسوبة من الأحداث التي استقبلتها المنصة")+
+  `<div class="grid g4">${stat("إجمالي الإعجابات",fmt(D.tot.likes),1)}${stat("نقاط الدعم",fmt(D.tot.gifts),1)}${stat("المكبسون",fmt(Object.keys(D.likes).length))}${stat("الداعمون",fmt(Object.keys(D.gifts).length))}</div>
+  <div class="grid g2" style="margin-top:14px"><div class="card"><h3>الدعم في آخر 12 دقيقة</h3><div class="bars">${mins.map(v=>`<i style="height:${v/mx*100}%" title="${fmt(v)}"></i>`).join("")}</div></div>
+  <div class="card"><h3>ملخص</h3><table><tr><td>مدة البث</td><td>${dur()}</td></tr><tr><td>متوسط قيمة الهدية</td><td>${D.tot.giftCount?fmt(D.tot.gifts/D.tot.giftCount):0}</td></tr><tr><td>المعلقون</td><td>${fmt(Object.keys(D.comments).length)}</td></tr><tr><td>سجل الدعم المحفوظ</td><td>${fmt(H.length)} حدث</td></tr></table></div></div>
+  <div class="grid g2" style="margin-top:14px"><div class="card"><h3>أفضل المكبسين</h3>${userTable(sorted(D.likes).slice(0,10),[["الإعجابات",r=>fmt(r.v)]])}</div><div class="card"><h3>أفضل الداعمين</h3>${userTable(sorted(D.gifts).slice(0,10),[["النقاط",r=>fmt(r.v)],["الهدايا",r=>fmt(r.c)]])}</div></div>`;
+ }
+ else if(p==="boards"){
+  h=head("قوائم الترتيب","كل قائمة عنصر مستقل بمعرّف وإعدادات وتصميم وموقع خاص",layoutPicker())+
+  `<div class="row" style="margin-bottom:14px">${Object.entries(TYPES).map(([k,t])=>`<button class="btn sm" data-add="${k}">+ ${t.icon} ${t.label}</button>`).join("")}</div>
+  <div class="grid g3">${l.widgets.map(w=>`<div class="card"><h3><span>${TYPES[w.type].icon} ${esc(w.name)}</span><span class="tag">${w.id}</span></h3>
+   <div class="mut small" style="line-height:2">التصميم: <b style="color:var(--tx)">${dname(w.design)}</b><br>الموقع: ${POS.find(x=>x[0]===w.pos)?.[1]||"مخصص"} · ${Math.round(w.w*100)}%×${Math.round(w.h*100)}%<br>${TYPES[w.type].board?`المراكز: أفضل ${w.topN}`:""} ${w.visible?"· ظاهرة":"· مخفية"} ${w.locked?"· مقفلة 🔒":""}</div>
+   <div class="row" style="margin-top:10px"><button class="btn sm pri" data-edit="${w.id}">تعديل في الاستوديو</button><button class="btn sm" data-lib="${w.id}">تغيير التصميم</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button></div></div>`).join("")||'<div class="empty">لا توجد قوائم</div>'}</div>`;
+ }
+ else if(p==="library"){
+  const tgt=l.widgets.find(w=>w.id===S.libTarget)||l.widgets.find(w=>TYPES[w.type].board)||l.widgets[0];
+  h=head("مكتبة التصاميم","معاينة مباشرة لكل تصميم — اختر القائمة ثم التصميم، ولن تتأثر بقية القوائم",layoutPicker())+
+  `<div class="card" style="margin-bottom:14px"><div class="row"><span class="mut">تطبيق التصميم على:</span><select class="inp" data-act="libTarget" style="width:auto">${l.widgets.map(w=>`<option value="${w.id}" ${tgt&&w.id===tgt.id?"selected":""}>${TYPES[w.type].icon} ${esc(w.name)} — ${dname(w.design)}</option>`).join("")}</select><span class="mut small">١٠ تصاميم بأشكال مختلفة فعلياً: قوائم، سداسي، منصة تتويج، دائري أفقي</span></div></div>
+  <div class="lib" id="lib">${DESIGNS.map(d=>`<div class="libc ${tgt&&tgt.design===d.id?"on":""}" data-pick="${d.id}"><div class="pv" data-pv="${d.id}"></div><div class="meta"><b>${d.name}</b><span class="tag">${({list:"قائمة",grid:"شبكة",pod:"تتويج",row:"أفقي"})[d.shape]}</span></div></div>`).join("")}</div>
+  <div class="ttl">المرحلة القادمة (٢٠ تصميماً إضافياً)</div><div class="row">${NEXT_DESIGNS.map(n=>`<span class="tag">${n}</span>`).join("")}</div>`;
+ }
+ else if(p==="likes"||p==="gifts"||p==="comments"){
+  const type=p, t=TYPES[type], ws_=l.widgets.filter(w=>w.type===type);
+  const rows=type==="likes"?sorted(D.likes):type==="gifts"?sorted(D.gifts):sorted(D.comments);
+  const cols=type==="likes"?[["الإعجابات",r=>fmt(r.v)]]:type==="gifts"?[["النقاط",r=>fmt(r.v)],["الهدايا",r=>fmt(r.c)]]:[["التعليقات",r=>fmt(r.v)]];
+  h=head(PAGES.find(x=>x[0]===p)[1],type==="likes"?"تستقبل أحداث الإعجاب فقط — لا تختلط بنقاط الهدايا":type==="gifts"?"تستقبل أحداث الهدايا فقط — نقاط الدعم = قيمة الهدية بالألماس × العدد":"تستقبل التعليقات فقط",layoutPicker())+
+  `<div class="grid g2"><div class="card"><h3>قوائم ${t.label} في هذا التخطيط <button class="btn sm" data-add="${type}">+ إضافة</button></h3>${ws_.map(w=>widgetQuick(w)).join("")||'<div class="empty">لا توجد قائمة من هذا النوع — أضف واحدة</div>'}
+  ${type==="gifts"?`<div class="note" style="margin-top:10px">📌 <b>الفترات المتاحة فعلياً:</b> TikTok لا يعطي سجل دعم تاريخي، لذلك «البث الحالي» يُحسب من أحداث هذا البث، و«اليوم/الأسبوع/الشهر» تُحسب من سجل الهدايا الذي حفظته المنصة أثناء اتصالها ببثوثك فقط. الهدايا خارج فترات الاتصال لا تظهر.</div>`:""}
+  ${type==="likes"?`<div class="note" style="margin-top:10px">📌 TikTok يرسل الإعجابات على دفعات، وفي البثوث الكبيرة قد لا تصل كل الدفعات، لذلك قد يختلف المجموع قليلاً عن عداد التطبيق.</div>`:""}</div>
+  <div class="card"><h3>الترتيب المباشر <span class="tag">${rows.length} مستخدم</span></h3>${userTable(rows.slice(0,15),cols)}${type==="comments"?`<div class="ttl">آخر التعليقات</div><div class="feed">${D.feed.slice(0,20).map(f=>`<div><b>${esc(f.name)}:</b> ${esc(f.text)}</div>`).join("")||'<div class="mut">لا توجد تعليقات</div>'}</div>`:""}</div></div>`+testBar();
+ }
+ else if(p==="counters"){
+  const tm=l.widgets.filter(w=>w.type==="timer"), gl=l.widgets.filter(w=>w.type==="goal");
+  h=head("العدادات والأهداف","عداد وقت البث وهدف الإعجابات — كل عنصر مستقل",layoutPicker())+
+  `<div class="grid g2"><div class="card"><h3>⏱️ عداد وقت البث <button class="btn sm" data-add="timer">+ إضافة</button></h3><div class="stat"><div class="v gold" id="durv">${dur()}</div></div>
+  <div class="row" style="margin-top:12px"><button class="btn sm" data-timer="start">▶ تشغيل</button><button class="btn sm" data-timer="pause">⏸ إيقاف مؤقت</button><button class="btn sm dng" data-timer="reset">↺ تصفير</button></div>${tm.map(widgetQuick).join("")}</div>
+  <div class="card"><h3>🎯 هدف الإعجابات <button class="btn sm" data-add="goal">+ إضافة</button></h3>${gl.map(w=>widgetQuick(w)+`<div class="fld"><label>الهدف</label><input class="inp" type="number" min="1" data-wf="target" data-wid="${w.id}" value="${w.target}"></div>`).join("")||'<div class="empty">لا يوجد هدف</div>'}<p class="mut small">التقدّم = إجمالي الإعجابات الواردة: ${fmt(D.tot.likes)}</p></div></div>`;
+ }
+ else if(p==="studio"){ h=studioHTML() }
+ else if(p==="obs"){
+  h=head("روابط OBS","أضفها كـ Browser Source — الخلفية شفافة تلقائياً",layoutPicker())+
+  `<div class="card"><h3>🔗 الرابط الشامل — «${esc(l.name)}»</h3><p class="mut small">يعرض جميع القوائم بنفس المواقع والأحجام في المحرر. مقاس المصدر في OBS: <b style="color:var(--tx)">${CV().w} × ${CV().h}</b></p>
+  <div class="code">${esc(overlayURL(l))}</div><div class="row" style="margin-top:10px"><button class="btn pri sm" data-copyall>نسخ الرابط الشامل</button><button class="btn sm" data-preview="">👁 معاينة هنا</button><a class="btn sm" target="_blank" href="${esc(overlayURL(l))}">فتح في تبويب ↗</a></div></div>
+  <div class="ttl">روابط مستقلة لكل قائمة</div><div class="grid g2">${l.widgets.map(w=>`<div class="card"><h3><span>${TYPES[w.type].icon} ${esc(w.name)}</span><span class="tag">${Math.round(w.w*CV().w)} × ${Math.round(w.h*CV().h)}</span></h3><div class="code">${esc(overlayURL(l,w.id))}</div><div class="row" style="margin-top:8px"><button class="btn sm" data-copylink="${w.id}">نسخ</button><button class="btn sm" data-preview="${w.id}">👁 معاينة هنا</button><a class="btn sm" target="_blank" href="${esc(overlayURL(l,w.id))}">تبويب ↗</a></div></div>`).join("")}</div>
+  <div class="card" style="margin-top:14px"><h3>طريقة الإضافة</h3><div class="mut" style="line-height:2"><b style="color:var(--tx)">OBS:</b> Sources ← + ← Browser ← الصق الرابط ← اكتب العرض والارتفاع الظاهرين فوق كل رابط.<br><b style="color:var(--tx)">TikTok LIVE Studio:</b> أضف مصدر «رابط/متصفح» إن كان متاحاً في نسختك، أو اعرض OBS عبر Virtual Camera.<br>في الرابط الشامل يمكنك تحريك القوائم من المحرر فقط؛ لا تحتاج تعديلها داخل OBS.</div>
+  <div class="note" style="margin-top:10px">⚠️ في هذه النسخة التجريبية: البيانات المباشرة تصل لنوافذ المعاينة في نفس المتصفح. لكي تتحدث القوائم داخل OBS أثناء البث الحقيقي شغّل خادم المنصة (مرفق مع المشروع) واكتب عنوانه في الإعدادات، ثم انسخ الروابط من جديد — بعدها أي تعديل في المحرر يظهر في OBS مباشرة.</div></div>`;
+ }
+ else if(p==="settings"){
+  const s=S.settings;
+  h=head("الإعدادات","الربط بالبث والتحكم العام")+
+  `<div class="grid g2"><div class="card"><h3>الربط مع TikTok LIVE</h3>
+  <div class="fld"><label>اسم المستخدم في TikTok (بدون @)</label><input class="inp" data-set="tiktok" value="${esc(s.tiktok)}" placeholder="username"></div>
+  <div class="fld"><label>عنوان خادم المنصة (WebSocket)</label><input class="inp" dir="ltr" data-set="wsUrl" value="${esc(s.wsUrl)}" placeholder="ws://localhost:3000/ws"></div>
+  <div class="fld"><label>معرّف الغرفة</label><input class="inp" dir="ltr" data-set="room" value="${esc(s.room)}"></div>
+  <div class="row"><button class="btn pri sm" data-connect>اتصال</button><button class="btn sm" data-disconnect>قطع</button><span class="pill"><span class="dot" id="cdot2"></span><span id="ctext2">—</span></span></div>
+  <div class="note" style="margin-top:12px">الربط يتم عبر الخادم المرفق باستخدام مكتبة tiktok-live-connector، وهي مكتبة مجتمعية <b>غير رسمية</b> تقرأ أحداث البث العامة (هدايا، إعجابات، تعليقات) وقد تتوقف إذا غيّر TikTok نظامه. لا تحتاج كلمة مرور حسابك. يجب أن تكون في بث مباشر لكي يتصل.</div></div>
+  <div class="card"><h3>عام</h3>
+  <div class="fld"><label><span>المؤثرات الحركية لكل القوائم</span></label><select class="inp" data-set="fx"><option value="1" ${s.fx?"selected":""}>مفعّلة</option><option value="0" ${!s.fx?"selected":""}>متوقفة</option></select></div>
+  <div class="fld"><label>حد «الهدية الكبيرة» (نقاط) لإظهار التأثير الخاص</label><input class="inp" type="number" data-set="bigGift" value="${s.bigGift}"></div>
+  <div class="fld"><label>خلفية المحرر</label><select class="inp" data-set="bg"><option value="stream" ${s.bg==="stream"?"selected":""}>محاكاة بث</option><option value="chk" ${s.bg==="chk"?"selected":""}>شفافية (مربعات)</option></select></div>
+  <div class="row"><button class="btn sm" data-export>⧉ نسخ الإعدادات</button><label class="btn sm">⬆ استيراد<input type="file" accept=".json" data-import hidden></label><button class="btn sm dng" data-wipe>حذف كل البيانات</button></div></div></div>`;
+ }
+ else if(p==="account"){
+  h=head("حسابي")+`<div class="grid g2"><div class="card"><div class="row" style="margin-bottom:14px"><img src="${avatar(S.profile.name)}" style="width:64px;height:64px;border-radius:50%"><div><b style="font-size:18px">${esc(S.profile.name)}</b><div class="mut small">الخطة: ${esc(S.profile.plan)}</div></div></div>
+  <div class="fld"><label>الاسم</label><input class="inp" data-prof="name" value="${esc(S.profile.name)}"></div></div>
+  <div class="card"><h3>ملخص الحساب</h3><table><tr><td>التخطيطات</td><td>${S.layouts.length}</td></tr><tr><td>العناصر</td><td>${S.layouts.reduce((s,l)=>s+l.widgets.length,0)}</td></tr><tr><td>التخزين</td><td>هذا المتصفح (النسخة التجريبية)</td></tr></table><p class="mut small">في النسخة الكاملة: تسجيل دخول وحفظ في قاعدة البيانات ومزامنة بين الأجهزة.</p></div></div>`;
+ }
+ pg.innerHTML=h;
+ if(p==="studio") mountStudio();
+ if(p==="library") mountLibrary();
+ setConn();
+}
+const dname=id=>(DESIGNS.find(d=>d.id===id)||{}).name||id;
+function stat(k,v,g){return `<div class="card stat"><div class="k">${k}</div><div class="v ${g?"gold":""}">${v}</div></div>`}
+function miniTop(t,rows){return `<div><div class="mut small" style="margin-bottom:6px">${t}</div>${rows.map((r,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:5px 0"><b style="color:var(--gold);width:14px">${i+1}</b><img class="tav" style="margin:0" src="${r.av||avatar(r.name)}"><span style="flex:1">${esc(r.name)}</span><b>${fmt(r.v)}</b></div>`).join("")||'<div class="mut small">—</div>'}</div>`}
+function dur(){const ms=(D.running?Date.now():(D.pausedAt||Date.now()))-D.startedAt,s=Math.max(0,Math.floor(ms/1000)),p=n=>String(n).padStart(2,"0");return `${p(Math.floor(s/3600))}:${p(Math.floor(s/60)%60)}:${p(s%60)}`}
+function widgetQuick(w){ const t=TYPES[w.type];
+ return `<div style="border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px"><div class="row" style="justify-content:space-between"><b>${esc(w.name)}</b><span class="tag">${dname(w.design)}</span></div>
+ <div class="grid g2" style="margin-top:8px;gap:8px">${t.board?`<div class="fld" style="margin:0"><label>عدد المراكز</label><select class="inp" data-wf="topN" data-wid="${w.id}">${[3,5,10].map(n=>`<option value="${n}" ${w.topN==n?"selected":""}>أفضل ${n}</option>`).join("")}</select></div>`:""}
+ ${w.type==="gifts"?`<div class="fld" style="margin:0"><label>الترتيب حسب</label><select class="inp" data-wf="sortBy" data-wid="${w.id}">${SORTS.map(s=>`<option value="${s[0]}" ${w.sortBy===s[0]?"selected":""}>${s[1]}</option>`).join("")}</select></div>`:""}
+ <div class="fld" style="margin:0"><label>التصميم</label><select class="inp" data-wf="design" data-wid="${w.id}">${DESIGNS.map(d=>`<option value="${d.id}" ${w.design===d.id?"selected":""}>${d.name}</option>`).join("")}</select></div></div>
+ <div class="row" style="margin-top:8px"><button class="btn sm" data-edit="${w.id}">فتح في الاستوديو</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button></div></div>`}
+
+/* ---- Studio ---- */
+function studioHTML(){ const l=L();
+ return head("استوديو البث","اسحب أي قائمة لمكانها — تعديل قائمة لا يحرّك غيرها",`<button class="btn sm" data-go="obs">🔗 روابط OBS</button>`)+
+ `<div class="st-bar">${layoutPicker()}<button class="btn sm" data-lay="new">+ تخطيط جديد</button><button class="btn sm" data-lay="dup">نسخ</button><button class="btn sm" data-lay="ren">إعادة تسمية</button><button class="btn sm dng" data-lay="del">حذف</button>
+ <span style="width:12px"></span>${Object.entries(CANVASES).map(([k,c])=>`<button class="btn sm ${l.canvas===k?"on":""}" data-canvas="${k}">${c.label}</button>`).join("")}
+ <span style="width:12px"></span><select class="inp" data-act="addW" style="width:auto"><option value="">+ إضافة عنصر…</option>${Object.entries(TYPES).map(([k,t])=>`<option value="${k}">${t.icon} ${t.label}</option>`).join("")}</select></div>
+ <div class="studio"><div class="card layers" id="layers"></div><div class="stagewrap" id="stagewrap"><div class="stage-outer" id="stageouter"><div class="stage ${S.settings.bg==="chk"?"chk":""}" id="stage"></div></div></div><div class="card" id="props"></div></div>`+testBar();
+}
+let stageScale=1;
+function mountStudio(){
+ const stage=document.getElementById("stage"), cv=CV();
+ stage.style.width=cv.w+"px"; stage.style.height=cv.h+"px";
+ views.clear();
+ for(const w of L().widgets){ const v=new View(w,cv,{refW:cv.w,editor:true,sel:S.sel,globalFx:S.settings.fx,data:()=>({D,H})}); views.set(w.id,v); stage.appendChild(v.el) }
+ fitStage(); renderLayers(); renderProps();
+ stage.addEventListener("pointerdown",onStageDown);
+}
+function fitStage(){
+ const wrap=document.getElementById("stagewrap"), outer=document.getElementById("stageouter"), stage=document.getElementById("stage"); if(!wrap) return;
+ const cv=CV(); const aw=wrap.clientWidth||600, ah=Math.max(380,innerHeight-260);
+ stageScale=Math.min(aw/cv.w,ah/cv.h); stage.style.transform=`scale(${stageScale})`;
+ outer.style.width=cv.w*stageScale+"px"; outer.style.height=cv.h*stageScale+"px";
+}
+addEventListener("resize",()=>{ if(S.page==="studio") fitStage() });
+function refreshView(w){ const v=views.get(w.id); if(v){ v.opts.sel=S.sel; v.opts.globalFx=S.settings.fx; v.apply(w) } }
+function select(id){ const prev=S.sel; S.sel=id; [prev,id].forEach(x=>{const w=L().widgets.find(y=>y.id===x); if(w) refreshView(w)}); renderLayers(); renderProps() }
+function renderLayers(){
+ const el=document.getElementById("layers"); if(!el) return;
+ const ws_=[...L().widgets].sort((a,b)=>b.z-a.z);
+ el.innerHTML=`<h3>الطبقات</h3>`+ws_.map(w=>`<div class="ly ${S.sel===w.id?"sel":""}" data-selw="${w.id}"><span>${TYPES[w.type].icon}</span><span class="nm">${esc(w.name)}</span><button class="ib ${w.visible?"":"off"}" data-tog="visible" data-wid="${w.id}" title="إظهار/إخفاء">👁</button><button class="ib ${w.locked?"":"off"}" data-tog="locked" data-wid="${w.id}" title="قفل">🔒</button></div>`).join("")||'<div class="mut small">لا عناصر</div>';
+}
+function renderProps(){
+ const el=document.getElementById("props"); if(!el) return;
+ const w=L().widgets.find(x=>x.id===S.sel);
+ if(!w){ el.innerHTML='<h3>الخصائص</h3><div class="empty">اضغط على أي قائمة في الشاشة لتعديلها بشكل مستقل</div>'; return }
+ const t=TYPES[w.type], cv=CV();
+ const rng=(f,l,min,max,step,val,fmtv)=>`<div class="fld"><label><span>${l}</span><span id="v_${f}">${fmtv?fmtv(val):val}</span></label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}" data-wf="${f}" data-wid="${w.id}"></div>`;
+ el.innerHTML=`<h3><span>${t.icon} ${esc(w.name)}</span><span class="tag" title="معرّف مستقل">${w.id}</span></h3>
+ <div class="fld"><label>اسم العنصر</label><input class="inp" data-wf="name" data-wid="${w.id}" value="${esc(w.name)}"></div>
+ ${t.board||w.type==="goal"?`<div class="fld"><label>العنوان الظاهر</label><input class="inp" data-wf="title" data-wid="${w.id}" value="${esc(w.title)}"></div>`:""}
+ <div class="fld"><label>التصميم</label><select class="inp" data-wf="design" data-wid="${w.id}">${DESIGNS.map(d=>`<option value="${d.id}" ${w.design===d.id?"selected":""}>${d.name}</option>`).join("")}</select></div>
+ ${t.board?`<div class="grid g2" style="gap:8px"><div class="fld"><label>المراكز</label><select class="inp" data-wf="topN" data-wid="${w.id}">${[3,5,10].map(n=>`<option value="${n}" ${w.topN==n?"selected":""}>أفضل ${n}</option>`).join("")}</select></div><div class="fld"><label>العنوان</label><select class="inp" data-wf="showTitle" data-wid="${w.id}"><option value="1" ${w.showTitle?"selected":""}>ظاهر</option><option value="0" ${!w.showTitle?"selected":""}>مخفي</option></select></div></div>`:""}
+ ${w.type==="gifts"?`<div class="fld"><label>ترتيب الداعمين حسب</label><select class="inp" data-wf="sortBy" data-wid="${w.id}">${SORTS.map(s=>`<option value="${s[0]}" ${w.sortBy===s[0]?"selected":""}>${s[1]}</option>`).join("")}</select></div>`:""}
+ ${w.type==="goal"?`<div class="fld"><label>الهدف (إعجابات)</label><input class="inp" type="number" min="1" data-wf="target" data-wid="${w.id}" value="${w.target}"></div>`:""}
+ <div class="fld"><label>الموقع</label><div class="posgrid">${POS.map(p=>`<button data-pos="${p[0]}" class="${w.pos===p[0]?"on":""}">${p[1]}</button>`).join("")}</div></div>
+ ${rng("w","العرض",.08,1,.005,w.w,v=>Math.round(v*cv.w)+"px")}${rng("h","الارتفاع",.03,1,.005,w.h,v=>Math.round(v*cv.h)+"px")}
+ ${rng("fontScale","حجم النصوص",.5,1.8,.05,w.fontScale,v=>Math.round(v*100)+"%")}${t.board?rng("avatarScale","حجم الصور",.4,1.5,.05,w.avatarScale,v=>Math.round(v*100)+"%"):""}
+ ${rng("gap","المسافات",0,40,1,w.gap)}${rng("opacity","الشفافية",.1,1,.05,w.opacity,v=>Math.round(v*100)+"%")}
+ <div class="grid g2" style="gap:8px"><div class="fld"><label>لون التمييز</label><input type="color" data-wf="acc" data-wid="${w.id}" value="${w.acc||"#e8c46a"}"></div><div class="fld"><label>لون النص</label><input type="color" data-wf="tx" data-wid="${w.id}" value="${w.tx||"#ffffff"}"></div></div>
+ <div class="grid g2" style="gap:8px"><div class="fld"><label>حركة الدخول</label><select class="inp" data-wf="anim" data-wid="${w.id}">${[["slide","انزلاق"],["fade","تلاشي"],["zoom","تكبير"],["none","بدون"]].map(a=>`<option value="${a[0]}" ${w.anim===a[0]?"selected":""}>${a[1]}</option>`).join("")}</select></div><div class="fld"><label>المؤثرات</label><select class="inp" data-wf="effects" data-wid="${w.id}"><option value="1" ${w.effects?"selected":""}>مفعّلة</option><option value="0" ${!w.effects?"selected":""}>متوقفة</option></select></div></div>
+ <div class="fld"><label>ترتيب الطبقات</label><div class="row"><button class="btn sm" data-z="front">⬆ للأمام</button><button class="btn sm" data-z="back">⬇ للخلف</button></div></div>
+ <div class="row"><button class="btn sm ${w.visible?"":"on"}" data-tog="visible" data-wid="${w.id}">${w.visible?"👁 إخفاء":"👁 إظهار"}</button><button class="btn sm ${w.locked?"on":""}" data-tog="locked" data-wid="${w.id}">${w.locked?"🔓 فك القفل":"🔒 قفل المكان"}</button><button class="btn sm" data-dupw>نسخ</button><button class="btn sm dng" data-delw>حذف</button></div>`;
+}
+let drag=null;
+function onStageDown(e){
+ const wdEl=e.target.closest(".wd"); if(!wdEl){ if(S.sel) select(null); return }
+ const w=L().widgets.find(x=>x.id===wdEl.dataset.id); if(!w) return;
+ if(S.sel!==w.id) select(w.id);
+ if(w.locked) return;
+ e.preventDefault();
+ const resize=e.target.classList.contains("rh");
+ drag={w,resize,sx:e.clientX,sy:e.clientY,ox:w.x,oy:w.y,ow:w.w,oh:w.h};
+ const move=ev=>{ if(!drag) return; const cv=CV(); const dx=(ev.clientX-drag.sx)/stageScale/cv.w, dy=(ev.clientY-drag.sy)/stageScale/cv.h;
+  const s=v=>Math.round(v*400)/400;
+  if(drag.resize){ w.w=s(clamp(drag.ow+dx,.05,1-w.x)); w.h=s(clamp(drag.oh+dy,.03,1-w.y)) }
+  else { w.x=s(clamp(drag.ox+dx,0,1-w.w)); w.y=s(clamp(drag.oy+dy,0,1-w.h)); w.pos="custom" }
+  refreshView(w) };
+ const up=()=>{ removeEventListener("pointermove",move); removeEventListener("pointerup",up); if(drag){drag=null; save(); pushLayout(); renderProps()} };
+ addEventListener("pointermove",move); addEventListener("pointerup",up);
+}
+addEventListener("keydown",e=>{ if(S.page!=="studio"||!S.sel||/INPUT|SELECT|TEXTAREA/.test(document.activeElement.tagName)) return;
+ const w=L().widgets.find(x=>x.id===S.sel); if(!w||w.locked) return;
+ const st_=e.shiftKey?.02:.004; const m={ArrowLeft:[-st_,0],ArrowRight:[st_,0],ArrowUp:[0,-st_],ArrowDown:[0,st_]}[e.key]; if(!m) return; e.preventDefault();
+ w.x=clamp(w.x+m[0],0,1-w.w); w.y=clamp(w.y+m[1],0,1-w.h); w.pos="custom"; refreshView(w); save(); pushLayout() });
+
+/* ---- library ---- */
+function sample(type){ const n=["نورة","فهد","سارة","عبدالله","ريم","خالد","لمى","سلطان","جود","تركي"]; const base=type==="gifts"?[52000,31000,18500,9900,4200,2600,1500,900,400,120]:[98000,64000,41000,22000,15000,9000,5000,2200,900,300]; return n.map((x,i)=>({k:"s"+i,name:x,av:avatar(x),v:base[i]})) }
+function mountLibrary(){
+ const l=L(); const tgt=l.widgets.find(w=>w.id===S.libTarget)||l.widgets.find(w=>TYPES[w.type].board)||l.widgets[0];
+ const type=tgt&&TYPES[tgt.type].board?tgt.type:"gifts";
+ document.querySelectorAll("[data-pv]").forEach(box=>{
+  const cv={w:540,h:680};
+  const w=newWidget(type,{id:"pv_"+box.dataset.pv,design:box.dataset.pv,x:.04,y:.06,w:.92,h:.88,topN:tgt&&TYPES[tgt.type].board?tgt.topN:5,title:tgt?tgt.title:"أفضل الداعمين",acc:tgt?tgt.acc:""});
+  const stg=document.createElement("div"); stg.className="stage"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px";
+  const s=Math.min(box.clientWidth/cv.w,box.clientHeight/cv.h); stg.style.transform=`scale(${s})`; stg.style.left=(box.clientWidth-cv.w*s)/2+"px";
+  box.appendChild(stg);
+  const v=new View(w,cv,{globalFx:S.settings.fx}); stg.appendChild(v.el); v.refresh({preview:sample(type)},true);
+ });
+}
+
+/* ---- events ---- */
+function findW(id){return L().widgets.find(w=>w.id===id)}
+function changed(w,full){ save(); pushLayout(); if(S.page==="studio"){ refreshView(w); if(full){renderProps();renderLayers()} } else renderPage(true) }
+function onClick(e){
+ const t=e.target.closest("button,[data-pick],[data-selw],a"); if(!t) return;
+ const d=t.dataset;
+ if(d.go) return go(d.go);
+ if(d.sim){ const sc=document.getElementById("simScope")?.value||"likes"; if(d.sim==="shuffle"){ if(sc==="all") return toast("اختر قائمة واحدة للتغيير"); return SIM.shuffle(sc) } if(d.sim==="reset") return SIM.reset(sc); return SIM[d.sim]() }
+ if(d.timer){ emit({type:"timer",action:d.timer}); return }
+ if(d.add){ const cv=CV(); const w=newWidget(d.add,{z:Math.max(0,...L().widgets.map(x=>x.z))+1}); applyPreset(w,"mr",cv); w.pos="custom"; w.x=clamp(w.x-.05*Math.random(),0,1-w.w); L().widgets.push(w); S.sel=w.id; save(); pushLayout(); toast("تمت إضافة "+TYPES[d.add].label); return S.page==="studio"?(mountStudioFresh()):renderPage() }
+ if(d.edit){ S.sel=d.edit; return go("studio") }
+ if(d.lib){ S.libTarget=d.lib; return go("library") }
+ if(d.pick){ const l=L(); const tgt=findW(S.libTarget)||l.widgets.find(w=>TYPES[w.type].board)||l.widgets[0]; if(!tgt) return; tgt.design=d.pick; save(); pushLayout(); toast(`«${dname(d.pick)}» ← ${tgt.name} فقط`); return renderPage() }
+ if(d.copylink!==undefined&&d.copylink) return copy(overlayURL(L(),d.copylink));
+ if(t.hasAttribute("data-copyall")) return copy(overlayURL(L()));
+ if(d.selw&&!d.tog) return select(d.selw);
+ if(d.tog){ e.stopPropagation(); const w=findW(d.wid); w[d.tog]=!w[d.tog]; return changed(w,true) }
+ if(d.pos){ const w=findW(S.sel); if(!w) return; applyPreset(w,d.pos,CV()); return changed(w,true) }
+ if(d.z){ const w=findW(S.sel); const zs=L().widgets.map(x=>x.z); w.z=d.z==="front"?Math.max(...zs)+1:Math.min(...zs)-1; if(w.z<0){L().widgets.forEach(x=>x.z+=1-w.z)} L().widgets.forEach(refreshView); return changed(w,true) }
+ if(t.hasAttribute("data-dupw")){ const w=findW(S.sel); const c={...w,id:"w_"+uid(),name:w.name+" (نسخة)",x:clamp(w.x+.03,0,1-w.w),y:clamp(w.y+.03,0,1-w.h),z:w.z+1,pos:"custom"}; L().widgets.push(c); S.sel=c.id; save(); pushLayout(); return mountStudioFresh() }
+ if(t.hasAttribute("data-delw")){ return ask("حذف هذا العنصر؟").then(ok=>{ if(!ok) return; const l=L(); l.widgets=l.widgets.filter(x=>x.id!==S.sel); S.sel=null; save(); pushLayout(); mountStudioFresh() }) }
+ if(d.canvas){ L().canvas=d.canvas; save(); pushLayout(); return mountStudioFresh() }
+ if(d.lay){ const l=L(); const done=()=>{S.sel=null; save(); renderPage()};
+  if(d.lay==="new") return ask("اسم التخطيط الجديد","تخطيط جديد").then(n=>{ if(!n) return; const nl={id:"l_"+uid(),name:n,canvas:l.canvas,widgets:[]}; S.layouts.push(nl); S.active=nl.id; done() });
+  if(d.lay==="dup"){ const nl=JSON.parse(JSON.stringify(l)); nl.id="l_"+uid(); nl.name=l.name+" (نسخة)"; nl.widgets.forEach(w=>w.id="w_"+uid()); S.layouts.push(nl); S.active=nl.id; return done() }
+  if(d.lay==="ren") return ask("الاسم الجديد",l.name).then(n=>{ if(!n) return; l.name=n; done() });
+  if(d.lay==="del"){ if(S.layouts.length<2) return toast("لا بد من تخطيط واحد على الأقل"); return ask("حذف التخطيط «"+l.name+"»؟").then(ok=>{ if(!ok) return; S.layouts=S.layouts.filter(x=>x.id!==l.id); S.active=S.layouts[0].id; done() }) } }
+ if(t.hasAttribute("data-connect")){ S.settings.wsUrl=S.settings.wsUrl.trim(); save(); startWS(); return }
+ if(t.hasAttribute("data-disconnect")){ try{ws&&ws.close()}catch(_){} ws=null; wsReady=false; setConn(); return }
+ if(t.hasAttribute("data-export")){ copy(JSON.stringify({layouts:S.layouts,settings:S.settings,profile:S.profile})); return toast("تم نسخ الإعدادات (JSON) — احفظها في ملف") }
+ if(t.hasAttribute("data-wipe")){ return ask("سيتم حذف التخطيطات والبيانات من هذا المتصفح").then(ok=>{ if(!ok) return; try{localStorage.removeItem("arsh.app");localStorage.removeItem("arsh.data");localStorage.removeItem("arsh.hist")}catch(_){} location.reload() }) }
+ if(d.preview!==undefined) return previewOverlay(d.preview||null);
+}
+function mountStudioFresh(){ renderPage() }
+function modal(html){ const m=document.createElement("div"); m.className="modal"; m.innerHTML=`<div class="mbox">${html}</div>`; document.body.appendChild(m); return m }
+function ask(msg,def){ return new Promise(res=>{ const m=modal(`<p>${esc(msg)}</p>${def!==undefined?`<input class="inp" id="askv" value="${esc(def)}">`:""}<div class="row" style="margin-top:12px"><button class="btn pri sm" data-ok>تأكيد</button><button class="btn sm" data-no>إلغاء</button></div>`); const inp=m.querySelector("#askv"); if(inp){inp.focus();inp.select()}
+ m.onclick=e=>{ if(e.target.closest("[data-ok]")){ const v=inp?inp.value.trim():true; m.remove(); res(v||null) } else if(e.target.closest("[data-no]")||e.target===m){ m.remove(); res(null) } } }) }
+function previewOverlay(only){
+ const l=L(), base=CV(); let cv=base, list=l.widgets;
+ if(only){ const w=l.widgets.find(x=>x.id===only); cv={w:Math.round(w.w*base.w),h:Math.round(w.h*base.h)}; list=[{...w,x:0,y:0,w:1,h:1}] }
+ const s=Math.min(innerWidth*.9/cv.w,(innerHeight*.9-110)/cv.h);
+ const m=modal(`<div class="row" style="justify-content:space-between;margin-bottom:10px"><b>معاينة ${only?"الرابط المستقل":"الرابط الشامل"} (${cv.w}×${cv.h})</b><button class="btn sm" data-no>إغلاق</button></div><div class="pvbox" style="width:${cv.w*s}px;height:${cv.h*s}px"><div class="stage" style="background:none;width:${cv.w}px;height:${cv.h}px;transform:scale(${s})"></div></div><div class="row" style="margin-top:10px;justify-content:center"><button class="btn sm" data-sim="like1000">❤️ +1000</button><button class="btn sm" data-sim="gift">🎁 هدية</button><button class="btn sm" data-sim="biggift">🦁 هدية كبيرة</button></div>`);
+ const stg=m.querySelector(".stage"), mine=[];
+ for(const w of list){ const v=new View(w,cv,{data:()=>({D,H}),refW:base.w,globalFx:S.settings.fx}); stg.appendChild(v.el); v.el.classList.add("w-in"); liveViews.add(v); mine.push(v) }
+ const tick=setInterval(()=>mine.forEach(v=>{if(v.w.type==="timer")v.refresh({D,H})}),1000);
+ m.onclick=e=>{ const b=e.target.closest("[data-sim]"); if(b) return SIM[b.dataset.sim](); if(e.target.closest("[data-no]")||e.target===m){ clearInterval(tick); mine.forEach(v=>liveViews.delete(v)); m.remove() } };
+}
+function onInput(e){
+ const t=e.target, d=t.dataset;
+ if(d.act==="pickLayout"&&e.type==="change"){ S.active=t.value; S.sel=null; save(); return renderPage() }
+ if(d.act==="addW"&&e.type==="change"&&t.value){ const b=document.createElement("button"); b.dataset.add=t.value; t.value=""; onClick({target:b}); return }
+ if(d.act==="libTarget"&&e.type==="change"){ S.libTarget=t.value; return renderPage() }
+ if(d.wf){ const w=findW(d.wid); if(!w) return; const f=d.wf; let v=t.value;
+  if(["w","h","fontScale","avatarScale","gap","opacity","topN","target"].includes(f)) v=+v;
+  if(f==="showTitle"||f==="effects") v=v==="1";
+  if(t.type==="range"&&e.type==="change") return; // handled on input
+  if((t.tagName==="SELECT"||t.type==="number"||t.type==="color")&&e.type==="input"&&t.type!=="color") return;
+  w[f]=v;
+  if(f==="w") w.x=clamp(w.x,0,1-w.w); if(f==="h") w.y=clamp(w.y,0,1-w.h);
+  if((f==="w"||f==="h")&&w.pos!=="custom") applyPreset(w,w.pos,CV());
+  const lab=document.getElementById("v_"+f); if(lab){ const cv=CV(); lab.textContent=f==="w"?Math.round(v*cv.w)+"px":f==="h"?Math.round(v*cv.h)+"px":["fontScale","avatarScale","opacity"].includes(f)?Math.round(v*100)+"%":v }
+  save(); pushLayout();
+  if(S.page==="studio"){ refreshView(w); if(f==="name") renderLayers(); if(["design","topN","sortBy","showTitle","effects"].includes(f)) renderProps() }
+  else if(t.tagName==="SELECT"||e.type==="change") renderPage(true);
+  return }
+ if(d.set&&e.type==="change"){ let v=t.value; if(d.set==="fx") v=v==="1"; if(d.set==="bigGift") v=+v; S.settings[d.set]=v; save(); if(d.set==="fx") L().widgets.forEach(w=>refreshView(w)); return }
+ if(d.prof&&e.type==="change"){ S.profile[d.prof]=t.value; save(); return renderPage() }
+ if(t.hasAttribute("data-import")&&e.type==="change"&&t.files[0]){ t.files[0].text().then(x=>{ try{ const o=JSON.parse(x); if(!Array.isArray(o.layouts)) throw 0; S.layouts=o.layouts; S.active=o.layouts[0].id; Object.assign(S.settings,o.settings||{}); save(); toast("تم الاستيراد"); renderPage() }catch(_){toast("ملف غير صالح")} }) }
+}
+function updateCounters(){ const e=document.getElementById("durv"); if(e) e.textContent=dur() }
+function setConn(){ const ok=wsReady; [["cdot","ctext"],["cdot2","ctext2"]].forEach(([a,b])=>{const d=document.getElementById(a),t=document.getElementById(b); if(d){d.classList.toggle("ok",ok)} if(t) t.textContent=ok?"متصل بالخادم":"غير متصل بالخادم"}) }
+function startWS(){ if(!S.settings.wsUrl) return toast("اكتب عنوان الخادم أولاً");
+ connectWS(S.settings.wsUrl,S.settings.room,m=>{ if(m.t==="snapshot"){ D=m.D; H=m.H||[]; saveData(); renderPage(true) } if(m.t==="event"){ handle(m.ev) } if(m.t==="status"){ toast(m.text||"") } },(ok,err)=>{ setConn(); if(ok){ toast("تم الاتصال بالخادم"); pushLayout(); if(S.settings.tiktok) ws.send(JSON.stringify({t:"tiktok",room:S.settings.room,username:S.settings.tiktok.replace(/^@/,"")})) } else if(err) toast(err) }) }
+
+/* ================= boot ================= */
+(function(){
+ const h=location.hash;
+ if(h.startsWith("#/overlay")){ bootOverlay(new URLSearchParams(h.split("?")[1]||"")); return }
+ shell(); renderPage();
+ setInterval(()=>{ views.forEach(v=>{ if(v.w.type==="timer") v.refresh({D,H}) }); updateCounters() },1000);
+ if(S.settings.wsUrl) startWS();
+ window.__arsh={S,D:()=>D,emit,L};
+})();
+</script>
+</body>
+</html>

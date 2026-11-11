@@ -1,0 +1,21 @@
+process.env.APP_SECRET=process.env.APP_SECRET||"t".repeat(40);
+const { createNotifyService } = await import("/home/claude/najd/arsh-live/src/server/notify.ts");
+let f=0; const ok=(c:any,m:string)=>{ console.log((c?"PASS ":"FAIL ")+m); if(!c) f++ };
+const db:any={ch:[],log:[]};
+const prisma:any={notifyChannel:{findMany:async({where}:any)=>db.ch.filter((c:any)=>c.userId===where.userId&&c.enabled&&(!where.kind||c.kind===where.kind)),findUnique:async({where}:any)=>db.ch.find((c:any)=>c.userId===where.userId_kind.userId&&c.kind===where.userId_kind.kind)||null,upsert:async({where,create,update}:any)=>{ const i=db.ch.findIndex((c:any)=>c.userId===where.userId_kind.userId&&c.kind===where.userId_kind.kind); if(i>=0) Object.assign(db.ch[i],update); else db.ch.push(create) }},
+ notifyLog:{create:async({data}:any)=>db.log.push(data)},user:{findFirst:async()=>({id:"u1",name:"بطوط"})}};
+const calls:any[]=[]; (globalThis as any).fetch=async(url:string,o:any)=>{ calls.push({url,body:o.body}); if(String(url).includes("bad")) return new Response("x",{status:404}); return new Response(JSON.stringify({ok:true}),{status:200,headers:{"content-type":"application/json"}}) };
+const svc=createNotifyService(prisma);
+await svc.save("u1","discord",{secret:"https://discord.com/api/webhooks/123/abc-DEF_9",label:"#live"});
+await svc.save("u1","telegram",{secret:{token:"123456:"+"A".repeat(35),chatId:"-1001"},label:"قناتي"});
+ok(db.ch.length===2&&!JSON.stringify(db.ch).includes("discord.com/api/webhooks/123"),"secrets stored encrypted (webhook URL not in plain text)");
+let r=await svc.live("tok",true,"https://b6o6.example");
+ok(r===undefined&&calls.length===2&&JSON.parse(calls[0].body).content.includes("بطوط بدأ البث"),"live start → Discord + Telegram with template");
+ok(calls[1].url.includes("api.telegram.org/bot123456:")&&JSON.parse(calls[1].body).chat_id==="-1001","Telegram sendMessage to chat id");
+await svc.live("tok",true); ok(calls.length===2&&db.log.some((l:any)=>l.ok)&&true,"duplicate 'live start' within 30 min blocked (reconnect)");
+await svc.live("tok",false); ok(calls.length===4,"live end sent");
+const res=await svc.send("u1","stats",{duration:"2:10",likes:1200,gifts:50,follows:9},{force:true,only:"discord"}); ok(res.length===1&&res[0].ok&&JSON.parse(calls[4].body).content.includes("1200"),"stats summary (test button, Discord only)");
+await svc.save("u1","discord",{secret:"https://evil.com/hook"}); const bad=await svc.send("u1","custom",{text:"x"},{force:true,only:"discord"});
+ok(bad[0].ok===false&&/غير صالح/.test(bad[0].error)&&db.log.some((l:any)=>l.ok===false),"invalid webhook rejected + failure logged");
+await svc.fromRoom("tok",{text:"اختبار",test:true}); ok(calls.length===5,"test action notifications are not sent");
+console.log(f?`${f} FAILED`:"ALL PASS"); if(f) process.exit(1);

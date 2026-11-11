@@ -1,0 +1,8 @@
+# قاعدة بيانات PostgreSQL محلية: docker compose up -d
+services:
+  db:
+    image: postgres:16
+    environment: { POSTGRES_USER: b6o6, POSTGRES_PASSWORD: b6o6, POSTGRES_DB: b6o6 }
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+volumes: { pgdata: {} }

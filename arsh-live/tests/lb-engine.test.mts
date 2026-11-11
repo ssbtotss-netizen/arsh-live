@@ -1,0 +1,50 @@
+import { emptyData, applyEvent } from "../arsh-live/src/engine/leaderboard.js";
+import { lbEntries, lbSlots, sgProgress, sgRaw, proAffects, LB_DESIGNS, SG_DESIGNS, LB_CATS } from "../arsh-live/src/engine/lb.js";
+import { newWidget, TYPES } from "../arsh-live/src/engine/defs.js";
+import { emptyDonations, applyDonation, defaultDonCfg } from "../arsh-live/src/engine/donations.js";
+let f=0; const ok=(c:any,m:string)=>{console.log((c?"PASS ":"FAIL ")+m); if(!c) f++};
+const D=emptyData(), H:any[]=[];
+const u=(n:string)=>({id:n,name:n,avatar:""});
+applyEvent(D,H,{type:"gift",user:u("a"),gift:"أسد",giftId:6369,value:29999,count:1});
+applyEvent(D,H,{type:"gift",user:u("b"),gift:"وردة",giftId:5655,value:100,count:100});
+applyEvent(D,H,{type:"gift",user:u("c"),gift:"وردة",giftId:5655,value:5,count:5});
+applyEvent(D,H,{type:"like",user:u("c"),count:1000});
+applyEvent(D,H,{type:"like",user:u("b"),count:50});
+const src={D,H};
+ok(lbEntries(newWidget("lb",{source:"gifts"}),src)[0].k==="a","points: lion sender first");
+ok(lbEntries(newWidget("lb",{source:"giftCount"}),src)[0].k==="b","count: 100 roses sender first");
+const sp=lbEntries(newWidget("lb",{source:"gift",giftKey:"5655"}),src); ok(sp.length===2&&sp[0].k==="b"&&sp[0].v===100&&sp[1].v===5,"specific gift (roses) only counts roses");
+ok(lbEntries(newWidget("lb",{source:"gift",giftKey:"6369"}),src).length===1,"specific gift (lion) only lion senders");
+ok(lbEntries(newWidget("lb",{source:"likes"}),src)[0].k==="c","likes list independent from gifts");
+ok(lbEntries(newWidget("lb",{source:"likes",topN:1}),src).length===1,"topN respected");
+const DN=emptyDonations(), DC=defaultDonCfg(); applyDonation(DN,{type:"donation",id:"d1",name:"زيد",amount:50,currency:DC.currency,provider:"test",test:true,t:Date.now()});
+const dl=lbEntries(newWidget("lb",{source:"donations"}),{...src,DN,DC}); ok(dl.length===1&&dl[0].v===50,"donations source uses money totals");
+// السلوك عند إعادة الضبط
+const D2=emptyData(); applyEvent(D2,[],{type:"gift",user:u("x"),giftId:1,gift:"g",value:1,count:3}); applyEvent(D2,[],{type:"reset",scope:"gifts"}); ok(Object.keys(D2.giftBy).length===0&&!D2.giftTot["1"],"reset gifts clears specific-gift counters");
+// الأهداف
+const g=newWidget("sgoal",{source:"gift",giftKey:"6369",target:3}); ok(sgProgress(g,src).cur===1&&Math.round(sgProgress(g,src).pct)===33,"lion goal 1/3");
+g.offset=sgRaw({...g,offset:0},src); ok(sgProgress(g,src).cur===0,"start counting from now → 0");
+applyEvent(D,H,{type:"gift",user:u("d"),giftId:6369,gift:"أسد",value:29999*2,count:2}); ok(sgProgress(g,src).cur===2,"new lions counted after offset");
+g.base=1; ok(sgProgress(g,src).done,"manual base completes the goal");
+ok(sgProgress(newWidget("sgoal",{source:"likes",target:2000}),src).cur===1050,"likes goal");
+ok(sgProgress(newWidget("sgoal",{source:"giftPoints",target:1e6}),src).cur===D.tot.gifts,"gift points goal");
+ok(sgProgress(newWidget("sgoal",{source:"custom",base:4,target:10}),src).cur===4,"custom goal manual");
+ok(sgProgress(newWidget("sgoal",{source:"donation",target:100}),{...src,DN,DC}).cur===50,"donation goal");
+ok(sgProgress(newWidget("sgoal",{source:"donation",target:100,since:Date.now()+1000}),{...src,DN,DC}).cur===0,"donation goal from now");
+// التوجيه: كل عنصر يستقبل أحداث مصدره فقط
+const lbL=newWidget("lb",{source:"likes"}), lbG=newWidget("lb",{source:"gift"}), sgF=newWidget("sgoal",{source:"follows"});
+ok(proAffects(lbL,{type:"like"})&&!proAffects(lbL,{type:"gift"}),"likes list ignores gifts");
+ok(proAffects(lbG,{type:"gift"})&&!proAffects(lbG,{type:"like"}),"gift list ignores likes");
+ok(proAffects(sgF,{type:"follow"})&&!proAffects(sgF,{type:"comment"}),"follow goal only follows");
+ok(proAffects(lbL,{type:"reset",scope:"likes"})&&!proAffects(lbL,{type:"reset",scope:"gifts"}),"reset scoped");
+// التخطيطات
+const W=400,Hh=600,G=8;
+const s3=lbSlots(3,W,Hh,G); ok(s3[0].x>s3[2].x&&s3[0].x<s3[1].x&&s3[0].y<s3[1].y&&s3[0].h>s3[1].h,"top3 podium: 1st center & raised");
+const s5=lbSlots(5,W,Hh,G); ok(s5.slice(0,3).every(s=>s.k==="pod")&&s5.slice(3).every(s=>s.k==="row"),"top5: podium + rows");
+const s10=lbSlots(10,W,Hh,G); ok(s10.every(s=>s.k==="row")&&s10[0].h>s10[5].h,"top10 compact rows, first 3 taller");
+const s20=lbSlots(20,W,Hh,G); ok(s20[0].x>s20[10].x&&s20[0].y===s20[10].y,"top20 two columns");
+const inside=(S:any[])=>S.every(s=>s.x>=-.01&&s.y>=-.01&&s.x+s.w<=W+.01&&s.y+s.h<=Hh+.01); ok([1,3,5,10,20].every(n=>inside(lbSlots(n,W,Hh,G))),"all slots inside the box");
+ok(LB_DESIGNS.length===100&&new Set(LB_DESIGNS.map(d=>d.id)).size===100&&LB_DESIGNS.every((d,i)=>d.n===i+1)&&LB_DESIGNS.every(d=>LB_CATS[d.cat]&&d.colors.length===5),"100 designs numbered 1-100, unique ids, 5 rank colors each");
+ok(SG_DESIGNS.length===10,"10 goal designs");
+ok(TYPES.lb.pro&&TYPES.sgoal.pro,"types registered");
+console.log(f?`${f} FAILED`:"ALL PASS"); process.exit(f?1:0);

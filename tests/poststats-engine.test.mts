@@ -1,0 +1,33 @@
+import { newRoom, roomEvent, roomLive, roomTick } from "/home/claude/najd/arsh-live/src/engine/room.js";
+import { psSections, psDefaults, PS_TEMPLATES, psStatValue, PS_END_CONFIRM_MS } from "/home/claude/najd/arsh-live/src/engine/poststats.js";
+let f=0; const ok=(c:any,m:string)=>{ console.log((c?"PASS ":"FAIL ")+m); if(!c) f++ };
+const R:any=newRoom(); let t=1_800_000_000_000;
+// نشاط قبل البث لا يُحتسب في تقرير الجلسة
+roomEvent(R,{id:"pre1",type:"like",user:{id:"a",name:"علي"},count:500},t);
+roomLive(R,true,t); ok(R.C.session&&!R.C.session.done,"session starts on live");
+const sid=R.C.session.id;
+roomEvent(R,{id:"e1",type:"like",user:{id:"a",name:"علي"},count:100},t+1000);
+roomEvent(R,{id:"e2",type:"like",user:{id:"b",name:"سارة"},count:300},t+2000);
+roomEvent(R,{id:"e3",type:"gift",user:{id:"b",name:"سارة"},gift:"وردة",giftId:1,count:5,value:5,diamonds:1},t+3000);
+roomEvent(R,{id:"e4",type:"follow",user:{id:"c",name:"خالد"}},t+4000);
+roomEvent(R,{id:"e5",type:"like",user:{id:"z",name:"تجربة"},count:9999,test:true},t+4500);
+roomEvent(R,{id:"d1",type:"donation",provider:"streamlabs",name:"منى",amount:25,currency:"USD"},t+5000);
+roomEvent(R,{id:"d2",type:"donation",provider:"test",name:"تجربة",amount:999,currency:"USD",test:true},t+5100);
+// انقطاع قصير ثم عودة = نفس الجلسة
+roomLive(R,false,t+10000); ok(!roomTick(R,t+10000+30000).out.some((m:any)=>m.t==="report"),"no report during short disconnect");
+roomLive(R,true,t+50000); ok(R.C.session.id===sid&&!R.C.session.endingAt,"reconnect within window keeps same session");
+roomLive(R,false,t+3600000);
+const out=roomTick(R,t+3600000+PS_END_CONFIRM_MS+1).out, rm=out.find((m:any)=>m.t==="report"); ok(!!rm,"report emitted after confirmed end");
+const rep=rm.report; ok(out[0].t==="clock"&&out[0].C.reports[0].id===rep.id,"report stored in C.reports (archive)");
+ok(rep.totals.likes===400,"session-only likes (excludes pre-live 500 and test 9999): "+rep.totals.likes);
+ok(rep.totals.follows===1&&rep.totals.giftCount>=5,"follows & gifts counted");
+ok(rep.lists.likers[0].name==="سارة"&&rep.lists.likers[0].v===300&&rep.lists.likers[1].v===100&&rep.listsSessionOnly,"likers ranked by session delta (علي 100 not 600)");
+ok(rep.totals.donations===25&&rep.lists.donors[0].name==="منى","donations: real only, by currency "+rep.totals.donations);
+ok(rep.totals.views===null&&rep.totals.peakViewers===null,"unavailable metrics are null, not invented");
+ok(rep.durationMs===3600000,"duration ends at disconnect, not at confirm");
+ok(!roomTick(R,t+9e6).out.some((m:any)=>m.t==="report"),"report emitted only once");
+ok(PS_TEMPLATES.length>=35&&new Set(PS_TEMPLATES.map(x=>x.id)).size===PS_TEMPLATES.length,"35+ unique templates: "+PS_TEMPLATES.length);
+const o={...psDefaults(),lists:{supporters:3,donors:0,likers:5,sharers:0,commenters:0}}; const S=psSections(rep,o);
+ok(S.lists.map((l:any)=>l.k).join()==="supporters,likers"&&S.lists[1].rows.length===2,"list toggles / topN");
+ok(psStatValue(rep,"views")===null&&psSections(rep,{...o,showUnavailable:false,stats:{...o.stats,views:true}}).stats.every((s:any)=>s.v!=null),"hide-unavailable option");
+console.log(f?`${f} FAILED`:"ALL PASS"); if(f) process.exit(1);

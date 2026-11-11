@@ -1,0 +1,26 @@
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const url='file:///home/claude/najd/demo/index.html';
+(async()=>{
+ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) process.exitCode=1};
+ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+ const ctx=await b.newContext({viewport:{width:1440,height:1000}}); const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ await p.goto(url); await p.evaluate(()=>localStorage.clear()); await p.goto(url);
+ const ids=await p.evaluate(()=>{ const A=window.__arsh; A.L().widgets.length=0; const g=A.addWidget("sgoal",{source:"likes",x:.05,y:.05,w:.9,h:.12}); const l=A.addWidget("lb",{design:"basicColorful",source:"giftsDay",topN:3,x:.05,y:.3,w:.9,h:.3}); A.save(); A.pushLayout(); return [g.id,l.id] });
+ await p.evaluate(id=>{ S.sel=id },ids[0]); await p.click('.nav [data-go="studio"]'); await p.waitForTimeout(400);
+ await p.click(`[data-sgpreset="${ids[0]}"]`); await p.waitForTimeout(300);
+ ok(await p.evaluate(id=>window.__arsh.L().widgets.find(w=>w.id===id).stages,ids[0])==="1000,1500,2000,3000,5000",'like challenge preset: 5 stages');
+ const send=ev=>p.evaluate(ev=>window.__arsh.send({t:"sim",ev}),ev);
+ await send({id:"l1",type:"like",user:{id:"a",name:"a"},count:1250}); await p.waitForTimeout(500);
+ const pc=()=>p.evaluate(id=>document.querySelector(`#stage .wd[data-id="${id}"]`).innerText,ids[0]);
+ ok((await pc()).includes("2/5")&&(await pc()).includes("50%"),'level 2/5 at 1250 likes, 50% of 1000→1500 '+(await pc()).replace(/\n/g," "));
+ await send({id:"l2",type:"like",user:{id:"a",name:"a"},count:400}); await p.waitForTimeout(150);
+ ok(await p.evaluate(id=>document.querySelector(`#stage .wd[data-id="${id}"]`).classList.contains('lvup'),ids[0]),'level-up celebration on reaching 1500');
+ await send({id:"l3",type:"like",user:{id:"a",name:"a"},count:5000}); await p.waitForTimeout(500);
+ ok((await pc()).includes("5/5")&&(await pc()).includes("100%"),'all stages complete');
+ for(const [id,n,v] of [["x","فهد",500],["y","نورة",2000],["x","فهد",2000]]) await send({id:"g"+Math.random(),type:"gift",user:{id,name:n},gift:"أسد",giftId:1,count:1,value:v});
+ await p.waitForTimeout(1200);
+ const rows=await p.evaluate(id=>[...document.querySelectorAll(`#stage .wd[data-id="${id}"] .lr.r1 .lr-nm, #stage .wd[data-id="${id}"] .lr.r1 .lr-vl b`)].map(e=>e.textContent),ids[1]);
+ ok(rows[0]==="فهد"&&rows[1].replace(/,/g,"")==="2.5K"||rows[1]==="2,500",'Pro list source "top supporters of the day": فهد first with 2,500 '+JSON.stringify(rows));
+ ok(errs.length===0,'no page errors '+errs.join(' | '));
+ await b.close();
+})();

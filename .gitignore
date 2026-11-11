@@ -1,0 +1,7 @@
+node_modules/
+.next/
+*.zip
+shots/
+arsh-live/.env
+arsh-live/.env.*
+!arsh-live/.env.example

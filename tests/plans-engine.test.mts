@@ -1,0 +1,18 @@
+import { PLANS, effectivePlan, planCheck, extendPlan } from "/home/claude/najd/arsh-live/src/engine/plans.js";
+import { verifyStripe } from "/home/claude/najd/arsh-live/src/server/stripe-sig.ts";
+import { createHmac } from "crypto";
+let f=0; const ok=(c:any,m:string)=>{ console.log((c?"PASS ":"FAIL ")+m); if(!c) f++ };
+ok(PLANS.map(p=>p.price).join()==="0,5,15,30,60","prices $0/5/15/30/60");
+const now=Date.UTC(2026,10,10);
+ok(effectivePlan({plan:"pro",planUntil:new Date(now+864e5)},now).id==="pro","active paid plan");
+ok(effectivePlan({plan:"pro",planUntil:new Date(now-1)},now).id==="free","expired plan falls back to free");
+ok(planCheck({plan:"free"},"layouts",2,now)!==null&&planCheck({plan:"starter",planUntil:new Date(now+1e9)},"layouts",3,now)===null,"layout limits");
+ok(planCheck({plan:"free"},"tts",1,now)!==null&&planCheck({plan:"starter",planUntil:new Date(now+1e9)},"tts",1,now)===null,"feature flags");
+const e1=extendPlan({plan:"pro",planUntil:new Date(Date.UTC(2026,11,1))},"pro",1,now); ok(e1.planUntil.startsWith("2027-01-01"),"renewal extends from current end: "+e1.planUntil);
+const e2=extendPlan({plan:"free"},"elite",3,now); ok(e2.planUntil.startsWith("2027-02-10"),"new plan starts now (+3 months)");
+const sec="whsec_test", body='{"type":"checkout.session.completed"}', t=Math.floor(now/1000), sig=createHmac("sha256",sec).update(`${t}.${body}`).digest("hex");
+ok(verifyStripe(body,`t=${t},v1=${sig}`,sec,now),"valid Stripe signature accepted");
+ok(!verifyStripe(body+" ",`t=${t},v1=${sig}`,sec,now),"tampered body rejected");
+ok(!verifyStripe(body,`t=${t},v1=${sig}`,sec,now+600e3),"old timestamp rejected (replay)");
+ok(!verifyStripe(body,null,sec,now),"missing header rejected");
+console.log(f?`${f} FAILED`:"ALL PASS"); if(f) process.exit(1);

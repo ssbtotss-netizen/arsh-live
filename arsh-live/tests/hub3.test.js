@@ -1,0 +1,25 @@
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const { spawn } = require('child_process');
+(async()=>{
+ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) process.exitCode=1};
+ require('fs').rmSync('/tmp/hubdb.json',{force:true});
+ const srv=await new Promise(r=>{const p=spawn('/opt/npm-tools/node_modules/.bin/tsx',['hub-dev.ts'],{cwd:__dirname});p.stdout.on('data',d=>String(d).includes('ready')&&r(p))});
+ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+ const dash=await (await b.newContext({viewport:{width:1400,height:950}})).newPage(); const errs=[]; dash.on('pageerror',e=>errs.push(e.message));
+ await dash.goto('http://localhost:4555/'); await dash.click('.nav [data-go="live"]');
+ await dash.fill('[data-set="wsUrl"]','ws://localhost:4555/ws'); await dash.fill('[data-set="room"]','room_soc1'); await dash.fill('[data-set="key"]','secret-key');
+ await dash.click('[data-connect]'); await dash.waitForTimeout(600);
+ await dash.click('.nav [data-go="socials"]'); await dash.click('[data-soctab="display"]'); await dash.click('[data-soc-addw="ondemand"]'); await dash.waitForTimeout(300);
+ await dash.click('.nav [data-go="obs"]'); const href=await dash.locator('a[href*="#/overlay"]').first().getAttribute('href');
+ const obs=await (await b.newContext({viewport:{width:540,height:960}})).newPage(); obs.on('pageerror',e=>errs.push('obs '+e.message));
+ await obs.goto(href); await obs.waitForTimeout(700);
+ ok(await obs.locator('.so-social .sc').count()===0,'on-demand widget hidden until triggered');
+ const sc=await dash.evaluate(()=>window.__arsh.S.socials.accounts.find(a=>a.platform==='snapchat').id);
+ await dash.click('.nav [data-go="socials"]'); await dash.click('[data-soctab="display"]'); await dash.fill('#showSecs','3'); await dash.click(`[data-soc-show="${sc}"]`);
+ await obs.waitForTimeout(600);
+ ok(await obs.evaluate(id=>!!document.querySelector(`.so-social .sc[data-acc="${id}"]`),sc),'server relayed on-demand: Snapchat shown in separate OBS browser');
+ await obs.waitForTimeout(3500);
+ ok(await obs.locator('.so-social .sc').count()===0,'hidden again after 3 seconds with exit animation');
+ ok(errs.length===0,'no errors '+errs.join('|'));
+ await b.close(); srv.kill();
+})();
