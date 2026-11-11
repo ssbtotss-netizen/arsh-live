@@ -129,3 +129,12 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .bio-screen{height:700px;border-radius:28px;overflow:auto}.bio-screen .bio{min-height:100%}
 @media(max-width:1000px){.bio-ed{grid-template-columns:1fr}.bio-phone{position:relative}}
 .lib.pv-still .pv *,.lib.pv-still .pv *::before,.lib.pv-still .pv *::after{animation-play-state:paused!important}
+/* مكتبة الآيرتات */
+.al-card{display:flex;flex-direction:column}
+.al-th{position:relative;height:130px;border-radius:12px;overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;background:repeating-conic-gradient(#1a1f2e 0 25%,#141826 0 50%) 0 0/18px 18px;border:1px solid #ffffff14}
+.al-th img,.al-th video{width:100%;height:100%;object-fit:contain}
+.al-play{position:absolute;inset:auto 8px 8px auto;width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#ffcc00,#ff7a00);color:#111;display:flex;align-items:center;justify-content:center;font-size:13px;box-shadow:0 4px 14px #0008;transition:transform .2s}
+.al-th:hover .al-play{transform:scale(1.15)}
+.al-card:hover{border-color:#ffcc0055}
+.btn.sm.on{background:#ffcc0033;border-color:#ffcc00}
+.grid.g4{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}

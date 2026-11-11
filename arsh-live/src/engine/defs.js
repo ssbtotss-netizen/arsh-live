@@ -35,6 +35,7 @@ export const TYPES={
  uchat:{label:"الشات الموحد",icon:"💬",title:"",listens:[],board:false,chat:true},
  levent:{label:"آخر التفاعلات",icon:"✨",title:"",listens:[],board:false,le:true},
  falert:{label:"تنبيهات المتابعين",icon:"🦆",title:"",listens:[],board:false,fa:true},
+ abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
 };
 /** آخر دعم نصي: الإعدادات الافتراضية (نص فقط، شفاف 100%) */
@@ -108,6 +109,7 @@ export function newWidget(type,o={}){
  if(type==="nowplay"){Object.assign(base,{design:"glass",showBy:true,fontScale:1,accent:"",animOn:true,w:.36,h:.12})}
  if(type==="uchat"){Object.assign(base,{design:"glass",mode:"all",max:8,holdSec:0,dir:"bottom",enter:"right",showAv:true,showLogo:true,showTime:false,showEvents:true,dedupe:true,dedupeSec:30,banned:"",bannedAction:"mask",highlight:true,importantWords:"",importantGift:100,bgOpacity:.55,fontScale:1,font:"",rotateSec:8,animOn:true,w:.3,h:.5})}
  if(type==="falert"){Object.assign(base,faDefaultsLite())}
+ if(type==="abox"){Object.assign(base,{x:.1,y:.25,w:.8,h:.35,abEvents:[],abGap:600,abMax:30,abMerge:true,abHideTest:false})}
  if(type==="levent"){Object.assign(base,{design:"butterfly",kind:"follow",mode:"sticky",dur:5,layout:"",frame:"auto",card:"clear",palette:"",title:"",msg:"",showTitle:true,showMsg:true,showEmblem:true,showAv:true,w:.42,h:.3,glow:1,textScale:1,animOn:true,animSpeed:1,frameImg:"",defaultAv:""})}
  if(type==="fcount"){Object.assign(base,{design:"minimalGold",platform:"tiktok",accountId:"",handle:"",avatar:"",w:.46,h:.16,showHead:true,showAvatar:true,showName:true,showLogo:true,showNew:true,showUnit:true,showLast:false,goalOn:false,goal:10000,goalAuto:true,goalStep:0,goalStyle:"bar",numFmt:"full",numScale:1,color:"",animOn:true,animSpeed:1})}
  if(TYPES[type].don){Object.assign(base,{period:type==="donTop"?"week":"month",currency:"",goalId:"",order:"recent",hideAnon:false,speed:110,dir:"rtl",enter:"zoomIn",exit:"fade",enterMs:700,exitMs:500,showMessage:true,showSub:true,

@@ -54,6 +54,7 @@ export class View{
   if(T.bot){ this.applyBot(w,W,Hh,pad,gap); return }
   if(T.fc){ this.applyFc(w,W,Hh,pad,gap); return }
   if(T.fa){ this.applyFa(w,W,Hh); return }
+  if(T.abox){ this.applyAbox(w,W,Hh); return }
   if(T.le){ this.applyLe(w,W,Hh); return }
   if(T.chat){ this.applyChat(w,W,Hh); return }
   if(T.np){ this.applyNp(w,W,Hh); return }
@@ -109,6 +110,7 @@ export class View{
   if(t.pro) return this.refreshPro(src,silent);
   if(t.rules) return this.refreshRules(src,silent);
   if(t.bot) return;
+  if(t.abox) return;
   if(t.fc) return this.refreshFc(src,silent);
   if(t.le) return this.refreshLe(src,silent);
   if(t.chat) return;
@@ -331,6 +333,8 @@ export function deliver(views,msg,src){
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
  else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
  else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ v.chatLoad(msg.CH||[]); continue } v.refresh(src,true) } }
+ else if(msg.t==="alert"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxPush(msg.items) }
+ else if(msg.t==="alertctl"){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxCtl(msg.op) }
  else if(msg.t==="act"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.act) v.actPush(msg.items) }
  else if(msg.t==="bot"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.bot) v.botPush(msg.items) }
  else if(msg.t==="fx"&&msg.fx&&msg.fx.kind==="social"){ for(const v of views) if(TYPES[v.w.type]?.soc){ v.socFx(msg.fx); v.refresh(src) } }

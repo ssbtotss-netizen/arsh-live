@@ -12,6 +12,7 @@ import { sessionOnLive, sessionTick, sessionOnEvent } from "./poststats.js";
 import { actionsOnEvent, newActState, actLog } from "./actions.js";
 import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext } from "./music.js";
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
+import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual } from "./alerts.js";
 import { newClockState, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
 
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
@@ -29,7 +30,7 @@ export function roomEvent(R,ev,now){
   R.C.latest=R.C.latest||{}; latestOnEvent(R.C.latest,ev,now);
   R.CHAT=R.CHAT||[]; chatPush(R.CHAT,ev);
   const out=[{t:"event",ev}], logs=ev.type==="donation"?subathonOnDonation(R.C.subathon,ev,now):[]; keep(R,logs); if(logs.length) out.push({t:"clock",C:R.C,now,logs});
- roomActions(R,ev,now,out); botOut(R,ev,now,out); return {out,logs} }
+ roomActions(R,ev,now,out); roomAlerts(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
  if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>8000){ const it=R.seen.keys(); for(let i=0;i<2000;i++) R.seen.delete(it.next().value) } }
  ev.t=ev.t||now;
  applyEvent(R.D,R.H,ev);
@@ -44,9 +45,15 @@ export function roomEvent(R,ev,now){
  roomActions(R,ev,now,out);
  if(ev.type==="follow"){ R.C.followers=R.C.followers||{}; if(followersOnEvent(R.C.followers,ev,now)&&!logs.length) out.push({t:"clock",C:R.C,now,logs:[],fc:"tiktok"}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
+ roomAlerts(R,ev,logs,now,out);
  botOut(R,ev,now,out);
  return {out,logs};
 }
+/** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
+function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
+function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
+  // القارئ الصوتي (اختياري لكل قاعدة): يمر عبر مركز البوتات — مفتاح خدمة الصوت يبقى على الخادم
+  const say=items.map(it=>{ const r=c.rules.find(x=>x.id===it.ruleId); if(!r||!r.over.tts||!r.over.ttsText) return null; const text=alFill(r.over.ttsText,it.vars).slice(0,200); return text?{id:"al_tts_"+it.id,kind:"reply",bot:"alerts",text,speech:text,show:false,say:true,user:{name:it.vars.display_name||""},at:now,test:!!it.test}:null }).filter(Boolean); if(say.length) out.push({t:"bot",items:say}) }catch(e){} }
 /** سياق البوتات: بيانات الغرفة الحقيقية + آخر تخطيط وحسابات من لوحة التحكم */
 function botCtx(R,now){ const c=R.botCtx||{}; return {now,D:R.D,H:R.H,C:R.C,DN:R.DN,DC:c.donCfg,layout:c.layout,socials:c.socials,live:R.live||!!c.forceLive,startedAt:R.C.timers.find(t=>t.id==="stream")?.startedAt||0} }
 function botOut(R,ev,now,out){ if(!R.botCfg) return; R.B=R.B||newBotState(); try{ const items=botsOnEvent(R.botCfg,R.B,ev,botCtx(R,now)); if(items.length) out.push({t:"bot",items}) }catch(e){ R.B.stats.errors++ } }
@@ -85,7 +92,11 @@ export function roomClockOp(R,m,now){
  let logs=[];
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(!musicOp(R.C.music,m,now,roomMusicCfg(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
- if(m.target==="subathon") logs=subathonOp(R.C.subathon,m,now);
+ if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
+  if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
+  if(m.op==="fire"){ const c=roomAlertCfg(R), items=c?alertsManual(c,R.AL,m.ruleId,now):[]; return {out:items.length?[{t:"alert",items}]:[],logs:[]} }
+  if(["skip","stop","replay","pause","resume"].includes(m.op)) return {out:[{t:"alertctl",op:m.op}],logs:[]}; return {out:[],logs:[]} }
+ if(m.target==="subathon"){ logs=subathonOp(R.C.subathon,m,now); keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}]; roomAlerts(R,null,logs,now,out); return {out,logs} }
  else if(m.target==="timers"){ // إضافة/حذف/ترتيب مؤقتات
   if(m.op==="create"){ if(R.C.timers.length<30) R.C.timers.push(newTimer(m.kind||"countdown",m.config||{})) }
   else if(m.op==="delete"){ if(m.id!=="stream") R.C.timers=R.C.timers.filter(t=>t.id!==m.id) }
@@ -103,11 +114,15 @@ export function roomTick(R,now){
 }
 /** حالة الاتصال بالبث: إيقاف/استكمال السبثون تلقائياً حسب الإعداد، وتشغيل مؤقت مدة البث */
 export function roomLive(R,live,now){
- const s=R.C.subathon, logs=[]; R.live=live; sessionOnLive(R,live,now);
+ const s=R.C.subathon, logs=[], was=!!R.live; R.live=live; sessionOnLive(R,live,now);
  if(!live&&s.pauseOnDisconnect&&s.status==="running") logs.push(...subathonOp(s,{op:"pause",auto:true},now));
  if(live&&s.autoPaused&&s.status==="paused") logs.push(...subathonOp(s,{op:"resume",auto:true},now));
  for(const t of R.C.timers) if(t.autoLive){ if(live&&t.status!=="running") timerOp(t,{op:t.status==="paused"?"resume":"start"},now); if(!live&&t.status==="running") timerOp(t,{op:"pause"},now) }
- keep(R,logs); return {out:[{t:"clock",C:R.C,now,logs}],logs};
+ keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}];
+ const gap=!R.liveOffAt||now-R.liveOffAt>5*60e3; if(!live&&was) R.liveOffAt=now;
+ if(!live&&was){ const c=roomAlertCfg(R); if(c){ const items=alertsOnEnd(c,R.AL,now); if(items.length) out.push({t:"alert",items}) } }
+ if(live&&!was&&gap){ const c=roomAlertCfg(R); if(c){ const items=alertsOnLive(c,R.AL,true,now); if(items.length) out.push({t:"alert",items}) } } // بداية جلسة جديدة فقط (لا عند إعادة اتصال قصيرة خلال 5 دقائق)
+ return {out,logs};
 }
 export function roomSnapshot(R,now){ if(R.C&&R.C.subathon) migrateRules(R.C.subathon); return {t:"snapshot",CH:(R.CHAT||[]).slice(-60),BS:R.B?{stats:R.B.stats,log:R.B.log.slice(0,60)}:null,D:R.D,H:R.H,C:R.C,DN:R.DN,logs:R.logs||[],now} }
 

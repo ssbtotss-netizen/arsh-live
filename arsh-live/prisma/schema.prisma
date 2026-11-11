@@ -41,6 +41,10 @@ model User {
   lastSeenAt     DateTime?
   subscriptions  Subscription[]
   streamSessions StreamSession[]
+  designerVerified Boolean   @default(false)   // شارة مصمم موثّق (من الإدارة فقط)
+  alerts         Alert[]
+  alertAssets    AlertAsset[]
+  alertUses      AlertUse[]
 }
 
 model Session {
@@ -271,4 +275,105 @@ model AppConfig {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// ---------------- سوق آيرتات المجتمع ----------------
+// الملفات تُحفظ في قاعدة البيانات (Postgres bytea) لأن قرص Render مؤقت — طبقة التخزين في server/alert-store.ts قابلة للاستبدال بـ S3/R2
+model AlertAsset {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  slot      String   // media | audio | cover
+  mime      String   // من فحص البايتات الفعلي (لا من الامتداد)
+  size      Int
+  sha256    String
+  data      Bytes
+  createdAt DateTime @default(now())
+  @@index([ownerId])
+}
+model Alert {
+  id              String    @id @default(cuid())
+  ownerId         String
+  owner           User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  name            String
+  description     String
+  kind            String    // video | gif | image | lottie | audio | template
+  event           String
+  durationSec     Int       @default(5)
+  mediaId         String?
+  audioId         String?
+  coverId         String?
+  config          Json      @default("{}")
+  visibility      String    @default("private") // الافتراضي خاص
+  review          String    @default("none")    // none | pending | approved | rejected
+  reviewNote      String?
+  rightsConfirmed Boolean   @default(false)
+  category        String    @default("other")
+  tags            String[]  @default([])
+  designerName    String    @default("")
+  uses            Int       @default(0)
+  likes           Int       @default(0)
+  favs            Int       @default(0)
+  ratingSum       Int       @default(0)
+  ratingCount     Int       @default(0)
+  reports         Int       @default(0)
+  removed         Boolean   @default(false)
+  publishedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  usesBy          AlertUse[]
+  reactions       AlertReaction[]
+  reportsBy       AlertReport[]
+  @@index([ownerId])
+  @@index([visibility, review, removed])
+}
+/** استخدام آيرت في بث مستخدم: نسخة إعدادات مستقلة لكل مستخدم — لا تعدّل الأصل */
+model AlertUse {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  alertId   String
+  alert     Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+  @@unique([userId, alertId])
+}
+/** تفاعل واحد لكل مستخدم لكل آيرت (يمنع التلاعب بالإعجابات والتقييم) */
+model AlertReaction {
+  id      String  @id @default(cuid())
+  userId  String
+  alertId String
+  alert   Alert   @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  like    Boolean @default(false)
+  fav     Boolean @default(false)
+  rating  Int     @default(0)
+  @@unique([userId, alertId])
+}
+model AlertReport {
+  id        String   @id @default(cuid())
+  alertId   String
+  alert     Alert    @relation(fields: [alertId], references: [id], onDelete: Cascade)
+  userId    String
+  reason    String
+  note      String   @default("")
+  status    String   @default("open") // open | resolved
+  createdAt DateTime @default(now())
+  @@unique([alertId, userId])
+}
+model DesignerFollow {
+  id         String   @id @default(cuid())
+  followerId String
+  designerId String
+  createdAt  DateTime @default(now())
+  @@unique([followerId, designerId])
+  @@index([designerId])
+}
+model AlertPack {
+  id          String   @id @default(cuid())
+  ownerId     String
+  name        String
+  description String   @default("")
+  alertIds    String[] @default([])
+  visibility  String   @default("private")
+  createdAt   DateTime @default(now())
+  @@index([ownerId])
 }

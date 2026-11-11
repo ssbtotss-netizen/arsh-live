@@ -2,7 +2,7 @@
 // رابط OBS / TikTok LIVE Studio: خلفية شفافة، تحديث لحظي من الخادم (أحداث + وقت السبثون/المؤقتات + تعديلات الاستوديو)
 import { Suspense, use, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { CANVASES, canvasOf, topsOnEvent, TYPES, View, deliver, migrateWidget, applyEvent, emptyData, newClockState, newWidget } from "@/lib/core";
+import { CANVASES, canvasOf, topsOnEvent, TYPES, View, deliver, migrateWidget, applyEvent, emptyData, newClockState, newWidget, aboxSetDefs } from "@/lib/core";
 
 export default function Page({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
@@ -46,10 +46,12 @@ function Overlay({ token }: { token: string }) {
       else if (m.t === "layout") {
         if (m.layout?.socials) st.SO = m.layout.socials; // تعديل الحسابات يظهر فوراً
         if (L && L.canvas !== "acc" && m.layout?.id === L.id) { L = m.layout; L.widgets.forEach(migrateWidget); layout(); }
+        if (m.layout?.bots?.alerts) loadBox();
         deliver(views.values(), { t: "snapshot" }, src()); return;
       }
       else if (m.t === "fx") { /* عرض حساب عند الطلب */ }
-      else return;
+      else if (m.t === "layout-alerts") { loadBox(); return; }
+      else if (!["bot", "act", "alert", "alertctl"].includes(m.t)) return; // ردود البوت، الإجراءات، وصندوق الآيرتات
       deliver(views.values(), m, src());
     }
     function connect() {
@@ -58,6 +60,10 @@ function Overlay({ token }: { token: string }) {
       ws.onmessage = e => { try { onMsg(JSON.parse(e.data)); } catch {} };
       ws.onclose = () => { if (!closed) retry = setTimeout(connect, Math.min(15000, 1000 * ++n)); }; // يعيد الاتصال ويستلم لقطة كاملة بلا تكرار
     }
+    // صندوق الآيرتات: التعريفات وروابط الملفات الموقّعة من الخادم (الآيرت الخاص لغيري لا يصل أبداً)
+    let boxT: any = null;
+    function loadBox() { clearTimeout(boxT); boxT = setTimeout(() => fetch(`/api/alerts/box/${token}`).then(r => r.json()).then(d => { if (d?.defs) aboxSetDefs(d.defs); }).catch(() => {}), 400); }
+    loadBox(); const boxRe = setInterval(loadBox, 6 * 3600e3);
     fetch(`/api/overlay/${token}?layout=${layoutId}`).then(r => r.json()).then(d => {
       if (!d.layout) return;
       L = d.layout; L.widgets.forEach(migrateWidget); big = d.settings.bigGift; fx = d.settings.fx; st.SO = d.socials;
@@ -66,7 +72,7 @@ function Overlay({ token }: { token: string }) {
     });
     const tick = setInterval(() => { for (const v of views.values()) if (TYPES[v.w.type]?.tick) v.refresh(src()); }, 250);
     addEventListener("resize", layout);
-    return () => { closed = true; clearTimeout(retry); clearInterval(tick); ws?.close(); removeEventListener("resize", layout); };
+    return () => { closed = true; clearTimeout(retry); clearInterval(tick); clearInterval(boxRe); ws?.close(); removeEventListener("resize", layout); };
   }, [token, layoutId, only, acc, ds]);
 
   return <div ref={stageRef} className="stage" style={{ background: "transparent" }} />;
