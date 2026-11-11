@@ -9,7 +9,7 @@ export async function GET(req: Request) {
   try {
     const mod: any = await import("tiktok-live-connector");
     const Conn = mod.TikTokLiveConnection ?? mod.WebcastPushConnection;
-    const opts: any = { processInitialData: false }; if (process.env.TIKTOK_SIGN_API_KEY) opts.signApiKey = process.env.TIKTOK_SIGN_API_KEY;
+    const opts: any = { processInitialData: false }; if (new URL(req.url).searchParams.get("ext") === "1") opts.enableExtendedGiftInfo = true; if (process.env.TIKTOK_SIGN_API_KEY) opts.signApiKey = process.env.TIKTOK_SIGN_API_KEY;
     const c = new Conn(u, opts);
     const st = await Promise.race([c.connect(), new Promise((_, r) => setTimeout(() => r(new Error("timeout 25s")), 25000))]) as any;
     try { c.disconnect(); } catch {}
