@@ -18,12 +18,15 @@ export function createConnectors(prisma: PrismaClient, svc: DonationService) {
       let io: any;
       try { io = (await import("socket.io-client")).default; } catch { setStatus(userId, "streamlabs", "مكتبة socket.io-client غير مثبتة"); return; }
       sock = io(`https://sockets.streamlabs.com?token=${encodeURIComponent(token)}`, { transports: ["websocket"], reconnection: true });
-      sock.on("connect", () => setStatus(userId, "streamlabs", "connected"));
-      sock.on("disconnect", () => !stopped && setStatus(userId, "streamlabs", "disconnected"));
+      sock.on("connect", () => { setStatus(userId, "streamlabs", "connected"); svc.log(userId, { step: "connected", provider: "streamlabs" }); });
+      sock.on("disconnect", (why: any) => { if (stopped) return; setStatus(userId, "streamlabs", "disconnected"); svc.log(userId, { step: "disconnected", provider: "streamlabs", detail: String(why || "") }); }); // socket.io يعيد الاتصال تلقائياً
+      sock.on("connect_error", (e: any) => { setStatus(userId, "streamlabs", "خطأ: " + String(e?.message || e).slice(0, 80)); svc.log(userId, { step: "error", provider: "streamlabs", detail: "تعذر الاتصال: " + String(e?.message || e).slice(0, 120) }); });
+      sock.on("error", (e: any) => { const s = String(e?.message || e); if (/unauth|invalid|token/i.test(s)) setStatus(userId, "streamlabs", "خطأ: الرمز غير صالح — أعد الربط"); svc.log(userId, { step: "error", provider: "streamlabs", detail: s.slice(0, 120) }); });
       sock.on("event", (e: any) => {
         if (e?.type !== "donation" || (e.for && e.for !== "streamlabs")) return;
         for (const m of Array.isArray(e.message) ? e.message : [e.message]) {
-          if (!m || m.isTest) continue; // تنبيهات الاختبار من Streamlabs لا تُحتسب كتبرعات حقيقية
+          if (!m) continue;
+          if (m.isTest) { svc.testEvent(userId, { provider: "streamlabs", providerId: String(m._id ?? m.id ?? Date.now()), name: m.name ?? m.from ?? "", amount: Number(m.amount), currency: m.currency ?? "USD", message: m.message ?? "" }); continue; } // «Test Donation» من Streamlabs: يحرك العناصر كتجربة ولا يُحتسب
           svc.record(userId, { provider: "streamlabs", providerId: String(m._id ?? m.id ?? m.donation_id ?? ""), name: m.name ?? m.from ?? "", amount: Number(m.amount), currency: m.currency ?? "USD", message: m.message ?? "" }).catch(() => {});
         }
       });

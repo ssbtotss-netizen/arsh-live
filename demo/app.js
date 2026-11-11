@@ -140,7 +140,7 @@ const SIM={
   if(w.source==="giftPoints") return sim({type:"gift",user:u,gift:GIFTS[4][0],giftId:GIFTS[4][2],diamonds:need,value:need,count:1});
   if(w.source==="giftCount") return sim({type:"gift",user:u,gift:GIFTS[0][0],giftId:GIFTS[0][2],diamonds:1,value:need,count:need});
   if(w.source==="likes") return sim({type:"like",user:u,count:need});
-  if(w.source==="donation") return sim({type:"donation",provider:"test",test:true,name:u.name,amount:need,currency:w.currency||S.donCfg.currency,message:"🎯"});
+  if(w.source==="donation"){ const G=sgGoal(w,SRC()); return sim({type:"donation",provider:"test",test:true,name:u.name,amount:need,currency:G?G.currency:(w.currency||S.donCfg.currency),message:"🎯"}) }
   const ty=w.source==="subs"?"subscribe":"follow"; for(let i=0;i<Math.min(need,200);i++) sim({type:ty,user:simUser(true)}) },
  gift:()=>gift(rnd(GIFTS.slice(0,6)),simUser()),
  biggift:()=>gift(GIFTS[6],simUser()),
@@ -169,7 +169,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","مكتبة الآيرتات","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","مكتبة الآيرتات","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -232,7 +232,7 @@ function proPropsHTML(w,sel,rng){
   <div class="row" style="margin-bottom:10px"><button class="btn sm pri" data-lib="${w.id}">🎨 مكتبة تصاميم القوائم</button><button class="btn sm" data-lb-save="${w.id}">💾 حفظ تصميمي</button><button class="btn sm" data-lb-default="${w.id}">↺ استعادة الافتراضي</button></div>` }
  const raw=sgProgress(w,SRC());
  return `${sel("source","نوع الهدف",SG_SOURCES,w.source)}${SG_AVAIL[w.source]?`<div class="note small">${SG_AVAIL[w.source]}</div>`:""}
-  ${w.source==="gift"?sel("giftKey","الهدية",giftOpts(),w.giftKey):""}${w.source==="donation"?sel("currency","العملة",[["","الافتراضية"],...Object.keys(CURRENCIES).map(c=>[c,c])],w.currency):""}
+  ${w.source==="gift"?sel("giftKey","الهدية",giftOpts(),w.giftKey):""}${w.source==="donation"?sel("goalId","🎯 مرتبط بهدف الدونيشن",[...(S.donCfg.goals||[]).map(g=>[g.id,"🎯 "+g.name+" ("+fmtMoney(g.target,g.currency)+")"]),["own","هدف مستقل داخل هذا العنصر (قديم)"]],w.goalId||(S.donCfg.goals[0]||{}).id)+`<div class="note small">كل تصاميم الهدف المرتبطة بنفس الهدف تتعبّى معاً من نفس المبلغ — المبلغ والعملة من صفحة الدونيشن ← الأهداف.</div>`+(w.goalId==="own"?sel("currency","العملة",[["","الافتراضية"],...Object.keys(CURRENCIES).map(c=>[c,c])],w.currency):""):""}
   <div class="grid g2" style="gap:8px">${inp("target","الهدف","number")}${inp("base",w.source==="custom"?"القيمة الحالية":"رصيد إضافي يدوي","number")}</div>
   ${inp("levelStages","مراحل التحدي (مثال: 1000,1500,2000,3000,5000) — فارغ = هدف واحد")}${raw.levels?`<div class="note small">المرحلة الحالية: <b>${raw.level}/${raw.levels}</b> — من ${sgFmt(w,raw.start,SRC())} إلى ${sgFmt(w,raw.tgt,SRC())}</div>`:""}<div class="row" style="margin-bottom:8px"><button class="btn sm" data-sgpreset="${w.id}">❤️ تحدي تكبيس جاهز (5 مراحل)</button></div>
   <div class="note small">الحالي: <b>${sgFmt(w,raw.cur,SRC())}</b> من ${sgFmt(w,raw.tgt,SRC())} (${Math.floor(raw.pct)}%)</div>
@@ -337,6 +337,7 @@ function renderPage(soft){
  else if(p==="alerts"){ h=alHTML() }
  else if(p==="donalerts"){ h=dnHTML() }
  else if(p==="layouts"){ h=lyHTML() }
+ else if(p==="dondiag"){ h=ddHTML() }
  else if(p==="music"){ h=musicHTML() }
  else if(p==="socials"){ h=socialsHTML() }
  else if(p==="donations"){ h=donationsHTML() }
@@ -483,7 +484,7 @@ function timersHTML(){
 /* ---- الدونيشن والتبرعات ---- */
 const DONTABS=[["overview","📊 لوحة الدونيشن"],["widgets","🧩 العناصر"],["goals","🎯 أهداف الدعم"],["alerts","🔔 التنبيهات"],["log","🧾 سجل التبرعات"],["providers","🔌 إعدادات الربط"],["settings","⚙️ الإعدادات"]];
 const CUR_OPTS=Object.entries(CURRENCIES).map(([k,c])=>[k,`${c.name} (${k})`]);
-function donSave(){ save(); pushLayout(); allViews().forEach(v=>{ if(TYPES[v.w.type]?.don) v.refresh(SRC()) }) }
+function donSave(){ save(); pushLayout(); allViews().forEach(v=>{ if(TYPES[v.w.type]?.don||v.w.type==="sgoal") v.refresh(SRC()) }) }
 function donPropsHTML(w,sel,rng){ const DC=S.donCfg; let h="";
  if(w.type==="donGoal") h+=sel("goalId","الهدف المعروض",DC.goals.map(g=>[g.id,g.name]),w.goalId||DC.goals[0]?.id);
  if(w.type==="donTop"||w.type==="donBoard"||(w.type==="donTicker"&&w.order==="top")) h+=sel("period","الفترة",PERIODS,w.period);
@@ -506,16 +507,20 @@ function donationsHTML(){
   <div class="grid g2">${donWidgetsOf(["donTicker","donGoal","donLatest","donText","donTop","donBoard","donAlert"]).map(w=>`<div class="card"><h3><span>${TYPES[w.type].icon} ${esc(w.name)}</span><span class="tag">${wdname(w)}</span></h3><div class="mut small">${w.type==="donTop"||w.type==="donBoard"?"الفترة: "+(PERIODS.find(p=>p[0]===w.period)||[])[1]+" · ":""}${w.currency||DC.currency}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-edit="${w.id}">تعديل في الاستوديو</button>${w.type==="donText"?"":`<button class="btn sm" data-lib="${w.id}">التصميم</button>`}<button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button><button class="btn sm" data-preview="${w.id}">👁 معاينة</button></div></div>`).join("")||'<div class="empty">لا توجد عناصر دونيشن في هذا المشهد</div>'}</div>
   <p class="mut small">أقوى داعم الأسبوع يُحسب بالمنطقة الزمنية وبداية الأسبوع من «الإعدادات». عند بداية شهر جديد يبدأ ترتيب جديد تلقائياً، وتبقى بيانات الأشهر السابقة في «جميع الأوقات» والسجل.</p>` }
  else if(t==="goals"){
-  body=`<div class="row" style="margin-bottom:12px"><button class="btn pri sm" data-goal-add>+ هدف جديد</button></div><div class="grid g2">${DC.goals.map(g=>{const p=goalProgress(g,R.DN,now); const inp=(f,l,v,type="text",attrs="")=>`<div class="fld" style="margin:0"><label>${l}</label><input class="inp" type="${type}" data-goal="${g.id}" data-gf="${f}" value="${esc(v??"")}" ${attrs}></div>`; const dtv=x=>x?new Date(x-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):"";
+  body=`<div class="row" style="margin-bottom:12px"><button class="btn pri sm" data-goal-add>+ هدف جديد</button></div><div class="grid g2">${DC.goals.map(g=>{const p=goalProgress(g,R.DN,now,DC.fx); const inp=(f,l,v,type="text",attrs="")=>`<div class="fld" style="margin:0"><label>${l}</label><input class="inp" type="${type}" data-goal="${g.id}" data-gf="${f}" value="${esc(v??"")}" ${attrs}></div>`; const dtv=x=>x?new Date(x-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):"";
    return `<div class="card"><h3><span>🎯 ${esc(g.name)}</span><span class="tag">${g.paused?"متوقف":p.reached?"✓ تحقق":Math.floor(p.pct)+"%"}</span></h3>
    <div class="gbar" style="height:12px;border-radius:999px;background:#ffffff1a;overflow:hidden;margin-bottom:8px"><i style="display:block;height:100%;width:${p.pct}%;background:linear-gradient(90deg,#1546c9,#6aa8ff)"></i></div>
-   <div class="mut small" style="margin-bottom:10px">${fmtMoney(p.current,g.currency)} / ${fmtMoney(p.target,g.currency)} · المتبقي ${fmtMoney(p.remaining,g.currency)}</div>
+   <div class="mut small" style="margin-bottom:10px">${fmtMoney(p.current,g.currency)} / ${fmtMoney(p.target,g.currency)} · المتبقي ${fmtMoney(p.remaining,g.currency)}${p.tests?` · <span title="التجارب تحرك الشريط ولا تُحتسب في الإجمالي الحقيقي">🧪 منها تجربة ${fmtMoney(p.tests,g.currency)}</span>`:""}${p.converted.length?` · 🔄 ${p.converted.length} دعم محوَّل من عملة أخرى`:""}${p.skipped?` · ⚠️ ${p.skipped} دعم بعملة بدون سعر صرف — حدّث الأسعار`:""}</div>
    <div class="grid g2" style="gap:8px">${inp("name","اسم الهدف",g.name)}${inp("target","المبلغ المستهدف",g.target,"number",'min="1"')}
    <div class="fld" style="margin:0"><label>العملة</label><select class="inp" data-goal="${g.id}" data-gf="currency">${CUR_OPTS.map(o=>`<option value="${o[0]}" ${g.currency===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>${inp("base","المبلغ الحالي (رصيد يدوي)",g.base,"number",'min="0"')}
    ${inp("startAt","تاريخ البداية",dtv(g.startAt),"datetime-local")}${inp("endAt","تاريخ النهاية",dtv(g.endAt),"datetime-local")}
    <div class="fld" style="margin:0"><label>احتساب التبرعات الجديدة تلقائياً</label><select class="inp" data-goal="${g.id}" data-gf="auto"><option value="1" ${g.auto?"selected":""}>نعم</option><option value="0" ${!g.auto?"selected":""}>لا — يدوي فقط</option></select></div>
-   <div class="fld" style="margin:0"><label>احتفال عند التحقيق</label><select class="inp" data-goal="${g.id}" data-gf="celebrate"><option value="1" ${g.celebrate!==false?"selected":""}>مفعّل</option><option value="0" ${g.celebrate===false?"selected":""}>متوقف</option></select></div></div>
+   <div class="fld" style="margin:0"><label>احتفال عند التحقيق</label><select class="inp" data-goal="${g.id}" data-gf="celebrate"><option value="1" ${g.celebrate!==false?"selected":""}>مفعّل</option><option value="0" ${g.celebrate===false?"selected":""}>متوقف</option></select></div>
+   <div class="fld" style="margin:0"><label>حركات الهدف (عدّ تدريجي، لمعة، نجوم)</label><select class="inp" data-goal="${g.id}" data-gf="anim"><option value="1" ${g.anim!==false?"selected":""}>مفعّلة</option><option value="0" ${g.anim===false?"selected":""}>متوقفة</option></select></div>
+   <div class="fld" style="margin:0"><label>إظهار الدعم الزائد عن الهدف</label><select class="inp" data-goal="${g.id}" data-gf="showOver"><option value="1" ${g.showOver!==false?"selected":""}>نعم</option><option value="0" ${g.showOver===false?"selected":""}>لا</option></select></div></div>
+   <p class="dn-hint">⚡ <b>التحديث التلقائي:</b> إذا وصلك دونيشن، بيتعبّى الهدف لحاله داخل البث. · 💱 <b>العملة:</b> الدعم بعملة ثانية يتحوّل لعملة الهدف بسعر موثوق — ما نجمع 10 ريال مع 10 دولار.</p>
    <div class="row" style="margin-top:10px"><button class="btn sm" data-goal-pause="${g.id}">${g.paused?"▶ استئناف":"⏸ إيقاف مؤقت"}</button><button class="btn sm dng" data-goal-reset="${g.id}">↺ إعادة ضبط</button>${DC.goals.length>1?`<button class="btn sm dng" data-goal-del="${g.id}">حذف</button>`:""}</div></div>` }).join("")}</div>
+  <div class="card" style="margin-top:12px"><h3>💱 أسعار الصرف للأهداف</h3><p class="dn-hint">${DC.fx&&DC.fx.source?`المصدر: ${esc(DC.fx.source)} — آخر تحديث: ${esc(DC.fx.at||"")}`:"حالياً: أسعار الربط الرسمية بالدولار فقط (ريال 3.75، درهم 3.6725، قطري 3.64، عُماني 0.3845، بحريني 0.376). العملات الأخرى لا تُحوَّل حتى تحدّث الأسعار."}</p>${CFG?`<button class="btn sm" data-goalfx>🔄 تحديث أسعار الصرف</button>`:""} <button class="btn sm pri" data-go="dondiag">🩺 فحص اتصال الدونيشن</button></div>
   <p class="mut small">إعادة الضبط تصفّر الرصيد اليدوي وتبدأ الاحتساب من الآن دون حذف أي تبرع. التبرعات المسترجعة تُخصم من الهدف تلقائياً.</p>` }
  else if(t==="alerts"){ const A=DC.alert;
   body=`<div class="grid g2"><div class="card"><h3>إعدادات التنبيه</h3><div class="grid g2" style="gap:8px">
@@ -555,6 +560,7 @@ function mountDonations(){}
 function donSim(amount,o={}){ const names=["محمد","خالد","عبدالله","سارة","نورة","فهد","ريم","تركي"]; const n=o.newName?rnd(names)+"_"+Math.floor(Math.random()*90+10):rnd(names);
  sim({type:"donation",provider:"test",test:true,name:n,amount:+amount,currency:S.donCfg.currency,message:o.msg||rnd(["كفو!","استمر 🔥","","لأجل البث 💙"]),anonymous:!o.newName&&Math.random()<.1}) }
 function donClick(t,d){
+ if(t.hasAttribute("data-goalfx")){ alApi("/api/fx").then(j=>{ if(j.error) return toast("تعذر جلب الأسعار"); S.donCfg.fx={rates:j.rates,source:j.source,at:j.updatedAt||new Date().toUTCString()}; donSave(); toast("✅ حُدّثت أسعار الصرف"+(j.fallback?" (أسعار الربط الرسمية فقط)":"")); renderPage(true) }); return true }
  if(d.dontab){ S.donTab=d.dontab; renderPage(); if(d.dontab==="providers"&&CFG) CFG.api("/api/donations/providers").then(r=>{ if(r.providers){ S.providers=r.providers; if(S.page==="donations"&&S.donTab==="providers") renderPage(true) } }); return true }
  if(d.donSim){ donSim(d.donSim,{newName:!!d.newname,msg:d.msg}); return true }
  if(t.hasAttribute("data-don-shuffle")){ const tops=donorTotals(R.DN,S.donCfg,{period:"all",now:Date.now()}); const pick=tops[1+Math.floor(Math.random()*Math.max(1,tops.length-1))]; if(pick&&tops[0]){ sim({type:"donation",provider:"test",test:true,name:pick.name,amount:Math.ceil(tops[0].v-pick.v+10),currency:S.donCfg.currency,message:"🔀"}) } else donSim(50); return true }
@@ -572,8 +578,9 @@ function donClick(t,d){
  if(d.pvOff&&CFG){ CFG.api("/api/donations/providers",{method:"PUT",body:{kind:d.pvOff,enabled:false}}).then(r=>{ S.providers=r.providers; renderPage(true) }); return true }
  return false }
 function donInput(t,d,e){ if(e.type!=="change") return false;
+ if(d.goal&&false){}
  if(d.goal){ const g=S.donCfg.goals.find(x=>x.id===d.goal); const f=d.gf; let v=t.value;
-  if(f==="target"||f==="base") v=Math.max(0,+v||0); else if(f==="auto"||f==="celebrate") v=v==="1"; else if(f==="startAt"||f==="endAt") v=v?new Date(v).getTime():null;
+  if(f==="target"||f==="base") v=Math.max(0,+v||0); else if(f==="auto"||f==="celebrate"||f==="anim"||f==="showOver") v=v==="1"; else if(f==="startAt"||f==="endAt") v=v?new Date(v).getTime():null;
   g[f]=v; donSave(); renderPage(true); return true }
  if(d.alert){ let v=t.value; if(["minAmount","durationSec"].includes(d.alert)) v=Math.max(0,+v||0); if(["showMessage","sound"].includes(d.alert)) v=v==="1"; S.donCfg.alert[d.alert]=v; donSave(); return true }
  if(d.tier!==undefined){ const x=S.donCfg.tiers[+d.tier]; x[d.tf]=d.tf==="min"?Math.max(0,+t.value||0):t.value; donSave(); return true }
@@ -934,6 +941,7 @@ function onClick(e){
  if(psClick(t,d)) return;
  if(billClick(t,d)) return;
  if(faClick(t,d)) return;
+ if(ddClick(t,d)) return;
  if(lyClick(t,d)) return;
  if(dnClick(t,d)) return;
  if(alClick(t,d)) return;
@@ -1757,6 +1765,46 @@ function faInput(t,d,e){
  if(d.fasound&&e.type==="change"){ const w=findW(d.fasound); faFile(t,1024*1024,u=>{ w.sound=u; save(); pushLayout(); renderPage(true) }); return true }
  if(t.hasAttribute("data-fatts")&&e.type==="change"){ S.bots.falert={...(S.bots.falert||{}),tts:t.value==="1"}; save(); pushLayout(); return true }
  if(t.hasAttribute("data-fattstext")&&e.type==="change"){ S.bots.falert={...(S.bots.falert||{}),text:t.value.slice(0,200)}; save(); pushLayout(); return true }
+ return false }
+
+// ====== 🩺 فحص اتصال الدونيشن ======
+function DDS(){ return S.dd||(S.dd={data:null,at:0,busy:false}) }
+function ddLoad(){ const D=DDS(); if(!CFG){ D.data={demo:true}; return } D.busy=true; alApi("/api/donations/diag").then(j=>{ D.busy=false; D.data=j; D.at=Date.now(); if(S.page==="dondiag") renderPage(true) }) }
+function ddGoalW(){ return L().widgets.find(w=>w.type==="donGoal"||(w.type==="sgoal"&&w.source==="donation")) }
+function ddHTML(){ const D=DDS(); if(!D.data&&!D.busy) ddLoad(); const j=D.data||{}, DC=S.donCfg, now=Date.now();
+ const prov=(j.providers||[]).filter(p=>p.enabled), conn=prov.filter(p=>p.status==="connected"), log=j.log||[], hub=j.hub||{};
+ const dash=(DC.goals||[]).map(g=>({g,p:goalProgress(g,R.DN,now,DC.fx)}));
+ // التشخيص: أول نقطة يتوقف عندها المسار
+ const checks=[];
+ if(!CFG) checks.push(["warn","وضع التجربة","الربط والفحص الحقيقي يعملان على المنصة بعد تسجيل الدخول. هنا تقدر تجرب حركة الشريط فقط."]);
+ else {
+  checks.push(!prov.length?["bad","🔌 مصدر الدونيشن","لا توجد خدمة دونيشن مربوطة — اربط Streamlabs من «💸 الدونيشن والآيرتات»."]:!conn.length?["bad","🔌 مصدر الدونيشن","الخدمة مفعّلة لكن غير متصلة: "+prov.map(p=>(AL_SERVICES[p.kind]||p.kind)+" ← "+(p.status||"جاري الاتصال")).join("، ")+". أعد الربط إذا كان الرمز غير صالح."]:["ok","🔌 مصدر الدونيشن","متصل: "+conn.map(p=>AL_SERVICES[p.kind]||p.kind).join("، ")+" · آخر مزامنة "+dnAgo(conn[0].lastSyncAt)]);
+  const rec=log.filter(e=>e.step==="received"), saved=log.filter(e=>e.step==="saved");
+  checks.push(rec.length?(saved.length?["ok","📥 استقبال الأحداث",`وصل ${rec.length} حدث منذ تشغيل الخادم، وحُفظ ${saved.length}.`+(log.some(e=>e.step==="duplicate")?" (المكرر رُفض تلقائياً)":"")]:["bad","📥 استقبال الأحداث","وصلت أحداث لكن لم يُحفظ أي منها — راجع السجل بالأسفل."]):j.lastDonation?["ok","📥 استقبال الأحداث","لا أحداث منذ آخر تشغيل للخادم. آخر دعم محفوظ "+dnAgo(j.lastDonation.createdAt)+"."]:["warn","📥 استقبال الأحداث","لم يصل أي دعم بعد. جرّب «Send Test Alert/Donation» من Streamlabs — يظهر هنا كتجربة."]);
+  const mism=(j.goals||[]).map(sg=>{ const dg=dash.find(x=>x.g.id===sg.id); return dg&&Math.abs(dg.p.real-sg.current)>0.01?sg.name:null }).filter(Boolean);
+  checks.push(mism.length?["bad","🧮 حساب الهدف","مبلغ لوحة التحكم يختلف عن الخادم في: "+mism.join("، ")+" — اضغط «مزامنة الهدف»."]:(j.goals||[]).some(g=>g.skipped)?["warn","🧮 حساب الهدف","يوجد دعم بعملة لا يوجد لها سعر صرف — حدّث الأسعار من صفحة الأهداف."]:["ok","🧮 حساب الهدف","المبلغ في الخادم = المبلغ في لوحة التحكم."]);
+  const ld=hub.lastDon; if(ld) checks.push(ld.sentTo===0?["warn","📡 وصول التحديث للبث",`آخر ${ld.test?"تجربة":"دعم"} (${dnAgo(ld.at)}) لم يكن عند وصوله أي رابط بث متصل — المبلغ محفوظ ويظهر عند فتح الرابط.`]:ld.confirmed>=ld.sentTo?["ok","📡 وصول التحديث للبث",`آخر ${ld.test?"تجربة":"دعم"} (${dnAgo(ld.at)}) وصل وأكّد استلامه ${ld.confirmed} من ${ld.sentTo} رابط بث${ld.goal!=null?" — الهدف عند "+ld.goal+"%":""}.`]:["bad","📡 وصول التحديث للبث",`آخر ${ld.test?"تجربة":"دعم"} أُرسل إلى ${ld.sentTo} رابط بث، وأكّد استلامه ${ld.confirmed} فقط. الرابط غير المؤكد غالباً نسخة قديمة مفتوحة — أعد تحميل المصدر في برنامج البث (Refresh cache of current page).`]);
+  checks.push(hub.overlays>0?["ok","📺 روابط البث",`${hub.overlays} رابط بث متصل الآن (OBS / LIVE Studio).`]:["bad","📺 روابط البث","لا يوجد رابط بث متصل الآن — تأكد أن رابط OBS مضاف كمصدر متصفح ومفتوح في OBS أو TikTok LIVE Studio."]);
+ }
+ const ic={ok:"✅",warn:"⚠️",bad:"❌"}, first=checks.find(c=>c[0]==="bad");
+ const steps={received:"📥 وصل",saved:"💾 حُفظ وأُرسل للبث",duplicate:"♻️ مكرر — رُفض",rejected:"⛔ مرفوض",error:"❌ خطأ",test:"🧪 تجربة من المزوّد",connected:"🟢 اتصل",disconnected:"🔌 انقطع (إعادة اتصال تلقائية)",dispatched:"📡 أُرسل لروابط البث",no_overlays:"📴 لا رابط بث متصل",duplicate_live:"♻️ مكرر في البث — تجاهل"};
+ const gw=ddGoalW();
+ return head("🩺 فحص اتصال الدونيشن","يوضح أين يتوقف التحديث: مصدر الدونيشن ← معالجة المبلغ ← رابط البث",`<button class="btn" data-ddcheck>🔄 فحص الاتصال</button>`)+
+ `<div class="card dd-verdict ${first?"bad":"ok"}"><b>${first?"المشكلة في: "+first[1]:CFG?"✅ المسار كامل يعمل":"وضع التجربة"}</b><p class="small">${first?esc(first[2]):"أي دعم مؤكد يصل الآن يتحدث في الهدف وروابط البث مباشرة."}</p></div>
+ <div class="dd-checks">${checks.map(c=>`<div class="dd-c ${c[0]}"><span>${ic[c[0]]}</span><div><b>${c[1]}</b><p class="small">${esc(c[2])}</p></div></div>`).join("")}</div>
+ <div class="grid g2" style="align-items:start;margin-top:12px"><div class="card"><h3>🎯 الأهداف</h3>${dash.map(({g,p})=>{ const sg=(j.goals||[]).find(x=>x.id===g.id); return `<div class="dd-goal"><b>${esc(g.name)}</b><div class="gbar" style="height:10px;border-radius:9px;background:#ffffff1a;overflow:hidden;margin:6px 0"><i style="display:block;height:100%;width:${p.pct}%;background:linear-gradient(90deg,#22c55e,#a3e635)"></i></div><div class="small">لوحة التحكم: <b>${fmtMoney(p.current,g.currency)} / ${fmtMoney(p.target,g.currency)} — ${Math.floor(p.pct)}%</b>${p.tests?` (منها تجربة ${fmtMoney(p.tests,g.currency)})`:""}</div>${sg?`<div class="small mut">الخادم (حقيقي فقط): ${fmtMoney(sg.current,g.currency)} — ${sg.pct}%</div>`:""}</div>` }).join("")||`<div class="empty">لا توجد أهداف</div>`}
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:10px"><button class="btn pri" data-ddtest>🧪 إرسال دعم تجريبي $10</button><button class="btn" data-ddclear>🧹 مسح التجربة من الشريط</button><button class="btn" data-ddsync>🔄 مزامنة الهدف</button>${gw?`<button class="btn" data-ddcopy>📋 نسخ رابط OBS للهدف</button>`:`<button class="btn" data-ddadd>➕ إضافة هدف الدعم للمشهد</button>`}</div>
+  <p class="dn-hint">🧪 <b>تجربة الدعم:</b> تأكد إن الشريط يتحرك في برنامج البث قبل تبدأ. التجربة تحرك الشريط ولا تُحسب في إجمالي الدعم الحقيقي، وتختفي بـ«مسح التجربة» أو عند إعادة تشغيل الخادم.</p></div>
+ <div class="card"><h3>🧾 سجل الأحداث ${D.at?`<span class="mut small">· ${new Date(D.at).toLocaleTimeString("ar-SA")}</span>`:""}</h3>${j.lastDonation?`<p class="small">آخر دعم محفوظ: <b>${fmtMoney(j.lastDonation.amount,j.lastDonation.currency)}</b> من ${esc(j.lastDonation.name||"مجهول")} عبر ${esc(AL_SERVICES[j.lastDonation.provider]||j.lastDonation.provider)} — ${dnAgo(j.lastDonation.createdAt)}</p>`:""}
+  ${j.lastError?`<p class="note small">آخر خطأ: ${esc(j.lastError.detail||"")} — ${dnAgo(j.lastError.at)}</p>`:""}
+  <div class="dd-log">${log.length?log.map(e=>`<div><span class="mut">${new Date(e.at).toLocaleTimeString("ar-SA")}</span> ${steps[e.step]||e.step} ${e.provider?esc(AL_SERVICES[e.provider]||e.provider):""} ${e.amount?`<b>${esc(e.amount)} ${esc(e.currency||"")}</b>`:""} ${e.detail?`<span class="mut">${esc(e.detail)}</span>`:""}</div>`).join(""):`<div class="empty">${CFG?"لا أحداث منذ آخر تشغيل للخادم":"السجل يعمل على المنصة"}</div>`}</div></div></div>` }
+function ddClick(t,d){ if(S.page!=="dondiag") return false; const D=DDS();
+ if(t.hasAttribute("data-ddcheck")){ D.data=null; ddLoad(); renderPage(true); toast("🔄 جاري الفحص…"); return true }
+ if(t.hasAttribute("data-ddtest")){ const g=(S.donCfg.goals||[])[0]; setTimeout(()=>ddLoad(),2500); send({t:"sim",ev:{type:"donation",id:"sim_"+Date.now(),provider:"test",test:true,name:"تجربة الهدف",amount:10,currency:"USD",message:"🧪"}}); toast("🧪 أُرسل دعم تجريبي $10 — راقب الشريط في OBS/LIVE Studio"); setTimeout(()=>renderPage(true),400); return true }
+ if(t.hasAttribute("data-ddclear")){ send({t:"sim",ev:{type:"donation_clear_tests",id:"clr_"+Date.now()}}); toast("🧹 مُسحت التجارب من الشريط"); setTimeout(()=>renderPage(true),400); return true }
+ if(t.hasAttribute("data-ddsync")){ if(wsReady){ ws.send(JSON.stringify({t:"resync",room:S.settings.room})); pushLayout() } else { pushLayout(); for(const m of [{t:"snapshot"}]) deliver(allViews(),m,SRC()) } toast("🔄 تمت مزامنة الهدف مع كل الروابط"); setTimeout(()=>{ D.data=null; ddLoad() },800); return true }
+ if(t.hasAttribute("data-ddcopy")){ copy(overlayURL(L(),ddGoalW().id)); toast("🔗 نُسخ رابط OBS للهدف"); return true }
+ if(t.hasAttribute("data-ddadd")){ const n=addWidget("donGoal",{name:"هدف الدعم",goalId:(S.donCfg.goals[0]||{}).id}); applyPreset(n,"tc",CV()); save(); pushLayout(); renderPage(true); return true }
  return false }
 
 // ====== 🎬 مشاركة واستيراد تصاميم البث + 🎨 مكتبة تصاميم البث ======

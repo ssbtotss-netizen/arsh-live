@@ -19,6 +19,7 @@ export type HubOptions = {
   onLiveStatus?(room: string, live: boolean, text: string): void;
   onNotify?(room: string, m: any): void;
   onReport?(room: string, report: any): void;
+  onDonationDispatch?(room: string, ev: any, info: { dup: boolean; overlays: number }): void;
 };
 
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
@@ -53,7 +54,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   function dispatch(id: string, r: Room, ev: LiveEvent) {
     const before = r.H.length;
     const res = roomEvent(r, ev, Date.now());
-    if ((res as any).dup) return;
+    if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return; }
+    if (ev.type === "donation") { const ov = [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length; (r as any).lastDon = { id: ev.id, at: Date.now(), test: !!(ev as any).test, overlays: ov, acks: new Set() }; opt.onDonationDispatch?.(id, ev, { dup: false, overlays: ov }); }
     // أحداث التجربة لا تدخل سجل الهدايا الحقيقي في قاعدة البيانات
     if (ev.type === "gift" && !(ev as any).sim && r.H.length > before) opt.persistGift?.(id, r.H[r.H.length - 1]).catch(() => {});
     commit(id, r, res);
@@ -79,9 +81,14 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         send(ws, { t: "status", live: !!r.tiktok?.connected, canEdit: ws.canEdit });
         return;
       }
+      if (m.t === "hb") return send(ws, { t: "hb", now: Date.now() }); // نبضة من رابط OBS/LIVE Studio لاكتشاف الانقطاع
+      // تأكيد استلام من رابط البث: يثبت أن تحديث الدعم وصل فعلاً للمصدر (لوحة «فحص اتصال الدونيشن»)
+      if (m.t === "ack" && ws.room && typeof m.id === "string") { const r = rooms.get(ws.room); if (r && (r as any).lastDon && (r as any).lastDon.id === m.id) { (r as any).lastDon.acks.add(ws); (r as any).lastDon.goal = m.goal ?? (r as any).lastDon.goal; } return; }
       if (!ws.room) return;
       const id = ws.room, r = rooms.get(id)!;
       if (!ws.canEdit) return send(ws, { t: "status", text: "هذا الاتصال للقراءة فقط" });
+      // «مزامنة الهدف»: لقطة كاملة جديدة لكل روابط البث المتصلة (نفس القيمة في كل مكان)
+      if (m.t === "resync") { const r = rooms.get(ws.room); if (r) { const snap = roomSnapshot(r, Date.now()); r.clients.forEach(c => send(c, snap)); r.layouts.forEach(layout => r.clients.forEach(c => send(c, { t: "layout", layout }))); send(ws, { t: "status", text: `🔄 تمت المزامنة مع ${[...r.clients].filter(c => !c.canEdit).length} رابط بث` }); } return; }
 
       if (m.t === "sim" && m.ev) {
         m.ev.sim = true; delete m.ev.verified; // «مؤكد» يأتي من الخادم فقط (خدمة الدونيشن) — لا من المتصفح
@@ -150,5 +157,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   const ping = setInterval(() => wss.clients.forEach((c: Client) => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);
   wss.on("close", () => { clearInterval(ping); clearInterval(tick); });
 
-  return { rooms, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); } };
+  /** للتشخيص: عدد روابط البث (قراءة فقط) واللوحات المتصلة بالغرفة */
+  function stats(room: string) { const r = rooms.get(room); if (!r) return { loaded: false, overlays: 0, dashboards: 0 }; const cs = [...r.clients].filter(c => c.readyState === 1); const ld = (r as any).lastDon; return { loaded: true, overlays: cs.filter(c => !c.canEdit).length, dashboards: cs.filter(c => c.canEdit).length, donations: (r.DN?.list || []).filter((d: any) => !d.test).length, lastDon: ld ? { id: ld.id, at: ld.at, test: ld.test, sentTo: ld.overlays, confirmed: [...ld.acks].filter((c: any) => c.readyState === 1).length, goal: ld.goal ?? null } : null }; }
+  return { rooms, stats, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
 }

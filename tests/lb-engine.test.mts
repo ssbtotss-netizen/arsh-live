@@ -30,7 +30,7 @@ ok(sgProgress(newWidget("sgoal",{source:"likes",target:2000}),src).cur===1050,"l
 ok(sgProgress(newWidget("sgoal",{source:"giftPoints",target:1e6}),src).cur===D.tot.gifts,"gift points goal");
 ok(sgProgress(newWidget("sgoal",{source:"custom",base:4,target:10}),src).cur===4,"custom goal manual");
 ok(sgProgress(newWidget("sgoal",{source:"donation",target:100}),{...src,DN,DC}).cur===50,"donation goal");
-ok(sgProgress(newWidget("sgoal",{source:"donation",target:100,since:Date.now()+1000}),{...src,DN,DC}).cur===0,"donation goal from now");
+ok(sgProgress(newWidget("sgoal",{source:"donation",goalId:"own",target:100,since:Date.now()+1000}),{...src,DN,DC}).cur===0,"donation goal from now (own goal; linked goals use the central goal start)");
 // التوجيه: كل عنصر يستقبل أحداث مصدره فقط
 const lbL=newWidget("lb",{source:"likes"}), lbG=newWidget("lb",{source:"gift"}), sgF=newWidget("sgoal",{source:"follows"});
 ok(proAffects(lbL,{type:"like"})&&!proAffects(lbL,{type:"gift"}),"likes list ignores gifts");

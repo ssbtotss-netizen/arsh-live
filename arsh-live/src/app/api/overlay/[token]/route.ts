@@ -11,7 +11,7 @@ export async function GET(req: Request, ctx: { params: Promise<{ token: string }
   if (!l) return NextResponse.json({ error: "no layout" }, { status: 404 });
   const s: any = u.settings || {};
   return NextResponse.json(
-    { layout: { id: l.id, name: l.name, canvas: l.canvas, widgets: l.widgets }, settings: { bigGift: s.bigGift ?? 1000, fx: s.fx !== false }, socials: u.socials || {} },
+    { layout: { id: l.id, name: l.name, canvas: l.canvas, widgets: l.widgets }, settings: { bigGift: s.bigGift ?? 1000, fx: s.fx !== false }, socials: u.socials || {}, donCfg: u.donCfg || {} },
     { headers: { "cache-control": "no-store" } }
   );
 }

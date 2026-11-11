@@ -3,6 +3,7 @@
 import { entries } from "./leaderboard.js";
 import { donorTotals, defaultDonCfg, fmtMoney } from "./donations.js";
 
+import { goalProgress } from "./donations.js";
 export const LB_SOURCES=[["gifts","نقاط هدايا TikTok (هذا البث)"],["giftsDay","أقوى داعمي اليوم (هدايا TikTok)"],["giftsWeek","أقوى داعمي الأسبوع"],["giftsMonth","أقوى داعمي الشهر"],["giftCount","عدد هدايا TikTok"],["gift","هدية TikTok محددة"],["likes","التكبيس (الإعجابات)"],["donations","الدونيشن المالي"],["interact","أكثر المتفاعلين"],["comments","أكثر المعلقين"]];
 export const LB_CATS={circle:"الدائرية والهالات",cloud:"السحابية والحالمة",royal:"الملكية والفاخرة",neon:"النيون والألعاب",glass:"الزجاجية والكريستالية",d3:"ثلاثية الأبعاد",mini:"الصغيرة والأنيقة"};
 export const RANK_COLORS=["#f5c542","#cfd8e3","#d08a52","#2f7bff","#9b5cff"];
@@ -793,17 +794,21 @@ export function sgRaw(w,src){
   case "likes": return t.likes||0; case "giftPoints": return t.gifts||0; case "giftCount": return t.giftCount||0;
   case "gift": return (D.giftTot||{})[String(w.giftKey||"")]||0;
   case "follows": return t.follows||0; case "subs": return t.subs||0; case "share": return t.shares||0;
-  case "donation": { const DN=src.DN||{list:[]}, DC=src.DC||defaultDonCfg(), cur=w.currency||DC.currency; let s=0; for(const d of DN.list) if(d.currency===cur&&d.t>=(w.since||0)) s+=Math.max(0,d.amount-(d.refunded||0)); return s }
+  // هدف مستقل داخل العنصر: نفس حاسبة الأهداف المركزية (تحويل عملات موثوق، المؤكد فقط) — كان يتجاهل أي دعم بعملة غير عملة اللوحة الافتراضية
+  case "donation": { const DN=src.DN||{list:[]}, DC=src.DC||defaultDonCfg(); const g={id:"own:"+w.id,target:Math.max(.01,+w.target||1),currency:w.currency||DC.currency,base:0,auto:true,countedFrom:+w.since||0}; return goalProgress(g,DN,Date.now(),DC.fx).current }
  }
  return 0;
 }
-export function sgProgress(w,src){ const raw=w.source==="donation"?sgRaw(w,src):Math.max(0,sgRaw(w,src)-(+w.offset||0)); const cur=(+w.base||0)+(w.source==="custom"?0:raw);
+/** هدف الدونيشن المركزي المرتبط بالعنصر (كل تصاميم الأهداف تقرأ نفس المصدر). «own» = هدف مستقل قديم داخل العنصر */
+export function sgGoal(w,src){ if(w.source!=="donation"||w.goalId==="own") return null; const DC=src.DC||defaultDonCfg(); return (DC.goals||[]).find(g=>g.id===w.goalId)||(DC.goals||[])[0]||null }
+export function sgProgress(w,src){ const G=sgGoal(w,src); if(G){ const DC=src.DC||defaultDonCfg(), p=goalProgress(G,src.DN||{list:[]},Date.now()+(src.skew||0),DC.fx); return {cur:p.current,tgt:p.target,pct:p.pct,done:p.reached,goal:G,over:p.over} }
+ const raw=w.source==="donation"?sgRaw(w,src):Math.max(0,sgRaw(w,src)-(+w.offset||0)); const cur=(+w.base||0)+(w.source==="custom"?0:raw);
  // مراحل التحدي (levelStages — منفصلة عن w.stages الخاصة بنسب تصاميم الأهداف المرئية): «1000,1500,2000» — التقدم يُحسب من بداية المرحلة الحالية إلى هدفها
  const st=String(w.levelStages||"").split(/[,،\s]+/).map(Number).filter(n=>n>0).sort((a,b)=>a-b);
  if(st.length){ let i=st.findIndex(n=>cur<n); const done=i<0; if(done) i=st.length-1; const tgt=st[i], start=done?0:(i?st[i-1]:0);
   return {cur,tgt,start,level:done?st.length:i+1,levels:st.length,pct:done?100:Math.min(100,Math.max(0,(cur-start)/Math.max(1,tgt-start)*100)),done} }
  const tgt=Math.max(1,+w.target||1); return {cur,tgt,pct:Math.min(100,cur/tgt*100),done:cur>=tgt} }
-export function sgFmt(w,v,src){ if(w.source==="donation"){ const DC=src.DC||defaultDonCfg(); return fmtMoney(v,w.currency||DC.currency) } return Math.floor(v).toLocaleString("en-US") }
+export function sgFmt(w,v,src){ if(w.source==="donation"){ const DC=src.DC||defaultDonCfg(), G=sgGoal(w,src); return fmtMoney(v,G?G.currency:(w.currency||DC.currency)) } return Math.floor(v).toLocaleString("en-US") }
 
 /** مصدر الأحداث لكل عنصر Pro — كل قائمة تستقبل أحداث مصدرها فقط */
 const LB_LISTEN={giftsDay:["gift"],giftsWeek:["gift"],giftsMonth:["gift"],gifts:["gift"],giftCount:["gift"],gift:["gift"],likes:["like"],comments:["comment"],interact:["like","gift","comment"],donations:["donation","donation_refund","donation_session","donation_clear_tests"]};

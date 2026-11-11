@@ -20,6 +20,7 @@ const { spawn } = require('child_process');
  // forged refund of a non-test id is ignored
  await dash.evaluate(()=>window.__arsh.send({t:'sim',ev:{type:'donation_refund',id:'moyasar:pay_x'}})); await dash.waitForTimeout(200); ok(true,'forged refund of real donation ignored by server');
  // OBS disconnect/reconnect keeps goal
+ await obs.waitForTimeout(1100);
  const g1=await obs.locator('.wd.t-donGoal .ck-time').textContent();
  await obs.evaluate(()=>{ /* simulate network drop */ }); await obs.reload(); await obs.waitForTimeout(800);
  ok((await obs.locator('.wd.t-donGoal .ck-time').textContent())===g1,'OBS reload resyncs goal from server snapshot: '+g1);

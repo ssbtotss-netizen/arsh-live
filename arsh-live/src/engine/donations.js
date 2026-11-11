@@ -3,6 +3,7 @@
 // كل تبرع له معرّف ثابت (المزوّد + معرّف العملية) يمنع احتسابه مرتين، والاسترجاع يُخصم من الإحصائيات والأهداف.
 
 export const CURRENCIES={SAR:{sym:"ر.س",name:"ريال سعودي",dec:2},USD:{sym:"$",name:"دولار",dec:2},EUR:{sym:"€",name:"يورو",dec:2},AED:{sym:"د.إ",name:"درهم",dec:2},KWD:{sym:"د.ك",name:"دينار كويتي",dec:3},QAR:{sym:"ر.ق",name:"ريال قطري",dec:2},BHD:{sym:"د.ب",name:"دينار بحريني",dec:3},OMR:{sym:"ر.ع",name:"ريال عماني",dec:3},GBP:{sym:"£",name:"جنيه",dec:2}};
+import { alConvert } from "./alerts.js";
 export const PROVIDERS={
  moyasar:{name:"ميسّر Moyasar",kind:"صفحة تبرع + Webhook",supported:true,note:"مزود دفع سعودي: مدى، Apple Pay، STC Pay، البطاقات. التبرع يُحتسب بعد التحقق من حالة الدفع paid عبر API ميسّر، والاسترجاع يصل عبر Webhook."},
  streamlabs:{name:"Streamlabs",kind:"Socket API الرسمي",supported:true,note:"يتطلب Socket API Token من إعدادات Streamlabs. يصل حدث donation فقط بعد إتمام الدفع. لا يرسل Streamlabs أحداث الاسترجاع عبر هذا الاتصال."},
@@ -64,11 +65,17 @@ export function donorTotals(DN,cfg,o){
  return Object.values(m).filter(r=>!(o.hideAnon&&r.anon)).sort((a,b)=>b.v-a.v);
 }
 export function recentDonations(DN,cfg,o={}){ return DN.list.filter(d=>net(d)>0&&(!o.currency||d.currency===o.currency)&&!(o.hideAnon&&(d.anonymous||!d.name))).slice(-(o.limit||20)).reverse() }
-export function goalProgress(g,DN,now){
- let cur=+g.base||0;
- if(g.auto&&!g.paused) for(const d of DN.list){ if(d.currency!==g.currency) continue; if(g.startAt&&d.t<g.startAt) continue; if(g.endAt&&d.t>g.endAt) continue; if(g.countedFrom&&d.t<g.countedFrom) continue; cur+=net(d) }
- const target=Math.max(0.01,+g.target||1);
- return {current:Math.round(cur*100)/100,target,pct:Math.min(100,cur/target*100),remaining:Math.max(0,target-cur),reached:cur>=target};
+/**
+ * تقدم الهدف من مصدر واحد (قائمة الدونيشن المؤكدة في الغرفة) — كل تصاميم الهدف تقرأ نفس النتيجة.
+ * عملة مختلفة عن عملة الهدف تُحوَّل بسعر موثوق (الربط الرسمي أو أسعار محفوظة مع وقتها) — لا نجمع 10 ريال مع 10 دولار كأنها نفس القيمة.
+ */
+export function goalProgress(g,DN,now,rates){
+ let cur=+g.base||0, real=+g.base||0, tests=0, skipped=0; const conv=[];
+ if(g.auto&&!g.paused) for(const d of DN.list){ const dt=+d.t||0; if(g.startAt&&dt<g.startAt) continue; if(g.endAt&&dt>g.endAt) continue; if(g.countedFrom&&dt<g.countedFrom) continue;
+  let v=net(d); if(d.currency!==g.currency){ const c=alConvert(v,d.currency,g.currency,rates&&rates.rates); if(c==null){ skipped++; continue } conv.push({id:d.id,from:d.currency,amount:v,to:c}); v=c }
+  cur+=v; if(d.test) tests+=v; else real+=v }
+ const target=Math.max(0.01,+g.target||1), c2=Math.round(cur*100)/100;
+ return {current:c2,real:Math.round(real*100)/100,tests:Math.round(tests*100)/100,over:Math.max(0,Math.round((cur-target)*100)/100),target,pct:Math.min(100,cur/target*100),rawPct:cur/target*100,remaining:Math.max(0,target-cur),reached:cur>=target,converted:conv,skipped,rateSrc:rates&&rates.source||"",rateAt:rates&&rates.at||""};
 }
 /** الإحصائيات المالية: التبرعات المؤكدة فقط، بدون التجريبية، ولكل عملة على حدة */
 export function donationStats(DN,cfg,now){

@@ -169,15 +169,23 @@ export class View{
  // ---------- الدونيشن ----------
  refreshGoal(src,silent){ const q=this.q; if(!q) return; const DC=src.DC||defaultDonCfg(), w=this.w;
   const g=(DC.goals||[]).find(x=>x.id===w.goalId)||(DC.goals||[])[0]; if(!g){ q.t.textContent="أضف هدفاً"; return }
-  const p=goalProgress(g,src.DN||{list:[]},Date.now()+(src.skew||0));
-  const txt=`${fmtMoney(p.current,g.currency)} / ${fmtMoney(p.target,g.currency)}`;
-  if(q.time.textContent!==txt){ q.time.textContent=txt; if(this.lastGoal!==undefined&&p.current>this.lastGoal&&!this.el.classList.contains("no-fx")){ this.el.classList.remove("pulse"); void this.el.offsetWidth; this.el.classList.add("pulse") } }
+  const p=goalProgress(g,src.DN||{list:[]},Date.now()+(src.skew||0),DC.fx);
+  const fxOn=!this.el.classList.contains("no-fx")&&g.anim!==false&&!silent, prev=this.lastGoal, inc=prev!==undefined&&p.current>prev;
+  const show=v=>`${fmtMoney(v,g.currency)} / ${fmtMoney(p.target,g.currency)}`;
+  // عدّ تدريجي للمبلغ + لمعة تمر على الشريط + نجوم للدعم الكبير — بدون إعادة حركة دخول العنصر
+  if(inc&&fxOn){ cancelAnimationFrame(this.goalRaf); const from=prev, to=p.current, t0=performance.now(), D=900;
+   const step=t=>{ const k=Math.min(1,(t-t0)/D), e=1-Math.pow(1-k,3); q.time.textContent=show(Math.round((from+(to-from)*e)*100)/100); if(k<1) this.goalRaf=requestAnimationFrame(step) }; this.goalRaf=requestAnimationFrame(step);
+   this.el.classList.remove("pulse","gshine"); void this.el.offsetWidth; this.el.classList.add("pulse","gshine");
+   if(to-from>=p.target*.2) this.goalStars(); }
+  else q.time.textContent=show(p.current);
   this.lastGoal=p.current;
   q.t.textContent=(w.title&&w.title!==TYPES.donGoal.title?w.title:"🎯 "+g.name)+(g.paused?" (متوقف)":"");
-  q.sub.textContent=p.reached?"✓ تم تحقيق الهدف!":`${Math.floor(p.pct)}% · المتبقي ${fmtMoney(p.remaining,g.currency)}`;
-  q.bar.style.width=p.pct+"%"; q.prg.style.strokeDasharray=`${p.pct} 100`; this.el.classList.toggle("ended",false);
+  q.sub.textContent=p.reached?(p.over>0&&g.showOver!==false?`✓ تم تحقيق الهدف! +${fmtMoney(p.over,g.currency)} فوق الهدف`:"✓ تم تحقيق الهدف!"):`${Math.floor(p.pct)}% · المتبقي ${fmtMoney(p.remaining,g.currency)}`;
+  q.bar.style.width=p.pct+"%"; q.prg.style.strokeDasharray=`${p.pct} 100`; this.el.style.setProperty("--gp",(p.pct/100).toFixed(4)); this.el.classList.toggle("ended",false);
+  this.el.dataset.goal=p.current; this.el.dataset.pct=Math.floor(p.pct);
   if(p.reached&&this.goalReached===false&&!silent&&g.celebrate!==false) this.burst({user:{name:"🎉"},gift:"تم تحقيق الهدف",value:p.target,goal:g});
   this.goalReached=p.reached }
+ goalStars(){ const box=document.createElement("div"); box.className="g-stars"; let h=""; for(let i=0;i<14;i++) h+=`<i style="left:${Math.random()*100}%;top:${20+Math.random()*60}%;animation-delay:${(Math.random()*.4).toFixed(2)}s">✦</i>`; box.innerHTML=h; this.el.appendChild(box); setTimeout(()=>box.remove(),1600) }
  donChip(d,DC,label,mainText){ const ds=this.dsg||SOCIAL_DESIGNS[0], tr=tierFor(DC,d.amount), w=this.w;
   const name=displayName(d,DC), av=(!d.anonymous&&d.avatar)?`<span class="av2"><img src="${esc(d.avatar)}" alt=""></span>`:"";
   ensureCSS(); const dd=designOf(ds.id);

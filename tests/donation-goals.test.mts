@@ -1,0 +1,31 @@
+import { goalProgress, newGoal, applyDonation, emptyDonations, defaultDonCfg } from "/home/claude/najd/arsh-live/src/engine/donations.js";
+import { sgProgress } from "/home/claude/najd/arsh-live/src/engine/lb.js";
+import { newRoom, roomEvent } from "/home/claude/najd/arsh-live/src/engine/room.js";
+let f=0; const ok=(c:any,m:string)=>{ console.log((c?"PASS ":"FAIL ")+m); if(!c) f++ };
+const g=newGoal({id:"g1",name:"هدف",target:50,currency:"USD"}); const DN=emptyDonations(); let n=0;
+const don=(a:number,cur="USD",x:any={})=>applyDonation(DN,{type:"donation",id:"streamlabs:"+(++n),amount:a,currency:cur,name:"س",t:Date.now(),...x});
+const P=()=>goalProgress(g,DN,Date.now());
+ok(P().current===0&&P().pct===0,"start $0 / $50");
+don(10); ok(P().current===10&&P().pct===20,"$10 → $10 / $50 — 20%");
+don(5); ok(P().current===15&&P().pct===30,"$5 → $15 / $50 — 30%");
+don(20); ok(P().current===35&&P().pct===70,"$20 → $35 / $50 — 70%");
+don(2); ok(P().current===37,"$2 counted");
+don(13); ok(P().reached&&P().pct===100,"reaching 100%");
+don(30); const o=P(); ok(o.pct===100&&o.over===30&&o.rawPct===160,"over target: fill capped at 100%, extra $30 reported");
+ok(!applyDonation(DN,{type:"donation",id:"streamlabs:1",amount:10,currency:"USD"}),"same donation id again (reconnect/resend) → not counted twice");
+const before=P().current; don(10,"USD",{test:true,id:"test:x"}); const t=P(); ok(t.current===before+10&&t.real===before&&t.tests===10,"test donation moves the bar but real total excludes it");
+applyDonation(DN,{type:"donation_clear_tests"}); ok(P().current===before,"clear tests restores real amount");
+const g2=newGoal({id:"g2",target:100,currency:"SAR"}); const D2=emptyDonations();
+applyDonation(D2,{type:"donation",id:"a",amount:10,currency:"USD",t:1}); applyDonation(D2,{type:"donation",id:"b",amount:10,currency:"SAR",t:2});
+const s=goalProgress(g2,D2,Date.now()); ok(s.current===47.5&&s.converted.length===1,"10 USD + 10 SAR into a SAR goal = 47.5 SAR (not 20)");
+applyDonation(D2,{type:"donation",id:"c",amount:10,currency:"EUR",t:3}); ok(goalProgress(g2,D2,Date.now()).skipped===1&&goalProgress(g2,D2,Date.now(),{rates:{EUR:0.9}}).current===47.5+41.67,"currency without trusted rate is skipped, counted once rates are saved");
+// كل التصاميم من نفس المصدر
+const DC={...defaultDonCfg(),goals:[g]}; const src={DN,DC,D:{tot:{}}};
+const sp=sgProgress({type:"sgoal",source:"donation",goalId:"g1",target:999,base:5} as any,src as any), gp=goalProgress(g,DN,Date.now());
+ok(sp.cur===gp.current&&sp.tgt===50,"legendary goal designs (cup/heart/palm…) read the same central goal (ignores old per-widget target)");
+ok(sgProgress({type:"sgoal",source:"donation",target:999} as any,src as any).tgt===50,"unlinked donation goal design defaults to the central goal");
+ok(sgProgress({type:"sgoal",source:"donation",goalId:"own",target:999,currency:"USD"} as any,src as any).tgt===999,"explicit «own» keeps legacy per-widget goal");
+// الغرفة: الدونيشن المؤكد يصل للودجت + متزامن
+const R:any=newRoom(); const r1=roomEvent(R,{type:"donation",verified:true,id:"streamlabs:z1",provider:"streamlabs",amount:10,currency:"USD",name:"أ"},1000), r2=roomEvent(R,{type:"donation",verified:true,id:"streamlabs:z2",provider:"streamlabs",amount:5,currency:"USD",name:"ب"},1000);
+ok(r1.out.some((m:any)=>m.t==="event")&&r2.out.some((m:any)=>m.t==="event")&&R.DN.list.length===2,"two simultaneous donations both broadcast and stored");
+console.log(f?f+" FAILED":"ALL PASS"); process.exit(f?1:0);

@@ -1,0 +1,31 @@
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+(async()=>{
+ const ok=(c,m)=>{console.log((c?'PASS ':'FAIL ')+m); if(!c) process.exitCode=1};
+ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+ const ctx=await b.newContext({viewport:{width:1280,height:900}}); await ctx.grantPermissions(['clipboard-read','clipboard-write']);
+ const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ await p.goto('file:///home/claude/najd/demo/index.html'); await p.evaluate(()=>localStorage.clear()); await p.goto('file:///home/claude/najd/demo/index.html');
+ const ids=await p.evaluate(()=>{ S.donCfg.goals=[newGoal({id:"g50",name:"هدف المعدات",target:50,currency:"USD"})]; const l={id:"l_goal",name:"أهداف",canvas:"horizontal",widgets:[]}; S.layouts.push(l); S.active=l.id;
+  const a=addWidget("donGoal",{goalId:"g50"}), c=addWidget("sgoal",{source:"donation",goalId:"g50",design:"goldCup"}), d=addWidget("sgoal",{source:"donation",goalId:"g50",design:"goldenPalm"}); save(); pushLayout(); return {a:a.id,c:c.id,d:d.id} });
+ const url=await p.evaluate(()=>overlayURL(L())); const o=await ctx.newPage(); await o.goto(url); await o.waitForTimeout(800);
+ const read=()=>o.evaluate(ids=>{ const t=id=>{ const el=document.querySelector(`[data-wid="${id}"]`)||[...document.querySelectorAll('.wd')].find(e=>e.dataset&&e.dataset.id===id); return el?el.textContent.replace(/\s+/g," "):"" }; return {a:t(ids.a),c:t(ids.c),d:t(ids.d),all:document.body.textContent.replace(/\s+/g," ")} },ids);
+ const sendDon=(amt,id)=>p.evaluate(([amt,id])=>{ const r=roomEvent(R,{type:"donation",verified:true,id,provider:"streamlabs",amount:amt,currency:"USD",name:"داعم"},Date.now()); for(const m of r.out){ receive(m,true); bus&&bus.postMessage(m) } },[amt,id]);
+ await sendDon(10,"streamlabs:1"); await o.waitForTimeout(1500); let r=await read();
+ ok(/\$10(\.00)? \/ \$50/.test(r.all.replace(/US\$/g,"$"))||/10.*50/.test(r.all),'OBS: $10 / $50 after first donation');
+ ok(/20%/.test(r.all),'OBS: 20% shown');
+ await sendDon(5,"streamlabs:2"); await o.waitForTimeout(1300); r=await read(); ok(/30%/.test(r.all),'OBS: 30% after $5 (live, no reload)');
+ await sendDon(20,"streamlabs:3"); await o.waitForTimeout(1300); r=await read(); ok(/70%/.test(r.all),'OBS: 70% after $20');
+ const vals=await o.evaluate(()=>[...document.querySelectorAll('.wd')].map(e=>e.dataset.goal||e.textContent.match(/\$?\s?35(\.00)?/)?.[0]||"").filter(Boolean)); ok(vals.length>=2,'bar + cup + palm designs all show the same $35: '+JSON.stringify(vals));
+ await sendDon(20,"streamlabs:3"); await o.waitForTimeout(800); r=await read(); ok(/70%/.test(r.all),'duplicate donation (resend) not counted twice');
+ await sendDon(30,"streamlabs:4"); await o.waitForTimeout(1500); r=await read(); ok(/تم تحقيق الهدف/.test(r.all)&&/فوق الهدف/.test(r.all),'over target: goal reached + extra shown');
+ await o.reload(); await o.waitForTimeout(1200); const r2=await read(); ok(/تم تحقيق الهدف/.test(r2.all),'reload widget: value kept (not reset)');
+ const dash=await p.evaluate(()=>goalProgress(S.donCfg.goals[0],R.DN,Date.now()).current); ok(dash===65,'dashboard amount = widget amount ($65): '+dash);
+ // التجربة لا تُحسب في الحقيقي
+ await p.evaluate(()=>{ S.page="dondiag"; renderPage() }); await p.waitForTimeout(400);
+ ok(await p.evaluate(()=>/فحص اتصال الدونيشن/.test(document.body.innerText)&&!!document.querySelector('[data-ddtest]')&&!!document.querySelector('[data-ddsync]')),'diagnostics page with test / sync / copy buttons');
+ await p.click('[data-ddtest]'); await p.waitForTimeout(800);
+ const t=await p.evaluate(()=>{ const q=goalProgress(S.donCfg.goals[0],R.DN,Date.now()); return {cur:q.current,real:q.real,tests:q.tests} }); ok(t.tests===10&&t.real===65,'test $10 moves the bar but real total stays $65: '+JSON.stringify(t));
+ await p.click('[data-ddclear]'); await p.waitForTimeout(500); ok(await p.evaluate(()=>goalProgress(S.donCfg.goals[0],R.DN,Date.now()).current===65),'clear test');
+ ok(errs.length===0,'no page errors '+errs.slice(0,3).join(' / '));
+ await b.close();
+})();

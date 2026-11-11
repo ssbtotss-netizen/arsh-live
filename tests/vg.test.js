@@ -8,7 +8,7 @@ const url='file:///home/claude/najd/demo/index.html';
  await p.click('.nav [data-go="boards"]'); await p.click('[data-add-vg="goldCup"]'); await p.click('[data-add-vg="treasureChest"]'); await p.waitForTimeout(200);
  const ids=await p.evaluate(()=>window.__arsh.L().widgets.filter(w=>w.type==='sgoal').map(w=>w.id)); ok(ids.length===2,'2 interactive goals, independent ids');
  const [cup,chest]=ids;
- await p.evaluate(id=>{const w=window.__arsh.L().widgets.find(x=>x.id===id); w.source="donation"; w.title="هدف الدونيشن"; w.target=100},chest);
+ await p.evaluate(id=>{const w=window.__arsh.L().widgets.find(x=>x.id===id); w.source="donation"; w.title="هدف الدونيشن"; w.target=100; w.goalId="own"},chest);
  await p.click('.nav [data-go="studio"]'); await p.waitForTimeout(400);
  const W=(id,s)=>p.evaluate(([id,s])=>{const e=document.querySelector(`#stage .wd[data-id="${id}"]`); return s==='p'?+getComputedStyle(e).getPropertyValue('--p'):s==='val'?e.querySelector('.vg-cur').textContent+e.querySelector('.vg-tgt').textContent:s==='last'?e.querySelector('.vg-last').innerText:s==='pop'?[...e.querySelectorAll('.vg-pop')].map(x=>x.textContent).join('|'):e.className},[id,s]);
  ok((await W(cup,'p'))===0,'cup starts empty');

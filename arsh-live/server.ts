@@ -40,6 +40,8 @@ app.prepare().then(() => {
 
   const hub = createHub(wss, {
     // إشعارات Discord/Telegram: «أنا لايف» ونهاية البث (منع التكرار داخل الخدمة) + رسائل الإجراءات
+    // سجل «فحص اتصال الدونيشن»: هل وصل الدعم للخادم اللحظي وكم رابط بث استلمه
+    onDonationDispatch(room: string, ev: any, info: any) { userIdOf(room).then(uid => { if (uid) (globalThis as any).__b6o6?.donations?.log(uid, { step: info.dup ? "duplicate_live" : info.overlays ? "dispatched" : "no_overlays", id: ev.id, amount: ev.amount, currency: ev.currency, test: !!ev.test, overlays: info.overlays, detail: info.dup ? "حدث مكرر — لم يُحتسب مرة ثانية" : info.overlays ? `أُرسل إلى ${info.overlays} رابط بث متصل` : "لا يوجد رابط بث متصل الآن — سيظهر المبلغ عند فتح الرابط (محفوظ في قاعدة البيانات)" }); }).catch(() => {}); },
     onNotify(room: string, m: any) { (globalThis as any).__b6o6?.notify?.fromRoom(room, m).catch(() => {}); },
     // تقرير نهاية البث: حفظ الجلسة في الأرشيف + ملخص Discord/Telegram
     async onReport(room: string, rep: any) {
@@ -96,7 +98,7 @@ app.prepare().then(() => {
   // ربط المنصات (YouTube / Twitch / Kick) — يعمل فقط عند ضبط مفاتيح المطوّر على الخادم
   const platforms = createPlatformService(prisma, hub);
   const notify = createNotifyService(prisma);
-  (globalThis as any).__b6o6 = { donations, connectors, platforms, notify };
+  (globalThis as any).__b6o6 = { donations, connectors, platforms, notify, hub };
   platforms.startAll().catch(e => console.error("platforms", e));
   connectors.startAll().catch(e => console.error("donation connectors", e));
 

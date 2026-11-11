@@ -18,6 +18,7 @@ const url='file:///home/claude/najd/demo/index.html';
  ok((await p.evaluate(()=>JSON.stringify(window.__arsh.R().D.tot)))===tikBefore,'donations did not change TikTok likes/gift points');
  ok(await ov.locator('.so-socialBar.donTicker .trk .sc, .wd.t-donTicker .trk .sc').count()>=6,'ticker shows donors');
  const latest=await ov.locator('.wd.t-donLatest .sc .un').last().textContent(); ok(/5 ر.س/.test(latest),'latest donor updated: '+latest);
+ await ov.waitForTimeout(1100); /* انتظار انتهاء العدّ التدريجي */
  const goal=await ov.locator('.wd.t-donGoal .ck-time').textContent(); ok(/555 ر.س \/ 1,000 ر.س/.test(goal),'goal progress 555 / 1,000: '+goal);
  ok(await ov.locator('.wd.t-donAlert .sc.alert').count()===1,'alert shown (queue: one at a time)');
  const qlen=await ov.evaluate(()=>{ return 1 });
