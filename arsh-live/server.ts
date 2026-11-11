@@ -5,6 +5,7 @@ import next from "next";
 import { WebSocketServer } from "ws";
 import { PrismaClient } from "@prisma/client";
 import { createHub } from "./src/server/live-hub";
+import { ffmpegPath } from "./src/server/media";
 import { createPlatformService } from "./src/server/platforms";
 import { createNotifyService } from "./src/server/notify";
 import { canvasValid } from "./src/engine/defs.js";
@@ -99,5 +100,5 @@ app.prepare().then(() => {
   platforms.startAll().catch(e => console.error("platforms", e));
   connectors.startAll().catch(e => console.error("donation connectors", e));
 
-  server.listen(port, () => console.log(`> B6O6 Streaming يعمل على http://localhost:${port}`));
+  server.listen(port, () => { console.log(`> B6O6 Streaming يعمل على http://localhost:${port}`); console.log(`[media] ffmpeg: ${ffmpegPath() || "غير متوفر — تحويل MOV/HEVC معطّل"}`); });
 });
