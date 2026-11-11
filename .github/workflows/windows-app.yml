@@ -17,7 +17,8 @@ jobs:
         with: { node-version: 22 }
       - name: عنوان المنصة
         shell: pwsh
-        run: if ("${{ vars.APP_URL }}") { '{ "url": "${{ vars.APP_URL }}" }' | Set-Content config.json }
+        run: |
+          if ("${{ vars.APP_URL }}") { '{ "url": "${{ vars.APP_URL }}" }' | Set-Content config.json }
       - run: npm install
       - run: npm run dist
       - uses: softprops/action-gh-release@v2
