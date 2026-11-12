@@ -4,7 +4,7 @@ let f=0; const ok=(c:any,m:string)=>{ console.log((c?"PASS ":"FAIL ")+m); if(!c)
 const lib=[{id:"1",title:"فوق هام السحب",artist:"محمد عبده",dur:300},{id:"2",title:"Blinding Lights",artist:"The Weeknd",dur:200},{id:"3",title:"أغنية طويلة",artist:"x",dur:900},{id:"4",title:"الأماكن",artist:"محمد عبده",dur:280}];
 ok(parseMusicCmd("!اغنية فوق هام")?.cmd==="request"&&parseMusicCmd("!SKIP")?.cmd==="skip"&&parseMusicCmd("!صوت 50")?.arg==="50"&&parseMusicCmd("مرحبا")===null,"commands parsed (Arabic + English aliases)");
 ok(musicSearch(lib,"فوق هام")?.id==="1"&&musicSearch(lib,"blinding")?.id==="2"&&musicSearch(lib,"الاماكن")?.id==="4"&&musicSearch(lib,"غير موجودة ابدا")===null,"library search normalizes Arabic (أ/ا)");
-const M=newMusicState(); M.lib=lib; const cfg=defaultMusicCfg(); let now=1e6;
+const M=newMusicState(); M.lib=lib; const cfg={...defaultMusicCfg(),source:"library"}; let now=1e6;
 const c=(text,user:any={id:"u1",name:"محمد"})=>musicOnEvent(M,cfg,{type:"comment",text,user},now+=1000);
 let r=c("!اغنية فوق هام السحب"); ok(r.changed&&M.current?.track.id==="1","request plays immediately when idle (autoplay)");
 r=c("!song blinding",{id:"u2",name:"Sara"}); ok(M.queue.length===1&&M.queue[0].by.name==="Sara","second request queued with requester name");
@@ -22,7 +22,7 @@ musicOp(M,{op:"add",id:"4"},now+=1000,cfg); ok(M.current?.track.id==="4","owner 
 musicOp(M,{op:"ended"},now+=1000,cfg); ok(M.current===null&&M.history[0].id==="4","track ended → history");
 r=c("!اغنية الاماكن",{id:"u9",name:"z"}); ok(!r.changed&&/قبل شوي/.test(r.reply),"no-repeat window after playing");
 // الغرفة
-const R=newRoom(); roomBots(R,{music:{perms:{request:"all",info:"all",skip:"mods",control:"owner_mods",vote:"all"}}},{});
+const R=newRoom(); roomBots(R,{music:{source:"library",perms:{request:"all",info:"all",skip:"mods",control:"owner_mods",vote:"all"}}},{});
 roomClockOp(R,{target:"music",op:"lib",lib},1e6);
 const res=roomEvent(R,{type:"comment",id:"x1",user:{id:"v",name:"زائر"},text:"!اغنية فوق هام"},1e6+5000);
 ok(res.out.some((m:any)=>m.t==="clock"&&m.C.music.current?.track.id==="1")&&res.out.some((m:any)=>m.t==="bot"&&/تمت إضافة/.test(m.items[0].text)),"room: chat command → state broadcast + reply");

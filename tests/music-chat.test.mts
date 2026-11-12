@@ -10,7 +10,7 @@ const replies:any[]=[]; const wss=new WebSocketServer({port:39611});
 const ROOM="ovl_chatbot_room1";
 const hub:any=createHub(wss as any,{ authorize:async()=>false, loadMusic:async()=>lib, onChatReply:(room:string,platform:string,text:string)=>replies.push({room,platform,text}) });
 const R=await hub.musicInfo(ROOM).then(()=>hub.rooms.get(ROOM));
-const setCfg=(music:any)=>{ R.botCfg={music:{cooldownSec:0,perUser:5,noRepeatMin:0,dupSec:8,skipCooldownSec:5,...music}} };
+const setCfg=(music:any)=>{ R.botCfg={music:{source:"library",cooldownSec:0,perUser:5,noRepeatMin:0,dupSec:8,skipCooldownSec:5,...music}} };
 setCfg({});
 const M=()=>R.C.music;
 let n=0;

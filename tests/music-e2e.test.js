@@ -4,10 +4,10 @@ const { spawn } = require('child_process');
 const PORT = 39500 + Math.floor(Math.random() * 400), B = 'http://127.0.0.1:' + PORT, SR = 'sr_PUBLIC_xyz789', OVL = 'ovl_TOKEN_abc123';
 (async () => {
  const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1 };
- const srv = spawn('npx', ['tsx', '../tests/music-e2e-server.mts'], { cwd: '/home/claude/najd/arsh-live', env: { ...process.env, PORT: String(PORT) } });
+ const srv = spawn('npx', ['tsx', '../tests/music-e2e-server.mts'], { cwd: '/home/claude/najd/arsh-live', detached: true, env: { ...process.env, PORT: String(PORT) } });
  let slog = ''; srv.stdout.on('data', d => slog += d); srv.stderr.on('data', d => slog += d);
  for (let i = 0; i < 80 && !/READY/.test(slog); i++) await new Promise(r => setTimeout(r, 250));
- if (!/READY/.test(slog)) { console.log('FAIL server did not start ' + slog); srv.kill(); process.exit(1) }
+ if (!/READY/.test(slog)) { console.log('FAIL server did not start ' + slog); try { process.kill(-srv.pid) } catch (e) { srv.kill() } process.exit(1) }
  const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox', '--autoplay-policy=no-user-gesture-required'] });
  const errs = [];
  const page = async (url, w = 1280, h = 900) => { const ctx = await b.newContext({ viewport: { width: w, height: h } }); await ctx.grantPermissions(['clipboard-read', 'clipboard-write']); const p = await ctx.newPage(); p.on('pageerror', e => errs.push(url + ': ' + e.message)); await p.goto(B + url); return p };
@@ -110,5 +110,5 @@ const PORT = 39500 + Math.floor(Math.random() * 400), B = 'http://127.0.0.1:' + 
  ok(!errs.length, 'no page errors ' + errs.slice(0, 3).join(' | '));
  await obs.screenshot({ path: '/home/claude/najd/tests/shot-music-player.png', omitBackground: true });
  await dash.screenshot({ path: '/home/claude/najd/tests/shot-music-dash.png' }); await v.screenshot({ path: '/home/claude/najd/tests/shot-music-request.png' });
- await b.close(); srv.kill();
+ await b.close(); try { process.kill(-srv.pid) } catch (e) { srv.kill() }
 })();

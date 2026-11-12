@@ -56,7 +56,7 @@ R.botCfg.music.enabled=true; R.botCfg.music.page=false; ok(/متوقفة/.test(r
 // المكتبة لا تُحفظ في حالة الغرفة (تُحمَّل من قاعدة البيانات)
 ok(!JSON.stringify(roomSnapshot(R,now).C.music).includes("Levitating\",\"artist\":\"Dua Lipa\",\"dur\":203,\"cover\"")&&R.MLIB.length===5,"library kept out of saved room state");
 // أمر الشات يستخدم مكتبة الخادم
-R.botCfg.music.page=true; R.botCfg.music.cooldownSec=0; const out=roomEvent(R,{id:"c1",type:"comment",platform:"tiktok",user:{id:"v1",name:"عبير"},text:"!اغنية levitating"},now+=1000).out;
+R.botCfg.music.page=true; R.botCfg.music.cooldownSec=0; R.botCfg.music.source="library"; const out=roomEvent(R,{id:"c1",type:"comment",platform:"tiktok",user:{id:"v1",name:"عبير"},text:"!اغنية levitating"},now+=1000).out;
 ok(out.some((m:any)=>m.t==="bot"&&/Levitating/.test(m.items[0].text)),"chat !اغنية finds the song in the server library (root cause fixed)");
 const t=roomEvent(R,{id:"c2",type:"comment",platform:"tiktok",test:true,user:{id:"v2",name:"ت"},text:"!song blinding lights"},now+=1000);
 ok([...R.C.music.queue,R.C.music.current].some((q:any)=>q&&q.by.test),"test requests are flagged as test (not real)");

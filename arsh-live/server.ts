@@ -6,6 +6,8 @@ import { WebSocketServer } from "ws";
 import { PrismaClient } from "@prisma/client";
 import { createHub } from "./src/server/live-hub";
 import { ffmpegPath } from "./src/server/media";
+import { createYouTube } from "./src/server/youtube";
+const youtube = createYouTube();
 import { createPlatformService } from "./src/server/platforms";
 import { createNotifyService } from "./src/server/notify";
 import { canvasValid } from "./src/engine/defs.js";
@@ -43,6 +45,8 @@ app.prepare().then(() => {
     // سجل «فحص اتصال الدونيشن»: هل وصل الدعم للخادم اللحظي وكم رابط بث استلمه
     onDonationDispatch(room: string, ev: any, info: any) { userIdOf(room).then(uid => { if (uid) (globalThis as any).__b6o6?.donations?.log(uid, { step: info.dup ? "duplicate_live" : info.overlays ? "dispatched" : "no_overlays", id: ev.id, amount: ev.amount, currency: ev.currency, test: !!ev.test, overlays: info.overlays, detail: info.dup ? "حدث مكرر — لم يُحتسب مرة ثانية" : info.overlays ? `أُرسل إلى ${info.overlays} رابط بث متصل` : "لا يوجد رابط بث متصل الآن — سيظهر المبلغ عند فتح الرابط (محفوظ في قاعدة البيانات)" }); }).catch(() => {}); },
     // ردود بوت الأغاني في شات YouTube / Twitch / Kick (TikTok لا يسمح بالإرسال)
+    // بوت الأغاني: البحث في YouTube Data API الرسمي (المفتاح على الخادم فقط)
+    ytFind: (q: string, o: any) => youtube.find(q, o),
     onChatReply(room: string, platform: string, text: string) { userIdOf(room).then(uid => { if (uid) (globalThis as any).__b6o6?.platforms?.sendChat(uid, platform, text); }).catch(() => {}); },
     onNotify(room: string, m: any) { (globalThis as any).__b6o6?.notify?.fromRoom(room, m).catch(() => {}); },
     // تقرير نهاية البث: حفظ الجلسة في الأرشيف + ملخص Discord/Telegram
@@ -106,7 +110,7 @@ app.prepare().then(() => {
   // ربط المنصات (YouTube / Twitch / Kick) — يعمل فقط عند ضبط مفاتيح المطوّر على الخادم
   const platforms = createPlatformService(prisma, hub);
   const notify = createNotifyService(prisma);
-  (globalThis as any).__b6o6 = { donations, connectors, platforms, notify, hub };
+  (globalThis as any).__b6o6 = { donations, connectors, platforms, notify, hub, youtube };
   platforms.startAll().catch(e => console.error("platforms", e));
   connectors.startAll().catch(e => console.error("donation connectors", e));
 

@@ -31,6 +31,8 @@ services:
         sync: false
       - key: TIKTOK_SIGN_API_KEY
         sync: false
+      - key: YOUTUBE_API_KEY # بوت الأغاني: بحث YouTube Data API v3 (مفتاح API من Google Cloud — يُضاف من لوحة Render)
+        sync: false
       - key: STREAMLABS_CLIENT_ID
         sync: false
       - key: STREAMLABS_CLIENT_SECRET

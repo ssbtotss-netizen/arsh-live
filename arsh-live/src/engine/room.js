@@ -10,7 +10,7 @@ import { chatPush } from "./chat.js";
 import { topsOnEvent } from "./tops.js";
 import { sessionOnLive, sessionTick, sessionOnEvent } from "./poststats.js";
 import { actionsOnEvent, newActState, actLog } from "./actions.js";
-import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext, musicLog } from "./music.js";
+import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext, musicLog, musicAddedText } from "./music.js";
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { newClockState, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
@@ -63,6 +63,14 @@ function botOut(R,ev,now,out){ if(!R.botCfg) return; R.B=R.B||newBotState(); try
 /** مكتبة الأغاني القابلة للتشغيل (بيانات فقط — الملفات على الخادم). لا تُحفظ داخل حالة الغرفة؛ تُحمَّل من قاعدة البيانات */
 export function roomMusicLib(R){ return R.MLIB||(R.C&&R.C.music&&R.C.music.lib)||[] }
 export function roomMusicSetLib(R,lib){ R.MLIB=(lib||[]).slice(0,2000).map(t=>({id:String(t.id),title:String(t.title||"").slice(0,120),artist:String(t.artist||"").slice(0,80),dur:+t.dur||0,cover:t.cover&&String(t.cover).length<2000?String(t.cover):""})); if(R.C&&R.C.music) R.C.music.lib=[] }
+/** نتيجة بحث YouTube لطلب من الشات: إضافة للقائمة + رد بالاسم (أو سبب الفشل) — نفس قيود الطلب */
+export function roomMusicFound(R,s,res,now){ R.C.music=R.C.music||newMusicState(); const M=R.C.music, cfg=roomMusicCfg(R), out=[], u=s.user||{}, at="@"+(u.name||u.id||"مشاهد");
+ let text="", changed=false;
+ if(!res||!res.ok){ const why=res&&res.message||"تعذر البحث"; musicLog(M,now,"refused",{why,by:u.name,via:s.plat,title:String(s.q).slice(0,60)}); text=`${at} ${why}`; }
+ else { const t=res.track; musicLog(M,now,"found",{title:t.title,by:u.name,via:s.plat,why:res.cached?"من الكاش":""}); const r=musicAdd(M,cfg,t,u,now,{via:"chat"}); if(!r.ok){ musicLog(M,now,"refused",{why:r.reply,title:t.title,by:u.name}); text=`${at} ${r.reply}` } else { changed=true; text=musicAddedText(t,r,at) } }
+ out.push({t:"clock",C:R.C,now,logs:[],mu:"found"});
+ if(text&&cfg.replies!==false) out.push({t:"bot",items:[{id:"mu_f"+now+Math.random().toString(36).slice(2,6),kind:"reply",bot:"music",text,show:true,say:false,user:{name:"🎵 الأغاني"},at:now,...(cfg.chatReplies!==false&&!s.test&&s.plat&&s.plat!=="tiktok"?{chat:s.plat}:{})}]});
+ return {out,changed} }
 /** طلب من صفحة الطلب العامة (مشاهد) — نفس القيود والطابور */
 export function roomMusicRequest(R,trackId,user,now){ R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R), M=R.C.music;
  if(cfg.page===false) return {res:{ok:false,reply:"صفحة طلب الأغاني متوقفة"},out:[]};
@@ -73,6 +81,7 @@ export function roomMusicRequest(R,trackId,user,now){ R.C.music=R.C.music||newMu
 export function roomMusicCfg(R){ return {...defaultMusicCfg(),...((R.botCfg&&R.botCfg.music)||{})} }
 function roomMusic(R,ev,now,out){ if(ev.type!=="comment"&&ev.type!=="follow") return; R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R);
  if(ev.test&&ev.type==="follow") return; const r=musicOnEvent(R.C.music,cfg,ev.test?{...ev,user:{...(ev.user||{}),test:true}}:ev,now,roomMusicLib(R)); if(!r) return;
+ if(r.search){ out.push({t:"musicsearch",q:r.search.q,user:r.search.user,plat:r.search.plat,test:!!ev.test,cfg:{maxDurSec:cfg.maxDurSec||0,region:cfg.ytRegion||"SA"}}); out.push({t:"clock",C:R.C,now,logs:[],mu:"search"}); return }
  if(r.changed) out.push({t:"clock",C:R.C,now,logs:[],mu:"cmd"});
  /* الرد: على الشاشة (ودجت البوت) + في شات المنصة نفسها إن كانت تسمح بالإرسال (YouTube / Twitch / Kick). TikTok لا يوفر إرسال رسائل */
  if(r.reply&&cfg.replies!==false) out.push({t:"bot",items:[{id:"mu_"+(ev.id||now),kind:"reply",bot:"music",text:r.reply,show:true,say:false,user:{name:"🎵 الأغاني"},at:now,...(cfg.chatReplies!==false&&!ev.test&&!ev.sim&&r.platform&&r.platform!=="tiktok"?{chat:r.platform}:{})}]}) }

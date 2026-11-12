@@ -10,8 +10,9 @@ import { requestPageHTML, playerPageHTML } from "/home/claude/najd/arsh-live/src
 import { processMusic } from "/home/claude/najd/arsh-live/src/server/media.ts";
 import { alInspect } from "/home/claude/najd/arsh-live/src/engine/alerts.js";
 import { userOf } from "/home/claude/najd/arsh-live/src/server/tiktok.ts";
+import { createYouTube } from "/home/claude/najd/arsh-live/src/server/youtube.ts";
 
-const PORT = +(process.env.PORT || 39500), OVL = "ovl_TOKEN_abc123", SR = "sr_PUBLIC_xyz789", KEY = "EDIT_SECRET_KEY_1";
+const YTMODE = !!process.env.YT, PORT = +(process.env.PORT || 39500), OVL = "ovl_TOKEN_abc123", SR = "sr_PUBLIC_xyz789", KEY = "EDIT_SECRET_KEY_1";
 // ملفات صوتية حقيقية (نغمات 20/14/16 ث بوسوم وغلاف) تُولَّد بـ FFmpeg
 const FX = "/tmp/mfx-e2e/"; mkdirSync(FX, { recursive: true });
 const ff = (a: string[]) => spawnSync("ffmpeg", ["-hide_banner", "-loglevel", "error", "-y", ...a]);
@@ -32,6 +33,13 @@ await add("t1.m4a", { title: "فوق هام السحب", artist: "محمد عب�
 await add("t2.mp3");
 await add("t3.ogg", { title: "الأماكن", artist: "محمد عبده" });
 await add("t1.m4a", { title: "Broken Song", artist: "Missing File", missing: true });
+// YouTube Data API v3: ردود بنفس الشكل الرسمي (الشبكة مغلقة هنا) — «blocked» لا يسمح بالتضمين من المشغل
+const YTV: Record<string, any> = { yt_amakenA1: ["محمد عبده - الأماكن", "PT0M20S"], yt_amakenB2: ["محمد عبده - الأماكن (Live)", "PT0M20S"], blockedVid1: ["Dua Lipa - Levitating", "PT0M14S"], yt_levitat2: ["Dua Lipa - Levitating", "PT0M14S"], yt_blinding: ["The Weeknd - Blinding Lights", "PT0M16S"] };
+const SEARCH: Record<string, string[]> = { "الاماكن": ["yt_amakenA1", "yt_amakenB2"], "levitating": ["blockedVid1", "yt_levitat2"], "blinding lights": ["yt_blinding"] };
+const ytFetch = async (url: string) => { const u = new URL(url);
+  if (u.pathname.endsWith("/search")) { const q = (u.searchParams.get("q") || "").toLowerCase().replace(/[أإآ]/g, "ا"); const k = Object.keys(SEARCH).find(x => q.includes(x)); return new Response(JSON.stringify({ items: (k ? SEARCH[k] : []).map(v => ({ id: { videoId: v } })) })); }
+  const ids = (u.searchParams.get("id") || "").split(","); return new Response(JSON.stringify({ items: ids.filter(i => YTV[i]).map(id => ({ id, snippet: { title: YTV[id][0], channelTitle: "Ch", liveBroadcastContent: "none", thumbnails: { high: { url: "/test/cover.png" } } }, contentDetails: { duration: YTV[id][1] }, status: { embeddable: true, privacyStatus: "public" } })) })); };
+const youtube = createYouTube({ key: "TEST_KEY", fetch: ytFetch as any });
 const store = {
   userBySongToken: async (t: string) => (t === SR ? user : null),
   userByOverlay: async (t: string) => (t === OVL ? { id: "u1" } : null),
@@ -51,12 +59,15 @@ const http = createServer(async (req, res) => {
     else if ((m = /^\/api\/sr\/([^/]+)\/request$/.exec(p))) { let b = ""; for await (const c of req) b += c; r = await svc.request(m[1], JSON.parse(b || "null"), String(req.headers["x-test-ip"] || req.socket.remoteAddress)); }
     else if ((m = /^\/api\/music\/stream\/([^/]+)\/([^/]+)$/.exec(p))) r = await svc.stream(m[1], m[2], (req.headers.range as string) || null);
     else if ((m = /^\/api\/music\/cover\/([^/]+)$/.exec(p))) r = await svc.cover(m[1]);
-    else if (p === "/api/music") r = new Response(JSON.stringify({ tracks: tracks.map(t => ({ ...libEntry(t), size: t.size })), used: 1e6, quota: 300 * 1048576, links: { request: "/sr/" + SR, player: "/music-player/" + OVL } }), { headers: { "content-type": "application/json" } });
+    else if (p === "/api/music") r = new Response(JSON.stringify({ tracks: tracks.map(t => ({ ...libEntry(t), size: t.size })), used: 1e6, quota: 300 * 1048576, links: { request: "/sr/" + SR, player: "/music-player/" + OVL }, youtube: youtube.status() }), { headers: { "content-type": "application/json" } });
     // محاكاة رسالة شات TikTok حقيقية (نفس تحويل المكتبة userOf) → مركز البث (خاص بخادم الاختبار فقط)
-    else if (p === "/test/chat") { const d = { comment: u.searchParams.get("text"), user: { uniqueId: u.searchParams.get("id"), nickname: u.searchParams.get("name") } }; hub.dispatch(OVL, { type: "comment", id: "tt_" + Date.now() + Math.random(), user: userOf(d), text: d.comment }); r = new Response("ok"); }
+    else if (p === "/test/chat") { const d: any = { comment: u.searchParams.get("text"), user: { uniqueId: u.searchParams.get("id"), nickname: u.searchParams.get("name") }, ...(u.searchParams.get("mod") ? { isModerator: true } : {}) }; const cu: any = userOf(d); if (u.searchParams.get("id") === "host_account") cu.owner = true; hub.dispatch(OVL, { type: "comment", id: "tt_" + Date.now() + Math.random(), user: cu, text: d.comment }); r = new Response("ok"); }
+    // صوت الفيديو في مشغل YouTube البديل للاختبار فقط (نغمة لكل فيديو)
+    else if ((m = /^\/test\/ytaudio\/([\w-]+)$/.exec(p))) { const f = ["t1.m4a", "t2.mp3", "t3.ogg"][Object.keys(YTV).indexOf(m[1]) % 3]; r = new Response(readFileSync(FX + f), { headers: { "content-type": f.endsWith("mp3") ? "audio/mpeg" : f.endsWith("ogg") ? "audio/ogg" : "audio/mp4" } }); }
+    else if (p === "/test/cover.png") r = new Response(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"), { headers: { "content-type": "image/png" } });
     else if (p === "/dash") {
       const h = readFileSync("/home/claude/najd/demo/index.html", "utf8");
-      const cfg = `<script>window.B6O6_CONFIG={layouts:null,activeLayoutId:null,settings:{},profile:{name:"بطوط"},bots:{music:{page:true,noRepeatMin:0}},socials:null,donCfg:null,providers:{},wsUrl:"ws://"+location.host+"/ws",room:${JSON.stringify(OVL)},key:${JSON.stringify(KEY)},api:(path,o={})=>fetch(path,{method:o.method||"GET",headers:{"content-type":"application/json"},body:o.body?JSON.stringify(o.body):undefined}).then(r=>r.json()),persist:()=>Promise.resolve(),overlayURL:()=>"/overlay",logout:()=>{}};</script>`;
+      const cfg = `<script>window.B6O6_CONFIG={layouts:null,activeLayoutId:null,settings:{},profile:{name:"بطوط"},bots:{music:{page:true,noRepeatMin:0,source:${YTMODE ? "\"youtube\"" : "\"library\""},maxDurSec:420}},socials:null,donCfg:null,providers:{},wsUrl:"ws://"+location.host+"/ws",room:${JSON.stringify(OVL)},key:${JSON.stringify(KEY)},api:(path,o={})=>fetch(path,{method:o.method||"GET",headers:{"content-type":"application/json"},body:o.body?JSON.stringify(o.body):undefined}).then(r=>r.json()),persist:()=>Promise.resolve(),overlayURL:()=>"/overlay",logout:()=>{}};</script>`;
       r = html(h.replace("<script>", cfg + "<script>"));
     }
   } catch (e: any) { console.error("[e2e]", e); r = new Response("err", { status: 500 }); }
@@ -67,7 +78,7 @@ const http = createServer(async (req, res) => {
 });
 const wss = new WebSocketServer({ noServer: true });
 http.on("upgrade", (req, sock, head) => { if (req.url === "/ws") wss.handleUpgrade(req, sock, head, (ws: any) => wss.emit("connection", ws, req)); else sock.destroy(); });
-const hub: any = createHub(wss as any, { authorize: async (room: string, key: string) => room === OVL && key === KEY, loadMusic: async () => tracks.map(libEntry), loadRoom: async () => ({ bots: { cfg: { music: { page: true, noRepeatMin: 0 } }, ctx: {} } }) });
+const hub: any = createHub(wss as any, { authorize: async (room: string, key: string) => room === OVL && key === KEY, loadMusic: async () => tracks.map(libEntry), ytFind: (q: string, o: any) => youtube.find(q, o), loadRoom: async () => ({ bots: { cfg: { music: { page: true, noRepeatMin: 0, source: YTMODE ? "youtube" : "library", maxDurSec: 420 } }, ctx: {} } }) });
 const svc = createMusicService(store as any, () => hub);
 (globalThis as any).__hub = hub;
 http.listen(PORT, () => console.log("READY " + PORT));

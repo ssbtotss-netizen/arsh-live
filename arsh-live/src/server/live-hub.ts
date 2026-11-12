@@ -1,7 +1,7 @@
 // مركز البث: غرفة لكل صانع محتوى. الخادم هو المرجع للوقت والبيانات.
 // استقبال الأحداث (tiktok.ts) ← غرفة (engine/room.js: منع التكرار → محرك القوائم + محرك السبثون/المؤقتات) ← العملاء
 import type { WebSocketServer, WebSocket } from "ws";
-import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg } from "../lib/core";
+import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound } from "../lib/core";
 import type { Layout, LiveEvent } from "../lib/core";
 import { startTikTok, type TikTokHandle } from "./tiktok";
 
@@ -24,6 +24,8 @@ export type HubOptions = {
   loadMusic?(room: string): Promise<any[]>;
   /** رد بوت يجب إرساله في شات المنصة نفسها (YouTube / Twitch / Kick) */
   onChatReply?(room: string, platform: string, text: string): void;
+  /** بحث YouTube لطلب أغنية من الشات (غير متزامن) */
+  ytFind?(q: string, opts: { maxDurSec: number; region: string }): Promise<any>;
 };
 
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
@@ -53,7 +55,11 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
 
   /** نشر نتائج المحرك + الحفظ */
   function commit(id: string, r: Room, res: { out: any[]; logs: any[] }) {
-    for (const m of res.out) { broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
+    for (const m of res.out) {
+      // طلب أغنية يحتاج بحث YouTube: لا يُبث — يُبحث على الخادم ثم تُضاف النتيجة للقائمة ويُبث الرد
+      if (m.t === "musicsearch") { const find = opt.ytFind ? opt.ytFind(m.q, m.cfg) : Promise.resolve({ ok: false, message: "البحث في YouTube غير متاح على هذا الخادم" });
+        find.catch(() => ({ ok: false, message: "تعذر البحث في YouTube" })).then(yr => commit(id, r, { out: roomMusicFound(r as any, m, yr, Date.now()).out, logs: [] })); continue; }
+      broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
     if (res.out.some(m => m.t === "clock")) { r.dirty = true; }
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }
@@ -93,7 +99,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (!ws.room) return;
       const id = ws.room, r = rooms.get(id)!;
       // مشغل الأغاني (رابط OBS للقراءة فقط): يُسمح فقط بتقارير حالته — تولّي التشغيل، الحالة، الانتهاء، الخطأ
-      if (m.t === "mplayer" && ["claim", "pstate", "pended", "perror"].includes(m.op)) { if (r) commit(id, r, roomClockOp(r, { target: "music", op: m.op, pid: m.pid, kind: m.kind, qid: m.qid, status: m.status, pos: m.pos, why: m.why, force: ws.canEdit ? !!m.force : false }, Date.now())); return; }
+      if (m.t === "mplayer" && ["claim", "pstate", "pended", "perror"].includes(m.op)) { if (r) commit(id, r, roomClockOp(r, { target: "music", op: m.op, pid: m.pid, kind: m.kind, qid: m.qid, status: m.status, pos: m.pos, why: m.why, embed: !!m.embed, force: ws.canEdit ? !!m.force : false }, Date.now())); return; }
       if (!ws.canEdit) return send(ws, { t: "status", text: "هذا الاتصال للقراءة فقط" });
       // «مزامنة الهدف»: لقطة كاملة جديدة لكل روابط البث المتصلة (نفس القيمة في كل مكان)
       if (m.t === "resync") { const r = rooms.get(ws.room); if (r) { const snap = roomSnapshot(r, Date.now()); r.clients.forEach(c => send(c, snap)); r.layouts.forEach(layout => r.clients.forEach(c => send(c, { t: "layout", layout }))); send(ws, { t: "status", text: `🔄 تمت المزامنة مع ${[...r.clients].filter(c => !c.canEdit).length} رابط بث` }); } return; }
