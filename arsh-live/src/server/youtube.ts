@@ -1,6 +1,6 @@
 // بحث YouTube الرسمي لبوت الأغاني (YouTube Data API v3 — المفتاح على الخادم فقط: YOUTUBE_API_KEY)
 // search.list يكلف حصة كبيرة (الافتراضي ~100 بحث يومياً لكل مشروع) ← كاش للطلبات المتكررة + روابط YouTube المباشرة تستخدم videos.list الرخيص.
-import { ytVideoIdFromText, ytPlayable, ytTrack, ytCacheKey } from "../engine/youtube.js";
+import { ytVideoIdFromText, ytPlayable, ytTrack, ytCacheKey, ytMeta } from "../engine/youtube.js";
 
 export type YtResult = { ok: true; track: any; cached?: boolean } | { ok: false; error: string; message: string };
 type Opt = { key?: string; fetch?: typeof fetch; now?: () => number };
@@ -28,8 +28,10 @@ export function createYouTube(o: Opt = {}) {
   }
   /** نص الطلب ← أغنية قابلة للتشغيل في المشغل المضمّن (+ نسخ بديلة) */
   async function find(q: string, opts: { maxDurSec?: number; region?: string } = {}): Promise<YtResult> {
-    tick(); if (!key()) return fail("no_key", "البحث في YouTube غير مفعّل على الخادم (يلزم مفتاح YouTube Data API)");
-    const maxDurSec = opts.maxDurSec || 0, region = (opts.region || "SA").toUpperCase();
+    tick(); const maxDurSec = opts.maxDurSec || 0, region = (opts.region || "SA").toUpperCase();
+    // رابط YouTube بدون مفتاح: oEmbed الرسمي العام (يرفض الفيديوهات الممنوعة من التضمين) — لا يحتاج أي إعداد
+    if (!key() || st.quotaUntil > now()) { const v = ytVideoIdFromText(q); if (v) return oembed(v);
+      return fail(key() ? "quota" : "no_key", key() ? "انتهت حصة البحث اليومية في YouTube — اكتب رابط الأغنية بدل اسمها، أو انتظر للغد" : "البحث بالاسم غير متاح مؤقتاً — اكتب رابط الأغنية من YouTube"); }
     try {
       const vid = ytVideoIdFromText(q);
       if (vid) { const c = await details([vid], maxDurSec, region); if (!c.length) return fail("not_found", "الرابط لا يشير لفيديو متاح"); if (!c[0].ok) return fail("not_playable", "لا يمكن تشغيله: " + c[0].why); return { ok: true, track: ytTrack(c[0]) }; }
@@ -51,5 +53,12 @@ export function createYouTube(o: Opt = {}) {
       return fail("network", "تعذر الاتصال بـ YouTube الآن");
     }
   }
+  async function oembed(vid: string): Promise<YtResult> {
+    try { st.lookups++; const r = await F("https://www.youtube.com/oembed?format=json&url=" + encodeURIComponent("https://www.youtube.com/watch?v=" + vid));
+      if (r.status === 401 || r.status === 403) return fail("not_playable", "صاحب الفيديو منع التشغيل خارج YouTube");
+      if (!r.ok) return fail("not_found", "الرابط لا يشير لفيديو متاح");
+      const j: any = await r.json(); const m = ytMeta({ title: j.title, channelTitle: j.author_name });
+      return { ok: true, track: ytTrack({ vid, title: m.title, artist: m.artist, dur: 0, cover: `https://i.ytimg.com/vi/${vid}/hqdefault.jpg` }) };
+    } catch { return fail("network", "تعذر الاتصال بـ YouTube الآن"); } }
   return { find, status: () => { tick(); return { configured: !!key(), searchesToday: st.searches, lookupsToday: st.lookups, quotaHit: st.quotaUntil > now(), lastError: st.lastError, cacheSize: cache.size }; } };
 }

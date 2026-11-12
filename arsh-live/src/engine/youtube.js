@@ -11,10 +11,14 @@ export function ytDur(iso){ const m=/^P(?:(\d+)D)?T?(?:(\d+)H)?(?:(\d+)M)?(?:(\d
 const ENT={"&amp;":"&","&quot;":'"',"&#39;":"'","&lt;":"<","&gt;":">","&#039;":"'"};
 export const ytDecode=s=>String(s||"").replace(/&(?:amp|quot|#39|#039|lt|gt);/g,x=>ENT[x]||x);
 /** العنوان والفنان من بيانات الفيديو: «الفنان - العنوان» أو اسم القناة (بدون « - Topic» و VEVO) */
-export function ytMeta(sn){ const raw=ytDecode(sn&&sn.title||"").replace(/\s*[\[(](official|music|lyric|lyrics|audio|video|hd|4k|clip|كليب|فيديو كليب|حصرياً|حصريا)[^\])]*[\])]\s*/gi," ").replace(/\s+/g," ").trim();
- const ch=ytDecode(sn&&sn.channelTitle||"").replace(/\s*-\s*Topic$/i,"").replace(/VEVO$/i,"").trim();
- const p=raw.split(/\s+[-–|]\s+/); if(p.length>=2&&p[0].length<=60) return {title:p.slice(1).join(" - ").slice(0,120),artist:p[0].slice(0,80)};
- return {title:raw.slice(0,120)||"أغنية",artist:ch.slice(0,80)} }
+const YT_NOISE=/^(official|music|lyric|lyrics|audio|video|hd|4k|clip|كليب|فيديو كليب|حصري[اًا]*|حصريا|افضل تسجيل|أفضل تسجيل|جديد|new|remastered|live|مباشر|النسخه الاصليه|النسخة الأصلية)$/i;
+const ytN=s=>String(s||"").toLowerCase().replace(/[أإآ]/g,"ا").replace(/ة/g,"ه").replace(/ى/g,"ي").replace(/[^\p{L}\p{N}]+/gu,"");
+export function ytMeta(sn){ const ch=ytDecode(sn&&sn.channelTitle||"").replace(/\s*-\s*Topic$/i,"").replace(/VEVO$/i,"").replace(/\s*official$/i,"").trim();
+ const raw=ytDecode(sn&&sn.title||"").replace(/\s*[\[(（][^\])）]*[\])）]\s*/g," ").replace(/\s*[|｜].*$/,"").replace(/\s+/g," ").trim();
+ const p=raw.split(/\s+[-–—]\s+/).map(x=>x.trim()).filter(x=>x&&!YT_NOISE.test(x));
+ if(p.length>=2){ const cn=ytN(ch), ai=cn?p.findIndex(x=>{ const n=ytN(x); return n&&(cn.includes(n)||n.includes(cn)) }):-1; const a=ai>=0?ai:0; const title=p.filter((_,i)=>i!==a).join(" - ");
+  return {title:title.slice(0,120),artist:p[a].slice(0,80)} }
+ return {title:(p[0]||raw).slice(0,120)||"أغنية",artist:ch.slice(0,80)} }
 /** صورة الغلاف: أعلى دقة متاحة */
 export const ytThumb=sn=>{ const t=(sn&&sn.thumbnails)||{}; return (t.high||t.medium||t.standard||t.default||{}).url||"" };
 /**
