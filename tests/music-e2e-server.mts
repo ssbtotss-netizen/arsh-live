@@ -9,6 +9,7 @@ import { createMusicService, libEntry, type MusicTrackRow } from "/home/claude/n
 import { requestPageHTML, playerPageHTML } from "/home/claude/najd/arsh-live/src/server/music-pages.ts";
 import { processMusic } from "/home/claude/najd/arsh-live/src/server/media.ts";
 import { alInspect } from "/home/claude/najd/arsh-live/src/engine/alerts.js";
+import { userOf } from "/home/claude/najd/arsh-live/src/server/tiktok.ts";
 
 const PORT = +(process.env.PORT || 39500), OVL = "ovl_TOKEN_abc123", SR = "sr_PUBLIC_xyz789", KEY = "EDIT_SECRET_KEY_1";
 // ملفات صوتية حقيقية (نغمات 20/14/16 ث بوسوم وغلاف) تُولَّد بـ FFmpeg
@@ -51,9 +52,11 @@ const http = createServer(async (req, res) => {
     else if ((m = /^\/api\/music\/stream\/([^/]+)\/([^/]+)$/.exec(p))) r = await svc.stream(m[1], m[2], (req.headers.range as string) || null);
     else if ((m = /^\/api\/music\/cover\/([^/]+)$/.exec(p))) r = await svc.cover(m[1]);
     else if (p === "/api/music") r = new Response(JSON.stringify({ tracks: tracks.map(t => ({ ...libEntry(t), size: t.size })), used: 1e6, quota: 300 * 1048576, links: { request: "/sr/" + SR, player: "/music-player/" + OVL } }), { headers: { "content-type": "application/json" } });
+    // محاكاة رسالة شات TikTok حقيقية (نفس تحويل المكتبة userOf) → مركز البث (خاص بخادم الاختبار فقط)
+    else if (p === "/test/chat") { const d = { comment: u.searchParams.get("text"), user: { uniqueId: u.searchParams.get("id"), nickname: u.searchParams.get("name") } }; hub.dispatch(OVL, { type: "comment", id: "tt_" + Date.now() + Math.random(), user: userOf(d), text: d.comment }); r = new Response("ok"); }
     else if (p === "/dash") {
       const h = readFileSync("/home/claude/najd/demo/index.html", "utf8");
-      const cfg = `<script>window.B6O6_CONFIG={layouts:null,activeLayoutId:null,settings:{},profile:{name:"بطوط"},bots:null,socials:null,donCfg:null,providers:{},wsUrl:"ws://"+location.host+"/ws",room:${JSON.stringify(OVL)},key:${JSON.stringify(KEY)},api:(path,o={})=>fetch(path,{method:o.method||"GET",headers:{"content-type":"application/json"},body:o.body?JSON.stringify(o.body):undefined}).then(r=>r.json()),persist:()=>Promise.resolve(),overlayURL:()=>"/overlay",logout:()=>{}};</script>`;
+      const cfg = `<script>window.B6O6_CONFIG={layouts:null,activeLayoutId:null,settings:{},profile:{name:"بطوط"},bots:{music:{page:true,noRepeatMin:0}},socials:null,donCfg:null,providers:{},wsUrl:"ws://"+location.host+"/ws",room:${JSON.stringify(OVL)},key:${JSON.stringify(KEY)},api:(path,o={})=>fetch(path,{method:o.method||"GET",headers:{"content-type":"application/json"},body:o.body?JSON.stringify(o.body):undefined}).then(r=>r.json()),persist:()=>Promise.resolve(),overlayURL:()=>"/overlay",logout:()=>{}};</script>`;
       r = html(h.replace("<script>", cfg + "<script>"));
     }
   } catch (e: any) { console.error("[e2e]", e); r = new Response("err", { status: 500 }); }
@@ -64,7 +67,7 @@ const http = createServer(async (req, res) => {
 });
 const wss = new WebSocketServer({ noServer: true });
 http.on("upgrade", (req, sock, head) => { if (req.url === "/ws") wss.handleUpgrade(req, sock, head, (ws: any) => wss.emit("connection", ws, req)); else sock.destroy(); });
-const hub: any = createHub(wss as any, { authorize: async (room: string, key: string) => room === OVL && key === KEY, loadMusic: async () => tracks.map(libEntry) });
+const hub: any = createHub(wss as any, { authorize: async (room: string, key: string) => room === OVL && key === KEY, loadMusic: async () => tracks.map(libEntry), loadRoom: async () => ({ bots: { cfg: { music: { page: true, noRepeatMin: 0 } }, ctx: {} } }) });
 const svc = createMusicService(store as any, () => hub);
 (globalThis as any).__hub = hub;
 http.listen(PORT, () => console.log("READY " + PORT));

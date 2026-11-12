@@ -25,5 +25,5 @@ r=c("!اغنية الاماكن",{id:"u9",name:"z"}); ok(!r.changed&&/قبل ش�
 const R=newRoom(); roomBots(R,{music:{perms:{request:"all",info:"all",skip:"mods",control:"owner_mods",vote:"all"}}},{});
 roomClockOp(R,{target:"music",op:"lib",lib},1e6);
 const res=roomEvent(R,{type:"comment",id:"x1",user:{id:"v",name:"زائر"},text:"!اغنية فوق هام"},1e6+5000);
-ok(res.out.some((m:any)=>m.t==="clock"&&m.C.music.current?.track.id==="1")&&res.out.some((m:any)=>m.t==="bot"&&/أُضيفت/.test(m.items[0].text)),"room: chat command → state broadcast + reply");
+ok(res.out.some((m:any)=>m.t==="clock"&&m.C.music.current?.track.id==="1")&&res.out.some((m:any)=>m.t==="bot"&&/تمت إضافة/.test(m.items[0].text)),"room: chat command → state broadcast + reply");
 console.log(f?`${f} FAILED`:"ALL PASS"); if(f) process.exit(1);

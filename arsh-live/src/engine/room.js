@@ -74,7 +74,8 @@ export function roomMusicCfg(R){ return {...defaultMusicCfg(),...((R.botCfg&&R.b
 function roomMusic(R,ev,now,out){ if(ev.type!=="comment"&&ev.type!=="follow") return; R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R);
  if(ev.test&&ev.type==="follow") return; const r=musicOnEvent(R.C.music,cfg,ev.test?{...ev,user:{...(ev.user||{}),test:true}}:ev,now,roomMusicLib(R)); if(!r) return;
  if(r.changed) out.push({t:"clock",C:R.C,now,logs:[],mu:"cmd"});
- if(r.reply&&cfg.replies!==false) out.push({t:"bot",items:[{id:"mu_"+(ev.id||now),kind:"reply",bot:"music",text:r.reply,show:true,say:false,user:{name:"🎵 الأغاني"},at:now}]}) }
+ /* الرد: على الشاشة (ودجت البوت) + في شات المنصة نفسها إن كانت تسمح بالإرسال (YouTube / Twitch / Kick). TikTok لا يوفر إرسال رسائل */
+ if(r.reply&&cfg.replies!==false) out.push({t:"bot",items:[{id:"mu_"+(ev.id||now),kind:"reply",bot:"music",text:r.reply,show:true,say:false,user:{name:"🎵 الأغاني"},at:now,...(cfg.chatReplies!==false&&!ev.test&&!ev.sim&&r.platform&&r.platform!=="tiktok"?{chat:r.platform}:{})}]}) }
 /** تنفيذ قواعد «عندما ← إذا ← نفّذ» — كل إجراء له نتيجة مسجّلة (نجاح/فشل + السبب) */
 function roomActions(R,ev,now,out){ const rules=R.botCfg&&R.botCfg.actions; if(!rules||!rules.length) return; R.ACT=R.ACT||newActState();
  const D=R.D||{}, tot=D.tot||{}; const donSum=((R.DN&&R.DN.list)||[]).filter(d=>!d.test&&!d.refunded).reduce((a,d)=>a+(+d.amount||0),0);

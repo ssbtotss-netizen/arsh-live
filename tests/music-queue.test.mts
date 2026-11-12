@@ -7,7 +7,7 @@ ok(musicSearchAll(lib,"محمد عبده").map(t=>t.id).sort().join()==="a,c","s
 ok(musicSearchAll(lib,"weeknd").length===2&&musicSearchAll(lib,"blind")[0].id==="b","search by artist / song prefix (English)");
 ok(musicSearchAll(lib,"الاماكن")[0].id==="c","hamza-insensitive song search");
 ok(musicSearchAll(lib,"zzzz").length===0,"no results → empty");
-let now=1e7; const R:any=newRoom(); R.botCfg={music:{maxDurSec:420,perUser:2,cooldownSec:30}}; roomMusicSetLib(R,lib);
+let now=1e7; const R:any=newRoom(); R.botCfg={music:{page:true,maxDurSec:420,perUser:2,cooldownSec:30,dupSec:0}}; roomMusicSetLib(R,lib);
 const op=(m:any)=>roomClockOp(R,{target:"music",...m},now+=100);
 const req=(id:string,name:string,uid=name)=>roomMusicRequest(R,id,{id:uid,name},now+=1000);
 let r=req("a","نورة"); const M=()=>R.C.music;

@@ -1,0 +1,57 @@
+// لوحة «أوامر بوت الأغاني»: تغيير الأوامر والصلاحيات والمنصات + تجربة حية بنفس معالج الشات
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+const fs = require('fs'), path = require('path'), os = require('os');
+const url = 'file:///home/claude/najd/demo/index.html';
+function wav(file, sec, hz) { const sr = 8000, n = sr * sec, b = Buffer.alloc(44 + n * 2); b.write('RIFF', 0); b.writeUInt32LE(36 + n * 2, 4); b.write('WAVEfmt ', 8); b.writeUInt32LE(16, 16); b.writeUInt16LE(1, 20); b.writeUInt16LE(1, 22); b.writeUInt32LE(sr, 24); b.writeUInt32LE(sr * 2, 28); b.writeUInt16LE(2, 32); b.writeUInt16LE(16, 34); b.write('data', 36); b.writeUInt32LE(n * 2, 40); for (let i = 0; i < n; i++) b.writeInt16LE(Math.round(Math.sin(2 * Math.PI * hz * i / sr) * 8000), 44 + i * 2); fs.writeFileSync(file, b) }
+(async () => {
+ const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) process.exitCode = 1 };
+ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'mc')); const f1 = path.join(dir, 'محمد عبده - فوق هام السحب.wav'), f2 = path.join(dir, 'Dua Lipa - Levitating.wav');
+ wav(f1, 20, 440); wav(f2, 20, 550);
+ const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] });
+ const p = await (await b.newContext({ viewport: { width: 1440, height: 1000 } })).newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+ await p.goto(url); await p.evaluate(() => { localStorage.clear(); indexedDB.deleteDatabase('b6o6-music') }); await p.goto(url);
+ await p.click('.nav [data-go="music"]'); await p.waitForTimeout(300);
+ await p.setInputFiles('[data-mimport]', [f1, f2].map(f => ({ name: path.basename(f), mimeType: 'audio/wav', buffer: fs.readFileSync(f) }))); await p.waitForTimeout(1200);
+ const txt = await p.textContent('#pg');
+ ok(/المشاهد يكتب في شات البث: !شغل اسم الأغنية/.test(txt) && !/صفحة طلب الأغاني للمشاهدين \(ضعها في البايو/.test(txt), 'chat is the main way; request-page link no longer required/prominent');
+ ok((await p.$$('.mc-row')).length === 11, '«أوامر بوت الأغاني»: 11 functions, each with its own words/permission');
+ const chips = await p.$$eval('.mc-chip', e => e.map(x => x.textContent.replace(/[✕…]/g, '').trim()));
+ ok(['!شغل', '!طلب', '!تخطي', '!سكب', '!وقف', '!كمل', '!التالي', '!قائمتي', '!حذف'].every(w => chips.includes(w)), 'default commands present: !شغل !طلب !تخطي !وقف !كمل !التالي !قائمتي !حذف');
+ const add = async (k, w) => { await p.fill(`[data-mcadd="${k}"]`, w); await p.dispatchEvent(`[data-mcadd="${k}"]`, 'change'); await p.waitForTimeout(200) };
+ await add('request', 'غني');
+ ok(await p.evaluate(() => S.bots.music.cmds.request.words.includes('!غني')), 'add alias «!غني» (auto «!» prefix) to request');
+ await add('pause', '!سكب');
+ ok(await p.evaluate(() => !S.bots.music.cmds.pause.words.includes('!سكب')) && /مستخدم في «تخطي الأغنية الحالية»/.test(await p.textContent('#toast')), 'conflict prevented: «!سكب» already used by skip');
+ await add('pause', '!اسكت');
+ await p.click('[data-mcdel="skip"][data-i="0"]'); await p.waitForTimeout(200);
+ ok(await p.evaluate(() => !S.bots.music.cmds.skip.words.includes('!تخطي') && S.bots.music.cmds.skip.words.includes('!سكب')), 'remove «!تخطي», keep «!سكب»');
+ await p.selectOption('[data-mcperm="skip"]', 'all'); await p.waitForTimeout(200);
+ ok(await p.evaluate(() => S.bots.music.cmds.skip.perm === 'all'), 'skip permission → everyone');
+ const chat = async (plat, role, name, msg) => { await p.selectOption('[data-mct="plat"]', plat); await p.selectOption('[data-mct="role"]', role); await p.fill('[data-mct="name"]', name); await p.dispatchEvent('[data-mct="name"]', 'input'); await p.fill('[data-mct="msg"]', msg); await p.dispatchEvent('[data-mct="msg"]', 'input'); await p.click('[data-mcsend]'); await p.waitForTimeout(600) };
+ await p.click('[data-muhere]'); await p.waitForTimeout(200);
+ await chat('youtube', 'viewer', 'Ahmad', '!غني فوق هام');
+ const M = () => p.evaluate(() => window.__arsh.R().C.music);
+ let m = await M(); ok(m.current && m.current.track.title === 'فوق هام السحب' && m.current.by.name === 'Ahmad' && m.current.by.platform === 'youtube', 'test console «!غني فوق هام» as YouTube viewer → plays, requester Ahmad');
+ ok(/🎵 تمت إضافة «فوق هام السحب» — محمد عبده وتعمل الآن بواسطة @Ahmad/.test(await p.textContent('.mc-feed')), 'bot reply: «🎵 تمت إضافة … بواسطة @Ahmad»');
+ ok(await p.evaluate(() => MP.audio && !MP.audio.paused), 'audio actually playing');
+ await chat('tiktok', 'viewer', 'نورة', '!طلب levitating'); m = await M();
+ ok(m.queue.length === 1 && m.queue[0].by.name === 'نورة' && /شات TikTok/.test(await p.textContent('#pg')), 'second request from TikTok → queue shows requester + platform');
+ await chat('tiktok', 'viewer', 'زائر', '!اسكت'); m = await M();
+ ok(!m.paused && /@زائر ما عندك صلاحية لأمر !اسكت/.test(await p.textContent('.mc-feed')), 'viewer cannot pause (owner/mods) → clear message');
+ await chat('twitch', 'mod', 'mod1', '!اسكت'); m = await M(); ok(m.paused, 'moderator «!اسكت» (custom pause word) → paused');
+ await chat('twitch', 'mod', 'mod1', '!كمل'); await chat('kick', 'viewer', 'v', '!سكب'); m = await M();
+ ok(m.current && m.current.track.title === 'Levitating', 'viewer «!سكب» allowed after changing permission → next song');
+ await chat('tiktok', 'viewer', 'v2', '!تخطي'); ok((await M()).current.track.title === 'Levitating', 'removed word «!تخطي» does nothing now');
+ await p.click('[data-mcplat="kick"]'); await p.waitForTimeout(200);
+ const ql = (await M()).queue.length; await chat('kick', 'viewer', 'k1', '!شغل فوق هام'); ok((await M()).queue.length === ql, 'Kick disabled → its chat commands ignored');
+ await p.click('[data-mcon="request"]'); await p.waitForTimeout(200); await chat('tiktok', 'viewer', 'z', '!شغل فوق هام'); ok((await M()).queue.length === ql, 'request command disabled → ignored');
+ await p.click('[data-mcon="request"]'); await p.waitForTimeout(200);
+ // الحفظ
+ await p.reload(); await p.waitForTimeout(500); await p.click('.nav [data-go="music"]'); await p.waitForTimeout(300);
+ const c = await p.evaluate(() => ({...S.bots.music.cmds, _kick: S.bots.music.platforms.kick}));
+ ok(c.request.words.includes('!غني') && c.pause.words.includes('!اسكت') && !c.skip.words.includes('!تخطي') && c.skip.perm === 'all' && c._kick === false, 'all command customizations persist after reload');
+ await p.click('[data-mcreset]').catch(() => {});
+ ok(!errs.length, 'no page errors ' + errs.slice(0, 3).join(' | '));
+ await p.screenshot({ path: '/home/claude/najd/tests/shot-music-cmds.png', fullPage: false });
+ await b.close();
+})();

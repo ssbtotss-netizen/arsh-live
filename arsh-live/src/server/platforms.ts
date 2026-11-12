@@ -6,7 +6,7 @@
 import WebSocket from "ws";
 import type { PrismaClient } from "@prisma/client";
 import { encrypt, decrypt } from "../lib/secrets";
-import { OAUTH, twitchToEvent, youtubeToEvents, kickToEvent } from "../engine/platforms.js";
+import { OAUTH, twitchToEvent, youtubeToEvents, kickToEvent, chatSendRequest } from "../engine/platforms.js";
 
 type Hub = { dispatch(room: string, ev: any): void };
 type Tok = { access: string; refresh?: string; exp?: number };
@@ -14,6 +14,7 @@ const env = process.env as Record<string, string | undefined>;
 
 export function createPlatformService(prisma: PrismaClient, hub: Hub) {
   const running = new Map<string, { stop(): void }>(); // key = userId:platform
+  const ytChat = new Map<string, string>(); // userId → liveChatId للبث النشط (لإرسال ردود البوت)
   const roomOf = async (userId: string) => (await prisma.user.findUnique({ where: { id: userId }, select: { overlayToken: true } }))?.overlayToken;
 
   async function setStatus(userId: string, platform: string, data: any) {
@@ -86,7 +87,7 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
       if (stopped) return; let wait = 15_000;
       try {
         const t = await tokenOf(userId, "youtube"); if (!t) return;
-        if (!chatId) { const r: any = await (await fetch("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true", { headers: { authorization: `Bearer ${t.access}` } })).json(); chatId = r.items?.[0]?.snippet?.liveChatId || ""; page = ""; if (!chatId) wait = 30_000; }
+        if (!chatId) { const r: any = await (await fetch("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true", { headers: { authorization: `Bearer ${t.access}` } })).json(); chatId = r.items?.[0]?.snippet?.liveChatId || ""; page = ""; if (chatId) ytChat.set(userId, chatId); else ytChat.delete(userId); if (!chatId) wait = 30_000; }
         if (chatId) {
           const r = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet,authorDetails&liveChatId=${chatId}${page ? `&pageToken=${page}` : ""}`, { headers: { authorization: `Bearer ${t.access}` } });
           if (r.status === 403 || r.status === 404) { chatId = ""; } else { const j: any = await r.json(); const first = !page; page = j.nextPageToken || page; wait = Math.max(3000, j.pollingIntervalMillis || 5000);
@@ -129,5 +130,23 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
     const all = await prisma.platformConnection.findMany({ where: { status: "connected", platform: { in: ["youtube", "twitch", "kick"] } } });
     for (const c of all) await start(c.userId, c.platform).catch(() => {});
   }
-  return { exchange, saveConnection, start, stop, startAll, kickWebhook };
+  // ---------- ردود البوت في شات المنصة (طابور لكل حساب: رسالة كل 1.5 ث، 5 رسائل كحد أقصى في الانتظار) ----------
+  const outQ = new Map<string, { list: string[]; busy: boolean }>();
+  async function sendNow(userId: string, platform: string, text: string) {
+    const c = await prisma.platformConnection.findUnique({ where: { userId_platform: { userId, platform } } });
+    if (!c || c.status !== "connected") return { ok: false, why: "غير متصل" };
+    const t = await tokenOf(userId, platform); if (!t) return { ok: false, why: "لا يوجد رمز وصول" };
+    const req = chatSendRequest(platform, { token: t.access, clientId: env.TWITCH_CLIENT_ID, accountId: c.accountId, liveChatId: ytChat.get(userId), text });
+    if (!req) return { ok: false, why: platform === "youtube" ? "لا يوجد بث YouTube نشط" : "غير مدعوم" };
+    const r = await fetch(req.url, req.init as any).catch(() => null);
+    if (!r || !r.ok) { const why = `فشل إرسال الرد (${r ? r.status : "شبكة"})`; await setStatus(userId, platform, { lastError: why }); return { ok: false, why }; }
+    return { ok: true };
+  }
+  function sendChat(userId: string, platform: string, text: string) {
+    if (!["youtube", "twitch", "kick"].includes(platform)) return; const k = userId + ":" + platform;
+    const q = outQ.get(k) || { list: [], busy: false }; outQ.set(k, q); if (q.list.length >= 5) return; q.list.push(text);
+    if (q.busy) return; q.busy = true;
+    (async () => { while (q.list.length) { await sendNow(userId, platform, q.list.shift()!).catch(() => {}); await new Promise(r => setTimeout(r, 1500)); } q.busy = false; })();
+  }
+  return { exchange, saveConnection, start, stop, startAll, kickWebhook, sendChat };
 }

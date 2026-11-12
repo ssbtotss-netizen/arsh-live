@@ -96,6 +96,10 @@ const PORT = 39500 + Math.floor(Math.random() * 400), B = 'http://127.0.0.1:' + 
  ok(await wait(dash, () => R.C.music.current && R.C.music.current.track.title === 'الأماكن'), 'new request when idle → plays immediately: ' + await v.textContent('#msg'));
  await dash.waitForTimeout(300); await dash.click('[data-mop="prev"]',{timeout:5000}).catch(e=>console.log('prev click',e.message.slice(0,80))); ok(await wait(dash, () => R.C.music.current && R.C.music.current.track.title !== 'الأماكن'), 'previous → goes back: '+await dash.evaluate(()=>JSON.stringify({c:R.C.music.current&&R.C.music.current.track.title,p:(R.C.music.prev||[]).map(x=>x.track.title)})));
 
+ // 10.5) الطريقة الأساسية: أمر من شات TikTok (بدون رابط ولا تسجيل) → القائمة → يُشغَّل
+ await fetch(B + '/test/chat?' + new URLSearchParams({ id: 'chat_fan', name: 'متابع الشات', text: '!شغل فوق هام' }));
+ ok(await wait(dash, () => [R.C.music.current, ...R.C.music.queue].some(q => q && q.track.title === 'فوق هام السحب' && q.by.name === 'متابع الشات' && q.by.platform === 'tiktok')), 'TikTok chat «!شغل فوق هام» → queued with the TikTok account name (no link/registration) '+await dash.evaluate(()=>JSON.stringify([R.C.music.log.slice(0,3),S.botFeed.slice(0,2).map(x=>x.text),S.bots.music.noRepeatMin,S.bots.music.cooldownSec])));
+ ok(await wait(dash, () => /شات TikTok/.test(document.querySelector('#pg').innerText)), 'dashboard queue shows the request platform (TikTok chat)');
  // 11) الصوت من اللوحة
  await dash.$eval('[data-mvol]', e => { e.value = '30'; e.dispatchEvent(new Event('change', { bubbles: true })) });
  ok(await wait(obs, () => Math.abs(window.__player.A.volume - 0.3) < 0.01), 'volume from dashboard → applied in the OBS player');

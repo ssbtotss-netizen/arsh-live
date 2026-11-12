@@ -70,3 +70,12 @@ export const PLATFORM_GUIDES={
   chat:"رسائل Twitch تظهر في الشات الموحد مع شارات المشرف والمشترك. الرد ممكن بصلاحية user:write:chat.",obs:["نفس رابط الشات الموحد"],test:"اكتب رسالة في شات قناتك.",
   fix:["انتهاء الصلاحية: يُجدَّد الرمز تلقائياً؛ إن فشل أعد الربط"]},
 };
+
+/** إرسال رد البوت في شات المنصة (واجهات رسمية فقط، بالصلاحيات الموجودة في OAUTH): يعيد {url, init} أو null.
+ * TikTok LIVE لا يوفر واجهة لإرسال رسائل الشات — الرد يظهر على الشاشة فقط هناك. */
+export function chatSendRequest(platform,{token,clientId,accountId,liveChatId,text}){ const msg=String(text||"").replace(/\s+/g," ").trim(); if(!msg||!token) return null;
+ const h={authorization:`Bearer ${token}`,"content-type":"application/json"};
+ if(platform==="twitch") return accountId&&clientId?{url:"https://api.twitch.tv/helix/chat/messages",init:{method:"POST",headers:{...h,"client-id":clientId},body:JSON.stringify({broadcaster_id:String(accountId),sender_id:String(accountId),message:msg.slice(0,500)})}}:null;
+ if(platform==="youtube") return liveChatId?{url:"https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet",init:{method:"POST",headers:h,body:JSON.stringify({snippet:{liveChatId,type:"textMessageEvent",textMessageDetails:{messageText:msg.slice(0,200)}}})}}:null;
+ if(platform==="kick") return accountId?{url:"https://api.kick.com/public/v1/chat",init:{method:"POST",headers:h,body:JSON.stringify({broadcaster_user_id:Number(accountId),content:msg.slice(0,500),type:"user"})}}:null;
+ return null }

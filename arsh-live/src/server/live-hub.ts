@@ -22,6 +22,8 @@ export type HubOptions = {
   onDonationDispatch?(room: string, ev: any, info: { dup: boolean; overlays: number }): void;
   /** مكتبة الأغاني (بيانات فقط) من قاعدة البيانات عند تحميل الغرفة */
   loadMusic?(room: string): Promise<any[]>;
+  /** رد بوت يجب إرساله في شات المنصة نفسها (YouTube / Twitch / Kick) */
+  onChatReply?(room: string, platform: string, text: string): void;
 };
 
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
@@ -51,7 +53,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
 
   /** نشر نتائج المحرك + الحفظ */
   function commit(id: string, r: Room, res: { out: any[]; logs: any[] }) {
-    for (const m of res.out) { broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); }
+    for (const m of res.out) { broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
     if (res.out.some(m => m.t === "clock")) { r.dirty = true; }
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }

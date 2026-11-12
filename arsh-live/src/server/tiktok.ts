@@ -9,7 +9,7 @@ import type { LiveEvent, LiveUser } from "../lib/core";
 
 export type TikTokHandle = { stop(): void; connected: boolean };
 
-function userOf(d: any): LiveUser {
+export function userOf(d: any): LiveUser {
   const u = d?.user ?? d ?? {};
   const id = String(u.uniqueId ?? d?.uniqueId ?? u.userId ?? d?.userId ?? "");
   const name = String(u.nickname ?? d?.nickname ?? id ?? "مجهول");
@@ -23,7 +23,10 @@ function userOf(d: any): LiveUser {
   // صفات المشرف/المشترك: تُقرأ فقط إن أرسلتها المكتبة (غير مضمونة)
   const mod = !!(d?.isModerator ?? u.isModerator ?? d?.userIdentity?.isModeratorOfAnchor);
   const sub = !!(d?.isSubscriber ?? u.isSubscriber ?? d?.userIdentity?.isSubscriberOfAnchor);
-  return { id: id || name, name: name || id, avatar, ...(mod ? { mod: true } : {}), ...(sub ? { sub: true } : {}) } as any;
+  // متابع لصاحب البث: followRole (1 متابع، 2 صديق) أو followInfo.followStatus — إن أرسلتها المكتبة
+  const fr = Number(d?.followRole ?? u.followRole ?? u.followInfo?.followStatus ?? d?.userIdentity?.isFollowerOfAnchor ?? 0);
+  const follower = fr >= 1 || d?.userIdentity?.isFollowerOfAnchor === true;
+  return { id: id || name, name: name || id, avatar, ...(mod ? { mod: true } : {}), ...(sub ? { sub: true } : {}), ...(follower ? { follower: true } : {}) } as any;
 }
 
 export function startTikTok(
@@ -78,7 +81,9 @@ export function startTikTok(
         cb.onEvent({ type: "gift", id, user: u, value: diamonds * repeat, count: repeat, gift, giftId, diamonds });
       });
       conn.on(ev("CHAT", "chat"), (d: any) => {
-        cb.onEvent({ type: "comment", id: mid(d, "chat"), user: userOf(d), text: String(d.comment ?? "").slice(0, 200) });
+        // صاحب البث نفسه يكتب في الشات ← صلاحية «صانع المحتوى» لأوامر البوت
+        const cu: any = userOf(d); if (String(cu.id).toLowerCase() === username.toLowerCase()) cu.owner = true;
+        cb.onEvent({ type: "comment", id: mid(d, "chat"), user: cu, text: String(d.comment ?? "").slice(0, 200) });
       });
       // متابعة: حدث FOLLOW في الإصدار 2، أو social بنوع follow في الإصدارات الأقدم
       const onFollow = (d: any) => cb.onEvent({ type: "follow", id: mid(d, "follow") ?? `follow:${userOf(d).id}`, user: userOf(d) });

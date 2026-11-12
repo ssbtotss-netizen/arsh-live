@@ -5,24 +5,48 @@
 import { normAr } from "./bots.js";
 
 export const MUSIC_PERMS=[["owner","صانع المحتوى فقط"],["mods","المشرفون فقط"],["owner_mods","صانع المحتوى والمشرفون"],["subs","المشتركون"],["followers","المتابعون"],["all","جميع المشاهدين"],["custom","قائمة مستخدمين مخصصة"]];
-export const MUSIC_CMDS={request:["!اغنية","!أغنية","!song","!طلب","!sr"],queue:["!queue","!قائمة"],current:["!current","!الحالية","!song?"],skip:["!skip","!سكب","!تخطي"],pause:["!pause","!ايقاف","!إيقاف"],resume:["!resume","!استئناف"],volume:["!volume","!صوت"],remove:["!remove","!حذف"],clear:["!clear","!مسح"],voteskip:["!voteskip","!تصويت"]};
-/** أي صلاحية تحكم كل أمر (طلب الأغاني منفصل عن التخطي والصوت) */
-const CMD_PERM={request:"request",queue:"info",current:"info",skip:"skip",pause:"control",resume:"control",volume:"control",remove:"control",clear:"control",voteskip:"vote"};
-export function defaultMusicCfg(){ return {page:true,approve:"auto",maxQueue:50,bannedUsers:"",playOn:"player",enabled:true,perms:{request:"all",info:"all",skip:"owner_mods",control:"owner_mods",vote:"all"},users:"",voteSkip:{on:true,needed:3},maxDurSec:420,perUser:2,cooldownSec:60,noRepeatMin:30,banned:"",autoplay:true,shuffle:false,duckTTS:true,volume:70,replies:true} }
+/** وظائف بوت الأغاني في الشات — لكل وظيفة: أوامرها (أكثر من صيغة)، تفعيلها، وصلاحيتها. كلها قابلة للتعديل من اللوحة */
+export const MUSIC_FUNCS=[
+ ["request","طلب / تشغيل أغنية",["!شغل","!طلب","!اغنية","!song","!sr"],"all",true,"يبحث في مكتبتك ويضيف الأغنية لقائمة الانتظار — مثال: !شغل فوق هام السحب"],
+ ["skip","تخطي الأغنية الحالية",["!تخطي","!سكب","!skip"],"owner_mods",false,"ينتقل للأغنية التالية"],
+ ["next","تشغيل التالي",["!التالي","!next"],"owner_mods",false,"نفس التخطي باسم آخر"],
+ ["pause","إيقاف مؤقت",["!وقف","!ايقاف","!pause"],"owner_mods",false,""],
+ ["resume","استكمال التشغيل",["!كمل","!استئناف","!resume"],"owner_mods",false,""],
+ ["queue","عرض قائمة الانتظار",["!قائمتي","!قائمة","!queue"],"all",false,"أول 5 أغاني + ترتيب طلباتك"],
+ ["current","الأغنية الحالية",["!الحالية","!current"],"all",false,""],
+ ["remove","حذف طلب",["!حذف","!remove"],"all",false,"المشاهد يحذف آخر طلب له فقط — المشرف يحذف برقم: !حذف 2"],
+ ["volume","مستوى الصوت",["!صوت","!volume"],"owner_mods",true,"!صوت 50"],
+ ["clear","مسح القائمة",["!مسح","!clear"],"owner",false,""],
+ ["voteskip","التصويت على التخطي",["!تصويت","!voteskip"],"all",false,"يتخطى عند اكتمال الأصوات"]];
+export const MUSIC_CMDS=Object.fromEntries(MUSIC_FUNCS.map(f=>[f[0],f[2]]));
+/** توحيد الأمر: ! في البداية، حروف صغيرة، توحيد الهمزات (أ/ا) — حتى لا يتعارض «!أغنية» و«!اغنية» */
+export function musicFixWord(w){ let t=String(w||"").trim().split(/\s+/)[0]||""; if(!t) return ""; if(!/^[!#/.$]/.test(t)) t="!"+t; return t.slice(0,30) }
+export function musicNormWord(w){ const t=musicFixWord(w); return t?normAr(t).toLowerCase():"" }
+export function defaultMusicCmds(){ return Object.fromEntries(MUSIC_FUNCS.map(([k,,w,perm])=>[k,{on:true,words:[...w],perm,users:""}])) }
+/** الأوامر الفعلية: المحفوظة، أو ترحيل الإعدادات القديمة (صلاحيات المجموعات) */
+export function musicCmds(cfg){ cfg=cfg||{}; const d=defaultMusicCmds(), c=cfg.cmds&&typeof cfg.cmds==="object"?cfg.cmds:null;
+ const old=cfg.perms||{}, oldMap={request:old.request,queue:old.info,current:old.info,skip:old.skip,next:old.skip,pause:old.control,resume:old.control,volume:old.control,clear:old.control,voteskip:old.vote};
+ const out={}; for(const [k,def] of Object.entries(d)){ const x=c&&c[k]||{}; const perm=MUSIC_PERMS.some(p=>p[0]===x.perm)?x.perm:(!c&&oldMap[k]&&MUSIC_PERMS.some(p=>p[0]===oldMap[k])?oldMap[k]:def.perm);
+  const seen=new Set(), words=(Array.isArray(x.words)?x.words:def.words).map(musicFixWord).filter(w=>{ const n=musicNormWord(w); if(!n||seen.has(n)) return false; seen.add(n); return true }).slice(0,10);
+  out[k]={on:x.on!==false,words,perm,users:String(x.users??(perm==="custom"&&!c?cfg.users||"":"")).slice(0,500)} }
+ return out }
+/** تعارض الأوامر: نفس الكلمة لوظيفتين — اللوحة تمنع الحفظ، والمحرك يأخذ أول وظيفة */
+export function musicCmdConflicts(cmds){ const seen={}, out=[]; for(const [k,c] of Object.entries(cmds||{})) for(const raw of (c.words||[])){ const w=musicNormWord(raw); if(!w) continue; if(seen[w]&&seen[w]!==k) out.push({word:musicFixWord(raw),a:seen[w],b:k}); else seen[w]=k } return out }
+/** تحليل التعليق: الأمر (كلمته الأولى) + النص بعده — فقط للأوامر المفعّلة */
+export function parseMusicCmd(text,cmds){ const t=String(text||"").trim(); if(!/^[!#/.$]/.test(t)) return null; const sp=t.search(/\s/), head=musicNormWord(sp<0?t:t.slice(0,sp)), arg=(sp<0?"":t.slice(sp+1)).trim().slice(0,120);
+ const C=cmds||musicCmds({}); for(const [cmd,c] of Object.entries(C)) if(c.on!==false){ const w=c.words.find(x=>musicNormWord(x)===head); if(w) return {cmd,arg,word:w} } return null }
+
+export function defaultMusicCfg(){ return {cmds:null,platforms:{tiktok:true,youtube:true,twitch:true,kick:true},dupSec:8,skipCooldownSec:5,chatReplies:true,page:false,approve:"auto",maxQueue:50,bannedUsers:"",playOn:"player",enabled:true,perms:{request:"all",info:"all",skip:"owner_mods",control:"owner_mods",vote:"all"},users:"",voteSkip:{on:true,needed:3},maxDurSec:420,perUser:2,cooldownSec:60,noRepeatMin:30,banned:"",autoplay:true,shuffle:false,duckTTS:true,volume:70,replies:true} }
 export function newMusicState(){ return {queue:[],current:null,paused:false,volume:70,lib:[],votes:[],history:[],last:{},followers:[],seq:0,pending:[],prev:[],player:null,status:"idle",err:"",log:[]} }
 /** سجل التشخيص: هل وصل الطلب، حُفظ، دخل القائمة، وُجد مصدر تشغيل، بدأ التشغيل، وسبب الفشل */
 export const MUSIC_STEPS={received:"📨 وصل الطلب للخادم",queued:"✅ حُفظ ودخل قائمة الانتظار",pending:"⏳ بانتظار موافقة صانع المحتوى",approved:"👍 وافق صانع المحتوى",rejected:"🚫 رفض صانع المحتوى",refused:"⛔ رُفض الطلب",source:"🎧 وُجد ملف التشغيل",loading:"⏳ جارٍ تحميل الأغنية في المشغل",playing:"▶ بدأ التشغيل فعلياً",paused:"⏸ إيقاف مؤقت",ended:"⏭ انتهت الأغنية",error:"❌ فشل التشغيل",skip:"⏭ تخطي",claim:"📺 مشغل جديد يتولى التشغيل"};
 export function musicLog(M,now,step,x={}){ M.log=M.log||[]; M.log.unshift({at:now,step,...x}); if(M.log.length>40) M.log.length=40 }
 function musFix(M){ for(const k of ["pending","prev","log"]) if(!Array.isArray(M[k])) M[k]=[]; if(M.status==null) M.status="idle"; return M }
 
-/** تحليل الأمر من نص التعليق */
-export function parseMusicCmd(text){ const t=String(text||"").trim(); if(!t.startsWith("!")) return null; const sp=t.search(/\s/), head=(sp<0?t:t.slice(0,sp)).toLowerCase(), arg=sp<0?"":t.slice(sp+1).trim();
- for(const [cmd,al] of Object.entries(MUSIC_CMDS)) if(al.includes(head)) return {cmd,arg}; return null }
-
 /** هل يملك المستخدم صلاحية المستوى؟ */
 export function musicPermOk(level,u,M,cfg){ u=u||{}; const owner=!!u.owner, mod=!!u.mod;
  switch(level){ case "owner": return owner; case "mods": return mod; case "owner_mods": return owner||mod; case "subs": return owner||mod||!!u.sub;
-  case "followers": return owner||mod||!!u.sub||(M.followers||[]).includes(String(u.id||u.name));
+  case "followers": return owner||mod||!!u.sub||!!u.follower||(M.followers||[]).includes(String(u.id||u.name));
   case "custom": { const list=String(cfg.users||"").split(/[,،\s]+/).map(s=>s.trim().replace(/^@/,"").toLowerCase()).filter(Boolean); return owner||list.includes(String(u.name||"").toLowerCase())||list.includes(String(u.id||"").toLowerCase()) }
   default: return true } }
 
@@ -70,24 +94,42 @@ export function musicNext(M,now,cfg={}){ musFix(M); if(M.current){ M.history.uns
  let i=0; if(cfg.shuffle&&M.queue.length>1) i=Math.floor((now/1000)%M.queue.length);
  const q=M.queue.splice(i,1)[0]; M.current=q?{...q,startedAt:now,pos:0,rp:0}:null; M.paused=false; M.votes=[]; M.status=q?"loading":"idle"; M.err=""; return M.current }
 
-/** حدث تعليق → أمر موسيقى. يرجع {changed, reply} */
-export function musicOnEvent(M,cfg,ev,now,lib){ if(!cfg||cfg.enabled===false) return null;
+/** حدث تعليق → أمر موسيقى. يرجع {changed, reply, platform} — المعالج نفسه لكل المنصات (TikTok / YouTube / Twitch / Kick) */
+export const MUSIC_PLATFORMS=[["tiktok","TikTok LIVE"],["youtube","YouTube Live"],["twitch","Twitch"],["kick","Kick"]];
+const muSpam=M=>{ M.sp=M.sp||{msg:{},deny:{},skipAt:0}; return M.sp };
+function muPrune(o,now,ms){ const ks=Object.keys(o); if(ks.length>500) for(const k of ks) if(now-o[k]>ms) delete o[k] }
+export function musicOnEvent(M,cfg,ev,now,lib){ if(!cfg||cfg.enabled===false) return null; musFix(M);
  if(ev.type==="follow"&&ev.user){ const k=String(ev.user.id||ev.user.name); if(!M.followers.includes(k)){ M.followers.push(k); if(M.followers.length>2000) M.followers.shift() } return null }
- if(ev.type!=="comment") return null; const c=parseMusicCmd(ev.text); if(!c) return null;
- const u={...(ev.user||{}),platform:ev.platform}; const perm=cfg.perms?.[CMD_PERM[c.cmd]]||"all";
- if(!musicPermOk(perm,u,M,cfg)) return {changed:false,reply:`@${u.name} ما عندك صلاحية لهذا الأمر`};
+ if(ev.type!=="comment") return null; const cmds=musicCmds(cfg); const c=parseMusicCmd(ev.text,cmds); if(!c) return null;
+ const plat=ev.platform||"tiktok"; if(cfg.platforms&&cfg.platforms[plat]===false) return null; /* المنصة غير مفعّلة لأوامر الأغاني */
+ const u={...(ev.user||{}),platform:plat}, uk=plat+":"+String(u.id||u.name), at="@"+(u.name||u.id||"مشاهد"), SP=muSpam(M), R=(changed,reply,x={})=>({changed,reply,platform:plat,...x});
+ // منع الرسائل المكررة: نفس الشخص ونفس الأمر خلال ثوانٍ ← تجاهل بصمت (بدون رد يزيد الإزعاج)
+ const mk=uk+"|"+normAr(c.word+" "+c.arg).toLowerCase(), dupMs=Math.max(0,+cfg.dupSec||8)*1000; if(dupMs&&SP.msg[mk]&&now-SP.msg[mk]<dupMs) return null; SP.msg[mk]=now; muPrune(SP.msg,now,60000);
+ const deny=txt=>{ /* رد الرفض مرة كل 30 ث لكل شخص — لا نغرق الشات */ if(SP.deny[uk]&&now-SP.deny[uk]<30000) return R(false,""); SP.deny[uk]=now; muPrune(SP.deny,now,60000); return R(false,txt) };
+ const C=cmds[c.cmd]; if(!musicPermOk(C.perm,u,M,{...cfg,users:C.users})) return deny(`${at} ما عندك صلاحية لأمر ${c.word}`);
+ const word=C.words[0]||c.word;
  switch(c.cmd){
-  case "request": { if(!c.arg) return {changed:false,reply:"اكتب اسم الأغنية بعد الأمر: !اغنية اسم الأغنية"}; const t=musicSearch(lib||M.lib,c.arg); const r=musicAdd(M,cfg,t,u,now,{via:"chat"}); return {changed:r.ok,reply:`@${u.name} ${r.reply}`} }
-  case "queue": return {changed:false,reply:M.queue.length?M.queue.slice(0,5).map((q,i)=>`${i+1}. ${q.track.title}`).join(" | "):"القائمة فاضية"};
-  case "current": return {changed:false,reply:M.current?`الحالية: ${M.current.track.title}${M.current.track.artist?" — "+M.current.track.artist:""} (طلب ${M.current.by.name})`:"لا توجد أغنية الآن"};
-  case "skip": if(M.current) musicLog(M,now,"skip",{qid:M.current.qid,title:M.current.track.title,by:u.name}); musicNext(M,now,cfg); return {changed:true,reply:"تم التخطي ⏭"};
-  case "pause": if(!M.current||M.paused) return {changed:false}; M.paused=true; M.status="paused"; return {changed:true,reply:"إيقاف مؤقت ⏸"};
-  case "resume": if(!M.current||!M.paused) return {changed:false}; M.paused=false; M.status="loading"; return {changed:true,reply:"استئناف ▶"};
-  case "volume": { const v=Math.round(+c.arg); if(!(v>=0&&v<=100)) return {changed:false,reply:"اكتب رقماً من 0 إلى 100"}; M.volume=v; return {changed:true,reply:`الصوت ${v}%`} }
-  case "remove": { const i=Math.round(+c.arg)-1; if(!(i>=0&&i<M.queue.length)) return {changed:false,reply:"رقم غير موجود في القائمة"}; const [q]=M.queue.splice(i,1); return {changed:true,reply:`حُذفت «${q.track.title}»`} }
-  case "clear": M.queue=[]; M.pending=[]; return {changed:true,reply:"تم مسح القائمة"};
-  case "voteskip": { if(!cfg.voteSkip?.on||!M.current) return {changed:false}; const k=String(u.id||u.name); if(M.votes.includes(k)) return {changed:false,reply:`@${u.name} صوّتت مسبقاً`};
-   M.votes.push(k); const need=Math.max(1,+cfg.voteSkip.needed||3); if(M.votes.length>=need){ musicNext(M,now,cfg); return {changed:true,reply:"اكتمل التصويت — تم التخطي ⏭"} } return {changed:true,reply:`تصويت التخطي ${M.votes.length}/${need}`} }
+  case "request": { if(!c.arg||c.arg.replace(/[\s!.؟?]/g,"").length<2) return deny(`${at} اكتب اسم الأغنية بعد الأمر: ${word} اسم الأغنية`);
+   const t=musicSearch(lib||M.lib,c.arg); if(!t){ musicLog(M,now,"refused",{why:"لم تُوجد في المكتبة: "+c.arg.slice(0,40),by:u.name,via:plat}); return R(false,`${at} ما لقيت «${c.arg.slice(0,40)}» في المكتبة`) }
+   const r=musicAdd(M,cfg,t,u,now,{via:"chat"}); if(!r.ok){ musicLog(M,now,"refused",{why:r.reply,title:t.title,by:u.name}); return R(false,`${at} ${r.reply}`) }
+   return R(true,r.pending?`🎵 وصل طلب «${t.title}» من ${at} — بانتظار موافقة صانع المحتوى`:`🎵 تمت إضافة «${t.title}»${t.artist?" — "+t.artist:""} ${r.position?`إلى قائمة الانتظار (رقم ${r.position})`:"وتعمل الآن"} بواسطة ${at}`) }
+  case "queue": { if(!M.queue.length) return R(false,"📋 القائمة فاضية"); const mine=M.queue.map((q,i)=>q.by.id===String(u.id||u.name)?i+1:0).filter(Boolean);
+   return R(false,"📋 "+M.queue.slice(0,5).map((q,i)=>`${i+1}. ${q.track.title}`).join(" | ")+(M.queue.length>5?` (+${M.queue.length-5})`:"")+(mine.length?` — طلباتك: ${mine.map(n=>"#"+n).join(" ")}`:"")) }
+  case "current": return R(false,M.current?`🎵 الحالية: ${M.current.track.title}${M.current.track.artist?" — "+M.current.track.artist:""} (طلب ${M.current.by.name})`:"لا توجد أغنية الآن");
+  case "skip": case "next": { if(!M.current&&!M.queue.length) return R(false,"لا توجد أغنية للتخطي");
+   const cd=Math.max(0,+cfg.skipCooldownSec||5)*1000; if(cd&&now-SP.skipAt<cd) return null; /* منع التخطي المتتالي المزعج */ SP.skipAt=now;
+   const was=M.current&&M.current.track.title; if(M.current) musicLog(M,now,"skip",{qid:M.current.qid,title:was,by:u.name,via:plat}); musicNext(M,now,cfg);
+   return R(true,`⏭ ${at} تخطى${was?` «${was}»`:""}${M.current?` — التالية: «${M.current.track.title}»`:""}`) }
+  case "pause": if(!M.current||M.paused) return R(false,""); M.paused=true; M.status="paused"; return R(true,`⏸ إيقاف مؤقت بواسطة ${at}`);
+  case "resume": if(!M.current||!M.paused) return R(false,""); M.paused=false; M.status="loading"; return R(true,`▶ استكمال بواسطة ${at}`);
+  case "volume": { const v=Math.round(+c.arg); if(!c.arg||!(v>=0&&v<=100)) return deny(`${at} اكتب رقماً من 0 إلى 100: ${word} 50`); M.volume=v; return R(true,`🔊 الصوت ${v}%`) }
+  case "remove": { const staff=!!(u.owner||u.mod), n=Math.round(+c.arg);
+   if(c.arg&&n>=1){ const q=M.queue[n-1]; if(!q) return deny(`${at} رقم غير موجود في القائمة`); if(!staff&&q.by.id!==String(u.id||u.name)) return deny(`${at} تقدر تحذف طلبك أنت فقط`); M.queue.splice(n-1,1); return R(true,`🗑 حُذفت «${q.track.title}»`) }
+   const i=[...M.queue].reverse().findIndex(q=>q.by.id===String(u.id||u.name)); if(i<0){ const p=M.pending.findIndex(q=>q.by.id===String(u.id||u.name)); if(p>=0){ const [q]=M.pending.splice(p,1); return R(true,`🗑 ${at} ألغى طلب «${q.track.title}»`) } return deny(`${at} ما عندك طلبات في القائمة`) }
+   const [q]=M.queue.splice(M.queue.length-1-i,1); return R(true,`🗑 ${at} حذف طلبه «${q.track.title}»`) }
+  case "clear": M.queue=[]; M.pending=[]; return R(true,"🗑 تم مسح القائمة");
+  case "voteskip": { if(!cfg.voteSkip?.on||!M.current) return R(false,""); const k=uk; if(M.votes.includes(k)) return null;
+   M.votes.push(k); const need=Math.max(1,+cfg.voteSkip.needed||3); if(M.votes.length>=need){ musicLog(M,now,"skip",{qid:M.current.qid,title:M.current.track.title,by:"تصويت"}); musicNext(M,now,cfg); return R(true,"⏭ اكتمل التصويت — تم التخطي") } return R(true,`🗳 تصويت التخطي ${M.votes.length}/${need}`) }
  } return null }
 
 /** عمليات لوحة التحكم (صانع المحتوى) */
