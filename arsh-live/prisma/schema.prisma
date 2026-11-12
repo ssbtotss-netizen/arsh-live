@@ -46,6 +46,9 @@ model User {
   alertAssets    AlertAsset[]
   alertUses      AlertUse[]
   streamLayouts  StreamLayout[]
+  songToken      String?                      // رابط صفحة طلب الأغاني العامة /sr/<token> (منفصل عن رابط OBS) — عشوائي 72 بت (بدون قيد unique حتى لا يتعطل db push على البيانات الحالية)
+  musicTracks    MusicTrack[]
+  @@index([songToken])
 }
 
 model Session {
@@ -458,4 +461,20 @@ model LayoutReport {
   status    String       @default("open")
   createdAt DateTime     @default(now())
   @@unique([layoutId, userId])
+}
+
+/// مكتبة أغاني صانع المحتوى (موسيقاه المرخّصة): البيانات هنا، والملف الصوتي (مصدر التشغيل) في AlertAsset slot=music
+model MusicTrack {
+  id        String   @id @default(cuid())
+  ownerId   String
+  owner     User     @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  title     String
+  artist    String   @default("")
+  dur       Int      @default(0)
+  assetId   String
+  coverId   String?
+  mime      String
+  size      Int
+  createdAt DateTime @default(now())
+  @@index([ownerId])
 }

@@ -150,3 +150,33 @@ export async function processMedia(bytes: Uint8Array, insp: any): Promise<Proces
     return { ok: true, main: (await rd(r.main))!, cover: r.cover, preview: await rd(r.preview), meta: r.meta, kind: r.kind };
   } finally { rm(dir, { recursive: true, force: true }).catch(() => {}); }
 }
+
+// ---------------- الأغاني: ملف صوتي فعلي يُشغَّل في المتصفح و OBS (CEF) ----------------
+/** وسوم الملف (العنوان/الفنان) من مخرجات ffmpeg -i */
+export function parseTags(err: string) {
+  const sec = (/Input #0[\s\S]*?Metadata:\n([\s\S]*?)\n\s{0,2}Duration:/.exec(err) || [])[1] || "";
+  const tag = (k: string) => ((new RegExp(`^\\s+${k}\\s*:\\s*(.+)$`, "im").exec(sec) || [])[1] || "").trim();
+  return { title: tag("title").slice(0, 120), artist: (tag("artist") || tag("album_artist")).slice(0, 80) };
+}
+export type MusicOut = { ok: true; path: string; mime: string; size: number; dur: number; cover?: Out; tags: { title: string; artist: string }; converted: boolean } | { ok: false; error: string; detail?: string };
+/**
+ * يتحقق أن الملف صوت حقيقي، ويحوّل غير MP3 إلى MP3 (يعمل في Chrome و OBS و TikTok LIVE Studio)،
+ * ويستخرج الغلاف المضمّن والمدة والوسوم. بدون FFmpeg: يُقبل MP3 فقط.
+ */
+export async function processMusic(src: string, dir: string, insp: any, size: number): Promise<MusicOut> {
+  if (insp.family !== "audio" && insp.family !== "video") return { ok: false, error: "bad_type" };
+  const ff = ffmpegPath();
+  if (!ff) return insp.mime === "audio/mpeg" ? { ok: true, path: src, mime: "audio/mpeg", size, dur: 0, tags: { title: "", artist: "" }, converted: false } : { ok: false, error: "no_converter" };
+  const pr = await run(["-i", src], 30_000), p = parseProbe(pr.err);
+  if (!p.ok || !p.hasAudio) return { ok: false, error: "no_audio" };
+  const tags = parseTags(pr.err);
+  let path = src, mime = insp.mime, out = size, converted = false;
+  if (p.acodec !== "mp3" || !/mp3/.test(p.container)) {
+    const o = join(dir, "m.mp3"); const r = await run([...LOW, "-i", src, "-map", "0:a:0", "-vn", "-c:a", "libmp3lame", "-b:a", "160k", "-ar", "44100", o], 600_000);
+    if (r.code !== 0) return { ok: false, error: r.oom ? "oom" : "convert_failed", detail: r.err.slice(-200) };
+    path = o; mime = "audio/mpeg"; out = (await stat(o)).size; converted = true;
+  }
+  let cover: Out | undefined;
+  if (p.vcodec) { const c = join(dir, "c.jpg"); const r = await run([...LOW, "-i", src, "-an", "-frames:v", "1", "-vf", "scale=300:300:force_original_aspect_ratio=increase,crop=300:300", c], 30_000); if (r.code === 0) { const b = await readFile(c).catch(() => null); if (b && b.length) cover = { bytes: b, mime: "image/jpeg" }; } }
+  return { ok: true, path, mime, size: out, dur: Math.round(p.duration || 0), cover, tags, converted };
+}

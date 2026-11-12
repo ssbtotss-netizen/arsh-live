@@ -1,7 +1,7 @@
 // مركز البث: غرفة لكل صانع محتوى. الخادم هو المرجع للوقت والبيانات.
 // استقبال الأحداث (tiktok.ts) ← غرفة (engine/room.js: منع التكرار → محرك القوائم + محرك السبثون/المؤقتات) ← العملاء
 import type { WebSocketServer, WebSocket } from "ws";
-import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots } from "../lib/core";
+import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg } from "../lib/core";
 import type { Layout, LiveEvent } from "../lib/core";
 import { startTikTok, type TikTokHandle } from "./tiktok";
 
@@ -20,6 +20,8 @@ export type HubOptions = {
   onNotify?(room: string, m: any): void;
   onReport?(room: string, report: any): void;
   onDonationDispatch?(room: string, ev: any, info: { dup: boolean; overlays: number }): void;
+  /** مكتبة الأغاني (بيانات فقط) من قاعدة البيانات عند تحميل الغرفة */
+  loadMusic?(room: string): Promise<any[]>;
 };
 
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
@@ -36,6 +38,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (saved?.logs) room.logs = saved.logs;
       if (saved?.DN) room.DN = saved.DN;
       if (saved?.bots) roomBots(room as any, saved.bots.cfg, saved.bots.ctx);
+      // المكتبة من قاعدة البيانات: طلبات الشات وصفحة الطلب تعمل حتى بعد إعادة تشغيل الخادم (كانت تضيع سابقاً)
+      const lib = await opt.loadMusic?.(id).catch(() => null); if (lib) roomMusicSetLib(room as any, lib);
       // معرّفات الأحداث المحتسبة سابقاً: تمنع إعادة احتسابها بعد إعادة تشغيل الخادم
       for (const l of room.logs || []) if (l.eventId) room.seen.set(l.eventId, l.at);
       rooms.set(id, room); loading.delete(id); return room;
@@ -86,6 +90,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "ack" && ws.room && typeof m.id === "string") { const r = rooms.get(ws.room); if (r && (r as any).lastDon && (r as any).lastDon.id === m.id) { (r as any).lastDon.acks.add(ws); (r as any).lastDon.goal = m.goal ?? (r as any).lastDon.goal; } return; }
       if (!ws.room) return;
       const id = ws.room, r = rooms.get(id)!;
+      // مشغل الأغاني (رابط OBS للقراءة فقط): يُسمح فقط بتقارير حالته — تولّي التشغيل، الحالة، الانتهاء، الخطأ
+      if (m.t === "mplayer" && ["claim", "pstate", "pended", "perror"].includes(m.op)) { if (r) commit(id, r, roomClockOp(r, { target: "music", op: m.op, pid: m.pid, kind: m.kind, qid: m.qid, status: m.status, pos: m.pos, why: m.why, force: ws.canEdit ? !!m.force : false }, Date.now())); return; }
       if (!ws.canEdit) return send(ws, { t: "status", text: "هذا الاتصال للقراءة فقط" });
       // «مزامنة الهدف»: لقطة كاملة جديدة لكل روابط البث المتصلة (نفس القيمة في كل مكان)
       if (m.t === "resync") { const r = rooms.get(ws.room); if (r) { const snap = roomSnapshot(r, Date.now()); r.clients.forEach(c => send(c, snap)); r.layouts.forEach(layout => r.clients.forEach(c => send(c, { t: "layout", layout }))); send(ws, { t: "status", text: `🔄 تمت المزامنة مع ${[...r.clients].filter(c => !c.canEdit).length} رابط بث` }); } return; }
@@ -159,5 +165,15 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
 
   /** للتشخيص: عدد روابط البث (قراءة فقط) واللوحات المتصلة بالغرفة */
   function stats(room: string) { const r = rooms.get(room); if (!r) return { loaded: false, overlays: 0, dashboards: 0 }; const cs = [...r.clients].filter(c => c.readyState === 1); const ld = (r as any).lastDon; return { loaded: true, overlays: cs.filter(c => !c.canEdit).length, dashboards: cs.filter(c => c.canEdit).length, donations: (r.DN?.list || []).filter((d: any) => !d.test).length, lastDon: ld ? { id: ld.id, at: ld.at, test: ld.test, sentTo: ld.overlays, confirmed: [...ld.acks].filter((c: any) => c.readyState === 1).length, goal: ld.goal ?? null } : null }; }
-  return { rooms, stats, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
+  /** طلب أغنية من صفحة المشاهد: يحمّل الغرفة إن لزم، يطبق القيود، ويبث القائمة لكل الروابط فوراً */
+  async function musicRequest(room: string, trackId: string, user: { id: string; name: string }) {
+    const r = await getRoom(room); const res = roomMusicRequest(r as any, trackId, user, Date.now());
+    commit(room, r, { out: res.out, logs: [] }); return res.res;
+  }
+  /** تحديث المكتبة بعد رفع/حذف أغنية */
+  function musicLib(room: string, lib: any[]) { const r = rooms.get(room); if (r) roomMusicSetLib(r as any, lib); }
+  function musicState(room: string) { const r = rooms.get(room); return r ? (r.C as any)?.music || null : null; }
+  /** حالة القائمة + الإعدادات الفعلية للغرفة (لصفحة الطلب العامة) */
+  async function musicInfo(room: string) { const r = await getRoom(room); return { M: (r.C as any)?.music || null, cfg: roomMusicCfg(r as any) }; }
+  return { rooms, stats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
 }

@@ -5,8 +5,10 @@ import { createReadStream } from "fs";
 import { prisma } from "@/lib/db";
 import { alCheckFile, AL_LIMITS } from "@/engine/alerts.js";
 
+export const MUSIC_SLOTS = ["music", "mcover"];
+/** مساحة الآيرتات فقط — ملفات الأغاني لها حصتها المستقلة */
 export async function usedBytes(ownerId: string) {
-  const r = await prisma.alertAsset.aggregate({ _sum: { size: true }, where: { ownerId } });
+  const r = await prisma.alertAsset.aggregate({ _sum: { size: true }, where: { ownerId, slot: { notIn: MUSIC_SLOTS } } });
   return r._sum.size || 0;
 }
 export async function putAsset(ownerId: string, slot: string, bytes: Uint8Array) {
@@ -18,6 +20,9 @@ export async function putAsset(ownerId: string, slot: string, bytes: Uint8Array)
 export async function putAssetRaw(ownerId: string, slot: string, bytes: Uint8Array, mime: string, meta: any, extra = 0) {
   const used = await usedBytes(ownerId);
   if (used + bytes.length + extra > AL_LIMITS.quota) return { ok: false as const, error: "quota", used, max: AL_LIMITS.quota };
+  return storeRaw(ownerId, slot, bytes, mime, meta);
+}
+export async function storeRaw(ownerId: string, slot: string, bytes: Uint8Array, mime: string, meta: any) {
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   // نفس الملف لنفس المستخدم لا يُخزَّن مرتين
   const dup = await prisma.alertAsset.findFirst({ where: { ownerId, sha256, slot }, select: { id: true, mime: true, size: true } });
@@ -41,6 +46,10 @@ async function sha256File(path: string) { const h = createHash("sha256"); for aw
 export async function putAssetFile(ownerId: string, slot: string, path: string, size: number, mime: string, meta: any, extra = 0) {
   const used = await usedBytes(ownerId);
   if (used + size + extra > AL_LIMITS.quota) return { ok: false as const, error: "quota", used, max: AL_LIMITS.quota };
+  return storeFile(ownerId, slot, path, size, mime, meta);
+}
+/** الحفظ نفسه (بدون فحص الحصة — يفحصها المستدعي) */
+export async function storeFile(ownerId: string, slot: string, path: string, size: number, mime: string, meta: any) {
   const sha256 = await sha256File(path);
   const dup = await prisma.alertAsset.findFirst({ where: { ownerId, sha256, slot }, select: { id: true, mime: true, size: true } });
   if (dup) return { ok: true as const, ...dup };

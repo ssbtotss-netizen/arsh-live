@@ -250,3 +250,11 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .ml-pk:hover,.ml-pk.on{border-color:var(--pri,#ffcc00)}.ml-pk span{display:flex;flex-direction:column;min-width:0}
 .ml-dsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
 .ml-dl{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line,#2a3046)}.ml-dl.ready{border-color:#4ade80}
+/* ===== طلبات الأغاني ===== */
+.mu-cv{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ec4899) center/cover;font-size:18px}
+.mu-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff10}
+.mu-t{flex:1;min-width:0;display:flex;flex-direction:column}.mu-t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu-n{width:20px;text-align:center;opacity:.6;font-weight:700}
+.mu-bar{height:5px;border-radius:5px;background:#ffffff1a;margin-top:8px;overflow:hidden}.mu-bar i{display:block;height:100%;background:var(--pri,#ffcc00);transition:width 1s linear}
+.mu-log{max-height:260px;overflow:auto;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+.tag.ok{background:#4ade8033}.tag.warn{background:#facc1533}.tag.bad{background:#f8717133}

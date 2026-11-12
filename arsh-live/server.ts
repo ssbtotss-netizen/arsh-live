@@ -74,6 +74,12 @@ app.prepare().then(() => {
         bots: owner?.bots && (owner.bots as any).commands ? { cfg: owner.bots, ctx: { socials: owner.socials, donCfg: owner.donCfg, layout: (() => { const ls = (owner as any).layouts || []; const l = ls.find((x: any) => x.id === owner.activeLayoutId) || ls[0]; return l ? { id: l.id, widgets: l.widgets } : null; })() } } : null,
       };
     },
+    // مكتبة الأغاني (بيانات فقط) — كانت تأتي من متصفح صانع المحتوى فقط فتضيع بعد إعادة التشغيل
+    async loadMusic(room) {
+      const userId = await userIdOf(room); if (!userId) return [];
+      const rows = await prisma.musicTrack.findMany({ where: { ownerId: userId }, orderBy: { createdAt: "desc" }, take: 2000, select: { id: true, title: true, artist: true, dur: true, coverId: true } });
+      return rows.map(t => ({ id: t.id, title: t.title, artist: t.artist, dur: t.dur, cover: t.coverId ? `/api/music/cover/${t.id}` : "" }));
+    },
     async saveClock(room, C) {
       const userId = await userIdOf(room); if (!userId) return;
       await prisma.roomState.upsert({ where: { userId }, create: { userId, clock: C }, update: { clock: C } });

@@ -11,9 +11,9 @@ function wav(file,sec,hz){ const sr=8000,n=sr*sec,b=Buffer.alloc(44+n*2); b.writ
  await p.goto(url); await p.evaluate(()=>{ localStorage.clear(); indexedDB.deleteDatabase("b6o6-music") }); await p.goto(url);
  await p.click('.nav [data-go="music"]'); await p.waitForTimeout(200);
  await p.setInputFiles('[data-mimport]',[f1,f2,f3].map(f=>({name:path.basename(f),mimeType:'audio/wav',buffer:fs.readFileSync(f)}))); await p.waitForTimeout(1200);
- const lib=await p.evaluate(()=>({ui:S.musicLib.map(t=>[t.title,t.artist,t.dur]),room:window.__arsh.R().C.music.lib.length}));
+ const lib=await p.evaluate(()=>({ui:S.musicLib.map(t=>[t.title,t.artist,t.dur]),room:(window.__arsh.R().MLIB||[]).length}));
  ok(lib.ui.length===3&&lib.room===3&&lib.ui[0][0]==="فوق هام السحب"&&lib.ui[0][1]==="محمد عبده"&&lib.ui[0][2]===3,'upload: title/artist from filename, real duration, synced to room');
- await p.click('[data-mpon]'); await p.waitForTimeout(200);
+ await p.click('[data-muhere]'); await p.waitForTimeout(200);
  const send=ev=>p.evaluate(ev=>window.__arsh.send({t:"sim",ev}),ev);
  await send({id:"c1",type:"comment",user:{id:"v1",name:"زائر"},text:"!اغنية فوق هام"}); await p.waitForTimeout(900);
  ok(await p.evaluate(()=>window.__arsh.R().C.music.current?.track.title)==="فوق هام السحب",'viewer request from chat → now playing');
@@ -42,6 +42,11 @@ function wav(file,sec,hz){ const sr=8000,n=sr*sec,b=Buffer.alloc(44+n*2); b.writ
  ok(await o.evaluate(()=>document.querySelector('.npw').classList.contains('np-empty')),'queue empty → widget hides (no fake track)');
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="nowplay"]'); await p.waitForTimeout(500);
  ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc .npw .np-ti').length)===30,'library: 30 now-playing designs with live previews');
+ // السبب الجذري: بعد إعادة تحميل الصفحة كانت المكتبة لا تُرسل للغرفة فتفشل كل طلبات الشات
+ await p.reload(); await p.waitForTimeout(800);
+ await send({id:"rl1",type:"comment",user:{id:"vr",name:"بعد التحديث"},text:"!اغنية blinding"}); await p.waitForTimeout(400);
+ const rr=await p.evaluate(()=>(S.botFeed.find(x=>x.bot==="music"&&/بعد التحديث/.test(x.text))||{}).text||"");
+ ok(rr&&!/ما لقيت/.test(rr)&&/Blinding Lights|اشتغلت/.test(rr),'after page reload, chat request still finds the song in the library (root cause fixed): '+rr);
  ok(errs.length===0,'no page errors '+errs.join(' | '));
  await b.close();
 })();

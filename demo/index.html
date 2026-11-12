@@ -258,6 +258,14 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .ml-pk:hover,.ml-pk.on{border-color:var(--pri,#ffcc00)}.ml-pk span{display:flex;flex-direction:column;min-width:0}
 .ml-dsum{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:8px;margin-top:8px}
 .ml-dl{display:flex;flex-direction:column;gap:2px;padding:10px;border-radius:12px;background:rgba(255,255,255,.04);border:1px solid var(--line,#2a3046)}.ml-dl.ready{border-color:#4ade80}
+/* ===== طلبات الأغاني ===== */
+.mu-cv{display:inline-grid;place-items:center;flex:0 0 auto;border-radius:10px;background:linear-gradient(135deg,#7c3aed,#ec4899) center/cover;font-size:18px}
+.mu-row{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid #ffffff10}
+.mu-t{flex:1;min-width:0;display:flex;flex-direction:column}.mu-t b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mu-n{width:20px;text-align:center;opacity:.6;font-weight:700}
+.mu-bar{height:5px;border-radius:5px;background:#ffffff1a;margin-top:8px;overflow:hidden}.mu-bar i{display:block;height:100%;background:var(--pri,#ffcc00);transition:width 1s linear}
+.mu-log{max-height:260px;overflow:auto;font-size:12.5px;display:flex;flex-direction:column;gap:3px}
+.tag.ok{background:#4ade8033}.tag.warn{background:#facc1533}.tag.bad{background:#f8717133}
 
 /* ============ OVERLAY WIDGETS (shared by editor, previews and OBS) ============ */
 body.ov{background:transparent!important;overflow:hidden}
@@ -1796,9 +1804,19 @@ function botCtx(R,now){ const c=R.botCtx||{}; return {now,D:R.D,H:R.H,C:R.C,DN:R
 function botOut(R,ev,now,out){ if(!R.botCfg) return; R.B=R.B||newBotState(); try{ const items=botsOnEvent(R.botCfg,R.B,ev,botCtx(R,now)); if(items.length) out.push({t:"bot",items}) }catch(e){ R.B.stats.errors++ } }
 /** إعدادات البوتات وسياقها (تصل مع التخطيط) */
 /** إعدادات الأغاني تُحفظ داخل إعدادات البوتات (cfg.music) — بدون تغيير قاعدة البيانات */
+/** مكتبة الأغاني القابلة للتشغيل (بيانات فقط — الملفات على الخادم). لا تُحفظ داخل حالة الغرفة؛ تُحمَّل من قاعدة البيانات */
+function roomMusicLib(R){ return R.MLIB||(R.C&&R.C.music&&R.C.music.lib)||[] }
+function roomMusicSetLib(R,lib){ R.MLIB=(lib||[]).slice(0,2000).map(t=>({id:String(t.id),title:String(t.title||"").slice(0,120),artist:String(t.artist||"").slice(0,80),dur:+t.dur||0,cover:t.cover&&String(t.cover).length<2000?String(t.cover):""})); if(R.C&&R.C.music) R.C.music.lib=[] }
+/** طلب من صفحة الطلب العامة (مشاهد) — نفس القيود والطابور */
+function roomMusicRequest(R,trackId,user,now){ R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R), M=R.C.music;
+ if(cfg.page===false) return {res:{ok:false,reply:"صفحة طلب الأغاني متوقفة"},out:[]};
+ const t=roomMusicLib(R).find(x=>x.id===String(trackId)); if(!t){ musicLog(M,now,"refused",{why:"الأغنية غير موجودة في المكتبة",by:user&&user.name}); return {res:{ok:false,reply:"الأغنية غير موجودة في المكتبة"},out:[]} }
+ const res=musicAdd(M,cfg,t,{id:String(user.id||""),name:String(user.name||"").slice(0,40),platform:"page"},now,{via:"page"});
+ if(!res.ok) musicLog(M,now,"refused",{why:res.reply,title:t.title,by:user.name});
+ return {res,out:[{t:"clock",C:R.C,now,logs:[],mu:"req"}]} }
 function roomMusicCfg(R){ return {...defaultMusicCfg(),...((R.botCfg&&R.botCfg.music)||{})} }
 function roomMusic(R,ev,now,out){ if(ev.type!=="comment"&&ev.type!=="follow") return; R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R);
- if(ev.test&&ev.type==="follow") return; const r=musicOnEvent(R.C.music,cfg,ev,now); if(!r) return;
+ if(ev.test&&ev.type==="follow") return; const r=musicOnEvent(R.C.music,cfg,ev.test?{...ev,user:{...(ev.user||{}),test:true}}:ev,now,roomMusicLib(R)); if(!r) return;
  if(r.changed) out.push({t:"clock",C:R.C,now,logs:[],mu:"cmd"});
  if(r.reply&&cfg.replies!==false) out.push({t:"bot",items:[{id:"mu_"+(ev.id||now),kind:"reply",bot:"music",text:r.reply,show:true,say:false,user:{name:"🎵 الأغاني"},at:now}]}) }
 /** تنفيذ قواعد «عندما ← إذا ← نفّذ» — كل إجراء له نتيجة مسجّلة (نجاح/فشل + السبب) */
@@ -1815,7 +1833,7 @@ function roomActions(R,ev,now,out){ const rules=R.botCfg&&R.botCfg.actions; if(!
     case "reply": bot.push({id:"act_rp_"+f.rule.id+now,kind:"reply",bot:"actions",text:a.text||"",show:true,say:false,user:{name:"⚡ "+f.rule.name},at:now}); a.ok=true; break;
     case "subAdd": case "subSub": { const ms=Math.round((+a.sec||0)*1000*(f.mult||1))*(a.t==="subSub"?-1:1); const lg=subathonOp(R.C.subathon,{op:"add",ms,source:"action",reason:"⚡ "+f.rule.name},now); a.ok=!!(lg&&lg.length); if(!a.ok) a.why="السابثون غير مشغّل"; else out.push({t:"clock",C:R.C,now,logs:lg}); break }
     case "goalAdd": media.push({id:"ac_goal_"+now,kind:"goal",widgetId:a.widgetId||"",n:(+a.n||1)*(f.mult||1)}); a.ok=true; break;
-    case "songAdd": { R.C.music=R.C.music||newMusicState(); const t=musicSearch(R.C.music.lib,a.text||""); const r=musicAdd(R.C.music,roomMusicCfg(R),t,{id:"actions",name:"⚡ "+f.rule.name,owner:true},now,{force:true}); a.ok=r.ok; if(!r.ok) a.why=r.reply; else out.push({t:"clock",C:R.C,now,logs:[],mu:"act"}); break }
+    case "songAdd": { R.C.music=R.C.music||newMusicState(); const t=musicSearch(roomMusicLib(R),a.text||""); const r=musicAdd(R.C.music,roomMusicCfg(R),t,{id:"actions",name:"⚡ "+f.rule.name,owner:true},now,{force:true}); a.ok=r.ok; if(!r.ok) a.why=r.reply; else out.push({t:"clock",C:R.C,now,logs:[],mu:"act"}); break }
     case "songSkip": { R.C.music=R.C.music||newMusicState(); a.ok=!!R.C.music.current; if(a.ok){ musicNext(R.C.music,now,roomMusicCfg(R)); out.push({t:"clock",C:R.C,now,logs:[],mu:"act"}) } else a.why="لا توجد أغنية"; break }
     case "discord": case "telegram": out.push({t:"notify",channel:a.t,text:a.text||"",rule:f.rule.name,test:!!f.ev.test}); a.ok=true; a.why="أُرسل لخدمة الإشعارات"; break;
     default: a.ok=false; a.why="إجراء غير معروف";
@@ -1827,7 +1845,7 @@ function roomBots(R,cfg,ctx){ R.botCfg=cfg||null; R.botCtx=ctx||{}; R.B=R.B||new
 /** أوامر لوحة التحكم للمؤقتات والسبثون */
 function roomClockOp(R,m,now){
  let logs=[];
- if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(!musicOp(R.C.music,m,now,roomMusicCfg(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
+ if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
  if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
   if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
@@ -3895,15 +3913,20 @@ function chatPush(list,ev,cap=60){ if(!ev||ev.test) return null; const m=chatMsg
 
 /* ---- engine/music.js ---- */
 // ====== نظام طلبات الأغاني (B6O6 Music Request): دوال نقية ======
-// المصدر: مكتبة ملفات يرفعها صانع المحتوى (موسيقاه المرخّصة). لا نستخرج صوتاً من YouTube أو غيره.
-// الحالة في C.music (تُحفظ مع حالة الغرفة). التشغيل الفعلي في لوحة التحكم (الجهاز الذي فيه الملفات).
+// المصدر: مكتبة ملفات يرفعها صانع المحتوى (موسيقاه المرخّصة) وتُحفظ على الخادم. لا نستخرج صوتاً من YouTube أو غيره،
+// ولا نعتبر رابط بحث أو صفحة أغنية رابط تشغيل: كل أغنية في المكتبة لها ملف صوتي فعلي (مصدر التشغيل) منفصل عن بياناتها.
+// الحالة في C.music (تُحفظ مع حالة الغرفة). التشغيل الفعلي في «مشغل الأغاني» (رابط OBS / LIVE Studio مستقل) — مشغل واحد فقط في كل لحظة.
 
 const MUSIC_PERMS=[["owner","صانع المحتوى فقط"],["mods","المشرفون فقط"],["owner_mods","صانع المحتوى والمشرفون"],["subs","المشتركون"],["followers","المتابعون"],["all","جميع المشاهدين"],["custom","قائمة مستخدمين مخصصة"]];
 const MUSIC_CMDS={request:["!اغنية","!أغنية","!song","!طلب","!sr"],queue:["!queue","!قائمة"],current:["!current","!الحالية","!song?"],skip:["!skip","!سكب","!تخطي"],pause:["!pause","!ايقاف","!إيقاف"],resume:["!resume","!استئناف"],volume:["!volume","!صوت"],remove:["!remove","!حذف"],clear:["!clear","!مسح"],voteskip:["!voteskip","!تصويت"]};
 /** أي صلاحية تحكم كل أمر (طلب الأغاني منفصل عن التخطي والصوت) */
 const CMD_PERM={request:"request",queue:"info",current:"info",skip:"skip",pause:"control",resume:"control",volume:"control",remove:"control",clear:"control",voteskip:"vote"};
-function defaultMusicCfg(){ return {enabled:true,perms:{request:"all",info:"all",skip:"owner_mods",control:"owner_mods",vote:"all"},users:"",voteSkip:{on:true,needed:3},maxDurSec:420,perUser:2,cooldownSec:60,noRepeatMin:30,banned:"",autoplay:true,shuffle:false,duckTTS:true,volume:70,replies:true} }
-function newMusicState(){ return {queue:[],current:null,paused:false,volume:70,lib:[],votes:[],history:[],last:{},followers:[],seq:0} }
+function defaultMusicCfg(){ return {page:true,approve:"auto",maxQueue:50,bannedUsers:"",playOn:"player",enabled:true,perms:{request:"all",info:"all",skip:"owner_mods",control:"owner_mods",vote:"all"},users:"",voteSkip:{on:true,needed:3},maxDurSec:420,perUser:2,cooldownSec:60,noRepeatMin:30,banned:"",autoplay:true,shuffle:false,duckTTS:true,volume:70,replies:true} }
+function newMusicState(){ return {queue:[],current:null,paused:false,volume:70,lib:[],votes:[],history:[],last:{},followers:[],seq:0,pending:[],prev:[],player:null,status:"idle",err:"",log:[]} }
+/** سجل التشخيص: هل وصل الطلب، حُفظ، دخل القائمة، وُجد مصدر تشغيل، بدأ التشغيل، وسبب الفشل */
+const MUSIC_STEPS={received:"📨 وصل الطلب للخادم",queued:"✅ حُفظ ودخل قائمة الانتظار",pending:"⏳ بانتظار موافقة صانع المحتوى",approved:"👍 وافق صانع المحتوى",rejected:"🚫 رفض صانع المحتوى",refused:"⛔ رُفض الطلب",source:"🎧 وُجد ملف التشغيل",loading:"⏳ جارٍ تحميل الأغنية في المشغل",playing:"▶ بدأ التشغيل فعلياً",paused:"⏸ إيقاف مؤقت",ended:"⏭ انتهت الأغنية",error:"❌ فشل التشغيل",skip:"⏭ تخطي",claim:"📺 مشغل جديد يتولى التشغيل"};
+function musicLog(M,now,step,x={}){ M.log=M.log||[]; M.log.unshift({at:now,step,...x}); if(M.log.length>40) M.log.length=40 }
+function musFix(M){ for(const k of ["pending","prev","log"]) if(!Array.isArray(M[k])) M[k]=[]; if(M.status==null) M.status="idle"; return M }
 
 /** تحليل الأمر من نص التعليق */
 function parseMusicCmd(text){ const t=String(text||"").trim(); if(!t.startsWith("!")) return null; const sp=t.search(/\s/), head=(sp<0?t:t.slice(0,sp)).toLowerCase(), arg=sp<0?"":t.slice(sp+1).trim();
@@ -3922,59 +3945,92 @@ function musicSearch(lib,q){ const n=normAr(q).toLowerCase(); if(!n) return null
   if(T===n) s=100; else if(full.includes(n)) s=60+n.length/full.length*30; else { const w=n.split(/\s+/).filter(x=>x.length>1); const hit=w.filter(x=>full.includes(x)).length; if(hit) s=hit/w.length*50 }
   if(s>bs){ bs=s; best=t } } return bs>=25?best:null }
 
+/** نتائج البحث لصفحة الطلب: الاسم أو الفنان (بعد توحيد الحروف) — مرتبة حسب التطابق. بدون كلمة: أحدث المكتبة */
+function musicSearchAll(lib,q,limit=20){ const n=normAr(q).toLowerCase().trim(); lib=lib||[]; if(!n) return lib.slice(0,limit);
+ const out=[]; for(const t of lib){ const T=normAr(t.title).toLowerCase(), A=normAr(t.artist||"").toLowerCase(), full=T+" "+A; let s=0;
+  if(T===n||A===n) s=100; else if(T.startsWith(n)||A.startsWith(n)) s=85; else if(full.includes(n)) s=60+n.length/full.length*20; else { const w=n.split(/\s+/).filter(x=>x.length>1); const hit=w.filter(x=>full.includes(x)).length; if(hit) s=hit/w.length*50 }
+  if(s>=25) out.push([s,t]) } return out.sort((a,b)=>b[0]-a[0]).slice(0,limit).map(x=>x[1]) }
 const muFmt=s=>`${Math.floor(s/60)}:${String(Math.floor(s%60)).padStart(2,"0")}`;
-const who=u=>({id:String(u?.id||u?.name||""),name:String(u?.name||"").slice(0,60),platform:u?.platform||"tiktok"});
+const who=u=>({id:String(u?.id||u?.name||""),name:String(u?.name||"").slice(0,60),platform:u?.platform||"tiktok",...(u?.test?{test:true}:{})});
 
 /** إضافة أغنية للطابور مع كل القيود — ترجع {ok, reply} */
-function musicAdd(M,cfg,track,u,now,{force}={}){ if(!track) return {ok:false,reply:"ما لقيت الأغنية في المكتبة"};
- const by=who(u), banned=String(cfg.banned||"").split(/[,،\n]/).map(s=>normAr(s.trim()).toLowerCase()).filter(Boolean);
+function musicAdd(M,cfg,track,u,now,{force,via}={}){ musFix(M); if(!track) return {ok:false,reply:"ما لقيت الأغنية في المكتبة"};
+ const by={...who(u),via:via||"chat"}, banned=String(cfg.banned||"").split(/[,،\n]/).map(s=>normAr(s.trim()).toLowerCase()).filter(Boolean);
  if(!force){
+  if(cfg.enabled===false) return {ok:false,reply:"طلبات الأغاني متوقفة الآن"};
+  const bu=String(cfg.bannedUsers||"").split(/[,،\s]+/).map(x=>x.trim().replace(/^@/,"").toLowerCase()).filter(Boolean); if(bu.includes(by.name.toLowerCase())||bu.includes(by.id.toLowerCase())) return {ok:false,reply:"لا يمكنك طلب الأغاني في هذا البث"};
+  if(cfg.maxQueue&&M.queue.length+M.pending.length>=cfg.maxQueue) return {ok:false,reply:"قائمة الانتظار ممتلئة — جرّب بعد قليل"};
+  if(M.pending.some(q=>q.track.id===track.id)) return {ok:false,reply:"الأغنية مطلوبة وبانتظار الموافقة"};
   if(banned.some(b=>normAr(track.title+" "+(track.artist||"")).toLowerCase().includes(b))) return {ok:false,reply:"هذه الأغنية محظورة"};
   if(cfg.maxDurSec&&track.dur>cfg.maxDurSec) return {ok:false,reply:`الأغنية أطول من الحد (${muFmt(cfg.maxDurSec)})`};
   if(M.queue.some(q=>q.track.id===track.id)||M.current?.track.id===track.id) return {ok:false,reply:"الأغنية موجودة في القائمة"};
   if(cfg.noRepeatMin&&M.history.some(h=>h.id===track.id&&now-h.at<cfg.noRepeatMin*60000)) return {ok:false,reply:"اشتغلت قبل شوي — جرّب أغنية ثانية"};
-  if(cfg.perUser&&M.queue.filter(q=>q.by.id===by.id).length>=cfg.perUser) return {ok:false,reply:`عندك ${cfg.perUser} طلبات في القائمة`};
+  if(cfg.perUser&&[...M.queue,...M.pending].filter(q=>q.by.id===by.id).length>=cfg.perUser) return {ok:false,reply:`عندك ${cfg.perUser} طلبات في القائمة`};
   const last=M.last[by.id]; if(cfg.cooldownSec&&last&&now-last<cfg.cooldownSec*1000) return {ok:false,reply:`انتظر ${Math.ceil((cfg.cooldownSec*1000-(now-last))/1000)} ث قبل طلب جديد`} }
- M.lastReq={name:by.name,id:by.id,platform:by.platform,title:track.title,at:now,qid:"q"+(M.seq+1)}; M.queue.push({qid:"q"+(++M.seq),track:{id:track.id,title:track.title,artist:track.artist||"",dur:track.dur||0,cover:track.cover||""},by,at:now}); M.last[by.id]=now;
+ const item={qid:"q"+(++M.seq),track:{id:track.id,title:track.title,artist:track.artist||"",dur:track.dur||0,cover:track.cover||""},by,at:now}; M.last[by.id]=now;
+ musicLog(M,now,"received",{qid:item.qid,title:track.title,by:by.name,via:by.via});
+ if(!force&&cfg.approve==="manual"&&!u.owner&&!u.mod){ M.pending.push(item); musicLog(M,now,"pending",{qid:item.qid,title:track.title,by:by.name}); return {ok:true,pending:true,qid:item.qid,reply:`وصل طلبك «${track.title}» — بانتظار موافقة صانع المحتوى`} }
+ return musicEnqueue(M,cfg,item,now) }
+/** إدخال القائمة (بترتيب وقت الطلب) + بدء التشغيل التلقائي إن لم يكن هناك أغنية */
+function musicEnqueue(M,cfg,item,now){ musFix(M); M.lastReq={name:item.by.name,id:item.by.id,platform:item.by.platform,title:item.track.title,at:now,qid:item.qid}; M.queue.push(item);
+ musicLog(M,now,"queued",{qid:item.qid,title:item.track.title,by:item.by.name});
  if(!M.current&&cfg.autoplay!==false) musicNext(M,now);
- return {ok:true,reply:`أُضيفت «${track.title}» — رقم ${M.current&&M.current.track.id===track.id?"الآن":M.queue.length}`} }
+ const pos=M.current&&M.current.qid===item.qid?0:M.queue.findIndex(q=>q.qid===item.qid)+1;
+ return {ok:true,qid:item.qid,position:pos,reply:`أُضيفت «${item.track.title}» — ${pos?"رقم "+pos+" في القائمة":"تعمل الآن"}`} }
 
 /** الانتقال للأغنية التالية */
-function musicNext(M,now,cfg={}){ if(M.current) M.history.unshift({id:M.current.track.id,at:now}); M.history.length=Math.min(M.history.length,50);
+function musicNext(M,now,cfg={}){ musFix(M); if(M.current){ M.history.unshift({id:M.current.track.id,at:now}); if(!M.current.bad){ M.prev.unshift({qid:M.current.qid,track:M.current.track,by:M.current.by,at:M.current.at}); if(M.prev.length>20) M.prev.length=20 } } M.history.length=Math.min(M.history.length,50);
  let i=0; if(cfg.shuffle&&M.queue.length>1) i=Math.floor((now/1000)%M.queue.length);
- const q=M.queue.splice(i,1)[0]; M.current=q?{...q,startedAt:now,pos:0}:null; M.paused=false; M.votes=[]; return M.current }
+ const q=M.queue.splice(i,1)[0]; M.current=q?{...q,startedAt:now,pos:0,rp:0}:null; M.paused=false; M.votes=[]; M.status=q?"loading":"idle"; M.err=""; return M.current }
 
 /** حدث تعليق → أمر موسيقى. يرجع {changed, reply} */
-function musicOnEvent(M,cfg,ev,now){ if(!cfg||cfg.enabled===false) return null;
+function musicOnEvent(M,cfg,ev,now,lib){ if(!cfg||cfg.enabled===false) return null;
  if(ev.type==="follow"&&ev.user){ const k=String(ev.user.id||ev.user.name); if(!M.followers.includes(k)){ M.followers.push(k); if(M.followers.length>2000) M.followers.shift() } return null }
  if(ev.type!=="comment") return null; const c=parseMusicCmd(ev.text); if(!c) return null;
  const u={...(ev.user||{}),platform:ev.platform}; const perm=cfg.perms?.[CMD_PERM[c.cmd]]||"all";
  if(!musicPermOk(perm,u,M,cfg)) return {changed:false,reply:`@${u.name} ما عندك صلاحية لهذا الأمر`};
  switch(c.cmd){
-  case "request": { if(!c.arg) return {changed:false,reply:"اكتب اسم الأغنية بعد الأمر: !اغنية اسم الأغنية"}; const t=musicSearch(M.lib,c.arg); const r=musicAdd(M,cfg,t,u,now); return {changed:r.ok,reply:`@${u.name} ${r.reply}`} }
+  case "request": { if(!c.arg) return {changed:false,reply:"اكتب اسم الأغنية بعد الأمر: !اغنية اسم الأغنية"}; const t=musicSearch(lib||M.lib,c.arg); const r=musicAdd(M,cfg,t,u,now,{via:"chat"}); return {changed:r.ok,reply:`@${u.name} ${r.reply}`} }
   case "queue": return {changed:false,reply:M.queue.length?M.queue.slice(0,5).map((q,i)=>`${i+1}. ${q.track.title}`).join(" | "):"القائمة فاضية"};
   case "current": return {changed:false,reply:M.current?`الحالية: ${M.current.track.title}${M.current.track.artist?" — "+M.current.track.artist:""} (طلب ${M.current.by.name})`:"لا توجد أغنية الآن"};
-  case "skip": musicNext(M,now,cfg); return {changed:true,reply:"تم التخطي ⏭"};
-  case "pause": if(!M.current||M.paused) return {changed:false}; M.paused=true; return {changed:true,reply:"إيقاف مؤقت ⏸"};
-  case "resume": if(!M.current||!M.paused) return {changed:false}; M.paused=false; return {changed:true,reply:"استئناف ▶"};
+  case "skip": if(M.current) musicLog(M,now,"skip",{qid:M.current.qid,title:M.current.track.title,by:u.name}); musicNext(M,now,cfg); return {changed:true,reply:"تم التخطي ⏭"};
+  case "pause": if(!M.current||M.paused) return {changed:false}; M.paused=true; M.status="paused"; return {changed:true,reply:"إيقاف مؤقت ⏸"};
+  case "resume": if(!M.current||!M.paused) return {changed:false}; M.paused=false; M.status="loading"; return {changed:true,reply:"استئناف ▶"};
   case "volume": { const v=Math.round(+c.arg); if(!(v>=0&&v<=100)) return {changed:false,reply:"اكتب رقماً من 0 إلى 100"}; M.volume=v; return {changed:true,reply:`الصوت ${v}%`} }
   case "remove": { const i=Math.round(+c.arg)-1; if(!(i>=0&&i<M.queue.length)) return {changed:false,reply:"رقم غير موجود في القائمة"}; const [q]=M.queue.splice(i,1); return {changed:true,reply:`حُذفت «${q.track.title}»`} }
-  case "clear": M.queue=[]; return {changed:true,reply:"تم مسح القائمة"};
+  case "clear": M.queue=[]; M.pending=[]; return {changed:true,reply:"تم مسح القائمة"};
   case "voteskip": { if(!cfg.voteSkip?.on||!M.current) return {changed:false}; const k=String(u.id||u.name); if(M.votes.includes(k)) return {changed:false,reply:`@${u.name} صوّتت مسبقاً`};
    M.votes.push(k); const need=Math.max(1,+cfg.voteSkip.needed||3); if(M.votes.length>=need){ musicNext(M,now,cfg); return {changed:true,reply:"اكتمل التصويت — تم التخطي ⏭"} } return {changed:true,reply:`تصويت التخطي ${M.votes.length}/${need}`} }
  } return null }
 
 /** عمليات لوحة التحكم (صانع المحتوى) */
-function musicOp(M,op,now,cfg={}){ switch(op.op){
+/** المشغل الفعلي (رابط OBS/LIVE Studio أو المتصفح): واحد فقط يملك التشغيل حتى لا تعمل أغنيتان معاً.
+ * يتولى المشغل التشغيل إن لم يوجد مشغل، أو انقطع نبض المشغل الحالي 15 ثانية، أو طلب صانع المحتوى ذلك (force). */
+const MUSIC_PLAYER_STALE=15000;
+function musicPlayerOp(M,op,now,cfg={}){ musFix(M); const pid=String(op.pid||"").slice(0,40); if(!pid) return false; const P=M.player, mine=P&&P.pid===pid;
+ if(op.op==="claim"){ if(mine){ P.at=now; return false } if(P&&now-P.at<MUSIC_PLAYER_STALE&&!op.force) return false; M.player={pid,kind:String(op.kind||"player").slice(0,20),at:now}; musicLog(M,now,"claim",{by:M.player.kind}); if(M.current&&!M.paused) M.status="loading"; return true }
+ if(!mine) return false; P.at=now; const cur=M.current, same=cur&&String(op.qid||"")===cur.qid;
+ if(op.op==="pstate"){ if(!same) return false; if(op.pos!=null) { cur.pos=Math.max(0,+op.pos||0); cur.posAt=now }
+  const st=["loading","playing","paused"].includes(op.status)?op.status:null; if(st==="loading"&&!cur.ld){ cur.ld=1; musicLog(M,now,"loading",{qid:cur.qid,title:cur.track.title}); if(M.status==="loading") return true }
+  if(!st||st===M.status) return false; M.status=st; if(st==="playing"){ M.err=""; musicLog(M,now,"playing",{qid:cur.qid,title:cur.track.title}) } return true }
+ if(op.op==="pended"){ if(!same) return false; musicLog(M,now,"ended",{qid:cur.qid,title:cur.track.title}); musicNext(M,now,cfg); return true }
+ if(op.op==="perror"){ if(!same) return false; const why=String(op.why||"تعذر تحميل ملف الأغنية").slice(0,160); M.err=why; cur.bad=1; /* لا تعود إليها بزر «السابق» */ musicLog(M,now,"error",{qid:cur.qid,title:cur.track.title,why}); musicNext(M,now,cfg); M.err=why; return true }
+ return false }
+function musicOp(M,op,now,cfg={},lib){ musFix(M); if(["claim","pstate","pended","perror"].includes(op.op)) return musicPlayerOp(M,op,now,cfg); const L=lib||M.lib; switch(op.op){
+ case "approve": { const i=M.pending.findIndex(q=>q.qid===op.qid); if(i<0) return false; const [q]=M.pending.splice(i,1); musicLog(M,now,"approved",{qid:q.qid,title:q.track.title,by:q.by.name}); musicEnqueue(M,cfg,q,now); return true }
+ case "reject": { const i=M.pending.findIndex(q=>q.qid===op.qid); if(i<0) return false; const [q]=M.pending.splice(i,1); musicLog(M,now,"rejected",{qid:q.qid,title:q.track.title,by:q.by.name}); return true }
+ case "release": M.player=null; return true; /* تسليم التشغيل لأول مشغل يطلبه (مثلاً OBS بعد الاستماع في اللوحة) */
+ case "replay": if(!M.current) return false; M.current.ld=0; M.current.rp=(M.current.rp||0)+1; M.current.pos=0; M.current.startedAt=now; M.paused=false; M.status="loading"; return true;
+ case "prev": { const p=M.prev.shift(); if(!p) return false; if(M.current) M.queue.unshift({qid:M.current.qid,track:M.current.track,by:M.current.by,at:M.current.at}); M.current={...p,startedAt:now,pos:0,rp:0}; M.paused=false; M.status="loading"; return true }
  case "lib": M.lib=(op.lib||[]).slice(0,1000).map(t=>({id:String(t.id),title:String(t.title||"").slice(0,120),artist:String(t.artist||"").slice(0,80),dur:+t.dur||0,cover:t.cover&&String(t.cover).length<200000?t.cover:""})); return true;
- case "add": return musicAdd(M,cfg,M.lib.find(t=>t.id===op.id),{id:"owner",name:op.name||"صانع المحتوى",owner:true},now,{force:true}).ok;
- case "next": case "ended": musicNext(M,now,cfg); return true;
- case "pause": if(M.current) M.paused=true; return true;
- case "resume": if(M.current) M.paused=false; return true;
+ case "add": return musicAdd(M,cfg,(L||[]).find(t=>t.id===op.id),{id:"owner",name:op.name||"صانع المحتوى",owner:true},now,{force:true,via:"dash"}).ok;
+ case "next": case "ended": if(op.op==="next"&&M.current) musicLog(M,now,"skip",{qid:M.current.qid,title:M.current.track.title}); musicNext(M,now,cfg); return true;
+ case "pause": if(!M.current) return false; M.paused=true; M.status="paused"; return true;
+ case "resume": if(!M.current) return false; M.paused=false; M.status="loading"; return true;
  case "volume": M.volume=Math.max(0,Math.min(100,Math.round(+op.v||0))); return true;
  case "remove": M.queue=M.queue.filter(q=>q.qid!==op.qid); return true;
  case "move": { const i=M.queue.findIndex(q=>q.qid===op.qid); if(i<0) return false; const [q]=M.queue.splice(i,1); M.queue.splice(Math.max(0,Math.min(M.queue.length,i+(op.d||0))),0,q); return true }
- case "clear": M.queue=[]; return true;
+ case "clear": M.queue=[]; M.pending=[]; return true;
  case "pos": if(M.current){ M.current.pos=+op.pos||0; M.current.posAt=now } return true;
  } return false }
 
@@ -9842,6 +9898,8 @@ const MDB={db:null,open(){ if(this.db) return Promise.resolve(this.db); return n
  async del(id){ const db=await this.open(); return new Promise(res=>{ const t=db.transaction("tracks","readwrite"); t.objectStore("tracks").delete(id); t.oncomplete=res }) }};
 S.musicLib=ls("b6o6.musicLib")||[];
 S.bots.music=Object.assign(defaultMusicCfg(),S.bots.music||{});
+/* وضع التجربة: المكتبة من هذا المتصفح تُرسل للغرفة عند الفتح (كانت تُرسل فقط عند الرفع فتفشل طلبات الشات بعد إعادة التحميل) */
+if(!CFG&&S.musicLib.length) setTimeout(()=>musicSyncLib(),0);
 function musicSyncLib(){ ls("b6o6.musicLib",S.musicLib); clockOp("music","lib",{lib:S.musicLib}) }
 async function musicImport(files){ let n=0;
  for(const f of files){ if(!/^audio\//.test(f.type)&&!/\.(mp3|m4a|aac|ogg|wav|flac|opus)$/i.test(f.name)) continue; if(f.size>40*1024*1024){ toast("ملف أكبر من 40MB: "+f.name); continue }
@@ -9849,51 +9907,96 @@ async function musicImport(files){ let n=0;
   const base=f.name.replace(/\.[^.]+$/,""), m=base.split(/\s+-\s+/); const id="t"+uid()+Date.now().toString(36);
   await MDB.put(id,f); S.musicLib.push({id,title:(m[1]||m[0]).trim().slice(0,120),artist:m[1]?m[0].trim().slice(0,80):"",dur}); n++ }
  musicSyncLib(); toast(n?`أُضيفت ${n} أغنية للمكتبة`:"لم تُضف ملفات صوتية"); renderPage(true) }
-// ---------- المشغل (هذا التبويب فقط بعد تفعيله — يتطلب ضغطة من المستخدم بسبب سياسة التشغيل التلقائي) ----------
-const MP={on:false,audio:null,id:null,posT:0};
-function mpEnsure(){ if(MP.audio) return MP.audio; const a=MP.audio=new Audio(); a.onended=()=>{ if(MP.on) clockOp("music","ended",{}) }; a.onerror=()=>{ if(MP.on&&MP.id){ toast("تعذر تشغيل الملف — تخطي"); clockOp("music","next",{}) } }; return a }
-async function mpSync(){ if(!MP.on) return; const M=R.C.music, a=mpEnsure(); const cur=M&&M.current;
- if(!cur){ if(MP.id){ a.pause(); MP.id=null } mpUI(); return }
- const key=cur.qid+cur.track.id; if(MP.id!==key){ MP.id=key; const blob=await MDB.get(cur.track.id); if(!blob){ toast("ملف الأغنية غير موجود على هذا الجهاز — تخطي"); clockOp("music","next",{}); return } if(a.src) URL.revokeObjectURL(a.src); a.src=URL.createObjectURL(blob); a.currentTime=0 }
+// ---------- المشغل في وضع التجربة المحلي فقط (الملفات في هذا المتصفح). في المنصة: «مشغل الأغاني» رابط مستقل لـ OBS ----------
+const MP={on:false,audio:null,id:null,pid:"dash-"+uid()};
+function mpSend(op,x={}){ clockOp("music",op,{pid:MP.pid,kind:"dashboard",...x}) }
+function mpEnsure(){ if(MP.audio) return MP.audio; const a=MP.audio=new Audio();
+ a.onplaying=()=>{ const c=R.C.music&&R.C.music.current; if(MP.on&&c) mpSend("pstate",{qid:c.qid,status:"playing",pos:Math.round(a.currentTime)}) };
+ a.onended=()=>{ const c=R.C.music&&R.C.music.current; if(MP.on&&c) mpSend("pended",{qid:c.qid}) };
+ a.onerror=()=>{ const c=R.C.music&&R.C.music.current; if(MP.on&&MP.id&&c&&a.currentSrc) mpSend("perror",{qid:c.qid,why:"تعذر تشغيل الملف"}) }; return a }
+async function mpSync(){ if(!MP.on||CFG) return; const M=R.C.music, a=mpEnsure(); const cur=M&&M.current;
+ if(!M||!M.player||M.player.pid!==MP.pid){ if(!a.paused) a.pause(); return }
+ if(!cur){ if(MP.id){ a.pause(); MP.id=null } return }
+ const key=cur.qid+":"+(cur.rp||0); if(MP.id!==key){ MP.id=key; const blob=await MDB.get(cur.track.id); if(!blob){ mpSend("perror",{qid:cur.qid,why:"ملف الأغنية غير موجود على هذا الجهاز"}); return } if(a.src) URL.revokeObjectURL(a.src); a.src=URL.createObjectURL(blob); a.currentTime=0; mpSend("pstate",{qid:cur.qid,status:"loading"}) }
  const duck=S.bots.music.duckTTS&&VP.speaking?.35:1; a.volume=Math.max(0,Math.min(1,(M.volume??70)/100*duck));
- if(M.paused) a.pause(); else a.play().catch(()=>toast("اضغط «تفعيل المشغل» للسماح بالتشغيل")); mpUI() }
-setInterval(()=>{ if(MP.on&&MP.audio&&!MP.audio.paused&&R.C.music?.current){ clockOp("music","pos",{pos:Math.round(MP.audio.currentTime)}); const M=R.C.music; MP.audio.volume=Math.max(0,Math.min(1,(M.volume??70)/100*(S.bots.music.duckTTS&&VP.speaking?.35:1))) } },5000);
-function mpUI(){ const b=document.querySelector("[data-mpon]"); if(b) b.textContent=MP.on?"🔊 المشغل يعمل في هذا التبويب":"▶ تفعيل المشغل في هذا التبويب" }
-function musicHTML(){ const M=R.C.music||{queue:[],lib:[]}, C=S.bots.music, cur=M.current, P=MUSIC_PERMS;
+ if(M.paused){ a.pause(); mpSend("pstate",{qid:cur.qid,status:"paused"}) } else a.play().catch(()=>toast("اضغط «تشغيل في هذا المتصفح» للسماح بالصوت")) }
+setInterval(()=>{ if(MP.on&&!CFG){ mpSend("claim"); const c=R.C.music&&R.C.music.current; if(c&&MP.audio&&!MP.audio.paused) mpSend("pstate",{qid:c.qid,status:"playing",pos:Math.round(MP.audio.currentTime)}) } },5000);
+// ---------- مكتبة الخادم (المنصة) ----------
+const MU={data:null,at:0,up:[],q:""};
+async function muLoad(force){ if(!CFG||(!force&&MU.at&&Date.now()-MU.at<30000)) return; MU.at=Date.now(); try{ const j=await CFG.api("/api/music"); if(j&&j.tracks){ MU.data=j; if(S.page==="music") renderPage(true) } }catch(e){} }
+function muLib(){ return CFG?(MU.data?MU.data.tracks:[]):S.musicLib }
+/** رفع الملفات واحداً تلو الآخر (تيار مباشر — بدون تحميل الملف في الذاكرة) */
+async function muUpload(files){ const list=[...files]; for(const f of list){ const it={name:f.name,pct:0,st:"up"}; MU.up.unshift(it); renderPage(true);
+  const r=await new Promise(res=>{ const x=new XMLHttpRequest(); x.open("POST","/api/music/upload"); x.setRequestHeader("x-filename",encodeURIComponent(f.name)); x.upload.onprogress=e=>{ if(e.lengthComputable){ it.pct=Math.round(e.loaded/e.total*100); if(it.pct>=100) it.st="proc"; const el=document.querySelector(`[data-muup="${MU.up.indexOf(it)}"]`); if(el) el.textContent=it.st==="proc"?"⚙️ معالجة على الخادم…":it.pct+"%" } }; x.onload=()=>{ let j={}; try{ j=JSON.parse(x.responseText) }catch(e){} res({status:x.status,j}) }; x.onerror=()=>res({status:0,j:{message:"انقطع الاتصال"}}); x.send(f) });
+  if(r.status===200&&r.j.ok){ it.st="ok"; it.msg="✅ "+r.j.track.title+(r.j.converted?" (حُوّلت إلى MP3)":"") } else { it.st="err"; it.msg="❌ "+(r.j.message||"فشل الرفع ("+r.status+")") } }
+ MU.up=MU.up.slice(0,8); await muLoad(true); renderPage(true) }
+const muTime=s=>s?Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0"):"0:00";
+const MU_ST={idle:["—",""],loading:["⏳ جارٍ التحميل","warn"],playing:["▶ يعمل","ok"],paused:["⏸ متوقف مؤقتاً","warn"],error:["❌ خطأ","bad"]};
+function muCv(t,s=44){ return `<span class="mu-cv" style="width:${s}px;height:${s}px;${t.cover?`background-image:url('${esc(t.cover)}')`:""}">${t.cover?"":"🎵"}</span>` }
+const muVia=b=>b&&b.test?"🧪 تجربة":b&&b.via==="page"?"🌐 صفحة الطلب":b&&b.via==="dash"?"🎛️ اللوحة":"💬 الشات";
+function musicHTML(){ const M=R.C.music||{queue:[],lib:[],pending:[],log:[]}, C=S.bots.music, cur=M.current, P=MUSIC_PERMS; if(CFG) muLoad();
  const permSel=(k,l)=>`<div class="fld"><label>${l}</label><select class="inp" data-mperm="${k}">${P.map(([v,t])=>`<option value="${v}" ${C.perms[k]===v?"selected":""}>${t}</option>`).join("")}</select></div>`;
- const num=(k,l,v)=>`<div class="fld"><label>${l}</label><input class="inp" type="number" data-mcfg="${k}" value="${v}"></div>`;
- const chk=(k,l)=>`<label class="row small" style="gap:6px"><input type="checkbox" data-mchk="${k}" ${C[k]?"checked":""}> ${l}</label>`;
- return head("🎵 طلبات الأغاني","يكتب المتابع في الشات: !اغنية اسم الأغنية — والمصدر مكتبتك المرخّصة فقط")+
- `<div class="note small" style="margin-bottom:12px">المصدر: ملفات صوتية ترفعها أنت (موسيقاك المرخّصة). الملفات تبقى على هذا الجهاز، والتشغيل من هذا التبويب بعد «تفعيل المشغل». لا نستخرج صوتاً من YouTube أو غيره. لإيصال الصوت للبث: التقط صوت سطح المكتب في OBS أو اجعل هذا المتصفح مصدر صوت.</div>
- <div class="grid g2"><div class="card"><h3>▶ يعمل الآن</h3>${cur?`<div class="row" style="gap:10px"><b style="font-size:18px">${esc(cur.track.title)}</b><span class="mut">${esc(cur.track.artist||"")}</span></div><div class="mut small">طلب: ${esc(cur.by.name)} · ${cur.by.platform||"tiktok"} · ${M.paused?"⏸ متوقف مؤقتاً":"يعمل"}</div>`:`<p class="mut">لا توجد أغنية الآن</p>`}
-  <div class="row" style="margin-top:10px"><button class="btn sm pri" data-mpon>${MP.on?"🔊 المشغل يعمل في هذا التبويب":"▶ تفعيل المشغل في هذا التبويب"}</button><button class="btn sm" data-mop="${M.paused?"resume":"pause"}">${M.paused?"▶ استئناف":"⏸ إيقاف مؤقت"}</button><button class="btn sm" data-mop="next">⏭ تخطي</button><button class="btn sm" data-mop="clear">🗑 مسح القائمة</button></div>
-  <div class="fld" style="margin-top:8px"><label>مستوى صوت الموسيقى: ${M.volume??70}%</label><input type="range" min="0" max="100" value="${M.volume??70}" data-mvol></div>
-  <h3 style="margin-top:12px">قائمة الانتظار (${M.queue.length})</h3>${M.queue.length?`<ol class="mq">${M.queue.map((q,i)=>`<li><b>${esc(q.track.title)}</b> <span class="mut small">${esc(q.track.artist||"")} · ${Math.floor(q.track.dur/60)}:${String(q.track.dur%60).padStart(2,"0")} · طلب ${esc(q.by.name)} (${q.by.platform||"tiktok"})</span> <button class="btn sm" data-mmv="${q.qid}" data-d="-1">↑</button><button class="btn sm" data-mmv="${q.qid}" data-d="1">↓</button><button class="btn sm" data-mrm="${q.qid}">✕</button></li>`).join("")}</ol>`:`<p class="mut small">فاضية</p>`}
-  <div class="row"><button class="btn sm" data-addw="nowplay">+ ودجت «الأغنية الحالية»</button><button class="btn sm" data-libtab="nowplay" data-go="library">🎨 التصاميم (${NP_DESIGNS.length})</button><button class="btn sm" data-mtest>🧪 تجربة طلب من الشات</button></div></div>
- <div class="card"><h3>📚 المكتبة (${S.musicLib.length})</h3><div class="fld"><label>رفع ملفات صوتية (اسم الملف: الفنان - العنوان)</label><input type="file" multiple accept="audio/*" data-mimport></div>
-  <div style="max-height:320px;overflow:auto">${S.musicLib.map(t=>`<div class="row" style="justify-content:space-between;border-bottom:1px solid #ffffff10;padding:4px 0"><span><b>${esc(t.title)}</b> <span class="mut small">${esc(t.artist)} · ${Math.floor(t.dur/60)}:${String(t.dur%60).padStart(2,"0")}</span></span><span><button class="btn sm" data-madd="${t.id}">+ للقائمة</button><button class="btn sm" data-mdel="${t.id}">حذف</button></span></div>`).join("")||`<p class="mut small">ارفع أغانيك المرخّصة لتبدأ.</p>`}</div></div></div>
- <div class="card" style="margin-top:14px"><h3>🔐 الصلاحيات (كل أمر مستقل)</h3><div class="grid g3">${permSel("request","طلب أغنية (!اغنية / !song / !طلب)")}${permSel("info","عرض القائمة والحالية (!queue / !current)")}${permSel("skip","التخطي (!skip / !سكب / !تخطي)")}${permSel("control","التحكم (!pause / !volume / !remove / !clear)")}${permSel("vote","التصويت على التخطي (!voteskip)")}<div class="fld"><label>القائمة المخصصة (أسماء مفصولة بفاصلة)</label><input class="inp" data-mcfg="users" value="${esc(C.users||"")}"></div></div>
-  <h3>⚙️ القيود</h3><div class="grid g3">${num("maxDurSec","أقصى مدة للأغنية (ثانية)",C.maxDurSec)}${num("perUser","طلبات لكل مستخدم في القائمة",C.perUser)}${num("cooldownSec","انتظار بين الطلبات (ثانية)",C.cooldownSec)}${num("noRepeatMin","منع تكرار نفس الأغنية (دقيقة)",C.noRepeatMin)}${num("voteNeeded","أصوات التخطي المطلوبة",C.voteSkip.needed)}<div class="fld"><label>أغانٍ محظورة (كلمات مفصولة بفاصلة)</label><input class="inp" data-mcfg="banned" value="${esc(C.banned||"")}"></div></div>
-  <div class="row" style="gap:16px;flex-wrap:wrap">${chk("enabled","تفعيل الأوامر")}${chk("autoplay","تشغيل تلقائي")}${chk("shuffle","تشغيل عشوائي")}${chk("duckTTS","خفض الموسيقى أثناء القارئ الصوتي")}${chk("replies","ردود البوت على الشاشة")}<label class="row small" style="gap:6px"><input type="checkbox" data-mvote ${C.voteSkip.on?"checked":""}> التصويت على التخطي</label></div></div>` }
+ const num=(k,l,v)=>`<div class="fld"><label>${l}</label><input class="inp" type="number" data-mcfg="${k}" value="${v??0}"></div>`;
+ const chk=(k,l)=>`<label class="row small" style="gap:6px"><input type="checkbox" data-mchk="${k}" ${C[k]!==false&&C[k]?"checked":""}> ${l}</label>`;
+ const now=Date.now()+skew, pl=M.player, plAlive=pl&&now-pl.at<MUSIC_PLAYER_STALE, st=cur?(M.paused?"paused":M.status||"loading"):"idle", [stL,stC]=MU_ST[st]||MU_ST.idle;
+ const links=CFG&&MU.data?MU.data.links:null, lib=muLib(), q=MU.q.trim(), libShown=q?musicSearchAll(lib,q,200):lib;
+ const plTxt=plAlive?(pl.kind==="dashboard"?"🎧 يعمل في متصفح لوحة التحكم":"📺 يعمل في مشغل OBS / LIVE Studio"):"⚠️ لا يوجد مشغل متصل — أضف رابط المشغل في OBS أو اضغط «تشغيل في هذا المتصفح»";
+ return head("🎵 طلبات الأغاني","المشاهد يبحث ويطلب من صفحة الطلب أو بالشات (!اغنية اسم الأغنية) ← قائمة الانتظار ← تُشغَّل فعلياً في مشغل OBS")+
+ `<div class="note small" style="margin-bottom:12px">🎧 مصدر التشغيل: ملفات صوتية ترفعها أنت (موسيقاك المرخّصة) ${CFG?"وتُحفظ على الخادم":"— في وضع التجربة تبقى في هذا المتصفح"}. لا نشغّل روابط YouTube أو Spotify ولا نستخرج صوتها (شروطها تمنع ذلك في البث). تأكد أن لديك حق بث الأغاني في TikTok LIVE.</div>
+ <div class="grid g2" style="align-items:start"><div>
+ <div class="card"><h3>🔗 الروابط</h3>${CFG?(links?`<div class="fld"><label>صفحة طلب الأغاني للمشاهدين (ضعها في البايو أو الشات)</label><div class="row" style="gap:6px"><input class="inp" readonly value="${esc(location.origin+links.request)}"><button class="btn sm pri" data-mucopy="${esc(location.origin+links.request)}">نسخ</button><a class="btn sm" href="${esc(links.request)}" target="_blank" rel="noopener">فتح</a></div></div>
+  <div class="fld"><label>مشغل الأغاني — Browser Source في OBS / TikTok LIVE Studio (خاص بك، لا تشاركه)</label><div class="row" style="gap:6px"><input class="inp" readonly value="${esc(location.origin+links.player)}"><button class="btn sm pri" data-mucopy="${esc(location.origin+links.player)}">نسخ</button></div></div>
+  <p class="small mut">في OBS: مصدر جديد ← Browser ← الصق الرابط، العرض 800 والارتفاع 200، وفعّل «Control audio via OBS» ليظهر الصوت في الميكسر. الخلفية شفافة. لإخفاء بطاقة الأغنية والإبقاء على الصوت فقط أضف <code>?ui=0</code>.</p>`:`<p class="mut small">جارٍ تحميل الروابط…</p>`):`<p class="mut small">رابط صفحة الطلب ومشغل OBS يظهران بعد تسجيل الدخول في المنصة. هنا (وضع التجربة) يعمل المشغل في هذا المتصفح.</p>`}
+  <div class="row" style="gap:6px;flex-wrap:wrap;align-items:center"><span class="small">${plTxt}</span><button class="btn sm" data-muhere>🎧 تشغيل في هذا المتصفح</button>${plAlive&&pl.kind==="dashboard"?`<button class="btn sm" data-murelease>📺 أعده لمشغل OBS</button>`:""}</div></div>
+ <div class="card mu-now"><h3>▶ تعمل الآن <span class="tag ${stC}">${stL}</span></h3>${cur?`<div class="row" style="gap:12px;align-items:center">${muCv(cur.track,72)}<div style="min-width:0;flex:1"><b style="font-size:18px">${esc(cur.track.title)}</b><div class="mut">${esc(cur.track.artist||"")}</div><div class="small">طلب: <b>${esc(cur.by.name)}</b> · ${muVia(cur.by)}</div>
+  <div class="mu-bar"><i data-mupos style="width:${cur.track.dur?Math.min(100,(cur.pos||0)/cur.track.dur*100):0}%"></i></div><div class="small mut"><span data-mupost>${muTime(cur.pos||0)}</span> / ${muTime(cur.track.dur)}</div></div></div>${M.err&&st!=="playing"?`<p class="small" style="color:#f87171">❌ آخر خطأ: ${esc(M.err)}</p>`:""}`:`<p class="mut">لا توجد أغنية الآن${M.err?` — <span style="color:#f87171">آخر خطأ: ${esc(M.err)}</span>`:""}</p>`}
+  <div class="row" style="margin-top:10px;gap:6px;flex-wrap:wrap"><button class="btn sm" data-mop="prev" ${(M.prev||[]).length?"":"disabled"}>⏮ السابق</button><button class="btn sm pri" data-mop="${M.paused?"resume":"pause"}" ${cur?"":"disabled"}>${M.paused?"▶ استكمال":"⏸ إيقاف مؤقت"}</button><button class="btn sm" data-mop="next" ${cur||M.queue.length?"":"disabled"}>⏭ التالي</button><button class="btn sm" data-mop="replay" ${cur?"":"disabled"}>🔁 إعادة</button><button class="btn sm" data-mop="clear" ${M.queue.length?"":"disabled"}>🗑 مسح القائمة</button></div>
+  <div class="fld" style="margin-top:8px"><label>🔊 مستوى الصوت: <b data-mvoll>${M.volume??70}%</b></label><input type="range" min="0" max="100" value="${M.volume??70}" data-mvol></div></div>
+ ${(M.pending||[]).length?`<div class="card"><h3>⏳ بانتظار موافقتك (${M.pending.length})</h3>${M.pending.map(q=>`<div class="mu-row">${muCv(q.track)}<div class="mu-t"><b>${esc(q.track.title)}</b><span class="mut small">${esc(q.track.artist||"")} · ${muTime(q.track.dur)} · طلب <b>${esc(q.by.name)}</b> · ${muVia(q.by)}</span></div><button class="btn sm pri" data-mapprove="${q.qid}">✅ قبول</button><button class="btn sm" data-mreject="${q.qid}">✖ رفض</button></div>`).join("")}</div>`:""}
+ <div class="card"><h3>📋 قائمة الانتظار (${M.queue.length}${C.maxQueue?" / "+C.maxQueue:""})</h3>${M.queue.length?M.queue.map((q,i)=>`<div class="mu-row"><span class="mu-n">${i+1}</span>${muCv(q.track)}<div class="mu-t"><b>${esc(q.track.title)}</b><span class="mut small">${esc(q.track.artist||"")} · ${muTime(q.track.dur)} · طلب <b>${esc(q.by.name)}</b> · ${muVia(q.by)}</span></div><button class="btn sm" data-mmv="${q.qid}" data-d="-1" ${i?"":"disabled"}>↑</button><button class="btn sm" data-mmv="${q.qid}" data-d="1" ${i<M.queue.length-1?"":"disabled"}>↓</button><button class="btn sm" data-mrm="${q.qid}" title="حذف">✕</button></div>`).join(""):`<p class="mut small">فاضية — الطلبات الجديدة تظهر هنا فوراً.</p>`}
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-top:8px"><button class="btn sm" data-addw="nowplay">+ ودجت «الأغنية الحالية»</button><button class="btn sm" data-libtab="nowplay" data-go="library">🎨 التصاميم (${NP_DESIGNS.length})</button><button class="btn sm" data-mtest>🧪 تجربة طلب من الشات</button></div></div>
+ </div><div>
+ <div class="card"><h3>📚 مكتبتي (${lib.length})${CFG&&MU.data?` <span class="tag">${(MU.data.used/1048576).toFixed(0)} / ${(MU.data.quota/1048576).toFixed(0)} MB</span>`:""}</h3>
+  <div class="fld"><label>${CFG?"رفع أغاني (MP3 / M4A / AAC / OGG / WAV / FLAC — حتى 40MB، تُحوَّل تلقائياً لـ MP3 ويُقرأ العنوان والفنان والغلاف من الملف)":"رفع ملفات صوتية (اسم الملف: الفنان - العنوان)"}</label><input type="file" multiple accept="audio/*,.mp3,.m4a,.aac,.ogg,.opus,.wav,.flac" data-mimport></div>
+  ${MU.up.length?`<div class="small" style="margin-bottom:6px">${MU.up.map((u,i)=>`<div>${esc(u.name)} — <span data-muup="${i}">${u.st==="up"?u.pct+"%":u.st==="proc"?"⚙️ معالجة على الخادم…":esc(u.msg||"")}</span></div>`).join("")}</div>`:""}
+  <input class="inp" placeholder="🔎 ابحث في مكتبتك" data-muq value="${esc(MU.q)}">
+  <div style="max-height:460px;overflow:auto;margin-top:6px">${libShown.map(t=>`<div class="mu-row">${muCv(t,36)}<div class="mu-t"><b>${esc(t.title)}</b><span class="mut small">${esc(t.artist||"—")} · ${muTime(t.dur)}</span></div><button class="btn sm" data-madd="${t.id}">+ للقائمة</button>${CFG?`<button class="btn sm" data-medit="${t.id}" title="تعديل الاسم">✏️</button>`:""}<button class="btn sm" data-mdel="${t.id}" title="حذف">🗑</button></div>`).join("")||`<p class="mut small">${q?"لا نتائج":"ارفع أغانيك المرخّصة لتبدأ — صفحة الطلب تعرض هذه المكتبة فقط."}</p>`}</div></div>
+ <div class="card"><h3>🩺 سجل التشخيص</h3><p class="small mut">كل خطوة حقيقية من الخادم: وصل الطلب ← حُفظ ← دخل القائمة ← تحميل الملف ← بدأ التشغيل، أو سبب الرفض/الفشل.</p><div class="mu-log">${(M.log||[]).slice(0,25).map(l=>`<div><span class="mut">${new Date(l.at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</span> ${esc(MUSIC_STEPS[l.step]||l.step)}${l.title?` — «${esc(l.title)}»`:""}${l.by?` · ${esc(l.by)}`:""}${l.why?` · <b>${esc(l.why)}</b>`:""}</div>`).join("")||`<span class="mut small">لا أحداث بعد</span>`}</div></div>
+ </div></div>
+ <div class="card" style="margin-top:14px"><h3>⚙️ إعدادات الطلبات</h3><div class="row" style="gap:16px;flex-wrap:wrap">${chk("enabled","تفعيل طلبات الأغاني")}${chk("page","صفحة الطلب للمشاهدين")}${chk("autoplay","تشغيل الأغنية التالية تلقائياً")}${chk("shuffle","تشغيل عشوائي")}${chk("duckTTS","خفض الموسيقى أثناء القارئ الصوتي")}${chk("replies","ردود البوت على الشاشة")}<label class="row small" style="gap:6px"><input type="checkbox" data-mvote ${C.voteSkip.on?"checked":""}> التصويت على التخطي</label></div>
+  <div class="grid g3"><div class="fld"><label>قبول الطلبات</label><select class="inp" data-mcfgs="approve"><option value="auto" ${C.approve!=="manual"?"selected":""}>تلقائياً</option><option value="manual" ${C.approve==="manual"?"selected":""}>يدوياً (أوافق على كل طلب)</option></select></div>${num("perUser","طلبات لكل مشاهد في القائمة",C.perUser)}${num("cooldownSec","انتظار بين طلبات المشاهد (ثانية)",C.cooldownSec)}${num("maxDurSec","أقصى مدة للأغنية (ثانية)",C.maxDurSec)}${num("maxQueue","أقصى طول للقائمة (يوقف الطلبات عند الامتلاء)",C.maxQueue)}${num("noRepeatMin","منع تكرار نفس الأغنية (دقيقة)",C.noRepeatMin)}${num("voteNeeded","أصوات التخطي المطلوبة",C.voteSkip.needed)}
+  <div class="fld"><label>أغانٍ أو كلمات محظورة (مفصولة بفاصلة)</label><input class="inp" data-mcfg="banned" value="${esc(C.banned||"")}"></div><div class="fld"><label>مشاهدون ممنوعون من الطلب (أسماء مفصولة بفاصلة)</label><input class="inp" data-mcfg="bannedUsers" value="${esc(C.bannedUsers||"")}"></div></div>
+  <h3>🔐 صلاحيات أوامر الشات (المشرفون يتحكمون بالقائمة من الشات)</h3><div class="grid g3">${permSel("request","طلب أغنية (!اغنية / !song / !طلب)")}${permSel("info","عرض القائمة والحالية (!queue / !current)")}${permSel("skip","التخطي (!skip / !تخطي)")}${permSel("control","التحكم (!pause / !resume / !volume / !remove / !clear)")}${permSel("vote","التصويت على التخطي (!voteskip)")}<div class="fld"><label>القائمة المخصصة (أسماء مفصولة بفاصلة)</label><input class="inp" data-mcfg="users" value="${esc(C.users||"")}"></div></div></div>` }
 function musicSave(){ save(); pushLayout(); syncBots&&syncBots() }
+function muHere(){ if(CFG){ document.getElementById("mu-ifr")?.remove(); const f=document.createElement("iframe"); f.id="mu-ifr"; f.allow="autoplay"; f.style.cssText="position:fixed;width:1px;height:1px;opacity:0;pointer-events:none;bottom:0;left:0;border:0"; f.src=MU.data.links.player+"?as=dashboard&ui=0&pid="+MP.pid; document.body.appendChild(f); setTimeout(()=>clockOp("music","claim",{pid:MP.pid,kind:"dashboard",force:true}),800); MP.on=true; toast("🎧 التشغيل الآن في هذا المتصفح"); return }
+ MP.on=true; mpEnsure().play().catch(()=>{}); MP.audio.pause(); MP.id=null; mpSend("claim",{force:true}); toast("🎧 المشغل يعمل في هذا المتصفح") }
 function musicClick(t,d){
- if(t.hasAttribute("data-mpon")){ MP.on=true; mpEnsure().play().catch(()=>{}); MP.audio.pause(); mpSync(); mpUI(); toast("المشغل يعمل في هذا التبويب"); return true }
+ if(t.hasAttribute("data-muhere")){ if(CFG&&!MU.data) return toast("جارٍ التحميل…"),true; muHere(); return true }
+ if(t.hasAttribute("data-murelease")){ document.getElementById("mu-ifr")?.remove(); MP.on=false; if(MP.audio) MP.audio.pause(); clockOp("music","release",{}); toast("📺 يتولى مشغل OBS التشغيل خلال ثوانٍ"); return true }
+ if(d.mucopy){ navigator.clipboard?.writeText(d.mucopy).then(()=>toast("✅ نُسخ الرابط"),()=>toast("انسخه يدوياً")); return true }
  if(d.addw){ const w=addWidget(d.addw,{}); applyPreset(w,"bc",CV()); save(); pushLayout(); toast("أُضيف «"+(TYPES[d.addw]||{}).label+"»"); return true }
- if(d.mop){ clockOp("music",d.mop,{}); setTimeout(()=>renderPage(true),60); return true }
- if(d.mrm){ clockOp("music","remove",{qid:d.mrm}); setTimeout(()=>renderPage(true),60); return true }
- if(d.mmv){ clockOp("music","move",{qid:d.mmv,d:+d.d}); setTimeout(()=>renderPage(true),60); return true }
- if(d.madd){ if(!R.C.music||!R.C.music.lib.length) musicSyncLib(); clockOp("music","add",{id:d.madd}); setTimeout(()=>renderPage(true),60); return true }
- if(d.mdel){ MDB.del(d.mdel); S.musicLib=S.musicLib.filter(x=>x.id!==d.mdel); musicSyncLib(); renderPage(true); return true }
- if(t.hasAttribute("data-mtest")){ const t0=S.musicLib[0]; if(!t0) return toast("ارفع أغنية أولاً"),true; sim({id:"mt_"+uid()+Date.now(),type:"comment",user:{id:"tester"+Date.now()%1000,name:"تجربة"},text:"!اغنية "+t0.title,test:true}); setTimeout(()=>renderPage(true),120); return true }
+ if(d.mop){ clockOp("music",d.mop,{}); return true }
+ if(d.mrm){ clockOp("music","remove",{qid:d.mrm}); return true }
+ if(d.mapprove){ clockOp("music","approve",{qid:d.mapprove}); return true }
+ if(d.mreject){ clockOp("music","reject",{qid:d.mreject}); return true }
+ if(d.mmv){ clockOp("music","move",{qid:d.mmv,d:+d.d}); return true }
+ if(d.madd){ if(!CFG) musicSyncLib(); clockOp("music","add",{id:d.madd}); toast("أُضيفت للقائمة"); return true }
+ if(d.medit){ const t0=muLib().find(x=>x.id===d.medit); if(!t0) return true; (async()=>{ const ti=await ask("اسم الأغنية",t0.title); if(ti==null) return; const ar=await ask("اسم الفنان",t0.artist||""); if(ar==null) return; const j=await CFG.api("/api/music/"+t0.id,{method:"PATCH",body:{title:ti,artist:ar}}); if(j.ok){ toast("✅ حُفظ"); muLoad(true) } else toast("تعذر الحفظ") })(); return true }
+ if(d.mdel){ if(!confirm("حذف الأغنية من المكتبة؟")) return true; if(CFG){ CFG.api("/api/music/"+d.mdel,{method:"DELETE"}).then(j=>{ if(j.ok){ toast("🗑️ حُذفت"); muLoad(true) } else toast("تعذر الحذف") }); return true } MDB.del(d.mdel); S.musicLib=S.musicLib.filter(x=>x.id!==d.mdel); musicSyncLib(); renderPage(true); return true }
+ if(t.hasAttribute("data-mtest")){ const t0=muLib()[0]; if(!t0) return toast("ارفع أغنية أولاً"),true; if(!CFG) musicSyncLib(); sim({id:"mt_"+uid()+Date.now(),type:"comment",user:{id:"tester"+Date.now()%1000,name:"تجربة"},text:"!اغنية "+t0.title,test:true}); return true }
  return false }
 function musicInput(t,d,e){
- if(d.mimport!==undefined&&e.type==="change"){ musicImport([...t.files]); return true }
- if(d.mvol!==undefined&&e.type==="change"){ clockOp("music","volume",{v:+t.value}); return true }
+ if(d.mimport!==undefined&&e.type==="change"){ if(CFG) muUpload(t.files); else musicImport([...t.files]); t.value=""; return true }
+ if(d.muq!==undefined){ MU.q=t.value; clearTimeout(MU.qt); MU.qt=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-muq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },200); return true }
+ if(d.mvol!==undefined){ const l=document.querySelector("[data-mvoll]"); if(l) l.textContent=t.value+"%"; if(e.type==="change") clockOp("music","volume",{v:+t.value}); return true }
  if(d.mperm){ S.bots.music.perms[d.mperm]=t.value; musicSave(); return true }
- if(d.mcfg&&e.type==="change"){ if(d.mcfg==="voteNeeded") S.bots.music.voteSkip.needed=Math.max(1,+t.value||1); else S.bots.music[d.mcfg]=["users","banned"].includes(d.mcfg)?t.value:Math.max(0,+t.value||0); musicSave(); return true }
+ if(d.mcfgs&&e.type==="change"){ S.bots.music[d.mcfgs]=t.value; musicSave(); return true }
+ if(d.mcfg&&e.type==="change"){ if(d.mcfg==="voteNeeded") S.bots.music.voteSkip.needed=Math.max(1,+t.value||1); else S.bots.music[d.mcfg]=["users","banned","bannedUsers"].includes(d.mcfg)?t.value:Math.max(0,+t.value||0); musicSave(); return true }
  if(d.mchk!==undefined){ S.bots.music[d.mchk]=t.checked; musicSave(); return true }
  if(d.mvote!==undefined){ S.bots.music.voteSkip.on=t.checked; musicSave(); return true }
  return false }
+/* تقدم الأغنية الحالية في اللوحة (من موضع المشغل الحقيقي) */
+setInterval(()=>{ if(S.page!=="music") return; const M=R.C.music, c=M&&M.current; if(!c) return; const p=Math.min(c.track.dur||1e9,(c.pos||0)+(M.status==="playing"&&!M.paused&&c.posAt?(Date.now()+skew-c.posAt)/1000:0)); const b=document.querySelector("[data-mupos]"), tx=document.querySelector("[data-mupost]"); if(b&&c.track.dur) b.style.width=Math.min(100,p/c.track.dur*100)+"%"; if(tx) tx.textContent=muTime(p) },1000);
 // ====== مركز ربط البثوث | Multi-Platform Connection Hub ======
 const CONN_P=["tiktok","youtube","kick","twitch"];
 const CONN_ST={connected:["متصل","ok"],connecting:["جارٍ الاتصال","warn"],error:["خطأ","bad"],disconnected:["غير متصل",""],unconfigured:["غير مضبوط على الخادم","bad"]};

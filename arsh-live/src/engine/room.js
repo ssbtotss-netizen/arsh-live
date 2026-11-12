@@ -10,7 +10,7 @@ import { chatPush } from "./chat.js";
 import { topsOnEvent } from "./tops.js";
 import { sessionOnLive, sessionTick, sessionOnEvent } from "./poststats.js";
 import { actionsOnEvent, newActState, actLog } from "./actions.js";
-import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext } from "./music.js";
+import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext, musicLog } from "./music.js";
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { newClockState, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
@@ -60,9 +60,19 @@ function botCtx(R,now){ const c=R.botCtx||{}; return {now,D:R.D,H:R.H,C:R.C,DN:R
 function botOut(R,ev,now,out){ if(!R.botCfg) return; R.B=R.B||newBotState(); try{ const items=botsOnEvent(R.botCfg,R.B,ev,botCtx(R,now)); if(items.length) out.push({t:"bot",items}) }catch(e){ R.B.stats.errors++ } }
 /** إعدادات البوتات وسياقها (تصل مع التخطيط) */
 /** إعدادات الأغاني تُحفظ داخل إعدادات البوتات (cfg.music) — بدون تغيير قاعدة البيانات */
+/** مكتبة الأغاني القابلة للتشغيل (بيانات فقط — الملفات على الخادم). لا تُحفظ داخل حالة الغرفة؛ تُحمَّل من قاعدة البيانات */
+export function roomMusicLib(R){ return R.MLIB||(R.C&&R.C.music&&R.C.music.lib)||[] }
+export function roomMusicSetLib(R,lib){ R.MLIB=(lib||[]).slice(0,2000).map(t=>({id:String(t.id),title:String(t.title||"").slice(0,120),artist:String(t.artist||"").slice(0,80),dur:+t.dur||0,cover:t.cover&&String(t.cover).length<2000?String(t.cover):""})); if(R.C&&R.C.music) R.C.music.lib=[] }
+/** طلب من صفحة الطلب العامة (مشاهد) — نفس القيود والطابور */
+export function roomMusicRequest(R,trackId,user,now){ R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R), M=R.C.music;
+ if(cfg.page===false) return {res:{ok:false,reply:"صفحة طلب الأغاني متوقفة"},out:[]};
+ const t=roomMusicLib(R).find(x=>x.id===String(trackId)); if(!t){ musicLog(M,now,"refused",{why:"الأغنية غير موجودة في المكتبة",by:user&&user.name}); return {res:{ok:false,reply:"الأغنية غير موجودة في المكتبة"},out:[]} }
+ const res=musicAdd(M,cfg,t,{id:String(user.id||""),name:String(user.name||"").slice(0,40),platform:"page"},now,{via:"page"});
+ if(!res.ok) musicLog(M,now,"refused",{why:res.reply,title:t.title,by:user.name});
+ return {res,out:[{t:"clock",C:R.C,now,logs:[],mu:"req"}]} }
 export function roomMusicCfg(R){ return {...defaultMusicCfg(),...((R.botCfg&&R.botCfg.music)||{})} }
 function roomMusic(R,ev,now,out){ if(ev.type!=="comment"&&ev.type!=="follow") return; R.C.music=R.C.music||newMusicState(); const cfg=roomMusicCfg(R);
- if(ev.test&&ev.type==="follow") return; const r=musicOnEvent(R.C.music,cfg,ev,now); if(!r) return;
+ if(ev.test&&ev.type==="follow") return; const r=musicOnEvent(R.C.music,cfg,ev.test?{...ev,user:{...(ev.user||{}),test:true}}:ev,now,roomMusicLib(R)); if(!r) return;
  if(r.changed) out.push({t:"clock",C:R.C,now,logs:[],mu:"cmd"});
  if(r.reply&&cfg.replies!==false) out.push({t:"bot",items:[{id:"mu_"+(ev.id||now),kind:"reply",bot:"music",text:r.reply,show:true,say:false,user:{name:"🎵 الأغاني"},at:now}]}) }
 /** تنفيذ قواعد «عندما ← إذا ← نفّذ» — كل إجراء له نتيجة مسجّلة (نجاح/فشل + السبب) */
@@ -79,7 +89,7 @@ function roomActions(R,ev,now,out){ const rules=R.botCfg&&R.botCfg.actions; if(!
     case "reply": bot.push({id:"act_rp_"+f.rule.id+now,kind:"reply",bot:"actions",text:a.text||"",show:true,say:false,user:{name:"⚡ "+f.rule.name},at:now}); a.ok=true; break;
     case "subAdd": case "subSub": { const ms=Math.round((+a.sec||0)*1000*(f.mult||1))*(a.t==="subSub"?-1:1); const lg=subathonOp(R.C.subathon,{op:"add",ms,source:"action",reason:"⚡ "+f.rule.name},now); a.ok=!!(lg&&lg.length); if(!a.ok) a.why="السابثون غير مشغّل"; else out.push({t:"clock",C:R.C,now,logs:lg}); break }
     case "goalAdd": media.push({id:"ac_goal_"+now,kind:"goal",widgetId:a.widgetId||"",n:(+a.n||1)*(f.mult||1)}); a.ok=true; break;
-    case "songAdd": { R.C.music=R.C.music||newMusicState(); const t=musicSearch(R.C.music.lib,a.text||""); const r=musicAdd(R.C.music,roomMusicCfg(R),t,{id:"actions",name:"⚡ "+f.rule.name,owner:true},now,{force:true}); a.ok=r.ok; if(!r.ok) a.why=r.reply; else out.push({t:"clock",C:R.C,now,logs:[],mu:"act"}); break }
+    case "songAdd": { R.C.music=R.C.music||newMusicState(); const t=musicSearch(roomMusicLib(R),a.text||""); const r=musicAdd(R.C.music,roomMusicCfg(R),t,{id:"actions",name:"⚡ "+f.rule.name,owner:true},now,{force:true}); a.ok=r.ok; if(!r.ok) a.why=r.reply; else out.push({t:"clock",C:R.C,now,logs:[],mu:"act"}); break }
     case "songSkip": { R.C.music=R.C.music||newMusicState(); a.ok=!!R.C.music.current; if(a.ok){ musicNext(R.C.music,now,roomMusicCfg(R)); out.push({t:"clock",C:R.C,now,logs:[],mu:"act"}) } else a.why="لا توجد أغنية"; break }
     case "discord": case "telegram": out.push({t:"notify",channel:a.t,text:a.text||"",rule:f.rule.name,test:!!f.ev.test}); a.ok=true; a.why="أُرسل لخدمة الإشعارات"; break;
     default: a.ok=false; a.why="إجراء غير معروف";
@@ -91,7 +101,7 @@ export function roomBots(R,cfg,ctx){ R.botCfg=cfg||null; R.botCtx=ctx||{}; R.B=R
 /** أوامر لوحة التحكم للمؤقتات والسبثون */
 export function roomClockOp(R,m,now){
  let logs=[];
- if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(!musicOp(R.C.music,m,now,roomMusicCfg(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
+ if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
  if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
   if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
