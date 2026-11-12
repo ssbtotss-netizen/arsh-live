@@ -70,7 +70,7 @@ Object.assign(View.prototype,{
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
   const c=alMergeCfg(d.config,it.over&&it.over.cfg), fixed=!!(it.over&&it.over.durationSec), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى. «مدة مخصصة» = مدة ثابتة؛ التلقائي = طول المقطع كاملاً
-  this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r);
+  this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r); const pl=it.over&&it.over.place; if(pl&&+pl.size>0&&+pl.size<100||pl&&(+pl.x!==50||+pl.y!==50)){ const z=Math.max(10,Math.min(100,+pl.size||100)); Object.assign(r.style,{inset:"auto",width:z+"%",height:z+"%",left:(+pl.x||0)+"%",top:(+pl.y||0)+"%",translate:"-50% -50%"}) } /* حجم ومكان المقطع من إعدادات المستوى */
   if(d.kind==="template"){ return this.aboxTemplate(d,c,it,r,dur,cur) }
   let media=null, lot=null, vid=null;
   if(d.mediaUrl&&d.kind!=="audio"){

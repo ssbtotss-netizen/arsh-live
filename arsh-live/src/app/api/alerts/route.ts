@@ -14,6 +14,9 @@ export async function GET(req: Request) {
   let rows: any[] = [];
   const filt: any = {}; if (AL_CATS[cat]) filt.category = cat; if (kind) filt.kind = kind; if (event) filt.event = event;
   const grp = sp.get("group") || ""; if ((AL_EVENT_GROUPS as any)[grp]) filt.event = { in: (AL_EVENT_GROUPS as any)[grp][1] };
+  // المكتبة العامة: أقسام الدعم فقط (أحبني / التكبيس / الدونيشن / الهدايا) — لا متابعة ولا تعليقات ولا دخول
+  const SUP = Object.values(AL_EVENT_GROUPS as any).flatMap((g: any) => g[1]); if (!filt.event) filt.event = { in: SUP };
+  const lvl = sp.get("lvl") || ""; if (lvl) filt.config = { path: ["lvl"], equals: lvl.slice(0, 20) };
   const alpha = sp.get("alpha"); if (alpha === "1" || alpha === "0") filt.meta = { path: ["alpha"], equals: alpha === "1" };
   if (PUBLIC_SECTIONS.has(section)) rows = await prisma.alert.findMany({ where: { ...LISTED, ...filt }, orderBy: { publishedAt: "desc" }, take: 600, include: { owner: ownerSel } });
   else if (section === "designer") rows = await prisma.alert.findMany({ where: { ...LISTED, ownerId: String(sp.get("id") || "") }, orderBy: { publishedAt: "desc" }, take: 300, include: { owner: ownerSel } });

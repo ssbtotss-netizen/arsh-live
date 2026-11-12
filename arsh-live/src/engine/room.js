@@ -12,7 +12,7 @@ import { sessionOnLive, sessionTick, sessionOnEvent } from "./poststats.js";
 import { actionsOnEvent, newActState, actLog } from "./actions.js";
 import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext } from "./music.js";
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
-import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual } from "./alerts.js";
+import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { newClockState, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
 
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
@@ -52,7 +52,7 @@ export function roomEvent(R,ev,now){
 }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
-function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
+function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now,{totalLikes:R.D&&R.D.tot?R.D.tot.likes:0}):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
   // القارئ الصوتي (اختياري لكل قاعدة): يمر عبر مركز البوتات — مفتاح خدمة الصوت يبقى على الخادم
   const say=items.map(it=>{ const r=c.rules.find(x=>x.id===it.ruleId); if(!r||!r.over.tts||!r.over.ttsText) return null; const text=alFill(r.over.ttsText,it.vars).slice(0,200); return text?{id:"al_tts_"+it.id,kind:"reply",bot:"alerts",text,speech:text,show:false,say:true,user:{name:it.vars.display_name||""},at:now,test:!!it.test}:null }).filter(Boolean); if(say.length) out.push({t:"bot",items:say}) }catch(e){} }
 /** سياق البوتات: بيانات الغرفة الحقيقية + آخر تخطيط وحسابات من لوحة التحكم */
@@ -99,6 +99,9 @@ export function roomClockOp(R,m,now){
    const c=roomAlertCfg(R); if(!c) return {out:[],logs:[]}; const amt=Math.max(0,+m.amount||0); if(!(amt>0)) return {out:[],logs:[]};
    const ev={type:"donation",id:"testdon:"+now,test:true,provider:"test",amount:amt,currency:String(m.currency||c.don.base).toUpperCase().slice(0,3),name:String(m.name||"داعم تجريبي").slice(0,40),message:String(m.message||"").slice(0,200),avatar:String(m.avatar||"").slice(0,400)};
    const items=alertsOnEvent(c,{...alNewState()},ev,now); return {out:items.length?[{t:"alert",items}]:[{t:"status",text:"لا توجد شريحة تنطبق على "+amt+" "+ev.currency}],logs:[]} }
+  if(m.op==="libtest"){ /* تجربة مستوى من مكتبة الأقسام: لا تمر على الدونيشن ولا الإحصائيات ولا عدادات التكبيس */
+   const c=roomAlertCfg(R); if(!c) return {out:[],logs:[]}; R.ALT=R.ALT||{}; const tv=m.vars&&typeof m.vars==="object"?m.vars:{}; const items=alLibTest(c,R.ALT,String(m.sec||""),String(m.key||""),now,tv);
+   return {out:items.length?[{t:"alert",items}]:[{t:"status",text:"لا يوجد مقطع مفعّل في هذا المستوى"}],logs:[]} }
   if(m.op==="fire"){ const c=roomAlertCfg(R), items=c?alertsManual(c,R.AL,m.ruleId,now):[]; return {out:items.length?[{t:"alert",items}]:[],logs:[]} }
   if(["skip","stop","replay","pause","resume"].includes(m.op)) return {out:[{t:"alertctl",op:m.op}],logs:[]}; return {out:[],logs:[]} }
  if(m.target==="subathon"){ logs=subathonOp(R.C.subathon,m,now); keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}]; roomAlerts(R,null,logs,now,out); return {out,logs} }
