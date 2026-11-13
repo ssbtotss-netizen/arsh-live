@@ -3,6 +3,7 @@
 // الحالات: listening = متصل بالشات ويستقبل | offline = القناة غير مباشرة الآن (نعيد المحاولة) | error = فشل مع السبب.
 import WebSocket from "ws";
 import type { PrismaClient } from "@prisma/client";
+import { youtubeToEvents } from "../engine/platforms.js";
 import { PC_PLATFORMS, pcNormChannel, pcParseIrc, pcIrcHello, PC_KICK_WS, pcKickSub, pcKickFrame, pcKickRoom, pcYtLiveUrl, pcYtVideoId, pcYtInit, pcYtActions, pcYtPoll } from "../engine/pubchat.js";
 
 type Hub = { dispatch(room: string, ev: any): void };
@@ -21,6 +22,7 @@ export function createPubChat(prisma: PrismaClient, hub: Hub) {
   async function emit(userId: string, p: string, ev: any) {
     if (!ev || !ev.id) return; const k = userId + ":" + p; let s = seen.get(k); if (!s) seen.set(k, (s = new Set()));
     if (s.has(ev.id)) return; s.add(ev.id); if (s.size > 3000) { const a = [...s].slice(-1500); seen.set(k, new Set(a)); }
+    if (ev.history) return; /* رسائل ما قبل الاتصال: تُعلَّم مقروءة فقط — لا تُرسل للبث ولا تشغّل أوامر البوت */
     const room = await roomOf(userId); if (!room) return;
     hub.dispatch(room, { ...ev, t: ev.at || Date.now() });
     const now = Date.now(); if (now - (lastSave.get(k) || 0) > 30_000) { lastSave.set(k, now); await setStatus(userId, p, { lastEventAt: new Date(), status: "connected", lastError: null }); }
@@ -41,24 +43,53 @@ export function createPubChat(prisma: PrismaClient, hub: Hub) {
     return { stop() { stopped = true; clearTimeout(timer); clearInterval(alive); try { ws?.close(); } catch {} } };
   }
 
-  // ---------- YouTube: صفحة الشات العامة للبث المباشر ----------
+  // ---------- YouTube: صفحة الشات العامة للبث المباشر (+ احتياط عبر YouTube Data API بمفتاح المنصة) ----------
+  const YH = { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+cb.20240101-00-p0.en+FX+000; SOCS=CAI" };
+  const apiKey = () => process.env.YOUTUBE_API_KEY || "";
+  const chanCache = new Map<string, string>();
+  const why = (h: string) => /consent\.youtube|before you continue/i.test(h) ? "consent" : /confirm you.re not a bot|unusual traffic/i.test(h) ? "bot" : "nolive";
+  /** احتياط رسمي: القناة → آخر الفيديوهات (RSS بدون حصة) → videos.list (وحدة واحدة) لمعرفة البث المباشر */
+  async function apiLive(ch: string): Promise<{ vid: string; chatId: string } | null> {
+    const k = apiKey(); if (!k) return null;
+    let cid = ch.startsWith("c:") ? ch.slice(2) : chanCache.get(ch) || "";
+    if (!cid && ch.startsWith("@")) { const r = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${encodeURIComponent(ch)}&key=${k}`); const j: any = r.ok ? await r.json() : null; cid = j?.items?.[0]?.id || ""; if (cid) chanCache.set(ch, cid); }
+    let ids: string[] = ch.startsWith("v:") ? [ch.slice(2)] : [];
+    if (!ids.length && cid) { const r = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${cid}`, { headers: YH }); if (r.ok) ids = [...(await r.text()).matchAll(/<yt:videoId>([A-Za-z0-9_-]{11})<\/yt:videoId>/g)].map(m => m[1]).slice(0, 15); }
+    if (!ids.length) return null;
+    const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${ids.join(",")}&key=${k}`); const j: any = r.ok ? await r.json() : null;
+    const v = (j?.items || []).find((x: any) => x.snippet?.liveBroadcastContent === "live" && x.liveStreamingDetails?.activeLiveChatId);
+    return v ? { vid: v.id, chatId: v.liveStreamingDetails.activeLiveChatId } : null;
+  }
   function startYouTube(userId: string, ch: string) {
     let stopped = false, timer: any = null;
     const wait = (ms: number, f: () => void) => { if (!stopped) timer = setTimeout(f, ms); };
     const findLive = async () => {
       if (stopped) return;
       try {
-        const page = await fetch(pcYtLiveUrl(ch)!, { headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+1" } });
-        if (!page.ok) { await setStatus(userId, "youtube", { status: "error", lastError: `تعذر فتح القناة (${page.status}) — تأكد من اسم القناة` }); return wait(120_000, findLive); }
-        const vid = ch.startsWith("v:") ? ch.slice(2) : pcYtVideoId(await page.text());
-        if (!vid) { await setStatus(userId, "youtube", { status: "offline", lastError: "القناة غير مباشرة الآن — سيبدأ الشات تلقائياً عند بدء البث" }); return wait(60_000, findLive); }
-        const lc = await fetch(`https://www.youtube.com/live_chat?is_popout=1&v=${vid}`, { headers: { "user-agent": UA, "accept-language": "en-US,en;q=0.9", cookie: "CONSENT=YES+1" } });
-        const init = lc.ok ? pcYtInit(await lc.text()) : null;
-        if (!init) { await setStatus(userId, "youtube", { status: "offline", lastError: "البث بدون شات مباشر أو الشات مقفل" }); return wait(60_000, findLive); }
+        let vid: string | null = ch.startsWith("v:") ? ch.slice(2) : null, reason = "";
+        if (!vid) { const page = await fetch(pcYtLiveUrl(ch)!, { headers: YH }); const h = page.ok ? await page.text() : ""; vid = pcYtVideoId(h); if (!vid) reason = page.ok ? why(h) : "http" + page.status; }
+        let init = vid ? await fetch(`https://www.youtube.com/live_chat?is_popout=1&v=${vid}`, { headers: YH }).then(r => r.ok ? r.text() : "").then(pcYtInit).catch(() => null) : null;
+        if (!init) {
+          const a = await apiLive(ch).catch(() => null);
+          if (a) { await setStatus(userId, "youtube", { status: "connected", lastError: null, accountId: a.vid }); return pollApi(a.chatId, ""); }
+          if (!vid) { await setStatus(userId, "youtube", { status: "offline", lastError: reason === "consent" || reason === "bot" ? `YouTube لم يعرض صفحة القناة للخادم (${reason}) — ونعيد المحاولة؛ تأكد أن القناة في بث مباشر` : "القناة غير مباشرة الآن — سيبدأ الشات تلقائياً عند بدء البث" }); return wait(60_000, findLive); }
+          await setStatus(userId, "youtube", { status: "offline", lastError: "البث بدون شات مباشر أو الشات مقفل" }); return wait(60_000, findLive);
+        }
         await setStatus(userId, "youtube", { status: "connected", lastError: null, accountId: vid });
         for (const e of pcYtActions(init.initial)) emit(userId, "youtube", { ...e, history: true });
         poll(init.key, init.ver, init.continuation, 0);
       } catch (e: any) { await setStatus(userId, "youtube", { status: "error", lastError: "خطأ شبكة مع YouTube — إعادة المحاولة" }); wait(60_000, findLive); }
+    };
+    /** احتياط: liveChatMessages الرسمي بمفتاح API (5 وحدات للطلب — أبطأ: كل 10 ثوانٍ على الأقل لحماية الحصة) */
+    const pollApi = async (chatId: string, page: string) => {
+      if (stopped) return;
+      try {
+        const r = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?liveChatId=${chatId}&part=snippet,authorDetails&maxResults=200${page ? "&pageToken=" + page : ""}&key=${apiKey()}`);
+        if (!r.ok) { const t = await r.text(); await setStatus(userId, "youtube", { status: r.status === 403 && /quota/i.test(t) ? "error" : "offline", lastError: /quota/i.test(t) ? "انتهت حصة YouTube اليومية — يعود الشات غداً أو بالربط الرسمي" : "انتهى البث — بانتظار البث القادم" }); return wait(/quota/i.test(t) ? 3600_000 : 60_000, findLive); }
+        const j: any = await r.json();
+        for (const e of youtubeToEvents(j.items || [])) emit(userId, "youtube", { ...e, source: "youtube-api-key", history: !page });
+        wait(Math.max(10_000, +j.pollingIntervalMillis || 10_000), () => pollApi(chatId, j.nextPageToken || page));
+      } catch { wait(20_000, () => pollApi(chatId, page)); }
     };
     const poll = async (apiKey: string, ver: string, cont: string, fails: number) => {
       if (stopped) return;
