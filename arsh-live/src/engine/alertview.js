@@ -22,7 +22,7 @@ export const AB_OUT_KF={fadeOut:[ab1,ab0],zoomOut:[ab1,{...ab0,transform:"scale(
 function abEnsureCSS(){ if(abCss||typeof document==="undefined") return; abCss=true; const st=document.createElement("style"); st.id="b6o6-abox"; st.textContent=AB_CSS; document.head.appendChild(st) }
 export const AB_CSS=`.t-abox{background:transparent!important;overflow:hidden;pointer-events:none}
 .ab-root{position:absolute;inset:0}.ab-media{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}.ab-media.cover{object-fit:cover}
-.ab-av{position:absolute;transform:translate(-50%,-50%);aspect-ratio:1;border-radius:50%;background:center/cover no-repeat;box-sizing:border-box}
+.ab-av{position:absolute;transform:translate(-50%,-50%);aspect-ratio:1;border-radius:50%;background:center/cover no-repeat;box-sizing:border-box}.ab-hideav .ab-av,.ab-hideav .fa-av{display:none!important}.ab-txwait .ab-tx,.ab-txwait .ab-av,.ab-txwait .fa-tx,.ab-txwait .fa-av,.ab-txwait .fa-card{visibility:hidden!important}.ab-txin .ab-tx,.ab-txin .ab-av,.ab-txin .fa-tx,.ab-txin .fa-av,.ab-txin .fa-card{animation:abTxIn .45s ease-out}@keyframes abTxIn{from{opacity:0}to{opacity:1}}.ab-txgone .ab-tx,.ab-txgone .ab-av,.ab-txgone .fa-tx,.ab-txgone .fa-av,.ab-txgone .fa-card{opacity:0!important;transition:opacity .45s}
 .ab-tx{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;font-weight:900;text-align:center;text-shadow:0 2px 6px #000a,0 0 2px #000;max-width:96%;overflow:hidden;text-overflow:ellipsis}
 .ab-ph{position:absolute;inset:8%;border:2px dashed #fff5;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fffa;font:700 14px system-ui;text-align:center}
 .abf-none{border:0}.abf-circle{border:.25em solid #fff}.abf-ring{border:.3em solid #fff;box-shadow:0 0 0 .2em #0006}.abf-gold{border:.35em solid #f5c542;box-shadow:0 0 1em #f5c54299}.abf-silver{border:.35em solid #d9dde3;box-shadow:0 0 .8em #fff8}
@@ -70,7 +70,9 @@ Object.assign(View.prototype,{
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
   const c=alMergeCfg(d.config,it.over&&it.over.cfg), fixed=!!(it.over&&it.over.durationSec), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى. «مدة مخصصة» = مدة ثابتة؛ التلقائي = طول المقطع كاملاً
-  this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r); const pl=it.over&&it.over.place; if(pl&&+pl.size>0&&+pl.size<100||pl&&(+pl.x!==50||+pl.y!==50)){ const z=Math.max(10,Math.min(100,+pl.size||100)); Object.assign(r.style,{inset:"auto",width:z+"%",height:z+"%",left:(+pl.x||0)+"%",top:(+pl.y||0)+"%",translate:"-50% -50%"}) } /* حجم ومكان المقطع من إعدادات المستوى */
+  this.el.innerHTML=""; const r=document.createElement("div"); r.className="ab-root"; r.style.isolation="isolate"; this.el.appendChild(r);
+  /* تحكم صانع المحتوى (لكل مستوى): إخفاء الصورة + متى يظهر كلام الداعم وكم يبقى */ { const o=it.over||{}; if(o.hideAv) r.classList.add("ab-hideav"); const tdl=Math.max(0,+o.textDelay||0), tdu=Math.max(0,+o.textDur||0);
+   if(tdl){ r.classList.add("ab-txwait"); setTimeout(()=>{ r.classList.remove("ab-txwait"); r.classList.add("ab-txin") },tdl*1000) } if(tdu) setTimeout(()=>r.classList.add("ab-txgone"),(tdl+tdu)*1000) } const pl=it.over&&it.over.place; if(pl&&+pl.size>0&&+pl.size<100||pl&&(+pl.x!==50||+pl.y!==50)){ const z=Math.max(10,Math.min(100,+pl.size||100)); Object.assign(r.style,{inset:"auto",width:z+"%",height:z+"%",left:(+pl.x||0)+"%",top:(+pl.y||0)+"%",translate:"-50% -50%"}) } /* حجم ومكان المقطع من إعدادات المستوى */
   if(d.kind==="template"){ return this.aboxTemplate(d,c,it,r,dur,cur) }
   let media=null, lot=null, vid=null;
   if(d.mediaUrl&&d.kind!=="audio"){

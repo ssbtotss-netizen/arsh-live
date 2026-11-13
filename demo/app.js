@@ -2719,7 +2719,8 @@ function mlLevelHTML(sec,[key,L,title,sub]){ const at=`data-s="${sec}" data-k="$
   <div class="ml-clips">${n?L.clips.map((c,i)=>mlClipHTML(sec,key,L,c,i)).join(""):`<div class="mut small" style="padding:8px">لا توجد مقاطع لهذا ${sec==="love"?"القسم":"المستوى"} بعد</div>`}</div>
   <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-ml="upload" ${at}>⬆️ رفع فيديو أو صوت</button><button class="btn sm" data-ml="pick" ${at}>📁 من مقاطعي</button><button class="btn sm" data-ml="community" ${at}>🌍 من مكتبة المجتمع</button></div>
   <div class="row" style="gap:10px;flex-wrap:wrap;margin-top:6px;align-items:center">${n>1?`<select class="inp" style="width:auto" data-mlf="order" ${at}><option value="random" ${L.order==="random"?"selected":""}>🎲 اختيار عشوائي</option><option value="seq" ${L.order==="seq"?"selected":""}>🔢 بالترتيب المحدد</option></select>`:""}
-  <span class="small mut">يظهر على الإشعار:</span>${sec!=="taps"?chk("show.name","اسم الداعم",L.show.name):""}${sec==="love"||sec==="gifts"?chk("show.gift","نوع الهدية",L.show.gift):""}${sec==="don"?chk("show.amount","قيمة الدعم",L.show.amount):""}${sec==="taps"?chk("show.amount","عدد التكبيسات",L.show.amount):""}</div></div>` }
+  <span class="small mut">يظهر على الإشعار:</span>${sec!=="taps"?chk("show.name","اسم الداعم",L.show.name):""}${sec==="love"||sec==="gifts"?chk("show.gift","نوع الهدية",L.show.gift):""}${sec==="don"?chk("show.amount","قيمة الدعم",L.show.amount):""}${sec==="taps"?chk("show.amount","عدد التكبيسات",L.show.amount):""}${sec!=="taps"?chk("show.avatar","صورة الداعم",L.show.avatar!==false):""}</div>
+  <div class="row small ml-tt" style="gap:8px;flex-wrap:wrap;align-items:center;margin-top:4px"><span class="mut">⏱️ كلام الداعم:</span><label class="row" style="gap:4px">يظهر بعد <input class="inp" type="number" min="0" max="60" step="0.5" style="width:70px" data-mlf="textDelay" ${at} value="${+L.textDelay||0}"> ثانية</label><label class="row" style="gap:4px">ويبقى <input class="inp" type="number" min="0" max="120" step="0.5" style="width:70px" data-mlf="textDur" ${at} value="${+L.textDur||0}"> ثانية</label><span class="mut">(0 = يظهر مع بداية المقطع / يبقى حتى نهايته)</span></div></div>` }
 function mlSecHTML(sec){ const s=AL_LIB_SECS[sec], lib=mlLib(), lv=mlLevels(sec);
  let tools="";
  if(sec==="love"){ const M=lib.love.match, cat=(S.catalog||[]);
@@ -2799,7 +2800,7 @@ function mlInput(t,d,e){ if(!d.mlf||e.type!=="change"&&t.type!=="range") return 
  const L=mlLevel(d.s,d.k); if(!L) return true; let v=t.type==="checkbox"?t.checked:t.value;
  if(d.c){ const c=L.clips.find(x=>x.id===d.c); if(!c) return true; if(["volume","size","x","y"].includes(f)) v=+v; c[f]=v; if(t.type==="range"){ const lb=t.closest(".fld")?.querySelector("label b"); if(lb) lb.textContent=f==="volume"?Math.round(v*100)+"%":v+"%"; if(e.type==="change") mlSave(false); return true } mlSave(false); return true }
  if(f==="usecolor"){ L.color=v?(L.color||"#ffcc00"):""; mlSave(); return true }
- if(f.startsWith("show.")) L.show[f.slice(5)]=!!v; else if(["min","max"].includes(f)) L[f]=Math.max(0,+v||0); else L[f]=String(v).slice(0,60);
+ if(f.startsWith("show.")) L.show[f.slice(5)]=!!v; else if(["min","max","textDelay","textDur"].includes(f)) L[f]=Math.max(0,+v||0); else L[f]=String(v).slice(0,60);
  mlSave(f==="order"||f==="color"||f.startsWith("show.")?false:true); return true }
 
 // ====== قوائم الداعمين الأسطورية: الإعدادات + «صمم قائمتك» ======
