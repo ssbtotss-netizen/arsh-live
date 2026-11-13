@@ -10,20 +10,20 @@ const { chromium } = require('/opt/npm-tools/node_modules/playwright');
  ok((await p.$$('.dn-step')).length===4&&(await p.$$('.dn-step.done')).length===1,'4 step cards; only «levels defined» done (4 default levels)');
  ok((await p.$$('[data-dnhelp]')).length>=3&&await p.$('[data-dnguide]'),'help (?) buttons + «كيف أضبط الدونيشن؟»');
  await p.click('[data-dnguide]'); await p.waitForTimeout(200); ok((await p.$$('.dn-gs')).length===8,'step-by-step guide (8 steps)'); await p.click('.modal [data-close]');
- ok((await p.$$eval('.ml-dl b',e=>e.map(x=>x.textContent))).join('|')==='💵 دونيشن بسيط|💵 دونيشن متوسط|💵 دونيشن قوي|💵 دونيشن أسطوري','same 4 donation levels as the alerts library');
+ ok((await p.$$('.ml-dl')).length===9&&/دعم خارق/.test(await p.textContent('#pg')),'same 9 donation levels as the alerts library (1$ → 1,000$)');
  // اختيار مقاطع: المتوسط ← قالب رسمي، الأسطوري ← مقطع مرفوع
  await p.click('[data-dnlib]'); await p.waitForTimeout(300);
  ok(await p.evaluate(()=>S.page==="alerts"&&S.al.mlSec==="don"),'«edit levels» opens 💵 donation section');
- await p.click('[data-ml="pick"][data-k="medium"]'); await p.waitForTimeout(200); await p.click('.modal details:last-of-type summary'); await (await p.$$('.modal details:last-of-type [data-pick]'))[3].click(); await p.waitForTimeout(250);
- ok(await p.evaluate(()=>/^tpl:/.test(S.bots.alerts.lib.don.levels[1].clips[0].alertId)),'official template chosen for medium');
- await p.click('[data-ml="upload"][data-k="legend"]'); await p.waitForTimeout(200);
+ await p.click('[data-ml="pick"][data-k="d10"]'); await p.waitForTimeout(200); await p.click('.modal details:last-of-type summary'); await (await p.$$('.modal details:last-of-type [data-pick]'))[3].click(); await p.waitForTimeout(250);
+ ok(await p.evaluate(()=>/^tpl:/.test(S.bots.alerts.lib.don.levels[2].clips[0].alertId)),'official template chosen for medium');
+ await p.click('[data-ml="upload"][data-k="d50"]'); await p.waitForTimeout(200);
  await p.setInputFiles('#al-file','/tmp/alfx/mp4_audio.mp4'); for(let i=0;i<60;i++){ if(await p.evaluate(()=>S.al.up&&S.al.up.phase==="done")) break; await p.waitForTimeout(200) }
  await p.evaluate(()=>{ S.al.form.name="أسطوري"; S.al.form.category="money" }); await p.click('[data-alsave]'); await p.waitForTimeout(400);
- const up=await p.evaluate(()=>{ const c=S.bots.alerts.lib.don.levels[3].clips[0]; const a=alLocal().find(x=>x.id===c.alertId); return a&&{vis:a.visibility,ev:a.event,dur:a.durationSec,cover:!!a.coverData,lvl:a.config.lvl} });
- ok(up&&up.vis==="private"&&up.ev==="donation"&&up.dur===3&&up.cover&&up.lvl==="legend",'upload for legendary: private, donation section, auto 3s, auto cover: '+JSON.stringify(up));
- await p.click('[data-ml="clipset"][data-k="legend"]'); await p.waitForTimeout(150);
- await p.$eval('[data-mlf="x"][data-k="legend"]',e=>{ e.value="25"; e.dispatchEvent(new Event("change",{bubbles:true})) }); await p.waitForTimeout(150);
- ok(await p.evaluate(()=>S.bots.alerts.lib.don.levels[3].clips[0].x===25),'clip position saved');
+ const up=await p.evaluate(()=>{ const c=S.bots.alerts.lib.don.levels[4].clips[0]; const a=alLocal().find(x=>x.id===c.alertId); return a&&{vis:a.visibility,ev:a.event,dur:a.durationSec,cover:!!a.coverData,lvl:a.config.lvl} });
+ ok(up&&up.vis==="private"&&up.ev==="donation"&&up.dur===3&&up.cover&&up.lvl==="d50",'upload for legendary: private, donation section, auto 3s, auto cover: '+JSON.stringify(up));
+ await p.click('[data-ml="clipset"][data-k="d50"]'); await p.waitForTimeout(150);
+ await p.$eval('[data-mlf="x"][data-k="d50"]',e=>{ e.value="25"; e.dispatchEvent(new Event("change",{bubbles:true})) }); await p.waitForTimeout(150);
+ ok(await p.evaluate(()=>S.bots.alerts.lib.don.levels[4].clips[0].x===25),'clip position saved');
  // التجربة من صفحة الدونيشن
  await p.click('.nav [data-go="donalerts"]'); await p.waitForTimeout(300);
  ok((await p.$$('.dn-step.done')).length===1,'step 3 waits until every enabled level has a clip');
@@ -46,9 +46,9 @@ const { chromium } = require('/opt/npm-tools/node_modules/playwright');
  ok((await p.$$('.dn-step.done')).length===3,'steps 2, 3, 4 done once every level has a clip');
  const o=await ctx.newPage(); await o.goto(url); await o.waitForTimeout(600);
  ok(await o.evaluate(()=>getComputedStyle(document.body).backgroundColor==="rgba(0, 0, 0, 0)"),'OBS link transparent');
- await p.evaluate(()=>{ syncBots(); const r=roomEvent(R,{type:"donation",verified:true,id:"streamlabs:x1",provider:"streamlabs",amount:120,currency:"USD",name:"سارة"},Date.now()); for(const m of r.out){ receive(m,true); bus&&bus.postMessage(m) } });
+ await p.evaluate(()=>{ syncBots(); const r=roomEvent(R,{type:"donation",verified:true,id:"streamlabs:x1",provider:"streamlabs",amount:60,currency:"USD",name:"سارة"},Date.now()); for(const m of r.out){ receive(m,true); bus&&bus.postMessage(m) } });
  await o.waitForTimeout(1200); const ot=await o.evaluate(()=>{ const r=document.querySelector('.ab-root'); return {tx:[...document.querySelectorAll('.ab-tx')].map(e=>e.textContent).join('|'),vid:!!document.querySelector('video'),left:r&&r.style.left} });
- ok(/سارة/.test(ot.tx)&&/120/.test(ot.tx)&&ot.vid&&ot.left==="25%",'real $120 donation shows the legendary clip on the OBS box: '+JSON.stringify(ot));
+ ok(/سارة/.test(ot.tx)&&/60/.test(ot.tx)&&ot.vid&&ot.left==="25%",'real $60 donation shows the legendary clip on the OBS box: '+JSON.stringify(ot));
  // الجوال
  const m=await (await b.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true})).newPage(); await m.goto('file:///home/claude/najd/demo/index.html'); await m.evaluate(()=>{ S.page="donalerts"; renderPage() }); await m.waitForTimeout(400);
  ok(await m.evaluate(()=>getComputedStyle(document.querySelector('.dn-grid')).gridTemplateColumns.split(' ').length===1&&document.documentElement.scrollWidth<=400),'mobile: single column, no horizontal overflow');

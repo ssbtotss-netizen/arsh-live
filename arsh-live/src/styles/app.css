@@ -271,3 +271,6 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .mc-pls{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
 .mc-pl{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 10px;border-radius:12px;border:1px solid var(--line,#2a3046);cursor:pointer}.mc-pl.on{border-color:#4ade8088}.mc-pl span{flex-basis:100%}
 .mc-feed{margin-top:8px;display:flex;flex-direction:column;gap:4px;font-size:13px;max-height:160px;overflow:auto}
+.ml-scroll{max-height:78vh;overflow:auto;padding-inline-end:4px;margin-top:4px}
+.ml-adv{margin:4px 0 6px}.ml-adv summary{cursor:pointer;opacity:.85}
+.ml-lv.ml-new{outline:2px solid var(--pri,#ffcc00);outline-offset:2px}

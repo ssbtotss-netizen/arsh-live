@@ -51,15 +51,15 @@ const FX='/tmp/alfx/';
 
  // 💵 الدونيشن: 4 مستويات افتراضية قابلة للتعديل
  await p.click('[data-mlsec=""]'); await p.click('[data-mlsec="don"]'); await p.waitForTimeout(200);
- ok((await p.evaluate(()=>S.bots.alerts.lib.don.levels.map(l=>l.label+":"+l.min+"-"+l.max))).join('|')==='دونيشن بسيط:1-5|دونيشن متوسط:5-20|دونيشن قوي:20-50|دونيشن أسطوري:50-0','donation: 4 default editable levels (1-5, 5-20, 20-50, 50+)');
- await p.fill('[data-mlf="max"][data-k="medium"]','25'); await p.dispatchEvent('[data-mlf="max"][data-k="medium"]','change'); await p.waitForTimeout(150);
- await p.click('[data-ml="pick"][data-k="medium"]'); await p.waitForTimeout(200);
+ ok((await p.evaluate(()=>S.bots.alerts.lib.don.levels.map(l=>l.min+"-"+l.max))).join('|')==='1-0|5-0|10-0|20-0|50-0|100-0|200-0|500-0|1000-0','donation: 9 default editable levels 1$ → 1,000$ «وأكثر»');
+ await p.click('[data-lvid="d10"] details.ml-adv summary'); await p.waitForTimeout(100); await p.fill('[data-mlf="max"][data-k="d10"]','25'); await p.dispatchEvent('[data-mlf="max"][data-k="d10"]','change'); await p.waitForTimeout(150);
+ await p.click('[data-ml="pick"][data-k="d10"]'); await p.waitForTimeout(200);
  const pickHas=await p.$(`.modal [data-pick="${loveId}"]`); if(pickHas){ const vis=await pickHas.isVisible(); if(!vis) await p.click('.modal details summary'); await p.click(`.modal [data-pick="${loveId}"]`) } await p.waitForTimeout(200);
- ok(await p.evaluate(()=>S.bots.alerts.lib.don.levels[1].max===25&&S.bots.alerts.lib.don.levels[1].clips.length===1),'edited medium level (5-25) and assigned a clip');
- await p.click('[data-ml="clipset"][data-k="medium"]'); await p.waitForTimeout(150);
- await p.$eval('[data-mlf="size"][data-k="medium"]',e=>{ e.value="60"; e.dispatchEvent(new Event("input",{bubbles:true})); e.dispatchEvent(new Event("change",{bubbles:true})) });
- await p.selectOption('[data-mlf="enter"][data-k="medium"]','slideUp'); await p.waitForTimeout(150);
- const c=await p.evaluate(()=>S.bots.alerts.lib.don.levels[1].clips[0]); ok(c.size===60&&c.enter==="slideUp",'clip size and enter animation saved');
+ ok(await p.evaluate(()=>S.bots.alerts.lib.don.levels[2].max===25&&S.bots.alerts.lib.don.levels[2].clips.length===1),'edited medium level (5-25) and assigned a clip');
+ await p.click('[data-ml="clipset"][data-k="d10"]'); await p.waitForTimeout(150);
+ await p.$eval('[data-mlf="size"][data-k="d10"]',e=>{ e.value="60"; e.dispatchEvent(new Event("input",{bubbles:true})); e.dispatchEvent(new Event("change",{bubbles:true})) });
+ await p.selectOption('[data-mlf="enter"][data-k="d10"]','slideUp'); await p.waitForTimeout(150);
+ const c=await p.evaluate(()=>S.bots.alerts.lib.don.levels[2].clips[0]); ok(c.size===60&&c.enter==="slideUp",'clip size and enter animation saved');
 
  // الربط الفعلي عبر الغرفة: كل حدث يشغّل قسمه فقط (نلتقط ما يصل لصندوق المعاينة)
  await p.evaluate(()=>{ window.__got=[]; const v=alPv; const o=v.aboxPush.bind(v); v.aboxPush=items=>{ window.__got.push(...items.map(i=>i.sec+":"+i.level+":"+(i.test?"t":"r"))); return o(items) } });
@@ -71,7 +71,7 @@ const FX='/tmp/alfx/';
  await sim({type:"like",user:{id:"d",name:"فهد"},count:5200,test:true}); await p.waitForTimeout(200);
  const got=await p.evaluate(()=>window.__got);
  ok(got[0]==="love:love:t",'Heart Me gift → love clip only');
- ok(got[1]==="don:medium:t",'$10 donation → medium level only (not love)');
+ ok(got[1]==="don:d10:t",'$10 donation → 10$ level only (not love)');
  ok(got[2]&&got[2].startsWith("gifts:")&&got.filter(x=>x.startsWith("gifts:")).length===1,'Lion (29999💎 ≥ 500) → gifts value category; Rose (1💎) → nothing');
  ok(got.includes("taps:5000:t")&&!got.some(x=>x==="taps:1000:t"),'5,200 taps → 5,000 clip (1,000/2,000 levels have no clip → nothing)');
  ok(got.length===4,'exactly 4 alerts for 5 events (no mixing): '+got.join(' | '));
@@ -92,7 +92,7 @@ const FX='/tmp/alfx/';
  // الحفظ بعد إعادة التحميل
  await p.goto(U); await p.waitForTimeout(300);
  const L2=await p.evaluate(()=>S.bots.alerts.lib);
- ok(L2.love.enabled===false&&L2.love.clips.length===1&&L2.don.levels[1].max===25&&L2.taps.levels[5000].clips.length===1&&L2.gifts.items[0].min===500,'all customizations persist after reload');
+ ok(L2.love.enabled===false&&L2.love.clips.length===1&&L2.don.levels[2].max===25&&L2.taps.levels[5000].clips.length===1&&L2.gifts.items[0].min===500,'all customizations persist after reload');
 
  // مكتبة المجتمع: الأقسام نفسها
  await p.click('.nav [data-go="alerts"]'); await p.waitForTimeout(200); await p.click('[data-altab="lib"]'); await p.waitForTimeout(300);
@@ -102,7 +102,7 @@ const FX='/tmp/alfx/';
  ok((await p.$$('[data-allvl]')).length===8,'taps → filter by tap count level');
  // الدونيشن (صفحة الدونيشن) تعرض نفس المستويات
  await p.click('.nav [data-go="donalerts"]'); await p.waitForTimeout(300);
- ok((await p.$$('.ml-dl')).length===4&&/2️⃣ مستويات الدونيشن/.test(await p.textContent('#pg')),'donations page shows the same donation levels (single source)');
+ ok((await p.$$('.ml-dl')).length===9&&/2️⃣ مستويات الدونيشن/.test(await p.textContent('#pg')),'donations page shows the same donation levels (single source)');
  await p.click('[data-dnlib]'); await p.waitForTimeout(300);
  ok(await p.evaluate(()=>S.page==="alerts"&&S.al.mlSec==="don"),'«edit levels» opens the donation section');
  ok(!errs.length,'no errors '+errs.join(' | '));

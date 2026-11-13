@@ -84,13 +84,15 @@ Object.assign(View.prototype,{
   if(c.fx!=="none"&&!(this.opts.lowPerf)) this.aboxFx(r,c.fx,dur);
   if(it.test&&ed) r.insertAdjacentHTML("beforeend",`<div class="ab-test">تجربة</div>`);
   if(d.audioUrl&&!ed&&!this.opts.mute){ try{ const a=new Audio(d.audioUrl); a.volume=it.over&&it.over.volume!=null?it.over.volume:c.volume; cur.audio=a; setTimeout(()=>{ if(!cur.skip) a.play().catch(()=>{}) },c.audioDelay) }catch(e){} }
+  /* صوت خاص بمستوى الدونيشن (مقطع صوتي من مكتبتك) — يُشغَّل مع المقطع */
+  const snd=it.over&&it.over.sound&&AB_DEFS[it.over.sound]; if(snd&&!ed&&!this.opts.mute){ const su=snd.audioUrl||snd.mediaUrl; if(su){ try{ const a2=new Audio(su); a2.volume=it.over.volume!=null?it.over.volume:c.volume; cur.audio2=a2; setTimeout(()=>{ if(!cur.skip) a2.play().catch(()=>{}) },150) }catch(e){} } }
   texts.forEach((t,i)=>{ try{ t.animate((AB_IN_KF[c.textEnter]||AB_IN_KF.rise).map(f=>({...f,transform:"translate(-50%,-50%) "+(f.transform&&f.transform!=="none"?f.transform:"")})),{duration:600/c.speed,delay:(250+i*180)/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}) }catch(e){} });
   await r.animate(AB_IN_KF[c.enter]||AB_IN_KF.popIn,{duration:650/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}).finished.catch(()=>{});
   // لا يُقطع المقطع: يبقى الآيرت حتى تنتهي المدة المحددة وحتى ينتهي الفيديو/الصوت نفسه
   const mediaLeft=el=>!!(el&&!el.ended&&!el.error&&isFinite(el.duration)&&el.duration-el.currentTime>.45&&(!el.paused||el.currentTime===0)&&Date.now()-t0<el.duration*1000+4000);
   const t0=Date.now(); while(!cur.skip&&(Date.now()-t0<dur-1000||!fixed&&(mediaLeft(vid)||mediaLeft(cur.audio)))) await abWait(100);
   await r.animate(AB_OUT_KF[c.exit]||AB_OUT_KF.fadeOut,{duration:450/c.speed,easing:"ease-in",fill:"forwards"}).finished.catch(()=>{});
-  try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
+  try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(cur.audio2) cur.audio2.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
   r.remove(); if(ed) this.applyAbox(w,this.abW,this.abH) },
  /** القوالب الرسمية: تصاميم تنبيهات المتابعين الجاهزة داخل الصندوق */
  async aboxTemplate(d,c,it,r,dur,cur){ const V=it.vars||{}; const sub=new View(newWidget("falert",{id:"abt",design:c.template||"duck_classic",x:0,y:0,w:1,h:1,z:1,holdMs:Math.max(1200,dur-1800),sound:"",...(it.event==="donation"?{msgs:"💸 شكراً يا {username} على دعمك",sub:""}:{})}),{w:this.abW||400,h:this.abH||300},{mute:true,refW:this.abW});

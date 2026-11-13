@@ -85,5 +85,5 @@ const mig=alLibFromRules([{id:"a",event:"donation",alertId:"X1",label:"بسيط"
 ok(mig.don.levels.length===2&&mig.don.levels[0].min===1&&mig.don.levels[0].max===10&&mig.don.levels[1].max===0,"ترحيل شرائح الدونيشن إلى مستويات");
 ok(mig.taps.levels[5000].clips[0].alertId==="X3"&&mig.gifts.items[0].name==="rose","ترحيل التكبيس والهدايا");
 ok(!alLibAlertIds(mig).includes("X5"),"آيرت المتابعة القديم لا يدخل المكتبة");
-ok(alLib({}).don.levels.map((l:any)=>l.label).join("|")==="دونيشن بسيط|دونيشن متوسط|دونيشن قوي|دونيشن أسطوري","المستويات الافتراضية الأربعة");
+ok(alLib({}).don.levels.map((l:any)=>l.min).join(",")==="1,5,10,20,50,100,200,500,1000","9 مستويات افتراضية 1$ → 1,000$");
 console.log(f?`\n${f} FAILED`:"\nALL PASS"); process.exit(f?1:0);

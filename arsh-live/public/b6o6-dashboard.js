@@ -7081,7 +7081,9 @@ const AL_LIB_SECS={
  don:{label:"قائمة الدونيشن",icon:"💵",event:"donation",desc:"مستويات مالية تحددها أنت — دونيشن مؤكد من خدمة الدفع فقط، مستقل عن الهدايا والتكبيس"},
  gifts:{label:"قائمة الهدايا",icon:"🎁",event:"gift",desc:"مقطع لهدية محددة أو لفئة هدايا حسب قيمتها — يعمل فقط عند وصول الهدية المطابقة"}};
 const AL_TAP_LEVELS=[1000,2000,5000,10000,20000,50000,100000];
-const AL_DON_DEFAULT=[{id:"simple",label:"دونيشن بسيط",min:1,max:5},{id:"medium",label:"دونيشن متوسط",min:5,max:20},{id:"strong",label:"دونيشن قوي",min:20,max:50},{id:"legend",label:"دونيشن أسطوري",min:50,max:0}];
+/** مستويات الدونيشن الافتراضية: «X$ وأكثر» — يُشغَّل أعلى مستوى مفعّل يصل له المبلغ. صانع المحتوى يضيف أي عدد وأي مبلغ */
+const AL_DON_DEFAULT=[[1,"داعم"],[5,"دعم جميل"],[10,"دعم رائع"],[20,"دعم قوي"],[50,"دعم أسطوري"],[100,"دعم ملكي"],[200,"دعم ذهبي"],[500,"دعم ماسي"],[1000,"دعم خارق"]].map(([min,label])=>({id:"d"+min,label,min,max:0}));
+const AL_DON_MAX_LEVELS=100;
 /** أسماء هدية أحبني كما يرسلها TikTok (الإنجليزية والعربية) — يمكن لصانع المحتوى إضافة معرّف الهدية من قائمة هدايا بثه */
 const AL_LOVE_NAMES=["heart me","أحبني"];
 const alLvlKey=s=>String(s||"").slice(0,40).replace(/[^\w\-]/g,"");
@@ -7095,7 +7097,8 @@ function alLib(raw){ raw=raw&&typeof raw==="object"?raw:{}; const lv=raw.love||{
  const love={...alLevel(lv),match:{ids:(Array.isArray(lv.match&&lv.match.ids)?lv.match.ids:[]).map(x=>String(x).slice(0,20)).filter(Boolean).slice(0,10),names:(Array.isArray(lv.match&&lv.match.names)?lv.match.names:[]).map(x=>alS(x,40).trim().toLowerCase()).filter(Boolean).slice(0,10)}};
  const taps={levels:{}}; for(const n of AL_TAP_LEVELS) taps.levels[n]=alLevel(tp.levels&&tp.levels[n]);
  const dl=Array.isArray(dn.levels)&&dn.levels.length?dn.levels:AL_DON_DEFAULT;
- const don={currency:/^[A-Z]{3}$/.test(dn.currency||"")?dn.currency:"USD",levels:dl.slice(0,12).map((x,i)=>({...alLevel(x),id:alLvlKey(x.id)||"d"+i,label:alS(x.label,40).trim()||"مستوى "+(i+1),min:Math.max(0,alN(x.min,0)),max:Math.max(0,alN(x.max,0))}))};
+ const don={currency:/^[A-Z]{3}$/.test(dn.currency||"")?dn.currency:"USD",levels:dl.slice(0,AL_DON_MAX_LEVELS).map((x,i)=>({...alLevel(x),id:alLvlKey(x.id)||"d"+i,label:alS(x.label,40).trim()||"مستوى "+(i+1),min:Math.max(0,alN(x.min,0)),max:Math.max(0,alN(x.max,0)),
+  cur:/^[A-Z]{3}$/.test(x.cur||"")?x.cur:"" /* عملة المستوى (فارغ = عملة القسم) */,color:/^#[0-9a-f]{6}$/i.test(x.color||"")?x.color:"",fx:AL_FX.some(f=>f[0]===x.fx)?x.fx:"",sound:alS(x.sound,60)}))};
  const gifts={items:(Array.isArray(gf.items)?gf.items:[]).slice(0,60).map((x,i)=>({...alLevel(x),id:alLvlKey(x.id)||"g"+i,kind:x.kind==="value"?"value":"gift",giftId:x.giftId==null||x.giftId===""?"":String(x.giftId).slice(0,20),name:alS(x.name,60).trim(),image:/^https:\/\//.test(x.image||"")?alS(x.image,400):"",label:alS(x.label,40).trim(),min:Math.max(0,alN(x.min,0)),max:Math.max(0,alN(x.max,0))}))};
  return {v:1,love,taps,don,gifts} }
 /** هل الهدية هي «أحبني»؟ بالاسم الرسمي أو بمعرّف أضافه صانع المحتوى من قائمة هدايا بثه */
@@ -7107,15 +7110,20 @@ function alGiftItem(lib,ev){ const items=lib.gifts.items, n=lc(ev.gift).trim(), 
  const exact=items.find(x=>x.kind==="gift"&&(x.giftId&&x.giftId===id||!x.giftId&&x.name&&lc(x.name)===n)); if(exact) return exact;
  const v=+ev.value||0; let best=null; for(const x of items) if(x.kind==="value"&&alInRange(v,x.min,x.max)&&(!best||x.min>best.min)) best=x; return best }
 /** مستوى الدونيشن: المبلغ بعد التحويل لعملة المستويات بسعر موثوق — أعلى مستوى ينطبق */
-function alDonLevel(lib,amt){ let best=null; for(const x of lib.don.levels) if(alInRange(amt,x.min,x.max)&&(!best||x.min>best.min)) best=x; return best }
+/** مستوى الدونيشن: المبلغ (بعملة القسم بعد التحويل) ← أعلى مستوى مفعّل وفيه مقطع يصل له المبلغ.
+ * المستوى المعطّل أو الفارغ يُتخطى إلى أقرب مستوى أدنى مفعّل. حدود كل مستوى تُحوَّل من عملته لعملة القسم. مستوى واحد فقط لكل دعم */
+function alDonLevel(lib,amt,rates,opts={}){ const base=lib.don.currency; let best=null, bestMin=-1;
+ for(const x of lib.don.levels){ if(opts.ready&&!(x.enabled&&x.clips.some(c=>c.enabled&&c.alertId))) continue;
+  const cur=x.cur||base, mn=cur===base?x.min:alConvert(x.min,cur,base,rates), mx=!(x.max>0)?0:cur===base?x.max:alConvert(x.max,cur,base,rates); if(mn==null||mx==null) continue;
+  if(alInRange(amt,mn,mx)&&mn>bestMin){ best=x; bestMin=mn } } return best }
 /** اختيار المقطع: عشوائي أو بالترتيب — المقاطع المفعّلة والمتاحة فقط */
 function alPickClip(L,st,key){ const cl=L.clips.filter(c=>c.enabled&&c.alertId); if(!cl.length) return null; if(cl.length===1) return cl[0];
  if(L.order==="seq"){ st.seq=st.seq||{}; const i=(st.seq[key]||0)%cl.length; st.seq[key]=i+1; return cl[i] } return cl[Math.floor(Math.random()*cl.length)] }
 /** عنصر الطابور لمقطع: النصوص الظاهرة حسب اختيار صانع المحتوى (الاسم / الهدية / القيمة) */
 function alLibItem(sec,key,L,clip,vars,base,now){ const sh=L.show;
  const sub=sec==="don"?(sh.amount?"{currency_symbol}{amount}":""):sec==="taps"?(sh.amount?"{total_likes} تكبيسة":""):(sh.gift?"{gift_count} × {gift_name}":"");
- const cfg={volume:clip.volume,enter:clip.enter,exit:clip.exit,title:{show:sec==="taps"?false:sh.name},sub:{show:!!sub,text:sub}};
- return {id:(base.id||"e"+now)+":"+sec+":"+key,ruleId:"lib:"+sec+":"+key,alertId:clip.alertId,event:AL_LIB_SECS[sec].event,sec,level:String(key),vars,over:{volume:clip.volume,sub,cfg,place:{x:clip.x,y:clip.y,size:clip.size}},priority:10,at:now,test:!!base.test} }
+ const cfg={volume:clip.volume,enter:clip.enter,exit:clip.exit,title:{show:sec==="taps"?false:sh.name,...(L.color?{color:L.color}:{})},sub:{show:!!sub,text:sub,...(L.color?{color:L.color}:{})},...(L.fx?{fx:L.fx}:{})};
+ return {id:(base.id||"e"+now)+":"+sec+":"+key,ruleId:"lib:"+sec+":"+key,alertId:clip.alertId,event:AL_LIB_SECS[sec].event,sec,level:String(key),vars,over:{volume:clip.volume,sub,cfg,place:{x:clip.x,y:clip.y,size:clip.size},...(L.sound?{sound:L.sound}:{})},priority:10,at:now,test:!!base.test} }
 /** المحرك: حدث حقيقي واحد ← قسم واحد ← مستوى واحد ← مقطع واحد (التكبيس: كل مستوى يُعبَر في الدفعة) */
 function alLibOnEvent(cfg,st,ev,now,ctx){ const lib=cfg.lib, out=[]; st.libIds=st.libIds||{}; st.taps=st.taps||{};
  if(ev.id){ if(st.libIds[ev.id]) return []; st.libIds[ev.id]=1; const ks=Object.keys(st.libIds); if(ks.length>4000) for(const k of ks.slice(0,1000)) delete st.libIds[k] } /* منع تكرار نفس الحدث */
@@ -7126,14 +7134,14 @@ function alLibOnEvent(cfg,st,ev,now,ctx){ const lib=cfg.lib, out=[]; st.libIds=s
   for(const lv of AL_TAP_LEVELS) if(prev<lv&&total>=lv&&!st.taps[lv]){ st.taps[lv]=1; push("taps",lv,lib.taps.levels[lv],alVars(null,{total_likes:lv.toLocaleString("en-US"),goal:lv})) } }
  else if(ev.type==="donation"&&(ev.verified||ev.test)&&!ev.refunded){ const D=cfg.don, cur=String(ev.currency||"").toUpperCase()||lib.don.currency;
   const amt=alConvert(ev.amount,cur,lib.don.currency,D&&D.rates); if(amt==null) return out; /* لا سعر موثوق ← لا نخمّن المستوى */
-  const L=alDonLevel(lib,amt); if(L) push("don",L.id,L,alVars(ev,{donor_total:ev.donorTotal})) }
+  const L=alDonLevel(lib,amt,D&&D.rates,{ready:true}); if(L) push("don",L.id,L,alVars(ev,{donor_total:ev.donorTotal})) }
  return out }
 /** تجربة مستوى من اللوحة: بيانات تجريبية واضحة، لا تُسجّل كدعم ولا تدخل الإحصائيات */
 function alLibTest(cfg,st,sec,key,now,tv){ const lib=cfg&&cfg.lib; if(!lib||!AL_LIB_SECS[sec]) return [];
  const L=sec==="love"?lib.love:sec==="taps"?lib.taps.levels[key]:sec==="don"?lib.don.levels.find(x=>x.id===key):lib.gifts.items.find(x=>x.id===key); if(!L) return [];
  const c=alPickClip({...L,enabled:true},st,"test:"+sec+":"+key); if(!c) return [];
  const sym=AL_CUR_SYM[lib.don.currency]||lib.don.currency;
- const v=sec==="taps"?{total_likes:Number(key).toLocaleString("en-US"),goal:String(key)}:sec==="don"?{display_name:"داعم تجريبي",amount:String(L.min||5),currency:lib.don.currency,currency_symbol:sym,service:"تجربة",platform:"تجربة"}:{display_name:"مشاهد تجريبي",username:"test_user",platform:"TikTok",gift_name:sec==="love"?"أحبني":(L.name||L.label||"هدية"),gift_count:"1"};
+ const v=sec==="taps"?{total_likes:Number(key).toLocaleString("en-US"),goal:String(key)}:sec==="don"?{display_name:"داعم تجريبي",amount:String(L.min||5),currency:L.cur||lib.don.currency,currency_symbol:AL_CUR_SYM[L.cur||lib.don.currency]||L.cur||sym,service:"تجربة",platform:"تجربة"}:{display_name:"مشاهد تجريبي",username:"test_user",platform:"TikTok",gift_name:sec==="love"?"أحبني":(L.name||L.label||"هدية"),gift_count:"1"};
  for(const [k,x] of Object.entries(tv||{})) if(typeof x==="string"&&x&&x.length<200&&AL_VARS.includes(k)) v[k]=x;
  return [alLibItem(sec,key,L,c,v,{id:"test:"+now,test:true},now)] }
 /** ترحيل القواعد القديمة لمكتبة الأقسام (مرة واحدة): هدايا/دونيشن/تكبيس فقط — القواعد نفسها تبقى محفوظة كما هي */
@@ -7146,7 +7154,7 @@ function alLibFromRules(rules){ const lib=alLib({}); const R=(rules||[]).map(alR
  for(const r of R.filter(r=>r.event==="gift_value"&&r.cond.op!=="any")) lib.gifts.items.push({...alLevel({clips:[clip(r)]}),id:"m"+lib.gifts.items.length,kind:"value",giftId:"",name:"",image:"",label:r.label||r.level,min:r.cond.value,max:r.cond.op==="between"?r.cond.value2:0});
  return alLib(lib) }
 /** معرّفات الآيرتات المستخدمة في المكتبة (لصندوق OBS) */
-function alLibAlertIds(lib){ if(!lib) return []; const L=[lib.love,...Object.values(lib.taps.levels),...lib.don.levels,...lib.gifts.items]; return [...new Set(L.flatMap(x=>x.enabled?x.clips.filter(c=>c.enabled&&c.alertId).map(c=>c.alertId):[]))] }
+function alLibAlertIds(lib){ if(!lib) return []; const L=[lib.love,...Object.values(lib.taps.levels),...lib.don.levels,...lib.gifts.items]; return [...new Set(L.flatMap(x=>x.enabled?[...x.clips.filter(c=>c.enabled&&c.alertId).map(c=>c.alertId),...(x.sound?[x.sound]:[])]:[]))] }
 
 /* ---- engine/alertview.js ---- */
 // صندوق الآيرتات الشامل (Universal Alert Box): رابط OBS واحد يعرض كل آيرتات المستخدم بالترتيب وبخلفية شفافة 100%
@@ -7234,13 +7242,15 @@ Object.assign(View.prototype,{
   if(c.fx!=="none"&&!(this.opts.lowPerf)) this.aboxFx(r,c.fx,dur);
   if(it.test&&ed) r.insertAdjacentHTML("beforeend",`<div class="ab-test">تجربة</div>`);
   if(d.audioUrl&&!ed&&!this.opts.mute){ try{ const a=new Audio(d.audioUrl); a.volume=it.over&&it.over.volume!=null?it.over.volume:c.volume; cur.audio=a; setTimeout(()=>{ if(!cur.skip) a.play().catch(()=>{}) },c.audioDelay) }catch(e){} }
+  /* صوت خاص بمستوى الدونيشن (مقطع صوتي من مكتبتك) — يُشغَّل مع المقطع */
+  const snd=it.over&&it.over.sound&&AB_DEFS[it.over.sound]; if(snd&&!ed&&!this.opts.mute){ const su=snd.audioUrl||snd.mediaUrl; if(su){ try{ const a2=new Audio(su); a2.volume=it.over.volume!=null?it.over.volume:c.volume; cur.audio2=a2; setTimeout(()=>{ if(!cur.skip) a2.play().catch(()=>{}) },150) }catch(e){} } }
   texts.forEach((t,i)=>{ try{ t.animate((AB_IN_KF[c.textEnter]||AB_IN_KF.rise).map(f=>({...f,transform:"translate(-50%,-50%) "+(f.transform&&f.transform!=="none"?f.transform:"")})),{duration:600/c.speed,delay:(250+i*180)/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}) }catch(e){} });
   await r.animate(AB_IN_KF[c.enter]||AB_IN_KF.popIn,{duration:650/c.speed,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}).finished.catch(()=>{});
   // لا يُقطع المقطع: يبقى الآيرت حتى تنتهي المدة المحددة وحتى ينتهي الفيديو/الصوت نفسه
   const mediaLeft=el=>!!(el&&!el.ended&&!el.error&&isFinite(el.duration)&&el.duration-el.currentTime>.45&&(!el.paused||el.currentTime===0)&&Date.now()-t0<el.duration*1000+4000);
   const t0=Date.now(); while(!cur.skip&&(Date.now()-t0<dur-1000||!fixed&&(mediaLeft(vid)||mediaLeft(cur.audio)))) await abWait(100);
   await r.animate(AB_OUT_KF[c.exit]||AB_OUT_KF.fadeOut,{duration:450/c.speed,easing:"ease-in",fill:"forwards"}).finished.catch(()=>{});
-  try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
+  try{ if(lot) lot.destroy(); if(cur.audio) cur.audio.pause(); if(cur.audio2) cur.audio2.pause(); if(media&&media.tagName==="VIDEO") media.pause() }catch(e){}
   r.remove(); if(ed) this.applyAbox(w,this.abW,this.abH) },
  /** القوالب الرسمية: تصاميم تنبيهات المتابعين الجاهزة داخل الصندوق */
  async aboxTemplate(d,c,it,r,dur,cur){ const V=it.vars||{}; const sub=new View(newWidget("falert",{id:"abt",design:c.template||"duck_classic",x:0,y:0,w:1,h:1,z:1,holdMs:Math.max(1200,dur-1800),sound:"",...(it.event==="donation"?{msgs:"💸 شكراً يا {username} على دعمك",sub:""}:{})}),{w:this.abW||400,h:this.abH||300},{mute:true,refW:this.abW});
@@ -9876,7 +9886,7 @@ function lyInput(t,d,e){ if(S.page!=="layouts") return false; const Y=LYS();
 function lyPreviewModal(r){ lyImportModal("",r) }
 
 // ====== 💸 الدونيشن والآيرتات — Smart Donation Alert Builder ======
-const DN_PRESETS=[2,5,10,20,30,50,100];
+const DN_PRESETS=[1,5,10,20,50,100,200,500,1000];
 const DN_HELP={
  connect:["ربط حساب الدونيشن","اربط حسابك في خدمة الدونيشن عشان توصلنا أحداث الدعم المؤكدة وتشتغل الآيرتات تلقائياً.","مثال: تربط Streamlabs، وإذا أحد دعمك بـ $10 يطلع آيرت $10 في البث."],
  min:["الحد الأدنى للدعم","حدد أقل مبلغ تبي يشتغل عنده آيرت الدونيشن.","مثال: لو حطيت $2 ووصلك $1، ينحسب الدعم عادي لكن ما يطلع آيرت. (منع الدفع نفسه يكون من إعدادات خدمة الدفع)"],
@@ -10481,7 +10491,8 @@ function mlSave(re){ const C=alCfgS(); C.lib=alLib(C.lib); alSaveCfg(); if(re!==
 function mlLevels(sec){ const lib=mlLib(), sym=c=>AL_CUR_SYM[c]||c;
  if(sec==="love") return [["love",lib.love,"❤️ هدية أحبني","Heart Me — عند وصولها فقط"]];
  if(sec==="taps") return AL_TAP_LEVELS.map(n=>[String(n),lib.taps.levels[n],"👆 "+n.toLocaleString("en-US")+" تكبيسة","عند بلوغ مجموع تكبيسات البث هذا العدد"]);
- if(sec==="don"){ const c=lib.don.currency; return lib.don.levels.map(l=>[l.id,l,"💵 "+l.label,l.max>0?`من ${l.min} إلى أقل من ${l.max} ${sym(c)}`:`${l.min} ${sym(c)} وأكثر`]) }
+ if(sec==="don"){ const c=lib.don.currency, R=(DNS&&typeof alDonCfg==="function")?(alDonCfg(S.donCfg||{}).rates||{}):{}, base=l=>{ const v=(l.cur||c)===c?l.min:alConvert(l.min,l.cur,c,R); return v==null?l.min:v };
+  return [...lib.don.levels].sort((a,b)=>base(a)-base(b)).map(l=>{ const cc=l.cur||c, n=x=>Number(x).toLocaleString("en-US"); return [l.id,l,"💵 "+l.label,l.max>0?`من ${n(l.min)} إلى أقل من ${n(l.max)} ${sym(cc)}`:`${n(l.min)} ${sym(cc)} وأكثر`] }) }
  return lib.gifts.items.map(g=>[g.id,g,g.kind==="value"?"💎 "+(g.label||"فئة هدايا"):"🎁 "+(g.label||g.name||"هدية"),g.kind==="value"?(g.max>0?`أي هدية قيمتها من ${g.min} إلى أقل من ${g.max} 💎`:`أي هدية قيمتها ${g.min} 💎 أو أكثر`)+" (إن لم تكن مخصصة باسمها)":`عند وصول «${g.name||g.giftId}» فقط`+(g.giftId?` · المعرّف ${g.giftId}`:"")]) }
 function mlLevel(sec,key){ const r=mlLevels(sec).find(x=>x[0]===String(key)); return r?r[1]:null }
 const mlReady=L=>L&&L.enabled&&L.clips.some(c=>c.enabled&&c.alertId);
@@ -10499,10 +10510,14 @@ function mlClipHTML(sec,key,L,c,i){ const A=ALS(), a=c.alertId?alFind(c.alertId)
   ${open?`<div class="grid g3" style="gap:6px;margin-top:6px">${rng("volume","🔊 مستوى الصوت",0,1,.05,c.volume,v=>Math.round(v*100)+"%")}${rng("size","📐 حجم الظهور",10,100,5,c.size,v=>v+"%")}${rng("x","↔ المكان أفقياً",0,100,1,c.x,v=>v+"%")}${rng("y","↕ المكان عمودياً",0,100,1,c.y,v=>v+"%")}
    <div class="fld"><label>حركة الظهور</label><select class="inp" data-mlf="enter" ${at}>${AL_IN.map(([k,n])=>`<option value="${k}" ${c.enter===k?"selected":""}>${esc(n)}</option>`).join("")}</select></div><div class="fld"><label>حركة الاختفاء</label><select class="inp" data-mlf="exit" ${at}>${AL_OUT.map(([k,n])=>`<option value="${k}" ${c.exit===k?"selected":""}>${esc(n)}</option>`).join("")}</select></div></div>`:""}</div></div>` }
 function mlLevelHTML(sec,[key,L,title,sub]){ const at=`data-s="${sec}" data-k="${esc(key)}"`, lib=mlLib(), chk=(f,l,v)=>`<label class="row small" style="gap:4px"><input type="checkbox" data-mlf="${f}" ${at} ${v?"checked":""}> ${l}</label>`;
- const edit=sec==="don"?`<div class="grid g3" style="gap:6px;margin:6px 0"><div class="fld"><label>اسم المستوى</label><input class="inp" data-mlf="label" ${at} value="${esc(L.label)}"></div><div class="fld"><label>من (${esc(lib.don.currency)})</label><input class="inp" type="number" min="0" step="0.01" data-mlf="min" ${at} value="${L.min}"></div><div class="fld"><label>إلى أقل من (0 = بلا حد)</label><input class="inp" type="number" min="0" step="0.01" data-mlf="max" ${at} value="${L.max}"></div></div>`
+ const edit=sec==="don"?(()=>{ const cc=L.cur||lib.don.currency; return `<div class="grid g3" style="gap:6px;margin:6px 0"><div class="fld"><label>اسم المستوى</label><input class="inp" data-mlf="label" ${at} value="${esc(L.label)}"></div><div class="fld"><label>المبلغ (وأكثر)</label><input class="inp" type="number" min="0" step="0.01" data-mlf="min" ${at} value="${L.min}"></div><div class="fld"><label>العملة</label><select class="inp" data-mlf="cur" ${at}><option value="" ${!L.cur?"selected":""}>عملة القسم (${esc(lib.don.currency)})</option>${Object.keys(AL_CUR_SYM).map(c=>`<option value="${c}" ${L.cur===c?"selected":""}>${c}</option>`).join("")}</select></div></div>
+  <details class="small ml-adv" data-advk="${esc(L.id)}" ${(S.al.mlAdv||{})[L.id]?"open":""}><summary>🎨 الألوان والمؤثرات والصوت (اختياري)</summary><div class="grid g3" style="gap:6px;margin-top:6px"><div class="fld"><label>لون نص التنبيه</label><div class="row" style="gap:6px"><input type="color" data-mlf="color" ${at} value="${esc(L.color||"#ffcc00")}" ${L.color?"":"disabled"}><label class="row small" style="gap:4px"><input type="checkbox" data-mlf="usecolor" ${at} ${L.color?"checked":""}> لون خاص</label></div></div>
+  <div class="fld"><label>مؤثر الخلفية</label><select class="inp" data-mlf="fx" ${at}><option value="" ${!L.fx?"selected":""}>مؤثر المقطع نفسه</option>${AL_FX.map(([k,n])=>`<option value="${k}" ${L.fx===k?"selected":""}>${esc(n)}</option>`).join("")}</select></div>
+  <div class="fld"><label>صوت خاص بالتنبيه</label><div class="row" style="gap:6px">${L.sound?`<span class="small">🔊 ${esc(alName(L.sound))}</span><button class="btn sm" data-ml="sndclr" ${at}>✕</button>`:`<button class="btn sm" data-ml="sndpick" ${at}>🔊 اختر صوتاً</button>`}</div></div>
+  <div class="fld"><label>حد أعلى (اختياري — 0 = بلا حد)</label><input class="inp" type="number" min="0" step="0.01" data-mlf="max" ${at} value="${L.max}"></div></div></details>` })()
   :sec==="gifts"?`<div class="grid g3" style="gap:6px;margin:6px 0"><div class="fld"><label>الاسم الظاهر</label><input class="inp" data-mlf="label" ${at} value="${esc(L.label)}"></div>${L.kind==="value"?`<div class="fld"><label>القيمة من (💎)</label><input class="inp" type="number" min="0" data-mlf="min" ${at} value="${L.min}"></div><div class="fld"><label>إلى أقل من (0 = بلا حد)</label><input class="inp" type="number" min="0" data-mlf="max" ${at} value="${L.max}"></div>`:`<div class="fld"><label>اسم الهدية كما يرسله TikTok</label><input class="inp" data-mlf="name" ${at} value="${esc(L.name)}"></div><div class="fld"><label>معرّف الهدية (اختياري)</label><input class="inp" data-mlf="giftId" ${at} value="${esc(L.giftId)}"></div>`}</div>`:"";
  const n=L.clips.length;
- return `<div class="card ml-lv ${L.enabled?"":"off"} ${mlReady(L)?"ready":""}"><div class="row" style="justify-content:space-between;gap:6px;flex-wrap:wrap"><div><b>${esc(title)}</b> ${mlReady(L)?`<span class="tag">✅ جاهز</span>`:L.enabled?`<span class="tag">⚪ أضف مقطعاً</span>`:`<span class="tag">⏸ معطّل</span>`}<div class="mut small">${esc(sub)}</div></div>
+ const th=L.clips.find(c=>c.alertId); return `<div class="card ml-lv ${L.enabled?"":"off"} ${mlReady(L)?"ready":""}" data-lvid="${esc(key)}"><div class="row" style="justify-content:space-between;gap:6px;flex-wrap:wrap"><div class="row" style="gap:8px;align-items:center">${sec==="don"||sec==="gifts"?`<span class="ml-cth">${th?mlThumb(alFind(th.alertId)):"<span>➕</span>"}</span>`:""}<div><b>${esc(title)}</b> ${mlReady(L)?`<span class="tag">✅ جاهز</span>`:L.enabled?`<span class="tag">⚪ أضف مقطعاً</span>`:`<span class="tag">⏸ معطّل</span>`}<div class="mut small">${esc(sub)}</div></div></div>
   <div class="row" style="gap:4px;flex-wrap:wrap"><button class="btn sm pri" data-ml="test" ${at} ${n?"":"disabled"}>🧪 تجربة</button><button class="btn sm" data-ml="lvon" ${at}>${L.enabled?"⏸ تعطيل الإشعار":"▶ تفعيل الإشعار"}</button>${sec==="don"&&lib.don.levels.length>1||sec==="gifts"?`<button class="btn sm" data-ml="lvdel" ${at} title="حذف">🗑️</button>`:""}</div></div>${edit}
   <div class="ml-clips">${n?L.clips.map((c,i)=>mlClipHTML(sec,key,L,c,i)).join(""):`<div class="mut small" style="padding:8px">لا توجد مقاطع لهذا ${sec==="love"?"القسم":"المستوى"} بعد</div>`}</div>
   <div class="row" style="gap:4px;flex-wrap:wrap;margin-top:6px"><button class="btn sm" data-ml="upload" ${at}>⬆️ رفع فيديو أو صوت</button><button class="btn sm" data-ml="pick" ${at}>📁 من مقاطعي</button><button class="btn sm" data-ml="community" ${at}>🌍 من مكتبة المجتمع</button></div>
@@ -10512,12 +10527,14 @@ function mlSecHTML(sec){ const s=AL_LIB_SECS[sec], lib=mlLib(), lv=mlLevels(sec)
  let tools="";
  if(sec==="love"){ const M=lib.love.match, cat=(S.catalog||[]);
   tools=`<p class="small">يتعرّف على الهدية باسمها في TikTok: <b>Heart Me</b> / <b>أحبني</b>${M.ids.length||M.names.length?" + "+[...M.ids.map(x=>"معرّف "+x),...M.names].map(esc).join("، "):""}.</p>${cat.length?`<div class="row" style="gap:6px;flex-wrap:wrap"><select class="inp" style="width:auto" id="ml-lovepick"><option value="">— إن ظهرت «أحبني» باسم آخر في بثك اخترها هنا —</option>${cat.map(g=>`<option value="${esc(g.id)}">${esc(g.name)} (${g.diamonds}💎)</option>`).join("")}</select><button class="btn sm" data-ml="loveadd">➕ إضافة</button>${M.ids.length||M.names.length?`<button class="btn sm" data-ml="loveclr">مسح الإضافات</button>`:""}</div>`:`<p class="mut small">قائمة هدايا بثك تظهر هنا بعد ربط TikTok LIVE (لإضافة معرّف الهدية إن اختلف اسمها).</p>`}` }
- if(sec==="don") tools=`<div class="row" style="gap:6px;flex-wrap:wrap;align-items:end"><div class="fld"><label>عملة المستويات</label><select class="inp" data-mlf="currency" data-s="don">${Object.keys(AL_CUR_SYM).map(c=>`<option ${lib.don.currency===c?"selected":""}>${c}</option>`).join("")}</select></div><button class="btn sm" data-ml="donadd">➕ مستوى جديد</button><button class="btn sm" data-ml="donreset">↺ المستويات الافتراضية</button></div><p class="mut small">الدونيشن بعملة أخرى يُحوَّل بسعر موثوق (الربط الرسمي للريال والدرهم… أو الأسعار المحفوظة في صفحة الدونيشن). إن لم يتوفر سعر لا يُشغَّل أي مستوى بدل التخمين. يُختار أعلى مستوى ينطبق على المبلغ.</p>`;
+ if(sec==="don"){ const have=new Set(lib.don.levels.filter(l=>!l.cur||l.cur===lib.don.currency).map(l=>+l.min)), miss=AL_DON_DEFAULT.filter(d=>!have.has(d.min));
+  tools=`<div class="row" style="gap:6px;flex-wrap:wrap;align-items:end"><button class="btn pri" data-ml="donnew">+ إضافة مستوى جديد</button><div class="fld"><label>عملة القسم</label><select class="inp" data-mlf="currency" data-s="don">${Object.keys(AL_CUR_SYM).map(c=>`<option ${lib.don.currency===c?"selected":""}>${c}</option>`).join("")}</select></div>${miss.length?`<button class="btn sm" data-ml="donfill">➕ أضف المستويات الناقصة (${miss.map(d=>d.min.toLocaleString("en-US")+"$").join("، ")})</button>`:""}<button class="btn sm" data-ml="donreset">↺ المستويات الافتراضية</button></div>
+  <p class="mut small">${lib.don.levels.length} مستوى · بدون حد لعدد المستويات أو المبالغ. عند وصول دعم يُشغَّل <b>أعلى مستوى مفعّل وفيه مقطع</b> يصل له المبلغ — مثلاً 250$ يشغّل مستوى 200$ إلا إذا أضفت 250$. المستوى المعطّل أو الفارغ يُتخطى لأقرب مستوى أدنى. تنبيه واحد فقط لكل دعم، والمبلغ من خدمة الدفع نفسها (المؤكد فقط). العملات الأخرى تُحوَّل بسعر موثوق، وإن لم يتوفر سعر لا نخمّن.</p>` }
  if(sec==="gifts") tools=`<div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm pri" data-ml="giftadd">➕ إضافة هدية</button><button class="btn sm" data-ml="valadd">➕ فئة هدايا حسب القيمة</button></div><p class="mut small">الهدية المخصصة باسمها تتقدّم على فئات القيمة. هدية «أحبني» لها قسمها الخاص ولا تمر هنا. هدايا السلسلة (Streak) تُشغَّل مرة واحدة عند اكتمالها.</p>`;
  if(sec==="taps") tools=`<p class="mut small">المستويات السبعة ثابتة. إذا قفز العدد فوق أكثر من مستوى دفعة واحدة تُشغَّل مقاطعها بالترتيب في الطابور. كل مستوى مرة واحدة في البث.</p>`;
  return `<div class="card"><div class="row" style="justify-content:space-between;gap:6px;flex-wrap:wrap"><div class="row" style="gap:8px;align-items:center"><button class="btn sm" data-mlsec="">→ الأقسام</button><h3 style="margin:0">${s.icon} ${s.label}</h3></div><span class="mut small">${esc(s.desc)}</span></div>
   <p class="note small" style="margin-top:6px">ℹ️ ${esc(mlAvail(sec))}</p>${tools}</div>
-  ${lv.length?lv.map(x=>mlLevelHTML(sec,x)).join(""):`<div class="card"><div class="empty">لم تضف هدايا بعد — اضغط «إضافة هدية»</div></div>`}` }
+  ${lv.length?(sec==="don"?`<div class="ml-scroll">${lv.map(x=>mlLevelHTML(sec,x)).join("")}</div>`:lv.map(x=>mlLevelHTML(sec,x)).join("")):`<div class="card"><div class="empty">لم تضف هدايا بعد — اضغط «إضافة هدية»</div></div>`}` }
 function mlBoxHTML(){ const C=alCfgS(), w=alBoxW();
  return `<div class="card"><h3>📺 صندوق الإشعارات في البث <span class="tag">رابط OBS / LIVE Studio واحد</span></h3>
   ${w?`<div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn pri" data-alcopy="${w.id}">🔗 نسخ رابط الصندوق</button><button class="btn" data-algo="studio">🎬 مكانه في الاستوديو</button></div>`:`<p class="mut small">أضف الصندوق للتخطيط «${esc(L().name)}» ليعرض الإشعارات بخلفية شفافة.</p><button class="btn pri" data-aladdbox>➕ إضافة صندوق الإشعارات</button>`}
@@ -10530,10 +10547,10 @@ function mlHTML(){ const A=ALS(); alLoadUsable(); const sec=A.mlSec&&AL_LIB_SECS
 /** إضافة مقطع لمستوى (أو استبدال مقطع) */
 function mlAddClip(sec,key,alertId,replaceId){ const L=mlLevel(sec,key); if(!L||!alertId) return; if(replaceId){ const c=L.clips.find(x=>x.id===replaceId); if(c) c.alertId=alertId } else { if(L.clips.some(c=>c.alertId===alertId)) return toast("المقطع موجود في هذا المستوى"); if(L.clips.length>=20) return toast("الحد 20 مقطعاً للمستوى"); L.clips.push(alClip({alertId})) } L.enabled=true; mlSave(); toast("✅ أُضيف المقطع") }
 const mlSecGroup={love:"love",taps:"likes",don:"donations",gifts:"gifts"};
-function mlPickModal(sec,key,replaceId){ alLoadUsable(); const G=AL_EVENT_GROUPS[mlSecGroup[sec]][1], all=alUsable().filter(a=>!a.unavailable), mine=all.filter(a=>G.includes(a.event)), other=all.filter(a=>!G.includes(a.event)&&AL_SUPPORT_EVENTS.includes(a.event)), off=alOfficial();
+function mlPickModal(sec,key,replaceId,opt={}){ alLoadUsable(); const G=AL_EVENT_GROUPS[mlSecGroup[sec]][1], all0=alUsable().filter(a=>!a.unavailable), all=opt.sound?all0.filter(a=>a.kind==="audio"):all0, mine=all.filter(a=>G.includes(a.event)), other=all.filter(a=>!G.includes(a.event)&&(opt.sound||AL_SUPPORT_EVENTS.includes(a.event))), off=opt.sound?[]:alOfficial();
  const row=a=>`<button class="ml-pk" data-pick="${esc(a.id)}"><span class="ml-cth">${mlThumb(a)}</span><span><b>${esc(a.name)}</b><small class="mut">${a.visibility==="private"?"🔒 خاص · ":""}${a.using&&!a.mine?"من المجتمع · ":""}${esc((AL_KINDS[a.kind]||"").split(" ")[0])}</small></span></button>`;
- const m=modal(`<h3>📁 اختر مقطعاً — ${AL_LIB_SECS[sec].icon} ${AL_LIB_SECS[sec].label}</h3><div style="max-height:56vh;overflow:auto">${mine.length?`<div class="small mut">مقاطع هذا القسم</div><div class="ml-pks">${mine.map(row).join("")}</div>`:`<p class="mut small">لا توجد مقاطع لهذا القسم في مكتبتك بعد — ارفع مقطعاً أو أضف من مكتبة المجتمع.</p>`}${other.length?`<details><summary class="small">مقاطعي من الأقسام الأخرى (${other.length})</summary><div class="ml-pks">${other.map(row).join("")}</div></details>`:""}<details><summary class="small">🏛️ القوالب الرسمية من المنصة (${off.length})</summary><div class="ml-pks">${off.map(row).join("")}</div></details></div><div class="row" style="gap:6px;margin-top:10px"><button class="btn" data-close>إلغاء</button></div>`);
- m.addEventListener("click",e=>{ const b=e.target.closest("[data-pick]"); if(!b) return; m.remove(); alSyncDefs(); mlAddClip(sec,key,b.dataset.pick,replaceId) }) }
+ const m=modal(`<h3>${opt.sound?"🔊 اختر صوتاً للمستوى":"📁 اختر مقطعاً"} — ${AL_LIB_SECS[sec].icon} ${AL_LIB_SECS[sec].label}</h3>${opt.sound&&!all.length?`<p class="small">ارفع ملفاً صوتياً أولاً من «⬆️ رفع مقطع» (نوع: صوت).</p>`:""}<div style="max-height:56vh;overflow:auto">${mine.length?`<div class="small mut">مقاطع هذا القسم</div><div class="ml-pks">${mine.map(row).join("")}</div>`:`<p class="mut small">لا توجد مقاطع لهذا القسم في مكتبتك بعد — ارفع مقطعاً أو أضف من مكتبة المجتمع.</p>`}${other.length?`<details><summary class="small">مقاطعي من الأقسام الأخرى (${other.length})</summary><div class="ml-pks">${other.map(row).join("")}</div></details>`:""}<details><summary class="small">🏛️ القوالب الرسمية من المنصة (${off.length})</summary><div class="ml-pks">${off.map(row).join("")}</div></details></div><div class="row" style="gap:6px;margin-top:10px"><button class="btn" data-close>إلغاء</button></div>`);
+ m.addEventListener("click",e=>{ const b=e.target.closest("[data-pick]"); if(!b) return; m.remove(); alSyncDefs(); if(opt.sound){ const L=mlLevel(sec,key); if(L){ L.sound=b.dataset.pick; mlSave(); toast("🔊 أُضيف الصوت للمستوى") } return } mlAddClip(sec,key,b.dataset.pick,replaceId) }) }
 function mlGiftModal(){ const cat=(S.catalog||[]), lib=mlLib();
  const m=modal(`<h3>🎁 إضافة هدية</h3>${cat.length?`<div class="fld"><label>من قائمة هدايا بثك (TikTok)</label><select class="inp" id="mlg"><option value="">— اختر —</option>${cat.map(g=>`<option value="${esc(g.id)}">${esc(g.name)} (${g.diamonds}💎)</option>`).join("")}</select></div><p class="mut small">أو اكتب اسمها يدوياً:</p>`:`<p class="mut small">قائمة الهدايا الحقيقية تظهر هنا بعد ربط بث TikTok. الآن اكتب اسم الهدية كما يرسله TikTok (مثل Rose أو Lion).</p>`}<input class="inp" id="mln" placeholder="اسم الهدية — مثال: Rose"><div class="row" style="gap:6px;margin-top:10px"><button class="btn pri" id="mlok">إضافة</button><button class="btn" data-close>إلغاء</button></div>`);
  m.querySelector("#mlok").onclick=()=>{ const id=m.querySelector("#mlg")?.value||"", g=cat.find(x=>String(x.id)===id), name=(g?g.name:m.querySelector("#mln").value).trim(); if(!name) return toast("اختر الهدية أو اكتب اسمها");
@@ -10547,6 +10564,15 @@ function mlChooseLevel(a){ const sec=Object.keys(AL_LIB_SECS).find(k=>AL_EVENT_G
  const lv=mlLevels(sec); if(lv.length===1) return mlAddClip(sec,lv[0][0],a.id);
  const m=modal(`<h3>➕ أين تريد «${esc(a.name)}»؟</h3><p class="small">${AL_LIB_SECS[sec].icon} ${AL_LIB_SECS[sec].label}</p>${lv.length?`<div class="ml-pks">${lv.map(([k,,t,s])=>`<button class="ml-pk ${String(lvl)===k?"on":""}" data-lv="${esc(k)}"><span><b>${esc(t)}</b><small class="mut">${esc(s)}</small></span></button>`).join("")}</div>`:`<p class="mut small">أضف هدية في «قائمة الهدايا» أولاً.</p>`}<div class="row" style="gap:6px;margin-top:10px"><button class="btn" data-close>لاحقاً (أُضيف لمقاطعي)</button></div>`);
  m.addEventListener("click",e=>{ const b=e.target.closest("[data-lv]"); if(!b) return; m.remove(); mlAddClip(sec,b.dataset.lv,a.id) }) }
+/** «+ إضافة مستوى جديد»: أي مبلغ وأي عملة واسم — بلا حدود من المنصة */
+document.addEventListener("toggle",e=>{ const d=e.target; if(d&&d.dataset&&d.dataset.advk!=null){ S.al.mlAdv=S.al.mlAdv||{}; S.al.mlAdv[d.dataset.advk]=d.open } },true);
+function mlDonNewModal(){ const lib=mlLib();
+ const m=modal(`<h3>+ إضافة مستوى دونيشن جديد</h3><div class="grid g3" style="gap:8px"><div class="fld"><label>المبلغ (وأكثر)</label><input class="inp" type="number" min="0.01" step="0.01" id="mln-amt" placeholder="مثال: 250"></div><div class="fld"><label>العملة</label><select class="inp" id="mln-cur">${Object.keys(AL_CUR_SYM).map(c=>`<option ${c===lib.don.currency?"selected":""}>${c}</option>`).join("")}</select></div><div class="fld"><label>اسم المستوى</label><input class="inp" id="mln-name" maxlength="40" placeholder="مثال: دعم ملكي"></div></div><p class="small mut">بعد الإضافة ارفع مقطعه أو اختره من مكتبة المجتمع، وخصّص الصوت والألوان والمؤثرات.</p><div class="row" style="gap:6px;margin-top:10px"><button class="btn pri" id="mln-ok">إضافة المستوى</button><button class="btn" data-close>إلغاء</button></div>`);
+ m.querySelector("#mln-ok").onclick=()=>{ const amt=Math.round(+m.querySelector("#mln-amt").value*100)/100, cur=m.querySelector("#mln-cur").value, name=m.querySelector("#mln-name").value.trim();
+  if(!(amt>0)) return toast("اكتب مبلغاً أكبر من صفر"); if(lib.don.levels.length>=AL_DON_MAX_LEVELS) return toast("وصلت لحد "+AL_DON_MAX_LEVELS+" مستوى");
+  if(lib.don.levels.some(l=>+l.min===amt&&(l.cur||lib.don.currency)===cur)) return toast("يوجد مستوى بنفس المبلغ والعملة");
+  const id="d"+Date.now().toString(36); lib.don.levels.push({id,label:name||("دعم "+amt.toLocaleString("en-US")+" "+(AL_CUR_SYM[cur]||cur)),min:amt,max:0,cur:cur===lib.don.currency?"":cur,clips:[]}); m.remove(); mlSave();
+  setTimeout(()=>{ const el=document.querySelector(`[data-lvid="${id}"]`); if(el){ el.scrollIntoView({block:"center"}); el.classList.add("ml-new") } },80); toast("✅ أُضيف المستوى — أضف له مقطعاً") } }
 function mlClick(t,d){ const A=ALS();
  if(d.mlsec!==undefined){ A.mlSec=d.mlsec; A.mlClip=null; renderPage(true); return true }
  if(!d.ml) return false; const sec=d.s, key=d.k, lib=mlLib(), L=sec?mlLevel(sec,key):null;
@@ -10561,6 +10587,11 @@ function mlClick(t,d){ const A=ALS();
  if(act==="community"){ A.mlPick={sec,key}; A.tab="lib"; A.sec="all"; A.grp=mlSecGroup[sec]; A.lvl=sec==="taps"||sec==="don"?key:""; A.key=""; renderPage(true); toast("اختر مقطعاً واضغط «➕ إضافة لهذا المستوى»"); return true }
  if(act==="loveadd"){ const v=document.getElementById("ml-lovepick")?.value; if(!v) return toast("اختر الهدية"),true; if(!lib.love.match.ids.includes(v)) lib.love.match.ids.push(v); mlSave(); return true }
  if(act==="loveclr"){ lib.love.match={ids:[],names:[]}; mlSave(); return true }
+ if(act==="donnew"){ mlDonNewModal(); return true }
+ if(act==="donfill"){ const have=new Set(lib.don.levels.filter(l=>!l.cur||l.cur===lib.don.currency).map(l=>+l.min)); let n=0; for(const d of AL_DON_DEFAULT) if(!have.has(d.min)){ lib.don.levels.push({...d,id:"d"+d.min+"_"+Date.now().toString(36).slice(-3),clips:[]}); n++ }
+  /* المستوى الذي كان آخر «وأكثر» بحد أعلى قديم يبقى كما هو — الأعلى يغلب تلقائياً */ mlSave(); toast(`✅ أُضيف ${n} مستوى — إعداداتك ومقاطعك الحالية كما هي`); return true }
+ if(act==="sndpick"){ mlPickModal(sec,key,"",{sound:true}); return true }
+ if(act==="sndclr"){ L.sound=""; mlSave(); return true }
  if(act==="donadd"){ const last=lib.don.levels[lib.don.levels.length-1]; const mn=last?(last.max||last.min+50):1; if(last&&!last.max) last.max=mn; lib.don.levels.push({id:"d"+Date.now().toString(36),label:"مستوى جديد",min:mn,max:0,clips:[]}); mlSave(); return true }
  if(act==="donreset"){ if(!confirm("إرجاع مستويات الدونيشن الأربعة الافتراضية؟ ستُزال المستويات الحالية ومقاطعها من القسم (الملفات تبقى).")) return true; lib.don.levels=JSON.parse(JSON.stringify(AL_DON_DEFAULT)); mlSave(); return true }
  if(act==="giftadd"){ mlGiftModal(); return true }
@@ -10570,8 +10601,9 @@ function mlInput(t,d,e){ if(!d.mlf||e.type!=="change"&&t.type!=="range") return 
  if(f==="currency"){ lib.don.currency=t.value; mlSave(); return true }
  const L=mlLevel(d.s,d.k); if(!L) return true; let v=t.type==="checkbox"?t.checked:t.value;
  if(d.c){ const c=L.clips.find(x=>x.id===d.c); if(!c) return true; if(["volume","size","x","y"].includes(f)) v=+v; c[f]=v; if(t.type==="range"){ const lb=t.closest(".fld")?.querySelector("label b"); if(lb) lb.textContent=f==="volume"?Math.round(v*100)+"%":v+"%"; if(e.type==="change") mlSave(false); return true } mlSave(false); return true }
+ if(f==="usecolor"){ L.color=v?(L.color||"#ffcc00"):""; mlSave(); return true }
  if(f.startsWith("show.")) L.show[f.slice(5)]=!!v; else if(["min","max"].includes(f)) L[f]=Math.max(0,+v||0); else L[f]=String(v).slice(0,60);
- mlSave(f==="order"||f.startsWith("show.")?false:true); return true }
+ mlSave(f==="order"||f==="color"||f.startsWith("show.")?false:true); return true }
 
 // ====== قوائم الداعمين الأسطورية: الإعدادات + «صمم قائمتك» ======
 function lbArtProps(w,d,sel,rng){ const A=lbArtOf(d,w), o=x=>Object.entries(x);

@@ -286,7 +286,9 @@ export const AL_LIB_SECS={
  don:{label:"قائمة الدونيشن",icon:"💵",event:"donation",desc:"مستويات مالية تحددها أنت — دونيشن مؤكد من خدمة الدفع فقط، مستقل عن الهدايا والتكبيس"},
  gifts:{label:"قائمة الهدايا",icon:"🎁",event:"gift",desc:"مقطع لهدية محددة أو لفئة هدايا حسب قيمتها — يعمل فقط عند وصول الهدية المطابقة"}};
 export const AL_TAP_LEVELS=[1000,2000,5000,10000,20000,50000,100000];
-export const AL_DON_DEFAULT=[{id:"simple",label:"دونيشن بسيط",min:1,max:5},{id:"medium",label:"دونيشن متوسط",min:5,max:20},{id:"strong",label:"دونيشن قوي",min:20,max:50},{id:"legend",label:"دونيشن أسطوري",min:50,max:0}];
+/** مستويات الدونيشن الافتراضية: «X$ وأكثر» — يُشغَّل أعلى مستوى مفعّل يصل له المبلغ. صانع المحتوى يضيف أي عدد وأي مبلغ */
+export const AL_DON_DEFAULT=[[1,"داعم"],[5,"دعم جميل"],[10,"دعم رائع"],[20,"دعم قوي"],[50,"دعم أسطوري"],[100,"دعم ملكي"],[200,"دعم ذهبي"],[500,"دعم ماسي"],[1000,"دعم خارق"]].map(([min,label])=>({id:"d"+min,label,min,max:0}));
+export const AL_DON_MAX_LEVELS=100;
 /** أسماء هدية أحبني كما يرسلها TikTok (الإنجليزية والعربية) — يمكن لصانع المحتوى إضافة معرّف الهدية من قائمة هدايا بثه */
 export const AL_LOVE_NAMES=["heart me","أحبني"];
 const alLvlKey=s=>String(s||"").slice(0,40).replace(/[^\w\-]/g,"");
@@ -300,7 +302,8 @@ export function alLib(raw){ raw=raw&&typeof raw==="object"?raw:{}; const lv=raw.
  const love={...alLevel(lv),match:{ids:(Array.isArray(lv.match&&lv.match.ids)?lv.match.ids:[]).map(x=>String(x).slice(0,20)).filter(Boolean).slice(0,10),names:(Array.isArray(lv.match&&lv.match.names)?lv.match.names:[]).map(x=>alS(x,40).trim().toLowerCase()).filter(Boolean).slice(0,10)}};
  const taps={levels:{}}; for(const n of AL_TAP_LEVELS) taps.levels[n]=alLevel(tp.levels&&tp.levels[n]);
  const dl=Array.isArray(dn.levels)&&dn.levels.length?dn.levels:AL_DON_DEFAULT;
- const don={currency:/^[A-Z]{3}$/.test(dn.currency||"")?dn.currency:"USD",levels:dl.slice(0,12).map((x,i)=>({...alLevel(x),id:alLvlKey(x.id)||"d"+i,label:alS(x.label,40).trim()||"مستوى "+(i+1),min:Math.max(0,alN(x.min,0)),max:Math.max(0,alN(x.max,0))}))};
+ const don={currency:/^[A-Z]{3}$/.test(dn.currency||"")?dn.currency:"USD",levels:dl.slice(0,AL_DON_MAX_LEVELS).map((x,i)=>({...alLevel(x),id:alLvlKey(x.id)||"d"+i,label:alS(x.label,40).trim()||"مستوى "+(i+1),min:Math.max(0,alN(x.min,0)),max:Math.max(0,alN(x.max,0)),
+  cur:/^[A-Z]{3}$/.test(x.cur||"")?x.cur:"" /* عملة المستوى (فارغ = عملة القسم) */,color:/^#[0-9a-f]{6}$/i.test(x.color||"")?x.color:"",fx:AL_FX.some(f=>f[0]===x.fx)?x.fx:"",sound:alS(x.sound,60)}))};
  const gifts={items:(Array.isArray(gf.items)?gf.items:[]).slice(0,60).map((x,i)=>({...alLevel(x),id:alLvlKey(x.id)||"g"+i,kind:x.kind==="value"?"value":"gift",giftId:x.giftId==null||x.giftId===""?"":String(x.giftId).slice(0,20),name:alS(x.name,60).trim(),image:/^https:\/\//.test(x.image||"")?alS(x.image,400):"",label:alS(x.label,40).trim(),min:Math.max(0,alN(x.min,0)),max:Math.max(0,alN(x.max,0))}))};
  return {v:1,love,taps,don,gifts} }
 /** هل الهدية هي «أحبني»؟ بالاسم الرسمي أو بمعرّف أضافه صانع المحتوى من قائمة هدايا بثه */
@@ -312,15 +315,20 @@ export function alGiftItem(lib,ev){ const items=lib.gifts.items, n=lc(ev.gift).t
  const exact=items.find(x=>x.kind==="gift"&&(x.giftId&&x.giftId===id||!x.giftId&&x.name&&lc(x.name)===n)); if(exact) return exact;
  const v=+ev.value||0; let best=null; for(const x of items) if(x.kind==="value"&&alInRange(v,x.min,x.max)&&(!best||x.min>best.min)) best=x; return best }
 /** مستوى الدونيشن: المبلغ بعد التحويل لعملة المستويات بسعر موثوق — أعلى مستوى ينطبق */
-export function alDonLevel(lib,amt){ let best=null; for(const x of lib.don.levels) if(alInRange(amt,x.min,x.max)&&(!best||x.min>best.min)) best=x; return best }
+/** مستوى الدونيشن: المبلغ (بعملة القسم بعد التحويل) ← أعلى مستوى مفعّل وفيه مقطع يصل له المبلغ.
+ * المستوى المعطّل أو الفارغ يُتخطى إلى أقرب مستوى أدنى مفعّل. حدود كل مستوى تُحوَّل من عملته لعملة القسم. مستوى واحد فقط لكل دعم */
+export function alDonLevel(lib,amt,rates,opts={}){ const base=lib.don.currency; let best=null, bestMin=-1;
+ for(const x of lib.don.levels){ if(opts.ready&&!(x.enabled&&x.clips.some(c=>c.enabled&&c.alertId))) continue;
+  const cur=x.cur||base, mn=cur===base?x.min:alConvert(x.min,cur,base,rates), mx=!(x.max>0)?0:cur===base?x.max:alConvert(x.max,cur,base,rates); if(mn==null||mx==null) continue;
+  if(alInRange(amt,mn,mx)&&mn>bestMin){ best=x; bestMin=mn } } return best }
 /** اختيار المقطع: عشوائي أو بالترتيب — المقاطع المفعّلة والمتاحة فقط */
 function alPickClip(L,st,key){ const cl=L.clips.filter(c=>c.enabled&&c.alertId); if(!cl.length) return null; if(cl.length===1) return cl[0];
  if(L.order==="seq"){ st.seq=st.seq||{}; const i=(st.seq[key]||0)%cl.length; st.seq[key]=i+1; return cl[i] } return cl[Math.floor(Math.random()*cl.length)] }
 /** عنصر الطابور لمقطع: النصوص الظاهرة حسب اختيار صانع المحتوى (الاسم / الهدية / القيمة) */
 export function alLibItem(sec,key,L,clip,vars,base,now){ const sh=L.show;
  const sub=sec==="don"?(sh.amount?"{currency_symbol}{amount}":""):sec==="taps"?(sh.amount?"{total_likes} تكبيسة":""):(sh.gift?"{gift_count} × {gift_name}":"");
- const cfg={volume:clip.volume,enter:clip.enter,exit:clip.exit,title:{show:sec==="taps"?false:sh.name},sub:{show:!!sub,text:sub}};
- return {id:(base.id||"e"+now)+":"+sec+":"+key,ruleId:"lib:"+sec+":"+key,alertId:clip.alertId,event:AL_LIB_SECS[sec].event,sec,level:String(key),vars,over:{volume:clip.volume,sub,cfg,place:{x:clip.x,y:clip.y,size:clip.size}},priority:10,at:now,test:!!base.test} }
+ const cfg={volume:clip.volume,enter:clip.enter,exit:clip.exit,title:{show:sec==="taps"?false:sh.name,...(L.color?{color:L.color}:{})},sub:{show:!!sub,text:sub,...(L.color?{color:L.color}:{})},...(L.fx?{fx:L.fx}:{})};
+ return {id:(base.id||"e"+now)+":"+sec+":"+key,ruleId:"lib:"+sec+":"+key,alertId:clip.alertId,event:AL_LIB_SECS[sec].event,sec,level:String(key),vars,over:{volume:clip.volume,sub,cfg,place:{x:clip.x,y:clip.y,size:clip.size},...(L.sound?{sound:L.sound}:{})},priority:10,at:now,test:!!base.test} }
 /** المحرك: حدث حقيقي واحد ← قسم واحد ← مستوى واحد ← مقطع واحد (التكبيس: كل مستوى يُعبَر في الدفعة) */
 export function alLibOnEvent(cfg,st,ev,now,ctx){ const lib=cfg.lib, out=[]; st.libIds=st.libIds||{}; st.taps=st.taps||{};
  if(ev.id){ if(st.libIds[ev.id]) return []; st.libIds[ev.id]=1; const ks=Object.keys(st.libIds); if(ks.length>4000) for(const k of ks.slice(0,1000)) delete st.libIds[k] } /* منع تكرار نفس الحدث */
@@ -331,14 +339,14 @@ export function alLibOnEvent(cfg,st,ev,now,ctx){ const lib=cfg.lib, out=[]; st.l
   for(const lv of AL_TAP_LEVELS) if(prev<lv&&total>=lv&&!st.taps[lv]){ st.taps[lv]=1; push("taps",lv,lib.taps.levels[lv],alVars(null,{total_likes:lv.toLocaleString("en-US"),goal:lv})) } }
  else if(ev.type==="donation"&&(ev.verified||ev.test)&&!ev.refunded){ const D=cfg.don, cur=String(ev.currency||"").toUpperCase()||lib.don.currency;
   const amt=alConvert(ev.amount,cur,lib.don.currency,D&&D.rates); if(amt==null) return out; /* لا سعر موثوق ← لا نخمّن المستوى */
-  const L=alDonLevel(lib,amt); if(L) push("don",L.id,L,alVars(ev,{donor_total:ev.donorTotal})) }
+  const L=alDonLevel(lib,amt,D&&D.rates,{ready:true}); if(L) push("don",L.id,L,alVars(ev,{donor_total:ev.donorTotal})) }
  return out }
 /** تجربة مستوى من اللوحة: بيانات تجريبية واضحة، لا تُسجّل كدعم ولا تدخل الإحصائيات */
 export function alLibTest(cfg,st,sec,key,now,tv){ const lib=cfg&&cfg.lib; if(!lib||!AL_LIB_SECS[sec]) return [];
  const L=sec==="love"?lib.love:sec==="taps"?lib.taps.levels[key]:sec==="don"?lib.don.levels.find(x=>x.id===key):lib.gifts.items.find(x=>x.id===key); if(!L) return [];
  const c=alPickClip({...L,enabled:true},st,"test:"+sec+":"+key); if(!c) return [];
  const sym=AL_CUR_SYM[lib.don.currency]||lib.don.currency;
- const v=sec==="taps"?{total_likes:Number(key).toLocaleString("en-US"),goal:String(key)}:sec==="don"?{display_name:"داعم تجريبي",amount:String(L.min||5),currency:lib.don.currency,currency_symbol:sym,service:"تجربة",platform:"تجربة"}:{display_name:"مشاهد تجريبي",username:"test_user",platform:"TikTok",gift_name:sec==="love"?"أحبني":(L.name||L.label||"هدية"),gift_count:"1"};
+ const v=sec==="taps"?{total_likes:Number(key).toLocaleString("en-US"),goal:String(key)}:sec==="don"?{display_name:"داعم تجريبي",amount:String(L.min||5),currency:L.cur||lib.don.currency,currency_symbol:AL_CUR_SYM[L.cur||lib.don.currency]||L.cur||sym,service:"تجربة",platform:"تجربة"}:{display_name:"مشاهد تجريبي",username:"test_user",platform:"TikTok",gift_name:sec==="love"?"أحبني":(L.name||L.label||"هدية"),gift_count:"1"};
  for(const [k,x] of Object.entries(tv||{})) if(typeof x==="string"&&x&&x.length<200&&AL_VARS.includes(k)) v[k]=x;
  return [alLibItem(sec,key,L,c,v,{id:"test:"+now,test:true},now)] }
 /** ترحيل القواعد القديمة لمكتبة الأقسام (مرة واحدة): هدايا/دونيشن/تكبيس فقط — القواعد نفسها تبقى محفوظة كما هي */
@@ -351,4 +359,4 @@ export function alLibFromRules(rules){ const lib=alLib({}); const R=(rules||[]).
  for(const r of R.filter(r=>r.event==="gift_value"&&r.cond.op!=="any")) lib.gifts.items.push({...alLevel({clips:[clip(r)]}),id:"m"+lib.gifts.items.length,kind:"value",giftId:"",name:"",image:"",label:r.label||r.level,min:r.cond.value,max:r.cond.op==="between"?r.cond.value2:0});
  return alLib(lib) }
 /** معرّفات الآيرتات المستخدمة في المكتبة (لصندوق OBS) */
-export function alLibAlertIds(lib){ if(!lib) return []; const L=[lib.love,...Object.values(lib.taps.levels),...lib.don.levels,...lib.gifts.items]; return [...new Set(L.flatMap(x=>x.enabled?x.clips.filter(c=>c.enabled&&c.alertId).map(c=>c.alertId):[]))] }
+export function alLibAlertIds(lib){ if(!lib) return []; const L=[lib.love,...Object.values(lib.taps.levels),...lib.don.levels,...lib.gifts.items]; return [...new Set(L.flatMap(x=>x.enabled?[...x.clips.filter(c=>c.enabled&&c.alertId).map(c=>c.alertId),...(x.sound?[x.sound]:[])]:[]))] }
