@@ -54,7 +54,10 @@ export function createPubChat(prisma: PrismaClient, hub: Hub) {
     let cid = ch.startsWith("c:") ? ch.slice(2) : chanCache.get(ch) || "";
     if (!cid && ch.startsWith("@")) { const r = await fetch(`https://www.googleapis.com/youtube/v3/channels?part=id&forHandle=${encodeURIComponent(ch)}&key=${k}`); const j: any = r.ok ? await r.json() : null; cid = j?.items?.[0]?.id || ""; if (cid) chanCache.set(ch, cid); }
     let ids: string[] = ch.startsWith("v:") ? [ch.slice(2)] : [];
-    if (!ids.length && cid) { const r = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${cid}`, { headers: YH }); if (r.ok) ids = [...(await r.text()).matchAll(/<yt:videoId>([A-Za-z0-9_-]{11})<\/yt:videoId>/g)].map(m => m[1]).slice(0, 15); }
+    if (!ids.length && cid) { /* قائمة الرفع الرسمية (وحدة واحدة) — البث المباشر يظهر فيها؛ RSS يُحجب أحياناً عن الخوادم */
+      const r = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?part=contentDetails&maxResults=15&playlistId=UU${cid.slice(2)}&key=${k}`); const j: any = r.ok ? await r.json() : null;
+      ids = (j?.items || []).map((x: any) => x.contentDetails?.videoId).filter(Boolean);
+      if (!ids.length) { const f = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${cid}`, { headers: YH }).catch(() => null); if (f && f.ok) ids = [...(await f.text()).matchAll(/<yt:videoId>([A-Za-z0-9_-]{11})<\/yt:videoId>/g)].map(m => m[1]).slice(0, 15); } }
     if (!ids.length) return null;
     const r = await fetch(`https://www.googleapis.com/youtube/v3/videos?part=snippet,liveStreamingDetails&id=${ids.join(",")}&key=${k}`); const j: any = r.ok ? await r.json() : null;
     const v = (j?.items || []).find((x: any) => x.snippet?.liveBroadcastContent === "live" && x.liveStreamingDetails?.activeLiveChatId);
@@ -72,7 +75,7 @@ export function createPubChat(prisma: PrismaClient, hub: Hub) {
         if (!init) {
           const a = await apiLive(ch).catch(() => null);
           if (a) { await setStatus(userId, "youtube", { status: "connected", lastError: null, accountId: a.vid }); return pollApi(a.chatId, ""); }
-          if (!vid) { await setStatus(userId, "youtube", { status: "offline", lastError: reason === "consent" || reason === "bot" ? `YouTube لم يعرض صفحة القناة للخادم (${reason}) — ونعيد المحاولة؛ تأكد أن القناة في بث مباشر` : "القناة غير مباشرة الآن — سيبدأ الشات تلقائياً عند بدء البث" }); return wait(60_000, findLive); }
+          if (!vid) { await setStatus(userId, "youtube", { status: "offline", lastError: reason === "consent" || reason === "bot" ? `YouTube لم يعرض صفحة القناة للخادم (${reason}) — ونعيد المحاولة؛ تأكد أن القناة في بث مباشر` : "القناة غير مباشرة الآن — سيبدأ الشات تلقائياً عند بدء البث" }); return wait(apiKey() ? 120_000 : 60_000, findLive); }
           await setStatus(userId, "youtube", { status: "offline", lastError: "البث بدون شات مباشر أو الشات مقفل" }); return wait(60_000, findLive);
         }
         await setStatus(userId, "youtube", { status: "connected", lastError: null, accountId: vid });
@@ -98,7 +101,8 @@ export function createPubChat(prisma: PrismaClient, hub: Hub) {
         if (!r.ok) throw new Error("http " + r.status);
         const p = pcYtPoll(await r.json());
         for (const e of p.events) emit(userId, "youtube", e);
-        if (p.ended || !p.continuation) { await setStatus(userId, "youtube", { status: "offline", lastError: "انتهى البث — بانتظار البث القادم" }); return wait(60_000, findLive); }
+        if (p.ended || !p.continuation) { if (fails < 3) return wait(5000, () => poll(apiKey, ver, cont, fails + 1)); /* انقطاع مؤقت شائع — نعيد نفس الاستمرار قبل الحكم بانتهاء البث */
+          await setStatus(userId, "youtube", { status: "offline", lastError: "انتهى البث أو توقف الشات — بانتظار البث القادم" }); return wait(30_000, findLive); }
         wait(p.waitMs, () => poll(apiKey, ver, p.continuation!, 0));
       } catch { if (fails >= 4) return wait(30_000, findLive); wait(4000 * (fails + 1), () => poll(apiKey, ver, cont, fails + 1)); }
     };
