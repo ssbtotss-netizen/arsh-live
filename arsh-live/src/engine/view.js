@@ -60,6 +60,8 @@ export class View{
   if(T.np){ this.applyNp(w,W,Hh); return }
   if(T.act){ this.applyAct(w,W,Hh); return }
   if(T.dt){ this.applyDt(w,W,Hh); return }
+  if(T.dc){ this.applyDc(w,W,Hh); return }
+  if(T.d5){ this.applyD5(w,W,Hh); return }
   if(ckLike){ this.layoutClock(d.shape,W,Hh,pad,w); if(w.type==="donGoal"){ const c=parseFloat(S.getPropertyValue("--cfs")); S.setProperty("--cfs",c*(d.shape==="ring"?.5:.6)+"px"); if(d.shape==="digital") S.setProperty("--sub",Math.max(parseFloat(S.getPropertyValue("--sub"))||0,Hh*.14)+"px") } }
   else if(chipLike&&!T.soc){ this.dsg=d; set("--sh",Math.max(10,w.type==="donTicker"?Hh-pad*2:Hh)); S.setProperty("--ls","1"); }
   else if(T.soc){ this.dsg=d; const n=Math.max(1,this.socCount||1), cols=Math.max(1,w.cols||1);
@@ -117,6 +119,8 @@ export class View{
   if(t.np) return this.refreshNp(src);
   if(t.act||t.fa) return;
   if(t.dt) return this.refreshDt(src,silent);
+  if(t.dc) return this.refreshDc(src,silent);
+  if(t.d5) return this.refreshD5(src,silent);
   if(t.clock) return this.refreshClock(src);
   if(w.type==="donGoal") return this.refreshGoal(src,silent);
   if(CHIP_TYPES.has(w.type)) return this.refreshDonChip(src);

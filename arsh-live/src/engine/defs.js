@@ -29,6 +29,8 @@ export const TYPES={
  srules:{label:"لوحة قوانين السبثون",icon:"📜",title:"⏰ قوانين السبثون",listens:["clock"],board:false,tick:true,rules:true},
  botbox:{label:"ردود البوت والشكر",icon:"🤖",title:"",listens:["bot"],board:false,bot:true},
  fcount:{label:"عداد المتابعين",icon:"👥",title:"",listens:["follow"],board:false,fc:true},
+ donCard:{label:"آخر دعم",icon:"💵",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dc:true},
+ donLast5:{label:"آخر 5 داعمين",icon:"🧾",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,d5:true},
  donText:{label:"آخر دعم نصي",icon:"💬",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dt:true},
  actbox:{label:"عرض الإجراءات",icon:"⚡",title:"",listens:[],board:false,act:true},
  nowplay:{label:"الأغنية الحالية",icon:"🎵",title:"",listens:[],board:false,np:true},
@@ -38,6 +40,18 @@ export const TYPES={
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
 };
+/** «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» */
+export const DC_DEFAULTS={lcBadge:"آخر دعم",lcThx:"شكراً على دعمك",lcShowBadge:true,lcShowName:true,lcShowSym:true,lcShowThx:true,
+ lcAmtMode:"solid",lcAmtC:"#22e07a",lcAmtC2:"#00c2ff",lcAmtA:1,lcNameC:"#ffffff",lcNameA:1,lcBadgeC:"#ffffff",lcBadgeBg:"#ff2d55",lcBadgeA:1,lcThxC:"#b8c0cc",lcThxA:1,
+ lcBgC:"#0b0f17",lcBgA:.72,lcBorderC:"#2a3242",lcBw:1,lcRad:.35,
+ lcNeon:true,lcNeonC:"#22e07a",lcNeonStr:.8,lcNeonSpread:1,lcNeonA:.85,lcNeonBorder:false,lcFxOff:false,
+ lcFont:"",lcWeight:"800",lcFs:1,lcAmtS:1,lcNameS:1,lcBadgeS:1,lcThxS:1,lcAlign:"center",lcGap:.18,lcPad:.5,lcOrder:"amt",
+ lcAnimOn:true,lcAnim:"fade",lcAnimOut:true,lcAnimMs:500,w:.46,h:.11};
+export const D5_DEFAULTS={l5Title:"آخر الداعمين",l5ShowTitle:true,l5ShowRank:true,l5ShowSym:true,l5Merge:"each",l5Count:5,
+ l5NameC:"#ffffff",l5AmtC:"#22e07a",l5RankC:"#f6c94a",l5TitleC:"#ffffff",l5BgMode:"rows",l5BgC:"#0b0f17",l5BgA:.62,l5BorderC:"#2a3242",l5Bw:1,l5Rad:.35,
+ l5Font:"",l5Weight:"700",l5Fs:1,l5Gap:.18,
+ l5Neon:false,l5NeonC:"#22e07a",l5NeonStr:.7,
+ l5AnimOn:true,l5Anim:"zigzag",l5Dir:"rl",l5InMs:700,l5Stagger:180,l5Hold:8,l5OutMs:600,l5Wait:2,l5Dist:60,l5Float:true,w:.56,h:.3};
 /** آخر دعم نصي: الإعدادات الافتراضية (نص فقط، شفاف 100%) */
 export const DT_DEFAULTS={dtTitle:"آخر دعم",showTitle:true,showName:true,showSep:true,showSym:true,showAmt:true,sepText:":",symMode:"sym",symPos:"auto",dec:"auto",
  cTitle:"#ffffff",cName:"#ff3b4e",cSep:"#ffffff",cSym:"#22c55e",cAmt:"#f6c94a",font:"",fs:1,weight:"800",nameScale:1,amtScale:1,symScale:1,titleScale:1,gapEm:.35,align:"center",dir:"auto",
@@ -104,6 +118,8 @@ export function newWidget(type,o={}){
  if(type==="sgoal"){Object.assign(base,{design:"miniPill",source:"gift",giftKey:"6369",giftEmoji:"🦁",title:"هدف الأسد",target:1,base:0,offset:0,since:0,currency:"",showPct:true,w:.52,h:.06,icon:"",stages:"25,50,75,90",fx:"",showLast:true,showTop:true,showCount:true})}
  if(type==="srules"){Object.assign(base,{design:"royalRules",mode:"list",w:.5,h:.34,interval:4,speed:70,tickerDir:"h",anim:"slideUp",animSpeed:1,animOn:true,order:"custom",maxRules:0,hideKinds:[],showWhat:true,showTime:true,showImg:true,iconScale:1,rowOpacity:1,posColor:"#22c55e",negColor:"#ef4444",lowPerf:false})}
  if(type==="botbox"){Object.assign(base,{design:"b6o6Bot",w:.6,h:.26,max:4,holdSec:10,stack:"up",showAvatar:true,showBot:true,botName:"بوت بطوط",kinds:[]})}
+ if(type==="donCard"){Object.assign(base,JSON.parse(JSON.stringify(DC_DEFAULTS)))}
+ if(type==="donLast5"){Object.assign(base,JSON.parse(JSON.stringify(D5_DEFAULTS)))}
  if(type==="donText"){Object.assign(base,JSON.parse(JSON.stringify(DT_DEFAULTS)))}
  if(type==="actbox"){Object.assign(base,{fontScale:1,hideTests:false,w:.6,h:.4})}
  if(type==="nowplay"){Object.assign(base,{design:"glass",showBy:true,fontScale:1,accent:"",animOn:true,w:.36,h:.12})}

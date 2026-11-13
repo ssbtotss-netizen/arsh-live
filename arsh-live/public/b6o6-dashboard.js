@@ -33,6 +33,8 @@ const TYPES={
  srules:{label:"لوحة قوانين السبثون",icon:"📜",title:"⏰ قوانين السبثون",listens:["clock"],board:false,tick:true,rules:true},
  botbox:{label:"ردود البوت والشكر",icon:"🤖",title:"",listens:["bot"],board:false,bot:true},
  fcount:{label:"عداد المتابعين",icon:"👥",title:"",listens:["follow"],board:false,fc:true},
+ donCard:{label:"آخر دعم",icon:"💵",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dc:true},
+ donLast5:{label:"آخر 5 داعمين",icon:"🧾",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,d5:true},
  donText:{label:"آخر دعم نصي",icon:"💬",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dt:true},
  actbox:{label:"عرض الإجراءات",icon:"⚡",title:"",listens:[],board:false,act:true},
  nowplay:{label:"الأغنية الحالية",icon:"🎵",title:"",listens:[],board:false,np:true},
@@ -42,6 +44,18 @@ const TYPES={
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
 };
+/** «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» */
+const DC_DEFAULTS={lcBadge:"آخر دعم",lcThx:"شكراً على دعمك",lcShowBadge:true,lcShowName:true,lcShowSym:true,lcShowThx:true,
+ lcAmtMode:"solid",lcAmtC:"#22e07a",lcAmtC2:"#00c2ff",lcAmtA:1,lcNameC:"#ffffff",lcNameA:1,lcBadgeC:"#ffffff",lcBadgeBg:"#ff2d55",lcBadgeA:1,lcThxC:"#b8c0cc",lcThxA:1,
+ lcBgC:"#0b0f17",lcBgA:.72,lcBorderC:"#2a3242",lcBw:1,lcRad:.35,
+ lcNeon:true,lcNeonC:"#22e07a",lcNeonStr:.8,lcNeonSpread:1,lcNeonA:.85,lcNeonBorder:false,lcFxOff:false,
+ lcFont:"",lcWeight:"800",lcFs:1,lcAmtS:1,lcNameS:1,lcBadgeS:1,lcThxS:1,lcAlign:"center",lcGap:.18,lcPad:.5,lcOrder:"amt",
+ lcAnimOn:true,lcAnim:"fade",lcAnimOut:true,lcAnimMs:500,w:.46,h:.11};
+const D5_DEFAULTS={l5Title:"آخر الداعمين",l5ShowTitle:true,l5ShowRank:true,l5ShowSym:true,l5Merge:"each",l5Count:5,
+ l5NameC:"#ffffff",l5AmtC:"#22e07a",l5RankC:"#f6c94a",l5TitleC:"#ffffff",l5BgMode:"rows",l5BgC:"#0b0f17",l5BgA:.62,l5BorderC:"#2a3242",l5Bw:1,l5Rad:.35,
+ l5Font:"",l5Weight:"700",l5Fs:1,l5Gap:.18,
+ l5Neon:false,l5NeonC:"#22e07a",l5NeonStr:.7,
+ l5AnimOn:true,l5Anim:"zigzag",l5Dir:"rl",l5InMs:700,l5Stagger:180,l5Hold:8,l5OutMs:600,l5Wait:2,l5Dist:60,l5Float:true,w:.56,h:.3};
 /** آخر دعم نصي: الإعدادات الافتراضية (نص فقط، شفاف 100%) */
 const DT_DEFAULTS={dtTitle:"آخر دعم",showTitle:true,showName:true,showSep:true,showSym:true,showAmt:true,sepText:":",symMode:"sym",symPos:"auto",dec:"auto",
  cTitle:"#ffffff",cName:"#ff3b4e",cSep:"#ffffff",cSym:"#22c55e",cAmt:"#f6c94a",font:"",fs:1,weight:"800",nameScale:1,amtScale:1,symScale:1,titleScale:1,gapEm:.35,align:"center",dir:"auto",
@@ -108,6 +122,8 @@ function newWidget(type,o={}){
  if(type==="sgoal"){Object.assign(base,{design:"miniPill",source:"gift",giftKey:"6369",giftEmoji:"🦁",title:"هدف الأسد",target:1,base:0,offset:0,since:0,currency:"",showPct:true,w:.52,h:.06,icon:"",stages:"25,50,75,90",fx:"",showLast:true,showTop:true,showCount:true})}
  if(type==="srules"){Object.assign(base,{design:"royalRules",mode:"list",w:.5,h:.34,interval:4,speed:70,tickerDir:"h",anim:"slideUp",animSpeed:1,animOn:true,order:"custom",maxRules:0,hideKinds:[],showWhat:true,showTime:true,showImg:true,iconScale:1,rowOpacity:1,posColor:"#22c55e",negColor:"#ef4444",lowPerf:false})}
  if(type==="botbox"){Object.assign(base,{design:"b6o6Bot",w:.6,h:.26,max:4,holdSec:10,stack:"up",showAvatar:true,showBot:true,botName:"بوت بطوط",kinds:[]})}
+ if(type==="donCard"){Object.assign(base,JSON.parse(JSON.stringify(DC_DEFAULTS)))}
+ if(type==="donLast5"){Object.assign(base,JSON.parse(JSON.stringify(D5_DEFAULTS)))}
  if(type==="donText"){Object.assign(base,JSON.parse(JSON.stringify(DT_DEFAULTS)))}
  if(type==="actbox"){Object.assign(base,{fontScale:1,hideTests:false,w:.6,h:.4})}
  if(type==="nowplay"){Object.assign(base,{design:"glass",showBy:true,fontScale:1,accent:"",animOn:true,w:.36,h:.12})}
@@ -3503,6 +3519,8 @@ class View{
   if(T.np){ this.applyNp(w,W,Hh); return }
   if(T.act){ this.applyAct(w,W,Hh); return }
   if(T.dt){ this.applyDt(w,W,Hh); return }
+  if(T.dc){ this.applyDc(w,W,Hh); return }
+  if(T.d5){ this.applyD5(w,W,Hh); return }
   if(ckLike){ this.layoutClock(d.shape,W,Hh,pad,w); if(w.type==="donGoal"){ const c=parseFloat(S.getPropertyValue("--cfs")); S.setProperty("--cfs",c*(d.shape==="ring"?.5:.6)+"px"); if(d.shape==="digital") S.setProperty("--sub",Math.max(parseFloat(S.getPropertyValue("--sub"))||0,Hh*.14)+"px") } }
   else if(chipLike&&!T.soc){ this.dsg=d; set("--sh",Math.max(10,w.type==="donTicker"?Hh-pad*2:Hh)); S.setProperty("--ls","1"); }
   else if(T.soc){ this.dsg=d; const n=Math.max(1,this.socCount||1), cols=Math.max(1,w.cols||1);
@@ -3560,6 +3578,8 @@ class View{
   if(t.np) return this.refreshNp(src);
   if(t.act||t.fa) return;
   if(t.dt) return this.refreshDt(src,silent);
+  if(t.dc) return this.refreshDc(src,silent);
+  if(t.d5) return this.refreshD5(src,silent);
   if(t.clock) return this.refreshClock(src);
   if(w.type==="donGoal") return this.refreshGoal(src,silent);
   if(CHIP_TYPES.has(w.type)) return this.refreshDonChip(src);
@@ -7447,6 +7467,138 @@ const DT_CSS=`
 @media (prefers-reduced-motion:reduce){.dt-line{animation:none!important}}
 `;
 
+/* ---- engine/dcard.js ---- */
+// ====== طبقتا «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» (حركة متعرجة) ======
+// المصدر الوحيد: تبرعات مؤكدة من مزود الدونيشن (DN.list) — لا تجربة ولا مسترجع بالكامل، بدون تكرار نفس العملية، وبعملة الدعم الفعلية.
+
+
+
+const DC_ANIMS=[["none","بدون حركة"],["fade","Fade In — ظهور تدريجي"],["slide","Slide — دخول خفيف من الأسفل"]];
+const D5_ANIMS=[["zigzag","Zigzag — متعرّجة يمين/يسار (افتراضي)"],["slide","Slide — كل الصفوف من جهة واحدة"],["fade","Fade — ظهور واختفاء تدريجي"],["none","بدون حركة"]];
+
+const hexA=(h,a)=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h||""); if(!m) return h||"transparent"; const n=parseInt(m[1],16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${Math.max(0,Math.min(1,+a))})` };
+const nmOf=d=>d.anonymous?"داعم مجهول":(d.name||"داعم");
+
+/** التبرعات الحقيقية الأحدث أولاً (بدون تكرار نفس العملية) */
+function dcReal(DN){ const L=(DN&&DN.list)||[], seen=new Set(), out=[];
+ for(let i=L.length-1;i>=0;i--){ const d=L[i]; if(!d||d.test||d.provider==="test") continue; if(d.status==="refunded"||(d.refunded||0)>=d.amount) continue;
+  const k=d.id||[d.provider,d.name,d.amount,d.at].join("|"); if(seen.has(k)) continue; seen.add(k); out.push(d) } return out }
+/** آخر N داعمين: «each» كل عملية صف مستقل، «person» آخر عملية لكل شخص */
+function d5List(DN,n=5,merge="each"){ const all=dcReal(DN); if(merge!=="person") return all.slice(0,n);
+ const seen=new Set(), out=[]; for(const d of all){ const k=(d.anonymous?"~anon":(d.name||"").trim().toLowerCase()); if(seen.has(k)) continue; seen.add(k); out.push(d); if(out.length>=n) break } return out }
+
+function moneyHTML(w,d,showSym,cls){ const m=dtMoney({symMode:showSym===false?"none":"sym",symPos:"auto",dec:"auto"},+d.amount||0,d.currency||"USD");
+ return `<span class="${cls}" dir="ltr">${m.before?esc(m.sym):""}${m.num}${!m.before&&m.sym?" "+esc(m.sym):""}</span>` }
+function neonFilter(c,str,spread,a){ const s=Math.max(.05,+spread||1), k=Math.max(0,+str||0); if(!k) return "none"; const col=hexA(c,Math.min(1,(+a||0)*Math.min(1,k)));
+ const L=[`drop-shadow(0 0 ${(.08*s).toFixed(3)}em ${col})`,`drop-shadow(0 0 ${(.22*s).toFixed(3)}em ${col})`]; if(k>1) L.push(`drop-shadow(0 0 ${(.45*s*k).toFixed(3)}em ${col})`); return L.join(" ") }
+
+Object.assign(View.prototype,{
+ // ---------- آخر دعم ----------
+ applyDc(w,W,Hh){ const e=this.el, ed=this.opts.editor; ensureDcCSS(); const D=DC_DEFAULTS, g=k=>w[k]??D[k];
+  e.className=`wd dcw${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
+  const st=e.style, fx=!g("lcFxOff"); st.setProperty("--cfs",Math.max(7,Hh*.2)*(+g("lcFs")||1)+"px");
+  const set=(k,v)=>st.setProperty(k,v);
+  set("--cbg",hexA(g("lcBgC"),g("lcBgA"))); set("--cbd",g("lcBorderC")); set("--cbw",Math.max(0,+g("lcBw"))+"px"); set("--crad",(+g("lcRad"))+"em"); set("--cpad",(+g("lcPad"))+"em"); set("--cgap",(+g("lcGap"))+"em");
+  set("--cw",g("lcWeight")); if(g("lcFont")) set("--cff",`"${g("lcFont")}"`); else st.removeProperty("--cff");
+  set("--cnc",hexA(g("lcNameC"),g("lcNameA"))); set("--cbc",hexA(g("lcBadgeC"),g("lcBadgeA"))); set("--cbb",hexA(g("lcBadgeBg"),g("lcBadgeA"))); set("--ctc",hexA(g("lcThxC"),g("lcThxA")));
+  for(const [k,v] of [["lcAmtS","--cas"],["lcNameS","--cns"],["lcBadgeS","--cbs"],["lcThxS","--cts"]]) set(v,+g(k)||1);
+  const grad=g("lcAmtMode")==="grad"; set("--cac",grad?"transparent":hexA(g("lcAmtC"),g("lcAmtA"))); set("--cagr",grad?`linear-gradient(90deg,${g("lcAmtC")},${g("lcAmtC2")})`:"none"); set("--caop",grad?String(+g("lcAmtA")):"1");
+  set("--cneon",fx&&g("lcNeon")?neonFilter(g("lcNeonC"),g("lcNeonStr"),g("lcNeonSpread"),g("lcNeonA")):"none");
+  set("--cbsh",fx&&g("lcNeon")&&g("lcNeonBorder")?`0 0 ${(.3*(+g("lcNeonSpread")||1)).toFixed(2)}em ${hexA(g("lcNeonC"),(+g("lcNeonA"))*.8)}`:"none");
+  e.classList.toggle("dc-grad",grad); set("--cal",g("lcAlign")==="right"?"flex-start":g("lcAlign")==="left"?"flex-end":"center"); set("--cta",g("lcAlign")||"center");
+  if(!this.dc){ this.dc={cur:null,key:null}; e.innerHTML=(ed?'<div class="rh"></div><div class="lockb">🔒</div>':"") }
+  this.dcRender(this.dc.cur,true); if(this.opts.data) this.refreshDc(this.opts.data(),true) },
+ dcHTML(d){ const w=this.w, D=DC_DEFAULTS, g=k=>w[k]??D[k], ed=this.opts.editor;
+  if(!d&&!ed) return null; const ph=!d;
+  const badge=g("lcShowBadge")&&g("lcBadge")?`<div class="dc-badge">${esc(g("lcBadge"))}</div>`:"";
+  const amt=ph?`<span class="dc-amt" dir="ltr">—</span>`:moneyHTML(w,d,g("lcShowSym"),"dc-amt");
+  const name=g("lcShowName")?`<span class="dc-name">${ph?"بانتظار أول دعم":esc(nmOf(d))}</span>`:"";
+  const row=`<div class="dc-row">${g("lcOrder")==="name"?name+amt:amt+name}</div>`;
+  const thx=g("lcShowThx")&&g("lcThx")?`<div class="dc-thx">${esc(g("lcThx"))}</div>`:"";
+  return `<div class="dc-card${ph?" dc-ph":""}" dir="rtl">${badge}${row}${thx}</div>` },
+ dcRender(d,silent){ const w=this.w, g=k=>w[k]??DC_DEFAULTS[k], old=this.el.querySelector(".dc-card:not(.dc-out)"), html=this.dcHTML(d), rh=this.el.querySelector(".rh");
+  const anim=g("lcFxOff")||!g("lcAnimOn")?"none":g("lcAnim"), ms=Math.max(100,Math.min(4000,+g("lcAnimMs")||500));
+  const tok=(this._dcTok=(this._dcTok||0)+1); this.el.querySelectorAll(".dc-card.dc-out").forEach(x=>x.remove());
+  if(!html){ if(old) old.remove(); return }
+  const t=document.createElement("div"); t.innerHTML=html; const card=t.firstChild;
+  const enter=()=>{ this.el.insertBefore(card,rh||null); if(!silent&&anim!=="none"&&card.animate) card.animate(anim==="slide"?[{opacity:0,transform:"translateY(35%)"},{opacity:1,transform:"none"}]:[{opacity:0},{opacity:1}],{duration:ms,easing:"cubic-bezier(.2,.9,.3,1)"}) };
+  if(old&&!silent&&anim!=="none"&&g("lcAnimOut")&&old.animate){ old.classList.add("dc-out"); old.animate([{opacity:1},{opacity:0}],{duration:ms*.6,fill:"forwards"}); setTimeout(()=>{ old.remove(); if(tok===this._dcTok) enter() },ms*.6); return } /* setTimeout بدل onfinish: يعمل حتى لو كان المصدر مخفياً في OBS */
+  if(old) old.remove(); enter() },
+ refreshDc(src,silent){ const d=this.opts.dcSample?this.opts.dcSample():(dcReal(src&&src.DN)[0]||null); const key=d?d.id+"|"+d.amount+"|"+(d.refunded||0):"";
+  if(!this.dc) this.dc={cur:null}; if(this.dc.key===key&&!this.dc.force) return; this.dc.key=key; this.dc.force=false; this.dc.cur=d; this.dcRender(d,silent) },
+
+ // ---------- آخر 5 داعمين ----------
+ applyD5(w,W,Hh){ const e=this.el, ed=this.opts.editor; ensureDcCSS(); const D=D5_DEFAULTS, g=k=>w[k]??D[k];
+  e.className=`wd d5w${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
+  const n=Math.max(1,Math.min(10,+g("l5Count")||5)), rows=n+(g("l5ShowTitle")&&g("l5Title")?.8:0), gap=+g("l5Gap")||0;
+  const rowH=Hh/(rows+gap*(n)); const st=e.style, set=(k,v)=>st.setProperty(k,v);
+  set("--qfs",Math.max(6,rowH*.5)*(+g("l5Fs")||1)+"px"); set("--qgap",gap*rowH+"px"); set("--qw",g("l5Weight")); if(g("l5Font")) set("--qff",`"${g("l5Font")}"`); else st.removeProperty("--qff");
+  set("--qnc",g("l5NameC")); set("--qac",g("l5AmtC")); set("--qrc",g("l5RankC")); set("--qtc",g("l5TitleC"));
+  set("--qbg",hexA(g("l5BgC"),g("l5BgA"))); set("--qbd",g("l5BorderC")); set("--qbw",Math.max(0,+g("l5Bw"))+"px"); set("--qrad",(+g("l5Rad"))+"em");
+  set("--qneon",g("l5Neon")?neonFilter(g("l5NeonC"),g("l5NeonStr"),1,.9):"none");
+  e.classList.toggle("d5-panel",g("l5BgMode")==="panel"); e.classList.toggle("d5-norank",!g("l5ShowRank"));
+  const sig=[n,g("l5ShowTitle"),g("l5Title"),g("l5Anim"),g("l5AnimOn"),g("l5Dir"),g("l5InMs"),g("l5Stagger"),g("l5Hold"),g("l5OutMs"),g("l5Wait"),g("l5Dist"),g("l5Float")].join("|");
+  if(!this.d5||this.d5.sig!==sig){ this.d5Stop(); this.d5={sig,items:this.d5?this.d5.items:[],key:null,timers:[],anims:[]};
+   e.innerHTML=`<div class="d5-box" dir="rtl">${g("l5ShowTitle")&&g("l5Title")?`<div class="d5-title">${esc(g("l5Title"))}</div>`:""}<div class="d5-rows">${Array.from({length:n},(_,i)=>`<div class="d5-row" data-i="${i}"><span class="d5-rank">${i+1}</span><span class="d5-name"></span><span class="d5-amt"></span></div>`).join("")}</div></div>`+(ed?'<div class="rh"></div><div class="lockb">🔒</div>':"");
+   this.d5Fill(true); this.d5Cycle(true) } else this.d5Fill(true);
+  if(this.opts.data) this.refreshD5(this.opts.data(),true) },
+ d5Fill(silent,newTop){ const w=this.w, g=k=>w[k]??D5_DEFAULTS[k], ed=this.opts.editor, items=this.d5.items||[];
+  this.el.querySelectorAll(".d5-row").forEach((r,i)=>{ const d=items[i];
+   if(!d){ r.classList.add("d5-empty"); r.querySelector(".d5-name").textContent=ed&&i===0&&!items.length?"بانتظار أول دعم":""; r.querySelector(".d5-amt").innerHTML=""; return }
+   r.classList.remove("d5-empty"); r.querySelector(".d5-name").textContent=nmOf(d); r.querySelector(".d5-amt").innerHTML=moneyHTML(w,d,g("l5ShowSym"),"d5-m") });
+  if(!silent&&newTop) this.d5Enter(0,true) },
+ d5Side(i){ const w=this.w, g=k=>w[k]??D5_DEFAULTS[k], a=g("l5Anim"), first=g("l5Dir")==="lr"?-1:1; return a==="zigzag"?(i%2?-first:first):first },
+ d5Enter(i,flash){ const w=this.w, g=k=>w[k]??D5_DEFAULTS[k], r=this.el.querySelectorAll(".d5-row")[i]; if(!r||!r.animate) return;
+  const a=g("l5Anim"), dist=(+g("l5Dist")||60)*this.d5Side(i), ms=Math.max(120,+g("l5InMs")||700);
+  const kf=a==="fade"?[{opacity:0},{opacity:1}]:[{opacity:0,transform:`translateX(${dist}%)`},{opacity:1,transform:"none"}];
+  r.style.opacity=""; const an=r.animate(kf,{duration:flash?Math.min(ms,600):ms,easing:"cubic-bezier(.2,.9,.25,1)",fill:"backwards"}); this.d5.anims.push(an); return an },
+ d5Stop(){ if(!this.d5) return; for(const t of this.d5.timers) clearTimeout(t); for(const a of this.d5.anims) try{ a.cancel() }catch{} this.d5.timers=[]; this.d5.anims=[];
+  this.el.querySelectorAll&&this.el.querySelectorAll(".d5-row").forEach(r=>{ r.style.opacity=""; r.style.transform="" }) },
+ d5Cycle(first){ const w=this.w, g=k=>w[k]??D5_DEFAULTS[k], S=this.d5, T=(f,ms)=>S.timers.push(setTimeout(()=>{ if(S!==this.d5) return; if(this.el.isConnected){ this._d5in=true; f() } else if(!this._d5in) f(); else this.d5Stop() },ms));
+  const anim=g("l5AnimOn")&&g("l5Anim")!=="none"; const rows=[...this.el.querySelectorAll(".d5-row")]; if(!anim||!rows.length) return;
+  const inMs=Math.max(120,+g("l5InMs")||700), stg=Math.max(0,+g("l5Stagger")||0), hold=Math.max(0,+g("l5Hold")||0)*1000, outMs=Math.max(120,+g("l5OutMs")||600), wait=Math.max(0,+g("l5Wait")||0)*1000, a=g("l5Anim");
+  rows.forEach(r=>r.style.opacity="0"); rows.forEach((r,i)=>T(()=>this.d5Enter(i),i*stg));
+  const shown=inMs+stg*(rows.length-1);
+  if(g("l5Float")) T(()=>rows.forEach((r,i)=>{ if(r.animate){ const an=r.animate([{transform:"translateX(0)"},{transform:`translateX(${this.d5Side(i)*1.2}%)`},{transform:"translateX(0)"}],{duration:3200,iterations:Infinity,easing:"ease-in-out",delay:i*240}); S.anims.push(an) } }),shown);
+  if(!hold) return; /* 0 = تبقى ظاهرة بدون دورة */
+  T(()=>{ S.anims.forEach(x=>{ try{ x.cancel() }catch{} }); S.anims=[];
+   rows.forEach((r,i)=>T(()=>{ if(!r.animate) return; const dist=(+g("l5Dist")||60)*this.d5Side(i);
+    const an=r.animate(a==="fade"?[{opacity:1},{opacity:0}]:[{opacity:1,transform:"none"},{opacity:0,transform:`translateX(${dist}%)`}],{duration:outMs,easing:"cubic-bezier(.6,0,.8,.4)",fill:"forwards"}); S.anims.push(an) },(rows.length-1-i)*stg));
+   T(()=>{ S.anims.forEach(x=>{ try{ x.cancel() }catch{} }); S.anims=[]; rows.forEach(r=>r.style.opacity="0"); T(()=>{ rows.forEach(r=>r.style.opacity=""); this.d5Cycle(false) },wait) },outMs+stg*(rows.length-1)+30) },shown+hold) },
+ refreshD5(src,silent){ const w=this.w, g=k=>w[k]??D5_DEFAULTS[k]; if(!this.d5) return;
+  const items=this.opts.d5Sample?this.opts.d5Sample():d5List(src&&src.DN,Math.max(1,Math.min(10,+g("l5Count")||5)),g("l5Merge"));
+  const key=items.map(d=>d.id+":"+d.amount+":"+(d.refunded||0)).join(","); if(this.d5.key===key&&!this.d5.force) return;
+  const newTop=this.d5.key!=null&&items[0]&&(this.d5.items[0]||{}).id!==items[0].id; this.d5.key=key; this.d5.force=false; this.d5.items=items; this.d5Fill(silent,newTop) },
+});
+
+let dcCss=false;
+function ensureDcCSS(){ if(dcCss||typeof document==="undefined") return; dcCss=true; const s=document.createElement("style"); s.id="b6o6-dc"; s.textContent=DC_CSS; document.head.appendChild(s) }
+const DC_CSS=`
+.dcw,.d5w{background:none!important;border:0!important;box-shadow:none!important;overflow:visible}
+.dcw{display:flex;align-items:stretch;justify-content:stretch}
+.dc-card{flex:1;box-sizing:border-box;display:flex;flex-direction:column;justify-content:center;align-items:var(--cal);text-align:var(--cta);gap:var(--cgap);padding:calc(var(--cpad)*.6) var(--cpad);
+ background:var(--cbg);border:var(--cbw) solid var(--cbd);border-radius:var(--crad);box-shadow:var(--cbsh);font-family:var(--cff,inherit);font-size:var(--cfs);font-weight:var(--cw);line-height:1.15;overflow:hidden;min-width:0}
+.dc-badge{display:inline-block;align-self:var(--cal);background:var(--cbb);color:var(--cbc);font-size:calc(.62em * var(--cbs));padding:.12em .7em;border-radius:99em;white-space:nowrap}
+.dc-row{display:flex;align-items:baseline;justify-content:var(--cal);gap:.45em;min-width:0;max-width:100%}
+.dc-amt{color:var(--cac);background:var(--cagr);-webkit-background-clip:text;background-clip:text;opacity:var(--caop);font-size:calc(1.4em * var(--cas));font-weight:900;filter:var(--cneon);font-variant-numeric:tabular-nums;white-space:nowrap;unicode-bidi:isolate}
+.dc-name{color:var(--cnc);flex:0 1 auto;font-size:calc(1em * var(--cns));white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;unicode-bidi:plaintext}
+.dc-thx{color:var(--ctc);font-size:calc(.62em * var(--cts));font-weight:600;white-space:nowrap}
+.dc-ph{opacity:.55}
+.d5w{display:flex;align-items:stretch}
+.d5-box{flex:1;display:flex;flex-direction:column;gap:var(--qgap);font-family:var(--qff,inherit);font-size:var(--qfs);font-weight:var(--qw);line-height:1.1;min-width:0}
+.d5-panel .d5-box{background:var(--qbg);border:var(--qbw) solid var(--qbd);border-radius:var(--qrad);padding:.35em .5em}
+.d5-title{color:var(--qtc);font-size:.85em;font-weight:800;text-align:center;white-space:nowrap}
+.d5-rows{flex:1;display:flex;flex-direction:column;gap:var(--qgap);min-height:0}
+.d5-row{flex:1;display:flex;align-items:center;gap:.55em;padding:0 .6em;min-height:0;border-radius:var(--qrad);will-change:transform,opacity}
+.d5w:not(.d5-panel) .d5-row{background:var(--qbg);border:var(--qbw) solid var(--qbd)}
+.d5-row.d5-empty{visibility:hidden}
+.d5-rank{color:var(--qrc);font-weight:900;min-width:1.1em;text-align:center}
+.d5-norank .d5-rank{display:none}
+.d5-name{color:var(--qnc);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;unicode-bidi:plaintext}
+.d5-amt{color:var(--qac);font-weight:900;white-space:nowrap;filter:var(--qneon);font-variant-numeric:tabular-nums}
+@media (prefers-reduced-motion:reduce){.d5-row,.dc-card{animation:none!important}}
+`;
+
 /* ---- engine/chatview.js ---- */
 // ====== الشات الموحد: محرك العرض + التصاميم (شفاف 100% خارج الرسائل) ======
 
@@ -7996,7 +8148,7 @@ function userTable(rows,cols){ if(!rows.length) return '<div class="empty">لا 
 const sorted=(o,f="v")=>Object.values(o||{}).sort((a,b)=>b[f]-a[f]);
 const proName=w=>w.type==="lb"?lbDesignOf(w.design).name:(SG_DESIGNS.find(x=>x.id===w.design)||SG_DESIGNS[0]).name;
 const dname=(id,clock)=>((clock===true?CLOCK_DESIGNS:clock==="soc"?SOCIAL_DESIGNS:DESIGNS).find(d=>d.id===id)||{}).name||id;
-const wdname=w=>w.type==="donText"?"Minimal — نص فقط":w.type==="levent"?leDesignOf(w.design).name+" — "+(LE_KINDS[w.kind]||{}).label:w.type==="fcount"?fcDesignOf(w.design).name:w.type==="srules"?rbDesignOf(w.design).name:TYPES[w.type]?.pro?proName(w):dname(w.design,dKind(w)==="clock"?true:dKind(w)==="soc"?"soc":false);
+const wdname=w=>w.type==="donCard"?"Basic — آخر دعم":w.type==="donLast5"?"آخر داعمين — "+((D5_ANIMS.find(a=>a[0]===(w.l5Anim||"zigzag"))||[])[1]||"").split(" — ")[0]:w.type==="donText"?"Minimal — نص فقط":w.type==="levent"?leDesignOf(w.design).name+" — "+(LE_KINDS[w.kind]||{}).label:w.type==="fcount"?fcDesignOf(w.design).name:w.type==="srules"?rbDesignOf(w.design).name:TYPES[w.type]?.pro?proName(w):dname(w.design,dKind(w)==="clock"?true:dKind(w)==="soc"?"soc":false);
 const isClock=w=>!!TYPES[w.type].clock;
 const isSoc=w=>!!TYPES[w.type].soc;
 const isChip=w=>["donTicker","donLatest","donAlert"].includes(w.type);
@@ -8311,8 +8463,8 @@ function donationsHTML(){
   <div class="row" style="margin-top:12px"><button class="btn sm" data-don-session>▶ بدء جلسة بث جديدة (لقائمة «البث الحالي»)</button><button class="btn sm" data-don-cleartests>🧹 مسح التبرعات التجريبية</button></div>` }
  else if(t==="widgets"){
   const add=(type,label,extra)=>`<button class="btn sm" data-don-addw="${type}" ${extra?`data-don-extra='${extra}'`:""}>+ ${label}</button>`;
-  body=`<div class="card" style="margin-bottom:14px"><h3>أضف إلى المشهد «${esc(L().name)}»</h3><div class="row">${add("donTicker","💸 شريط الدعم")}${add("donGoal","🎯 هدف الدعم")}${add("donLatest","💚 آخر داعم")}${add("donText","💬 آخر دعم نصي (نص فقط)")}${add("donText","💬 آخر دعم نصي (نص فقط)")}${add("donTop","👑 أكبر داعم (البث الحالي)",'{"period":"session","title":"ملك الدعم"}')}${add("donTop","🏆 أقوى داعم الأسبوع",'{"period":"week","title":"أقوى داعم الأسبوع","name":"أقوى داعم الأسبوع"}')}${add("donTop","👑 أقوى داعم الشهر",'{"period":"month","title":"أقوى داعم الشهر","name":"أقوى داعم الشهر"}')}${add("donBoard","💰 قائمة أفضل الداعمين")}${add("donAlert","🔔 تنبيهات الدونيشن")}</div></div>
-  <div class="grid g2">${donWidgetsOf(["donTicker","donGoal","donLatest","donText","donTop","donBoard","donAlert"]).map(w=>`<div class="card"><h3><span>${TYPES[w.type].icon} ${esc(w.name)}</span><span class="tag">${wdname(w)}</span></h3><div class="mut small">${w.type==="donTop"||w.type==="donBoard"?"الفترة: "+(PERIODS.find(p=>p[0]===w.period)||[])[1]+" · ":""}${w.currency||DC.currency}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-edit="${w.id}">تعديل في الاستوديو</button>${w.type==="donText"?"":`<button class="btn sm" data-lib="${w.id}">التصميم</button>`}<button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button><button class="btn sm" data-preview="${w.id}">👁 معاينة</button></div></div>`).join("")||'<div class="empty">لا توجد عناصر دونيشن في هذا المشهد</div>'}</div>
+  body=`<div class="card" style="margin-bottom:14px"><h3>أضف إلى المشهد «${esc(L().name)}»</h3><div class="row">${add("donTicker","💸 شريط الدعم")}${add("donGoal","🎯 هدف الدعم")}${add("donLatest","💚 آخر داعم")}${add("donCard","💵 آخر دعم (Basic)")}${add("donLast5","🧾 آخر 5 داعمين")}${add("donText","💬 آخر دعم نصي (نص فقط)")}${add("donTop","👑 أكبر داعم (البث الحالي)",'{"period":"session","title":"ملك الدعم"}')}${add("donTop","🏆 أقوى داعم الأسبوع",'{"period":"week","title":"أقوى داعم الأسبوع","name":"أقوى داعم الأسبوع"}')}${add("donTop","👑 أقوى داعم الشهر",'{"period":"month","title":"أقوى داعم الشهر","name":"أقوى داعم الشهر"}')}${add("donBoard","💰 قائمة أفضل الداعمين")}${add("donAlert","🔔 تنبيهات الدونيشن")}</div></div>
+  <div class="grid g2">${donWidgetsOf(["donTicker","donGoal","donLatest","donCard","donLast5","donText","donTop","donBoard","donAlert"]).map(w=>`<div class="card"><h3><span>${TYPES[w.type].icon} ${esc(w.name)}</span><span class="tag">${wdname(w)}</span></h3><div class="mut small">${w.type==="donTop"||w.type==="donBoard"?"الفترة: "+(PERIODS.find(p=>p[0]===w.period)||[])[1]+" · ":""}${w.currency||DC.currency}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-edit="${w.id}">تعديل في الاستوديو</button>${["donText","donCard","donLast5"].includes(w.type)?"":`<button class="btn sm" data-lib="${w.id}">التصميم</button>`}<button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button><button class="btn sm" data-preview="${w.id}">👁 معاينة</button></div></div>`).join("")||'<div class="empty">لا توجد عناصر دونيشن في هذا المشهد</div>'}</div>
   <p class="mut small">أقوى داعم الأسبوع يُحسب بالمنطقة الزمنية وبداية الأسبوع من «الإعدادات». عند بداية شهر جديد يبدأ ترتيب جديد تلقائياً، وتبقى بيانات الأشهر السابقة في «جميع الأوقات» والسجل.</p>` }
  else if(t==="goals"){
   body=`<div class="row" style="margin-bottom:12px"><button class="btn pri sm" data-goal-add>+ هدف جديد</button></div><div class="grid g2">${DC.goals.map(g=>{const p=goalProgress(g,R.DN,now,DC.fx); const inp=(f,l,v,type="text",attrs="")=>`<div class="fld" style="margin:0"><label>${l}</label><input class="inp" type="${type}" data-goal="${g.id}" data-gf="${f}" value="${esc(v??"")}" ${attrs}></div>`; const dtv=x=>x?new Date(x-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):"";
@@ -8375,7 +8527,7 @@ function donClick(t,d){
  if(t.hasAttribute("data-don-session")){ sim({type:"donation_session"}); toast("بدأت جلسة جديدة"); return true }
  if(t.hasAttribute("data-don-cleartests")){ sim({type:"donation_clear_tests"}); setTimeout(()=>renderPage(true),80); return true }
  if(d.donRefund){ sim({type:"donation_refund",id:d.donRefund}); setTimeout(()=>renderPage(true),80); return true }
- if(d.donAddw){ const w=addWidget(d.donAddw,d.donExtra?JSON.parse(d.donExtra):{}); const ex=d.donExtra?JSON.parse(d.donExtra):{}; const pos={donTicker:"tc",donGoal:"bc",donLatest:"bl",donText:"tc",donTop:ex.period==="month"?"tr":ex.period==="week"?"tl":"tc",donBoard:"ml",donAlert:"mr"}[d.donAddw]; applyPreset(w,pos==="mr"?"tc":pos,CV()); if(d.donAddw==="donAlert"){ w.y=.3 } save(); pushLayout(); renderPage(); return true }
+ if(d.donAddw){ const w=addWidget(d.donAddw,d.donExtra?JSON.parse(d.donExtra):{}); const ex=d.donExtra?JSON.parse(d.donExtra):{}; const pos={donTicker:"tc",donGoal:"bc",donLatest:"bl",donText:"tc",donCard:"tr",donLast5:"ml",donTop:ex.period==="month"?"tr":ex.period==="week"?"tl":"tc",donBoard:"ml",donAlert:"mr"}[d.donAddw]; applyPreset(w,pos==="mr"?"tc":pos,CV()); if(d.donAddw==="donAlert"){ w.y=.3 } save(); pushLayout(); renderPage(); return true }
  if(t.hasAttribute("data-goal-add")){ S.donCfg.goals.push(newGoal({name:"هدف جديد",currency:S.donCfg.currency})); donSave(); renderPage(true); return true }
  if(d.goalPause){ const g=S.donCfg.goals.find(x=>x.id===d.goalPause); g.paused=!g.paused; donSave(); renderPage(true); return true }
  if(d.goalReset){ ask("إعادة ضبط الهدف؟ يبدأ الاحتساب من الآن ولا تُحذف التبرعات").then(ok=>{ if(!ok) return; const g=S.donCfg.goals.find(x=>x.id===d.goalReset); g.base=0; g.countedFrom=Date.now()+skew; donSave(); renderPage(true) }); return true }
@@ -8612,14 +8764,14 @@ function renderProps(){
  const sel=(f,l,opts,val)=>`<div class="fld"><label>${l}</label><select class="inp" data-wf="${f}" data-wid="${w.id}">${opts.map(o=>`<option value="${o[0]}" ${String(val)===String(o[0])?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;
  el.innerHTML=`<h3><span>${t.icon} ${esc(w.name)}</span><span class="tag" title="معرّف مستقل">${w.id}</span></h3>${lyElementButtons(w)}
  <div class="fld"><label>اسم العنصر</label><input class="inp" data-wf="name" data-wid="${w.id}" value="${esc(w.name)}"></div>
- ${w.type!=="timer"?`<div class="fld"><label>العنوان الظاهر</label><input class="inp" data-wf="title" data-wid="${w.id}" value="${esc(w.title)}"></div>`:""}
+ ${w.type!=="timer"&&!t.dc&&!t.d5?`<div class="fld"><label>العنوان الظاهر</label><input class="inp" data-wf="title" data-wid="${w.id}" value="${esc(w.title)}"></div>`:""}
  ${w.type==="timer"?sel("timerId","المؤقت المعروض",R.C.timers.map(x=>[x.id,x.name]),w.timerId):""}
- ${sel("design","التصميم",designsOf(w).map(d=>[d.id,d.name]),w.design)}
+ ${t.dc||t.d5?"":sel("design","التصميم",designsOf(w).map(d=>[d.id,d.name]),w.design)}
  ${t.board?`<div class="grid g2" style="gap:8px">${sel("topN","المراكز",TOPNS.map(n=>[n,n===1?"الأول فقط":"أفضل "+n]),w.topN)}${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}</div>`:""}
  ${ck?`<div class="grid g2" style="gap:8px">${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}${sel("showSub","سطر الحالة",[["1","ظاهر"],["0","مخفي"]],w.showSub?"1":"0")}</div>${sel("font","شكل الأرقام والخط",FONTS,w.font)}`:""}
  ${w.type==="subathon"?sel("sound","صوت عند إضافة الوقت",[["1","مفعّل"],["0","متوقف"]],w.sound?"1":"0"):""}
  ${w.type==="gifts"?sel("sortBy","ترتيب الداعمين حسب",SORTS,w.sortBy):""}
- ${t.don?donPropsHTML(w,sel,rng):""}
+ ${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
  ${t.rules?rbPropsHTML(w,sel,rng):""}
  ${t.fc?fcPropsHTML(w,sel,rng):""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
@@ -8636,13 +8788,14 @@ function renderProps(){
  ${w.type==="goal"?`<div class="fld"><label>الهدف (إعجابات)</label><input class="inp" type="number" min="1" data-wf="target" data-wid="${w.id}" value="${w.target}"></div>`:""}
  <div class="fld"><label>الموقع</label><div class="posgrid">${POS.map(p=>`<button data-pos="${p[0]}" class="${w.pos===p[0]?"on":""}">${p[1]}</button>`).join("")}</div></div>
  ${rng("w","العرض",.05,1,.005,w.w,v=>Math.round(v*cv.w)+"px")}${rng("h","الارتفاع",.02,1,.005,w.h,v=>Math.round(v*cv.h)+"px")}
- ${rng("fontScale","حجم النصوص",.5,1.8,.05,w.fontScale,v=>Math.round(v*100)+"%")}${t.board||w.type==="lb"?rng("avatarScale","حجم الصور",.4,1.5,.05,w.avatarScale,v=>Math.round(v*100)+"%"):""}
- ${rng("gap","المسافات",0,40,1,w.gap)}${rng("opacity","الشفافية",.1,1,.05,w.opacity,v=>Math.round(v*100)+"%")}${rng("rot","التدوير",-180,180,1,w.rot||0,v=>v+"°")}<div class="fld"><label>التجميع (تتحرك العناصر معاً)</label><select class="inp" data-wgroup="${w.id}"><option value="">بدون مجموعة</option>${[...new Set(L().widgets.map(x=>x.group).filter(Boolean))].map(g=>`<option value="${esc(g)}" ${w.group===g?"selected":""}>${esc(g)} (${L().widgets.filter(x=>x.group===g).length})</option>`).join("")}<option value="@new">+ مجموعة جديدة…</option></select></div>
- <div class="grid g2" style="gap:8px"><div class="fld"><label>لون التمييز</label><input type="color" data-wf="acc" data-wid="${w.id}" value="${w.acc||"#e8c46a"}"></div><div class="fld"><label>لون النص</label><input type="color" data-wf="tx" data-wid="${w.id}" value="${w.tx||"#ffffff"}"></div></div>
- <div class="grid g2" style="gap:8px">${sel("anim","حركة الدخول",[["slide","انزلاق"],["fade","تلاشي"],["zoom","تكبير"],["none","بدون"]],w.anim)}${sel("effects","المؤثرات",[["1","مفعّلة"],["0","متوقفة"]],w.effects?"1":"0")}</div>
+ ${t.dc||t.d5?"":rng("fontScale","حجم النصوص",.5,1.8,.05,w.fontScale,v=>Math.round(v*100)+"%")}${t.board||w.type==="lb"?rng("avatarScale","حجم الصور",.4,1.5,.05,w.avatarScale,v=>Math.round(v*100)+"%"):""}
+ ${t.dc||t.d5?"":rng("gap","المسافات",0,40,1,w.gap)}${rng("opacity","الشفافية",.1,1,.05,w.opacity,v=>Math.round(v*100)+"%")}${rng("rot","التدوير",-180,180,1,w.rot||0,v=>v+"°")}<div class="fld"><label>التجميع (تتحرك العناصر معاً)</label><select class="inp" data-wgroup="${w.id}"><option value="">بدون مجموعة</option>${[...new Set(L().widgets.map(x=>x.group).filter(Boolean))].map(g=>`<option value="${esc(g)}" ${w.group===g?"selected":""}>${esc(g)} (${L().widgets.filter(x=>x.group===g).length})</option>`).join("")}<option value="@new">+ مجموعة جديدة…</option></select></div>
+ ${t.dc||t.d5?"":`<div class="grid g2" style="gap:8px"><div class="fld"><label>لون التمييز</label><input type="color" data-wf="acc" data-wid="${w.id}" value="${w.acc||"#e8c46a"}"></div><div class="fld"><label>لون النص</label><input type="color" data-wf="tx" data-wid="${w.id}" value="${w.tx||"#ffffff"}"></div></div>`}
+ ${t.dc||t.d5?"":`<div class="grid g2" style="gap:8px">${sel("anim","حركة الدخول",[["slide","انزلاق"],["fade","تلاشي"],["zoom","تكبير"],["none","بدون"]],w.anim)}${sel("effects","المؤثرات",[["1","مفعّلة"],["0","متوقفة"]],w.effects?"1":"0")}</div>`}
  <div class="fld"><label>ترتيب الطبقات</label><div class="row"><button class="btn sm" data-z="front">⬆ للأمام</button><button class="btn sm" data-z="back">⬇ للخلف</button></div></div>
  <div class="row"><button class="btn sm ${w.visible?"":"on"}" data-tog="visible" data-wid="${w.id}">${w.visible?"👁 إخفاء":"👁 إظهار"}</button><button class="btn sm ${w.locked?"on":""}" data-tog="locked" data-wid="${w.id}">${w.locked?"🔓 فك القفل":"🔒 قفل المكان"}</button><button class="btn sm" data-dupw>نسخ</button><button class="btn sm dng" data-delw>حذف</button></div>`;
  if(t.dt) mountDtPreview(w);
+ if(t.dc||t.d5) mountDcPreview(w);
 }
 /** المحاذاة الذكية: حواف ومنتصف الشاشة والعناصر الأخرى */
 function snapMove(w,cv){
@@ -8728,7 +8881,7 @@ function mountLibrary(){
 
 /* ---- الأحداث ---- */
 function findW(id){return L().widgets.find(w=>w.id===id)}
-function changed(w,full){ save(); pushLayout(); if(S.page==="studio"){ refreshView(w); if(full){renderProps();renderLayers()} else if(w.type==="donText") mountDtPreview(w) } else renderPage(true) }
+function changed(w,full){ save(); pushLayout(); if(S.page==="studio"){ refreshView(w); if(full){renderProps();renderLayers()} else if(w.type==="donText") mountDtPreview(w); else if(w.type==="donCard"||w.type==="donLast5") mountDcPreview(w) } else renderPage(true) }
 function addLB(k){ const likes=k==="Likes", n=likes?5:+k||5; const [ww,hh]=LB_SIZE[n]; const w=addWidget("lb",{topN:n,w:ww,h:hh,source:likes?"likes":"gifts",design:likes?"roseAura":"pinkCloud",title:likes?"أفضل المكبسين":"أفضل الداعمين",name:likes?"قائمة التكبيس Pro":"قائمة Pro — أفضل "+n,icon:likes?"❤️":""}); applyPreset(w,likes?"mr":"ml",CV()); save(); pushLayout(); return w }
 function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math.max(0,...L().widgets.map(x=>x.z))+1,...extra}); applyPreset(w,isClock(w)?"tc":"mr",cv); L().widgets.push(w); S.sel=w.id; save(); pushLayout(); toast("تمت إضافة "+TYPES[type].label); return w }
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
@@ -8756,6 +8909,7 @@ function onClick(e){
  if(alClick(t,d)) return;
  if(musicClick(t,d)) return;
  if(dtClick(t,d)) return;
+ if(dcClick(t,d)) return;
  if(donClick(t,d)) return;
  if(d.libtab){ S.libTab=d.libtab; S.libTarget=null; if(!d.go) return renderPage() }
  if(d.go) return go(d.go);
@@ -8856,6 +9010,7 @@ function onInput(e){
  if(faInput(t,d,e)) return;
  if(psInput(t,d,e)) return;
  if(dtInput(t,d,e)) return;
+ if(dcCopyScene(t,d,e)) return;
  if(socInput(t,d,e)) return;
  if(botsInput(t,d,e)) return;
  if(donInput(t,d,e)) return;
@@ -8892,6 +9047,7 @@ function onInput(e){
  if(d.wf){ const w=findW(d.wid); if(!w) return; const f=d.wf; let v=t.type==="checkbox"?t.checked:t.value;
   if(["w","h","fontScale","avatarScale","gap","opacity","topN","target","base","goal","goalStep","goalStart","glow","textScale","dur","avScale","ptN","shineEvery","rot","fs","titleScale","nameScale","amtScale","symScale","gapEm","glowStr","fxN","firstScale","rotSec","numScale","rowOpacity","interval","speed","maxRules","iconScale","animSpeed","enterMs","exitMs","delayMs","speed","cols","logoScale","showSec","gapSec"].includes(f)) v=+v;
   if(["showTitle","showAmb","effects","showSub","sound","repeat","showLogo","showPlatform","showUser","hideAnon","showMessage","useAccStyle","lowPerf","showPct","showHead","showAvatar","showName","showLogo","showNew","showUnit","goalOn","goalAuto","goalRemain","showMsg","showEmblem","showAv","fxHalo","fxKind","showBy","medals","showIcon","showRank","crown1","fx1","shine","showDeco","shadow","glowOn","showLast","showTop","showCount","showWhat","showTime","showImg","animOn","msgRandom","reduceFx"].includes(f)&&t.type!=="checkbox") v=v==="1";
+  if(/^(lc|l5)[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")) v=v==="1" }
   if(f==="idle"){ v=[v,...((findW(d.wid)||{}).idle||[]).slice(1)].filter(Boolean) }
   if(t.type==="range"&&e.type==="change") return;
   if((t.tagName==="SELECT"||t.type==="number"||t.type==="checkbox")&&e.type==="input") return;
@@ -8901,7 +9057,9 @@ function onInput(e){
   if(f==="w") w.x=clamp(w.x,0,1-w.w); if(f==="h") w.y=clamp(w.y,0,1-w.h);
   if((f==="w"||f==="h")&&w.pos!=="custom") applyPreset(w,w.pos,CV());
   const lab=document.getElementById("v_"+f); if(lab){ const cv=CV(); lab.textContent=f==="w"?Math.round(v*cv.w)+"px":f==="h"?Math.round(v*cv.h)+"px":["fontScale","avatarScale","opacity","logoScale","rowOpacity"].includes(f)?Math.round(v*100)+"%":["enterMs","exitMs","delayMs"].includes(f)?v+"ms":f==="speed"?v+" px/ث":v }
+  if(lab&&/^(lc|l5)[A-Z]/.test(f)) lab.textContent=t.step==="0.01"?Math.round(v*100)+"%":v;
   save(); pushLayout();
+  if(S.page==="studio"&&(w.type==="donCard"||w.type==="donLast5")){ refreshView(w); if(t.tagName==="SELECT") renderProps(); else mountDcPreview(w); return }
   if(S.page==="studio"){ refreshView(w); if(f==="name") renderLayers(); if(["design","topN","sortBy","showTitle","effects","timerId","mode","repeat","filter","order","source","target","base","tickerDir","stages","levelStages","platform","goalOn"].includes(f)) renderProps() }
   else if(t.tagName==="SELECT"||e.type==="change") renderPage(true);
   return }
@@ -9071,6 +9229,51 @@ function dtClick(t,d){
  if(d.dtreset&&d.wid){ const w=findW(d.wid); if(!w) return true; Object.assign(w,JSON.parse(JSON.stringify(DT_DEFAULTS)),{w:w.w,h:w.h}); changed(w,true); toast("أُعيدت الإعدادات الافتراضية"); return true }
  return false }
 function dtInput(t,d,e){ if(!d.dtpvf) return false; const p=S.dtPv; p[d.dtpvf]=t.value; const v=S._dtV; if(v){ v.dt.force=true; v.refreshDt({},true) } return true }
+// ====== «آخر دعم» و«آخر 5 داعمين»: لوحة التخصيص + معاينة مباشرة بعيّنة (المعاينة فقط — OBS يعرض الدعم الحقيقي) ======
+const DC_TABS=[["content","المحتوى"],["colors","الألوان"],["fonts","الخطوط والأحجام"],["fx","المؤثرات"],["anim","الحركة"]];
+function dcCtl(w,sel,rng){ const D=w.type==="donCard"?DC_DEFAULTS:D5_DEFAULTS, g=k=>w[k]??D[k];
+ return { g, tg:(f,l)=>`<button class="btn sm ${g(f)?"on":""}" data-lctog="${f}" data-wid="${w.id}">${g(f)?"✓":"✕"} ${l}</button>`,
+  col:(f,l)=>`<div class="fld"><label>${l}</label><input type="color" data-wf="${f}" data-wid="${w.id}" value="${g(f)}"></div>`,
+  txt:(f,l)=>`<div class="fld"><label>${l}</label><input class="inp" maxlength="40" data-wf="${f}" data-wid="${w.id}" value="${esc(g(f)??"")}"></div>`,
+  pct:(f,l,a=0,b=1,st=.01)=>rng(f,l,a,b,st,+g(f),v=>Math.round(v*100)+"%"),
+  num:(f,l,a,b,st,u="")=>rng(f,l,a,b,st,+g(f),v=>v+u), sl:(f,l,o)=>sel(f,l,o,typeof g(f)==="boolean"?(g(f)?"1":"0"):g(f)) } }
+function dcTabsBar(w){ const cur=S.lcTab||"content"; return `<div class="row" style="gap:4px;flex-wrap:wrap;margin:6px 0">${DC_TABS.map(([k,l])=>`<button class="btn sm ${cur===k?"pri":""}" data-lctab="${k}">${l}</button>`).join("")}</div>` }
+function dcScenesHTML(w){ const others=S.layouts.filter(l=>l.id!==S.active); return `<div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" data-lcsim="${w.id}">🧪 تجربة وصول دعم (المعاينة فقط)</button><button class="btn sm" data-lcreset="${w.id}">↺ الإعدادات الافتراضية</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط OBS / LIVE Studio</button>${others.length?`<select class="inp" data-lccopy="${w.id}" style="width:auto"><option value="">📋 نسخ إلى مشهد…</option>${others.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>`:""}</div>` }
+function dcPropsHTML(w,sel,rng){ const c=dcCtl(w,sel,rng), tab=S.lcTab||"content", ON=[["1","مفعّل"],["0","متوقف"]];
+ const body={content:`<div class="row" style="gap:4px;flex-wrap:wrap">${c.tg("lcShowBadge","شارة «"+esc(c.g("lcBadge"))+"»")}${c.tg("lcShowName","اسم الداعم")}${c.tg("lcShowSym","رمز العملة")}${c.tg("lcShowThx","عبارة الشكر")}</div>
+   <div class="grid g2" style="gap:8px">${c.txt("lcBadge","نص الشارة")}${c.txt("lcThx","عبارة الشكر")}${c.sl("lcOrder","الترتيب",[["amt","المبلغ ثم الاسم"],["name","الاسم ثم المبلغ"]])}${c.sl("lcAlign","المحاذاة",[["right","يمين"],["center","وسط"],["left","يسار"]])}</div>`,
+  colors:`<div class="grid g2" style="gap:8px">${c.sl("lcAmtMode","لون المبلغ",[["solid","لون ثابت"],["grad","متدرّج"]])}${c.col("lcAmtC",c.g("lcAmtMode")==="grad"?"بداية التدرج":"لون المبلغ")}${c.g("lcAmtMode")==="grad"?c.col("lcAmtC2","نهاية التدرج"):""}${c.pct("lcAmtA","شفافية المبلغ",.1)}
+   ${c.col("lcNameC","لون الاسم")}${c.pct("lcNameA","شفافية الاسم",.1)}${c.col("lcBadgeC","لون نص «آخر دعم»")}${c.col("lcBadgeBg","لون الشارة")}${c.pct("lcBadgeA","شفافية الشارة",.1)}${c.col("lcThxC","لون «شكراً على دعمك»")}${c.pct("lcThxA","شفافية عبارة الشكر",.1)}
+   ${c.col("lcBgC","لون الخلفية")}${c.pct("lcBgA","شفافية الخلفية",0)}${c.col("lcBorderC","لون الإطار")}${c.num("lcBw","سمك الإطار",0,8,.5,"px")}${c.num("lcRad","تدوير الزوايا",0,1.5,.05,"em")}</div>`,
+  fonts:`<div class="grid g2" style="gap:8px">${c.sl("lcFont","الخط",DT_FONTS)}${c.sl("lcWeight","وزن الخط",[["400","عادي"],["600","متوسط"],["800","عريض"],["900","أسود"]])}${c.pct("lcFs","الحجم العام",.4,2.5)}${c.pct("lcAmtS","حجم المبلغ",.4,2.5)}${c.pct("lcNameS","حجم الاسم",.4,2.5)}${c.pct("lcBadgeS","حجم الشارة (النص العلوي)",.4,2.5)}${c.pct("lcThxS","حجم عبارة الشكر (النص السفلي)",.4,2.5)}${c.num("lcGap","المسافة بين العناصر",0,1,.02,"em")}${c.num("lcPad","الهوامش الداخلية",0,1.5,.05,"em")}</div>`,
+  fx:`<div class="grid g2" style="gap:8px">${c.sl("lcFxOff","كل المؤثرات",[["0","مسموحة"],["1","⛔ إيقاف الكل (Basic هادئ)"]])}${c.sl("lcNeon","نيون المبلغ",ON)}${c.g("lcNeon")?`${c.col("lcNeonC","لون النيون")}${c.pct("lcNeonStr","شدة التوهج",0,2)}${c.pct("lcNeonSpread","انتشار الإضاءة",.2,3)}${c.pct("lcNeonA","شفافية التوهج",.05)}${c.sl("lcNeonBorder","توهج الإطار",ON)}`:""}</div>${c.g("lcFxOff")?`<p class="small mut">المؤثرات موقوفة: يظهر النص عادياً بدون توهج ولا حركة.</p>`:""}`,
+  anim:`<div class="grid g2" style="gap:8px">${c.sl("lcAnimOn","الحركة",[["1","مفعّلة"],["0","معطّلة بالكامل"]])}${c.sl("lcAnim","حركة الدخول",DC_ANIMS)}${c.sl("lcAnimOut","Fade Out للدعم السابق",ON)}${c.num("lcAnimMs","مدة الحركة",100,3000,50,"ms")}</div>`}[tab]||"";
+ return `<div class="ttl" style="margin:6px 0 4px">💵 آخر دعم — Basic</div><div class="dc-pvbox" data-dcpv="${w.id}" style="height:120px;border-radius:10px;border:1px dashed var(--line);background:repeating-conic-gradient(#2a2f3a 0 25%,#1c2029 0 50%) 0 0/16px 16px;position:relative;overflow:hidden"></div>
+  ${dcScenesHTML(w)}${dcTabsBar(w)}${body}<p class="mut small">يعرض آخر دونيشن حقيقي مؤكد ويتحدّث لحظياً — التجربة تظهر في المعاينة فقط ولا تُحسب دعماً.</p>` }
+function d5PropsHTML(w,sel,rng){ const c=dcCtl(w,sel,rng), tab=S.lcTab||"content", ON=[["1","مفعّل"],["0","متوقف"]];
+ const body={content:`<div class="row" style="gap:4px;flex-wrap:wrap">${c.tg("l5ShowTitle","العنوان")}${c.tg("l5ShowRank","الترتيب")}${c.tg("l5ShowSym","رمز العملة")}</div>
+   <div class="grid g2" style="gap:8px">${c.txt("l5Title","نص العنوان")}${c.sl("l5Count","عدد الصفوف",[3,4,5,6,7,8,10].map(n=>[n,n]))}${c.sl("l5Merge","تكرار نفس الداعم",[["each","كل عملية دعم في صف"],["person","آخر دعم لكل شخص فقط"]])}${c.sl("l5BgMode","الخلفية",[["rows","خلفية لكل صف"],["panel","خلفية موحّدة"]])}</div>`,
+  colors:`<div class="grid g2" style="gap:8px">${c.col("l5NameC","لون الأسماء")}${c.col("l5AmtC","لون المبالغ")}${c.col("l5RankC","لون الترتيب")}${c.col("l5TitleC","لون العنوان")}${c.col("l5BgC","لون الخلفية")}${c.pct("l5BgA","شفافية الخلفية",0)}${c.col("l5BorderC","لون الإطار")}${c.num("l5Bw","سمك الإطار",0,6,.5,"px")}${c.num("l5Rad","تدوير زوايا الصفوف",0,1.5,.05,"em")}</div>`,
+  fonts:`<div class="grid g2" style="gap:8px">${c.sl("l5Font","الخط",DT_FONTS)}${c.sl("l5Weight","وزن الخط",[["400","عادي"],["600","متوسط"],["700","عريض"],["900","أسود"]])}${c.pct("l5Fs","حجم الخط",.4,2)}${c.num("l5Gap","المسافة بين الصفوف",0,1,.02)}</div>`,
+  fx:`<div class="grid g2" style="gap:8px">${c.sl("l5Neon","نيون المبالغ",ON)}${c.g("l5Neon")?`${c.col("l5NeonC","لون النيون")}${c.pct("l5NeonStr","شدة النيون",0,2)}`:""}</div>`,
+  anim:`<div class="grid g2" style="gap:8px">${c.sl("l5AnimOn","الحركة",[["1","مفعّلة"],["0","معطّلة"]])}${c.sl("l5Anim","نوع الحركة",D5_ANIMS)}${c.sl("l5Dir","اتجاه الصف الأول",[["rl","يدخل من اليمين"],["lr","يدخل من اليسار"]])}${c.num("l5InMs","سرعة دخول الصف",150,3000,50,"ms")}${c.num("l5Stagger","الفاصل بين الصفوف",0,1500,20,"ms")}${c.num("l5Hold","مدة الظهور (0 = ثابتة)",0,60,1,"ث")}${c.num("l5OutMs","مدة الاختفاء",150,3000,50,"ms")}${c.num("l5Wait","الوقت بين الدورات",0,30,.5,"ث")}${c.num("l5Dist","مسافة الحركة",10,120,5,"%")}${c.sl("l5Float","حركة خفيفة أثناء الظهور",ON)}</div><p class="small mut">أثناء الظهور تبقى الأسماء والمبالغ ثابتة وواضحة؛ الحركة تحصل فقط عند الدخول والخروج.</p>`}[tab]||"";
+ return `<div class="ttl" style="margin:6px 0 4px">🧾 آخر ${+c.g("l5Count")||5} داعمين</div><div class="dc-pvbox" data-dcpv="${w.id}" style="height:220px;border-radius:10px;border:1px dashed var(--line);background:repeating-conic-gradient(#2a2f3a 0 25%,#1c2029 0 50%) 0 0/16px 16px;position:relative;overflow:hidden"></div>
+  ${dcScenesHTML(w)}${dcTabsBar(w)}${body}<p class="mut small">كل دعم حقيقي جديد يدخل المركز الأول ويخرج الأقدم، بدون تكرار نفس العملية. التجربة تظهر في المعاينة فقط.</p>` }
+const DC_SAMPLE=[["أحمد",100,"USD"],["محمد",50,"USD"],["خالد",25,"USD"],["فيصل",20,"USD"],["عبدالله",10,"USD"],["سارة",375,"SAR"],["نورة",5,"USD"]];
+function mountDcPreview(w){ const box=document.querySelector(`[data-dcpv="${w.id}"]`); if(!box) return; box.innerHTML=""; if(S._dcV) try{ S._dcV.d5Stop&&S._dcV.d5Stop() }catch{}
+ const bw=box.clientWidth||300, bh=box.clientHeight||120, cv={w:bw,h:bh}, ar=(w.w*CV().w)/(w.h*CV().h)||2.5; let pw_=Math.min(.92,(bh*.86*ar)/bw), ph_=Math.min(.86,pw_*bw/ar/bh);
+ const pw={...w,id:"pv_dc",x:(1-pw_)/2,y:(1-ph_)/2,w:pw_,h:ph_,visible:true,locked:false}, n=S.dcPvN||0;
+ const smp=i=>{ const r=DC_SAMPLE[(i+DC_SAMPLE.length*9)%DC_SAMPLE.length]; return {id:"pv_"+i,name:r[0],amount:r[1],currency:r[2],refunded:0} };
+ const v=new View(pw,cv,{mute:true,dcSample:()=>smp(-n),d5Sample:()=>Array.from({length:Math.max(1,+(w.l5Count??5))},(_,i)=>smp(i-n))});
+ box.appendChild(v.el); v.apply(pw); if(w.type==="donCard") v.refreshDc({},true); else v.refreshD5({},true); S._dcV=v }
+function dcClick(t,d){
+ if(d.lctab){ S.lcTab=d.lctab; renderProps(); return true }
+ if(d.lctog&&d.wid){ const w=findW(d.wid); if(!w) return true; const D=w.type==="donCard"?DC_DEFAULTS:D5_DEFAULTS; w[d.lctog]=!(w[d.lctog]??D[d.lctog]); changed(w,true); return true }
+ if(d.lcsim){ S.dcPvN=(S.dcPvN||0)+1; const v=S._dcV, w=findW(d.lcsim); if(!v||!w) return true; if(w.type==="donCard"){ v.dc.force=true; v.refreshDc({},false) } else { v.d5.force=true; v.refreshD5({},false) } return true }
+ if(d.lcreset){ const w=findW(d.lcreset); if(!w) return true; Object.assign(w,JSON.parse(JSON.stringify(w.type==="donCard"?DC_DEFAULTS:D5_DEFAULTS)),{w:w.w,h:w.h}); changed(w,true); toast("أُعيدت الإعدادات الافتراضية لهذه الطبقة فقط"); return true }
+ return false }
+function dcCopyScene(t,d,e){ if(!d.lccopy||e.type!=="change"||!t.value) return false; const w=findW(d.lccopy), dst=S.layouts.find(l=>l.id===t.value); if(!w||!dst) return true;
+ const c=JSON.parse(JSON.stringify(w)); c.id="w_"+uid(); c.z=Math.max(0,...dst.widgets.map(x=>x.z||0))+1; dst.widgets.push(c); t.value=""; save(); pushLayout(); toast("📋 نُسخت الطبقة بإعداداتها إلى «"+dst.name+"»"); return true }
 // ====== رابط البايو: المنشئ + المعاينة ======
 S.bio=Object.assign(bioDefaults(),(CFG&&CFG.bio)||ls("b6o6.bio")||{});
 function bioSave(re){ ls("b6o6.bio",S.bio); if(CFG) fetch("/api/me",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({bio:S.bio})}).then(r=>r.json()).then(j=>{ if(j&&j.error) toast(j.error) }).catch(()=>{}); if(re) renderPage(true); else bioPreview() }

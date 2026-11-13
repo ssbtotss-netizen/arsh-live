@@ -51,6 +51,7 @@ export * from "../engine/le_royal.js";
 export * from "../engine/le_space.js";
 export * from "../engine/le_fire.js";
 export * from "../engine/dtext.js";
+export * from "../engine/dcard.js";
 
 export type LiveUser = { id: string; name: string; avatar?: string };
 export type LiveEvent =

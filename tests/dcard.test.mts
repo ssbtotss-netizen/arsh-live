@@ -1,0 +1,11 @@
+import { dcReal, d5List } from "/home/claude/najd/arsh-live/src/engine/dcard.js";
+let f=0; const ok=(c:any,m:string)=>{ console.log((c?"PASS ":"FAIL ")+m); if(!c) f++ };
+const d=(id:string,name:string,amount:number,x:any={})=>({id,name,amount,currency:"USD",provider:"streamlabs",...x});
+const DN={list:[d("1","أحمد",100),d("2","محمد",50),d("t","تجربة",999,{test:true}),d("3","خالد",25),d("r","مسترجع",30,{refunded:30}),d("4","فيصل",20),d("4","فيصل",20),d("5","أحمد",10),d("6","عبدالله",10,{anonymous:true})]};
+ok(dcReal(DN)[0].id==="6","آخر دعم حقيقي = الأحدث");
+ok(!dcReal(DN).some((x:any)=>x.test||x.id==="r"),"لا تجربة ولا مسترجع بالكامل");
+ok(dcReal(DN).filter((x:any)=>x.id==="4").length===1,"نفس العملية لا تتكرر");
+ok(d5List(DN,5).map((x:any)=>x.id).join()==="6,5,4,3,2","آخر 5 الأحدث أولاً، الأقدم يخرج");
+ok(d5List(DN,5,"person").map((x:any)=>x.name).join()==="عبدالله,أحمد,فيصل,خالد,محمد","وضع «آخر دعم لكل شخص»");
+ok(dcReal({list:[]}).length===0&&dcReal(null as any).length===0,"بدون بيانات ← لا شيء");
+console.log(f?f+" FAILED":"ALL PASS"); if(f) process.exit(1);
