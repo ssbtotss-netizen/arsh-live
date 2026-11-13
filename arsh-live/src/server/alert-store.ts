@@ -11,6 +11,29 @@ export async function usedBytes(ownerId: string) {
   const r = await prisma.alertAsset.aggregate({ _sum: { size: true }, where: { ownerId, slot: { notIn: MUSIC_SLOTS } } });
   return r._sum.size || 0;
 }
+/**
+ * لا حصة ثابتة لكل حساب (كانت 200MB وتوقف صانع المحتوى بلا داعٍ).
+ * الحماية الوحيدة على مستوى المنصة: حجم قاعدة البيانات الفعلي مقابل سعتها (Render: 15GB — STORAGE_CAPACITY_MB).
+ * عند 90% نرفض الرفع الجديد برسالة صادقة (تخزين المنصة يحتاج توسعة) بدل امتلاء القرص وتوقف المنصة كلها، ونسجّل تنبيهاً للإدارة.
+ */
+const CAP_MB = () => Math.max(256, +(process.env.STORAGE_CAPACITY_MB || 15360));
+let dbSize = { at: 0, bytes: 0 };
+export async function platformStorage(force = false) {
+  if (force || Date.now() - dbSize.at > 60_000) {
+    try { const r: any[] = await prisma.$queryRawUnsafe("SELECT pg_database_size(current_database())::bigint AS b"); dbSize = { at: Date.now(), bytes: Number(r[0]?.b || 0) }; }
+    catch (e: any) { console.error("[storage] size query failed", e?.message || e); dbSize = { at: Date.now(), bytes: dbSize.bytes }; }
+  }
+  const cap = CAP_MB() * 1024 * 1024;
+  return { used: dbSize.bytes, capacity: cap, pct: cap ? dbSize.bytes / cap : 0 };
+}
+async function guard(add: number) {
+  const st = await platformStorage();
+  if (st.used + add > st.capacity * 0.9) {
+    console.error(`[storage] ⚠️ PLATFORM STORAGE HIGH: ${(st.used / 1048576).toFixed(0)}MB / ${(st.capacity / 1048576).toFixed(0)}MB — expand the database disk (Render → b6o6-db → Storage) or enable autoscaling`);
+    return { ok: false as const, error: "platform_storage", used: st.used, max: st.capacity };
+  }
+  return null;
+}
 export async function putAsset(ownerId: string, slot: string, bytes: Uint8Array) {
   const chk: any = alCheckFile(slot, bytes);
   if (!chk.ok) return { ok: false as const, error: chk.error, max: chk.max };
@@ -18,15 +41,14 @@ export async function putAsset(ownerId: string, slot: string, bytes: Uint8Array)
 }
 /** حفظ ملف فحصه الخادم أو أنتجه FFmpeg (النوع معروف) */
 export async function putAssetRaw(ownerId: string, slot: string, bytes: Uint8Array, mime: string, meta: any, extra = 0) {
-  const used = await usedBytes(ownerId);
-  if (used + bytes.length + extra > AL_LIMITS.quota) return { ok: false as const, error: "quota", used, max: AL_LIMITS.quota };
+  const g = await guard(bytes.length + extra); if (g) return g;
   return storeRaw(ownerId, slot, bytes, mime, meta);
 }
 export async function storeRaw(ownerId: string, slot: string, bytes: Uint8Array, mime: string, meta: any) {
   const sha256 = createHash("sha256").update(bytes).digest("hex");
   // نفس الملف لنفس المستخدم لا يُخزَّن مرتين
   const dup = await prisma.alertAsset.findFirst({ where: { ownerId, sha256, slot }, select: { id: true, mime: true, size: true } });
-  if (dup) return { ok: true as const, id: dup.id, mime: dup.mime, size: dup.size };
+  if (dup) return { ok: true as const, id: dup.id, mime: dup.mime, size: dup.size, dup: true };
   const a = await prisma.alertAsset.create({ data: { ownerId, slot, mime, size: bytes.length, sha256, meta: meta || {}, data: Buffer.from(bytes) }, select: { id: true, mime: true, size: true } });
   return { ok: true as const, ...a };
 }
@@ -44,15 +66,14 @@ export async function removeOrphans(ownerId: string, ids: (string | null | undef
 export const CHUNK = 1024 * 1024;
 async function sha256File(path: string) { const h = createHash("sha256"); for await (const b of createReadStream(path, { highWaterMark: CHUNK })) h.update(b as Buffer); return h.digest("hex"); }
 export async function putAssetFile(ownerId: string, slot: string, path: string, size: number, mime: string, meta: any, extra = 0) {
-  const used = await usedBytes(ownerId);
-  if (used + size + extra > AL_LIMITS.quota) return { ok: false as const, error: "quota", used, max: AL_LIMITS.quota };
+  const g = await guard(size + extra); if (g) return g;
   return storeFile(ownerId, slot, path, size, mime, meta);
 }
 /** الحفظ نفسه (بدون فحص الحصة — يفحصها المستدعي) */
 export async function storeFile(ownerId: string, slot: string, path: string, size: number, mime: string, meta: any) {
   const sha256 = await sha256File(path);
   const dup = await prisma.alertAsset.findFirst({ where: { ownerId, sha256, slot }, select: { id: true, mime: true, size: true } });
-  if (dup) return { ok: true as const, ...dup };
+  if (dup) return { ok: true as const, ...dup, dup: true };
   const a = await prisma.alertAsset.create({ data: { ownerId, slot, mime, size, sha256, meta: meta || {}, chunks: 0 }, select: { id: true, mime: true, size: true } });
   try {
     let idx = 0;

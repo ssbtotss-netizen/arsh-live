@@ -503,3 +503,15 @@ body.ov .stage{background:transparent!important}
 .g-stars{position:absolute;inset:0;pointer-events:none;overflow:visible}.g-stars i{position:absolute;font-style:normal;color:#fff6c2;text-shadow:0 0 8px #ffd700;font-size:calc(var(--cfs,20px)*.8);animation:gStar 1.2s ease-out forwards;opacity:0}
 @keyframes gStar{0%{opacity:0;transform:scale(.2)}30%{opacity:1;transform:scale(1.2)}100%{opacity:0;transform:translateY(-40px) scale(.6) rotate(90deg)}}
 @media (prefers-reduced-motion:reduce){.wd.dgoal.gshine::after,.g-stars{display:none}}
+
+/* شريط الدعم: Marquee بالـ JS (لا CSS animation) — الألوان والخلفية من الإعدادات */
+.so-socialBar .trk.tk-js{animation:none!important;position:absolute;left:0;top:0;display:flex;gap:0;width:max-content;height:100%;direction:ltr;will-change:transform}
+.tk-on .scs{background:var(--tkbg,transparent);overflow:hidden}
+.tk-u{display:flex;align-items:center;gap:var(--tkgap,1em);padding-inline-end:var(--tkgap,1em);height:100%;flex:0 0 auto}
+.tk-it{display:inline-flex;align-items:center;gap:.35em;white-space:nowrap;font-weight:800;font-size:calc(var(--sh,24px) * .55);line-height:1;direction:rtl}
+.tk-n{color:var(--tkn,inherit);unicode-bidi:plaintext}.tk-a{color:var(--tka,inherit);unicode-bidi:isolate}.tk-x{color:var(--tkx,inherit)}
+.tk-text .tk-it{color:#fff;text-shadow:0 2px 3px #000b}.tk-text .tk-a{color:var(--tka,#22e07a)}.tk-text .tk-n{color:var(--tkn,#ffffff)}
+.tk-m{display:inline;unicode-bidi:isolate;white-space:nowrap;word-spacing:normal;letter-spacing:normal}.tk-m:not(.tk-pre) .tk-c{margin-inline-start:.22em}.tk-c{color:var(--tkc,var(--tka,inherit))}
+.tk-div{flex:0 0 auto;color:var(--tkd,#f6c94a);font-size:calc(var(--sh,24px) * .45);opacity:.9;text-shadow:0 0 6px currentColor}
+.tk-text .tk-c{color:var(--tkc,var(--tka,#22e07a))}
+.wd .emo.emo-tx{font-style:normal;font-weight:900;color:var(--dnic,#22e07a)!important;text-shadow:0 0 .35em color-mix(in srgb,var(--dnic,#22e07a) 70%,transparent);font-family:inherit;line-height:1}

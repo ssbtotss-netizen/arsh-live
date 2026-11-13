@@ -74,7 +74,7 @@ const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.C
 const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
 let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),()=>toast("تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
-function saveRoomNow(){ ls("arsh.room",{D:R.D,H:R.H,C:R.C,logs:R.logs,DN:R.DN,CHAT:R.CHAT}) }
+function saveRoomNow(){ if(location.hash.startsWith("#/overlay")) return; /* رابط OBS يقرأ فقط — لا يكتب نسخة قديمة فوق حالة اللوحة */ ls("arsh.room",{D:R.D,H:R.H,C:R.C,logs:R.logs,DN:R.DN,CHAT:R.CHAT}) }
 let saveRT; function saveRoom(){clearTimeout(saveRT);saveRT=setTimeout(saveRoomNow,300)}
 addEventListener("pagehide",()=>{ if(!CFG) ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); saveRoomNow()});
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1600)}
@@ -491,7 +491,20 @@ function donSave(){ save(); pushLayout(); allViews().forEach(v=>{ if(TYPES[v.w.t
 function donPropsHTML(w,sel,rng){ const DC=S.donCfg; let h="";
  if(w.type==="donGoal") h+=sel("goalId","الهدف المعروض",DC.goals.map(g=>[g.id,g.name]),w.goalId||DC.goals[0]?.id);
  if(w.type==="donTop"||w.type==="donBoard"||(w.type==="donTicker"&&w.order==="top")) h+=sel("period","الفترة",PERIODS,w.period);
- if(w.type==="donTicker") h+=`<div class="grid g2" style="gap:8px">${sel("order","الترتيب",[["recent","الأحدث"],["top","الأعلى مبلغاً"]],w.order)}${sel("topN","عدد الداعمين",[[5,"آخر 5"],[10,"آخر 10"],[20,"آخر 20"]],w.topN)}</div><div class="grid g2" style="gap:8px">${sel("dir","الاتجاه",[["rtl","من اليمين لليسار"],["ltr","من اليسار لليمين"]],w.dir)}</div>${rng("speed","سرعة الحركة",20,400,10,w.speed,v=>v+" px/ث")}`;
+ if(["donLatest","donTicker","donAlert"].includes(w.type)){ const ic=w.dnIcon||"";
+  h+=`<div class="ttl" style="margin:8px 0 4px">💚 الأيقونة بجانب الاسم</div><div class="row" style="gap:4px;flex-wrap:wrap;margin-bottom:6px">${[["","تلقائي حسب المبلغ"],["none","⛔ بدون أيقونة"],["💚","💚"],["❤️","❤️"],["$","$"],["💵","💵"],["💰","💰"],["💎","💎"],["👑","👑"],["⭐","⭐"],["🔥","🔥"],["🎁","🎁"],["custom","✏️ مخصص"]].map(([v,l])=>`<button class="btn sm ${ic===v?"pri":""}" data-dnicon="${esc(v)}" data-wid="${w.id}">${l}</button>`).join("")}</div>
+  ${ic==="custom"?`<div class="fld"><label>أيقونة مخصصة (رمز أو إيموجي، حتى 4 أحرف)</label><input class="inp" maxlength="4" data-wf="dnIconTx" data-wid="${w.id}" value="${esc(w.dnIconTx||"")}" placeholder="مثال: ﷼ أو ★"></div>`:""}
+  ${ic!=="none"?`<div class="fld"><label>لون الأيقونة النصية ($ ★ …)</label><input type="color" data-wf="dnIconC" data-wid="${w.id}" value="${w.dnIconC||"#22e07a"}"></div>`:""}` }
+ if(w.type==="donTicker"){ const col=(f,l,d)=>`<div class="fld"><label>${l}</label><input type="color" data-wf="${f}" data-wid="${w.id}" value="${w[f]||d}"></div>`;
+  h+=`<div class="grid g2" style="gap:8px">${sel("order","الترتيب",[["recent","الأحدث"],["top","الأعلى مبلغاً"]],w.order)}${sel("topN","عدد الداعمين",[[1,"آخر داعم"],[5,"آخر 5"],[10,"آخر 10"],[20,"آخر 20"],[50,"آخر 50"]],w.topN)}</div>
+  <div class="grid g2" style="gap:8px">${sel("tkAnim","الحركة",[["1","مستمرة"],["0","متوقفة"]],w.tkAnim===false?"0":"1")}${sel("tkDir","اتجاه الحركة",[["lr","من اليسار ← إلى اليمين"],["rl","من اليمين ← إلى اليسار"]],w.tkDir||"lr")}${sel("tkStyle","الشكل",[["chips","بطاقات التصميم"],["text","نص على الشريط"]],w.tkStyle||"chips")}${sel("tkCycleMode","التحكم بالسرعة",[["speed","سرعة ثابتة (px/ث)"],["cycle","مدة الدورة (ث)"]],+w.tkCycle>0?"cycle":"speed")}</div>
+  ${+w.tkCycle>0?rng("tkCycle","مدة عرض الدورة الواحدة",3,120,1,+w.tkCycle,v=>v+" ث"):rng("speed","سرعة الشريط",20,400,10,w.speed,v=>v+" px/ث")}
+  ${rng("tkFs","حجم الخط",.5,2,.05,+w.tkFs||1,v=>Math.round(v*100)+"%")}${rng("tkGap","المسافة بين الداعمين",.2,4,.1,w.tkGap??1,v=>v+"em")}
+  <div class="grid g3" style="gap:8px">${col("tkNameC","لون الأسماء","#ffffff")}${col("tkAmtC","لون المبالغ","#22e07a")}${col("tkCurC","لون العملة","#22e07a")}${col("tkTxtC","لون النصوص","#ffffff")}${col("tkDivC","لون الفاصل","#f6c94a")}${col("tkBg","خلفية الشريط","#0b0f17")}</div>
+  <div class="grid g2" style="gap:8px">${sel("tkDiv","الفاصل بين الداعمين",[["✦","✦"],["•","•"],["|","|"],["💚","💚"],["⭐","⭐"],["","بدون فاصل"]],w.tkDiv??"✦")}</div>
+  ${rng("tkBgA","شفافية الخلفية",0,1,.05,w.tkBg?(w.tkBgA??.6):0,v=>Math.round(v*100)+"%")}
+  <div class="row" style="gap:6px;margin-bottom:8px"><button class="btn sm" data-tkclr="${w.id}">↺ ألوان التصميم الأصلية</button></div>
+  <p class="mut small">يعرض كل الداعمين الحقيقيين بعملاتهم (بدون التجارب). الحركة متواصلة بدون فراغ، وتحديث الأسماء لا يعيدها من البداية.${w.order==="top"?" «الأعلى مبلغاً» يقارن بعملة واحدة: "+esc(w.currency||DC.currency):""}</p>` }
  if(w.type!=="donGoal"&&w.type!=="donAlert") h+=`<div class="grid g2" style="gap:8px">${sel("currency","العملة",[["","الافتراضية ("+DC.currency+")"],...CUR_OPTS],w.currency)}${sel("hideAnon","المجهولون",[["0","إظهار"],["1","إخفاء"]],w.hideAnon?"1":"0")}</div>`;
  if(w.type==="donLatest"||w.type==="donAlert") h+=`<div class="grid g2" style="gap:8px">${sel("enter","حركة الدخول",ENTER_OPTS,w.enter)}${sel("exit","حركة الخروج",ENTER_OPTS,w.exit)}</div>${w.type==="donLatest"?sel("showMessage","رسالة الداعم",[["1","ظاهرة"],["0","مخفية"]],w.showMessage?"1":"0"):""}`;
  return h }
@@ -953,6 +966,9 @@ function onClick(e){
  if(musicClick(t,d)) return;
  if(dtClick(t,d)) return;
  if(dcClick(t,d)) return;
+ if(alBulkClick(t,d)) return;
+ if(d.dnicon!==undefined&&d.wid){ const w=findW(d.wid); if(w){ w.dnIcon=d.dnicon; save(); pushLayout(); refreshView(w); renderPage(true) } return }
+ if(d.tkclr){ const w=findW(d.tkclr); if(w){ for(const k of ["tkNameC","tkAmtC","tkTxtC","tkCurC","tkDivC","tkBg","tkBgA"]) delete w[k]; save(); pushLayout(); refreshView(w); renderPage(true) } return }
  if(donClick(t,d)) return;
  if(d.libtab){ S.libTab=d.libtab; S.libTarget=null; if(!d.go) return renderPage() }
  if(d.go) return go(d.go);
@@ -1054,6 +1070,7 @@ function onInput(e){
  if(psInput(t,d,e)) return;
  if(dtInput(t,d,e)) return;
  if(dcCopyScene(t,d,e)) return;
+ if(alBulkInput(t,d,e)) return;
  if(socInput(t,d,e)) return;
  if(botsInput(t,d,e)) return;
  if(donInput(t,d,e)) return;
@@ -1090,6 +1107,9 @@ function onInput(e){
  if(d.wf){ const w=findW(d.wid); if(!w) return; const f=d.wf; let v=t.type==="checkbox"?t.checked:t.value;
   if(["w","h","fontScale","avatarScale","gap","opacity","topN","target","base","goal","goalStep","goalStart","glow","textScale","dur","avScale","ptN","shineEvery","rot","fs","titleScale","nameScale","amtScale","symScale","gapEm","glowStr","fxN","firstScale","rotSec","numScale","rowOpacity","interval","speed","maxRules","iconScale","animSpeed","enterMs","exitMs","delayMs","speed","cols","logoScale","showSec","gapSec"].includes(f)) v=+v;
   if(["showTitle","showAmb","effects","showSub","sound","repeat","showLogo","showPlatform","showUser","hideAnon","showMessage","useAccStyle","lowPerf","showPct","showHead","showAvatar","showName","showLogo","showNew","showUnit","goalOn","goalAuto","goalRemain","showMsg","showEmblem","showAv","fxHalo","fxKind","showBy","medals","showIcon","showRank","crown1","fx1","shine","showDeco","shadow","glowOn","showLast","showTop","showCount","showWhat","showTime","showImg","animOn","msgRandom","reduceFx"].includes(f)&&t.type!=="checkbox") v=v==="1";
+  if(f==="tkCycleMode"){ w.tkCycle=v==="cycle"?(+w.tkCycle>0?w.tkCycle:20):0; save(); pushLayout(); refreshView(w); return renderPage(true) }
+  if(/^tk[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(f==="tkAnim") v=v==="1" }
+  if(f==="tkBgA"&&!w.tkBg) w.tkBg="#0b0f17";
   if(/^(lc|l5)[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")) v=v==="1" }
   if(f==="idle"){ v=[v,...((findW(d.wid)||{}).idle||[]).slice(1)].filter(Boolean) }
   if(t.type==="range"&&e.type==="change") return;
@@ -1317,6 +1337,61 @@ function dcClick(t,d){
  return false }
 function dcCopyScene(t,d,e){ if(!d.lccopy||e.type!=="change"||!t.value) return false; const w=findW(d.lccopy), dst=S.layouts.find(l=>l.id===t.value); if(!w||!dst) return true;
  const c=JSON.parse(JSON.stringify(w)); c.id="w_"+uid(); c.z=Math.max(0,...dst.widgets.map(x=>x.z||0))+1; dst.widgets.push(c); t.value=""; save(); pushLayout(); toast("📋 نُسخت الطبقة بإعداداتها إلى «"+dst.name+"»"); return true }
+// ====== رفع عدة مقاطع دفعة واحدة: تقدم وحالة لكل ملف، إعادة محاولة للفاشل فقط، كشف المكرر، بدون حصة ثابتة للحساب ======
+function alBulk(){ const A=ALS(); return A.bulk||(A.bulk={items:[],event:"donation",style:"",running:0,stats:null,statsAt:0}) }
+const AL_BK_ST={wait:["⏳","بالانتظار"],check:["🔎","فحص الملف"],upload:["⬆️","جاري الرفع"],process:["⚙️","معالجة"],save:["💾","حفظ في مكتبتك"],done:["✅","جاهز"],dup:["♻️","موجود مسبقاً في مكتبتك — لم يُكرَّر"],retry:["🔁","انقطع الاتصال — إعادة محاولة تلقائية"],error:["❌","فشل"]};
+async function alBulkStats(force){ const B=alBulk(); if(!CFG||(!force&&Date.now()-B.statsAt<20000)) return; B.statsAt=Date.now(); try{ const r=await fetch("/api/alerts/upload"); if(r.ok){ B.stats=await r.json(); alBulkPaint() } }catch(e){} }
+function alBulkHTML(){ alBulkStats(); return `<div class="card" style="margin-bottom:12px" id="al-bulk">${alBulkInner()}</div>` }
+function alBulkInner(){ const B=alBulk(), st=B.stats, n=B.items.length, ok=B.items.filter(x=>x.st==="done"||x.st==="dup").length, bad=B.items.filter(x=>x.st==="error"&&!x.fatal).length;
+ const evs=[["donation","💵 الدونيشن"],["gift","🎁 الهدايا"],["love","❤️ أحبني"],["like_user","👆 التكبيس"],["follow","👤 متابعة"],["manual","يدوي"]];
+ return `<h3>📦 رفع عدة مقاطع دفعة واحدة ${n?`<span class="tag">${ok}/${n}</span>`:""}</h3>
+  <p class="mut small">اختر 10 أو 20 أو 50 ملفاً مرة واحدة (فيديو أو صوت أو صور متحركة). كل ملف يُحفظ مقطعاً خاصاً في مكتبتك باسم الملف، وتقدر تعدّل اسمه وتصنيفه لاحقاً. ${st?`<b class="al-bk-stats">مساحتك المستخدمة: ${alFmtSize(st.used||0)} · ${st.files||0} ملف — بدون حد ثابت للحساب.</b>${st.platform&&!st.platform.ok?` <span style="color:var(--bad)">⚠️ تخزين المنصة يحتاج توسعة الآن — أُبلغت الإدارة.</span>`:""}`:""}</p>
+  <div class="grid g2" style="gap:8px"><div class="fld"><label>القسم (الحدث)</label><select class="inp" data-albk="event">${evs.map(([k,l])=>`<option value="${k}" ${B.event===k?"selected":""}>${l}</option>`).join("")}</select></div>
+   <div class="fld"><label>التصنيف</label><select class="inp" data-albk="style"><option value="">تلقائي من اسم الملف</option>${Object.entries(AL_STYLES).map(([k,v])=>`<option value="${k}" ${B.style===k?"selected":""}>${esc(String(v))}</option>`).join("")}</select></div></div>
+  <button type="button" class="al-drop" id="al-bulk-drop" data-albkpick style="min-height:84px"><div class="al-drop-t"><b>⬇️ اسحب عدة ملفات هنا</b><span>أو اضغط لاختيار ملفات متعددة (حتى ${alFmtSize(AL_LIMITS.media)} للملف)</span></div></button>
+  <input type="file" id="al-bulk-file" multiple accept="${AL_ACCEPT}" style="display:none" data-albkfiles>
+  ${n?`<div class="row" style="gap:6px;margin:8px 0;flex-wrap:wrap">${bad?`<button class="btn sm pri" data-albkretry="all">🔁 إعادة محاولة الفاشل فقط (${bad})</button>`:""}${ok&&!B.running?`<button class="btn sm" data-albkclear>🧹 إخفاء المكتمل</button>`:""}${ok?`<button class="btn sm" data-tab="mylib">🎛️ استخدمها في مكتبتي</button>`:""}</div>
+  <div class="al-bk-list" style="display:flex;flex-direction:column;gap:6px;max-height:60vh;overflow:auto">${B.items.map((x,i)=>{ const [ic,lb]=AL_BK_ST[x.st]||["",""];
+   return `<div class="al-bk-it ${x.st}" data-bki="${i}" style="border:1px solid var(--line);border-radius:10px;padding:8px"><div class="row" style="justify-content:space-between;gap:6px"><b class="small">${ic} ${esc(x.name)}</b><span class="small mut">${alFmtSize(x.size)}</span></div>
+    <div class="small al-bk-st ${x.st==="error"?"":"mut"}" style="${x.st==="error"?"color:var(--bad)":""}">${lb}${x.st==="upload"?" "+(x.pct||0)+"%":""}${x.msg?" — "+esc(x.msg):""}</div>
+    ${["upload","process","save","check"].includes(x.st)?`<div class="al-bar"><i style="width:${x.st==="upload"?(x.pct||0):100}%" class="${x.st!=="upload"?"busy":""}"></i></div>`:""}
+    ${x.st==="done"&&x.url?(x.kind==="audio"?`<audio controls preload="none" src="${esc(x.url)}" style="width:260px;max-width:100%;height:30px;margin-top:4px"></audio>`:x.kind==="video"?`<video controls muted preload="metadata" src="${esc(x.url)}" style="width:160px;height:90px;object-fit:contain;margin-top:4px;border-radius:8px;background:#000"></video>`:`<img src="${esc(x.url)}" style="height:70px;margin-top:4px;border-radius:6px" alt="">`):""}
+    ${x.st==="error"&&!x.fatal?`<button class="btn sm" data-albkretry="${i}" style="margin-top:4px">🔁 إعادة محاولة هذا الملف</button>`:""}</div>` }).join("")}</div>`:""}` }
+function alBulkPaint(){ const el=document.getElementById("al-bulk"); if(el) el.innerHTML=alBulkInner() }
+function alBulkAdd(files){ const B=alBulk(); const seen=new Set(B.items.filter(x=>x.st!=="error").map(x=>x.name+"|"+x.size));
+ let added=0; for(const f of files){ const k=f.name+"|"+f.size; if(seen.has(k)) continue; seen.add(k); B.items.push({file:f,name:f.name,size:f.size,st:"wait",pct:0,tries:0}); added++ }
+ if(files.length&&!added) toast("♻️ هذه الملفات موجودة في القائمة"); alBulkPaint(); alBulkRun() }
+function alBulkRun(){ const B=alBulk(), MAX=2; while(B.running<MAX){ const it=B.items.find(x=>x.st==="wait"); if(!it) break; B.running++; alBulkOne(it).finally(()=>{ B.running--; alBulkPaint(); if(!B.items.some(x=>["wait","upload","process","save","check","retry"].includes(x.st))) alBulkDone(); else alBulkRun() }) } }
+function alBulkDone(){ const B=alBulk(), A=ALS(); A.usableAt=0; A.key=""; alBulkStats(true); const ok=B.items.filter(x=>x.st==="done").length, bad=B.items.filter(x=>x.st==="error").length; if(ok||bad) toast(`📦 اكتمل الرفع: ${ok} جاهز${bad?` · ${bad} فشل (اضغط إعادة المحاولة)`:""}`) }
+async function alBulkOne(it){ const B=alBulk(), A=ALS(), set=p=>{ Object.assign(it,p); alBulkPaint() };
+ try{
+  set({st:"check",msg:""});
+  if(it.size>AL_LIMITS.media) return set({st:"error",msg:`${AL_ERR.too_large} (${alFmtSize(it.size)} — الحد ${alFmtSize(AL_LIMITS.media)})`,fatal:true});
+  const buf=new Uint8Array(await it.file.slice(0,4*1024*1024).arrayBuffer()); const chk=alCheckFile("media",buf);
+  if(!chk.ok&&chk.error!=="too_large") return set({st:"error",msg:AL_ERR[chk.error]||chk.error,fatal:true});
+  if(!CFG) return set({st:"error",msg:"الرفع الجماعي يعمل على المنصة بعد تسجيل الدخول",fatal:true});
+  let j=null;
+  for(;;){ set({st:"upload",pct:0});
+   j=await alXhr(it.file,"media",(p,done)=>{ if(done) return set({st:"process"}); it.pct=p; const el=document.querySelector(`[data-bki="${B.items.indexOf(it)}"]`); if(el){ const i=el.querySelector(".al-bar i"); if(i) i.style.width=p+"%"; const t=el.querySelector(".al-bk-st"); if(t) t.textContent=AL_BK_ST.upload[1]+" "+p+"%" } });
+   if(j.error&&["network","gateway","rate_limited","server_error"].includes(j.error)&&it.tries<3){ it.tries++; set({st:"retry",msg:`محاولة ${it.tries}/3`}); await new Promise(r=>setTimeout(r,[2000,5000,10000][it.tries-1])); continue }
+   break }
+  if(j.error) return set({st:"error",msg:(j.message||AL_ERR[j.error]||j.error)+(j.detail?" — "+j.detail:"")});
+  const kind=j.slot==="audio"?"audio":j.kind;
+  if(j.dup&&alUsable().some(a=>a.mine!==false&&(a.mediaId===j.id||a.audioId===j.id))) return set({st:"dup",url:j.url,kind});
+  set({st:"save"}); const meta=j.meta||{}, nm=it.name.replace(/\.[^.]+$/,"").replace(/[_-]+/g," ").trim().slice(0,60)||"مقطع";
+  const body={name:nm,description:"",kind,event:B.event,durationSec:Math.max(1,Math.ceil((meta.duration||6)-.05)),category:B.style||alSuggestStyle(it.name)||"minimal",tags:"",visibility:"private",rightsConfirmed:false,
+   mediaId:kind==="audio"?null:j.id,audioId:kind==="audio"?j.id:null,coverId:j.coverId||null,previewId:j.previewId||null,meta,config:{}};
+  const r=await alApi("/api/alerts",{method:"POST",body}); if(r.error) return set({st:"error",msg:r.message||(r.errors||[]).join("، ")||r.error});
+  A.cache[r.alert.id]=r.alert; set({st:"done",url:kind==="audio"?j.url:(j.previewUrl||j.url),kind:kind==="audio"?"audio":(kind==="video"?"video":"image"),alertId:r.alert.id})
+ }catch(e){ set({st:"error",msg:String(e&&e.message||e).slice(0,120)}) } }
+function alBulkClick(t,d){
+ if(t.closest&&t.closest("[data-albkpick]")){ const i=document.getElementById("al-bulk-file"); if(i) i.click(); return true }
+ if(d.albkretry){ const B=alBulk(); const list=d.albkretry==="all"?B.items.filter(x=>x.st==="error"&&!x.fatal):[B.items[+d.albkretry]].filter(Boolean); for(const x of list){ x.st="wait"; x.tries=0; x.msg="" } alBulkPaint(); alBulkRun(); return true }
+ if(t.hasAttribute&&t.hasAttribute("data-albkclear")){ const B=alBulk(); B.items=B.items.filter(x=>x.st!=="done"&&x.st!=="dup"); alBulkPaint(); return true }
+ return false }
+function alBulkInput(t,d,e){ if(t.hasAttribute&&t.hasAttribute("data-albkfiles")){ if(e.type==="change"&&t.files&&t.files.length){ alBulkAdd([...t.files]); t.value="" } return true }
+ if(d.albk){ if(e.type==="change") alBulk()[d.albk]=t.value; return true } return false }
+function alBulkWire(){ const dz=document.getElementById("al-bulk-drop"); if(!dz||dz.__w) return; dz.__w=1; dz.addEventListener("dragover",e=>{ e.preventDefault(); dz.classList.add("over") }); dz.addEventListener("dragleave",()=>dz.classList.remove("over")); dz.addEventListener("drop",e=>{ e.preventDefault(); dz.classList.remove("over"); const fs=[...(e.dataTransfer&&e.dataTransfer.files||[])]; if(fs.length) alBulkAdd(fs) }) }
 // ====== رابط البايو: المنشئ + المعاينة ======
 S.bio=Object.assign(bioDefaults(),(CFG&&CFG.bio)||ls("b6o6.bio")||{});
 function bioSave(re){ ls("b6o6.bio",S.bio); if(CFG) fetch("/api/me",{method:"PUT",headers:{"content-type":"application/json"},body:JSON.stringify({bio:S.bio})}).then(r=>r.json()).then(j=>{ if(j&&j.error) toast(j.error) }).catch(()=>{}); if(re) renderPage(true); else bioPreview() }
@@ -2591,7 +2666,7 @@ function alHTML(){ alHoverStop(); const A=ALS(), adm=!!(CFG&&CFG.profile&&CFG.pr
  const tabs=[["mylib","🎛️ مكتبتي"],["lib","🌍 مكتبة المجتمع"],["create",A.form&&A.form.id?"✏️ تعديل مقطع":"⬆️ رفع مقطع"],...(adm?[["admin","🛡️ المراجعة"]]:[])];
  return head("🔔 إشعارات الدعم",`مقطع لكل نوع دعم يصلك في البث: ❤️ أحبني · 👆 التكبيس · 💵 الدونيشن · 🎁 الهدايا — كل قسم مستقل تماماً`)+
  `<div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:12px">${tabs.map(([k,n])=>`<button class="btn ${A.tab===k?"pri":""}" data-altab="${k}">${n}</button>`).join("")}</div>`+
- (A.tab==="mylib"?mlHTML():A.tab==="create"?(A.formTarget?`<div class="note" style="margin-bottom:8px">⬆️ بعد الحفظ يُضاف المقطع مباشرة إلى: <b>${esc(AL_LIB_SECS[A.formTarget.sec].label)} ← ${esc((mlLevels(A.formTarget.sec).find(x=>x[0]===A.formTarget.key)||[,,""])[2])}</b></div>`:"")+alFormHTML():A.tab==="admin"&&adm?alAdminHTML():alLibHTML()) }
+ (A.tab==="mylib"?mlHTML():A.tab==="create"?(A.formTarget?`<div class="note" style="margin-bottom:8px">⬆️ بعد الحفظ يُضاف المقطع مباشرة إلى: <b>${esc(AL_LIB_SECS[A.formTarget.sec].label)} ← ${esc((mlLevels(A.formTarget.sec).find(x=>x[0]===A.formTarget.key)||[,,""])[2])}</b></div>`:"")+(A.form&&A.form.id?"":alBulkHTML())+alFormHTML():A.tab==="admin"&&adm?alAdminHTML():alLibHTML()) }
 
 /* ---------------- صندوق الآيرتات والقواعد ---------------- */
 function alRulesHTML(){ const C=alCfgS(), w=alBoxW(); alLoadUsable(); const us=alUsable(), off=alOfficial();
@@ -2634,6 +2709,7 @@ function alPreviewMount(id){ const box=document.getElementById(id); if(!box) ret
  const cv={w:Math.max(320,box.clientWidth),h:box.clientHeight||300}; const stg=document.createElement("div"); stg.className="stage"; stg.style.cssText=`width:${cv.w}px;height:${cv.h}px;background:none;position:absolute;left:0;top:0`; box.appendChild(stg);
  const v=new View(newWidget("abox",{id:"pv_ab",x:.02,y:.03,w:.96,h:.94}),cv,{data:SRC,mute:true}); stg.appendChild(v.el); return v }
 function alAfter(){ const A=ALS(); alSyncDefs(); alHoverWire();
+ alBulkWire();
  const dz=document.getElementById("al-drop"); if(dz&&!dz.__w){ dz.__w=1; dz.addEventListener("dragover",e=>{ e.preventDefault(); dz.classList.add("over") }); dz.addEventListener("dragleave",()=>dz.classList.remove("over")); dz.addEventListener("drop",e=>{ e.preventDefault(); dz.classList.remove("over"); const f=e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files[0]; if(f) alPickFile(f) }) } if(A.tab==="mylib"){ alPv=alPreviewMount("al-pv"); if(alPv) liveViews.add(alPv) } if(A.tab==="create") alFormPreview(false); if(CFG&&A.tab==="lib"&&A.sec==="mine"&&!A.quota) alApi("/api/alerts/upload").then(j=>{ if(!j.error){ A.quota=j; softRefresh() } }) }
 /** معاينة آيرت واحد في نافذة منبثقة */
 /* ---------------- رفع/تعديل آيرت ---------------- */

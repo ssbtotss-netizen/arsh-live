@@ -54,7 +54,7 @@ export async function POST(req: Request) {
   const b = await req.json().catch(() => ({}));
   const val = alValidate(b); if (!val.ok) return NextResponse.json({ error: "invalid", errors: val.errors }, { status: 400 });
   const x: any = val.value;
-  if ((await prisma.alert.count({ where: { ownerId: user.id } })) >= 300) return NextResponse.json({ error: "limit", message: "وصلت للحد الأعلى (300 آيرت)" }, { status: 400 });
+  if ((await prisma.alert.count({ where: { ownerId: user.id } })) >= 5000) return NextResponse.json({ error: "limit", message: "وصلت للحد الأعلى (5000 آيرت) — للحماية من الإغراق" }, { status: 400 });
   // الملفات يجب أن تكون ملك المستخدم نفسه — لا يمكن ربط ملف شخص آخر
   for (const k of ["mediaId", "audioId", "coverId", "previewId"]) if (x[k]) { const a = await prisma.alertAsset.findUnique({ where: { id: x[k] }, select: { ownerId: true, slot: true } }); if (!a || a.ownerId !== user.id) return NextResponse.json({ error: "bad_file", field: k }, { status: 400 }); }
   // خصائص الوسائط تُؤخذ من الملف المحفوظ في الخادم (لا من المتصفح)

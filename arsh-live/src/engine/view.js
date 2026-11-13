@@ -26,6 +26,10 @@ function chime(){ try{ actx=actx||new (window.AudioContext||window.webkitAudioCo
  [880,1320,1760].forEach((f,i)=>{ const o=actx.createOscillator(), g=actx.createGain(); o.type="sine"; o.frequency.value=f; g.gain.setValueAtTime(0,t+i*.09); g.gain.linearRampToValueAtTime(.18,t+i*.09+.02); g.gain.exponentialRampToValueAtTime(.001,t+i*.09+.5); o.connect(g).connect(actx.destination); o.start(t+i*.09); o.stop(t+i*.09+.55) }) }catch(e){} }
 
 const CHIP_TYPES=new Set(["donTicker","donLatest","donAlert"]);
+/** المبلغ والعملة في عنصرين (لون مستقل للعملة) — الرموز اللاتينية قبل الرقم ($50) والعربية بعده (200 ر.س) */
+function tkMoney(a,cu){ const t=fmtMoney(a,cu), i=t.lastIndexOf(" "); const num=i>0?t.slice(0,i):t, sym=i>0?t.slice(i+1):"";
+ const before=/^[$€£]$/.test(sym); const S=sym?`<span class="tk-c">${esc(sym)}</span>`:"", N=`<span class="tk-a">${esc(num)}</span>`;
+ return `<span class="tk-m${before?" tk-pre":""}" dir="ltr">${before?S+N:N+S}</span>` }
 let cssDone=false;
 /** يحقن CSS التصاميم الخمسين مرة واحدة في الصفحة */
 function ensureCSS(){ if(cssDone||typeof document==="undefined") return; cssDone=true; const st=document.createElement("style"); st.id="b6o6-social-designs"; st.textContent=socialDesignCSS(); document.head.appendChild(st) }
@@ -63,7 +67,7 @@ export class View{
   if(T.dc){ this.applyDc(w,W,Hh); return }
   if(T.d5){ this.applyD5(w,W,Hh); return }
   if(ckLike){ this.layoutClock(d.shape,W,Hh,pad,w); if(w.type==="donGoal"){ const c=parseFloat(S.getPropertyValue("--cfs")); S.setProperty("--cfs",c*(d.shape==="ring"?.5:.6)+"px"); if(d.shape==="digital") S.setProperty("--sub",Math.max(parseFloat(S.getPropertyValue("--sub"))||0,Hh*.14)+"px") } }
-  else if(chipLike&&!T.soc){ this.dsg=d; set("--sh",Math.max(10,w.type==="donTicker"?Hh-pad*2:Hh)); S.setProperty("--ls","1"); }
+  else if(chipLike&&!T.soc){ this.dsg=d; set("--sh",Math.max(10,w.type==="donTicker"?(Hh-pad*2)*(+w.tkFs||1):Hh)); S.setProperty("--ls","1"); }
   else if(T.soc){ this.dsg=d; const n=Math.max(1,this.socCount||1), cols=Math.max(1,w.cols||1);
    const sh=w.type==="socialPanel"?(Hh-pad*2-gap*(Math.ceil(n/cols)-1))/Math.ceil(n/cols):w.type==="socialBar"?Hh-pad*2:Hh;
    set("--sh",Math.max(10,sh)); S.setProperty("--ls",String(w.logoScale||1)); S.setProperty("--ems",(w.enterMs||700)+"ms") }
@@ -190,28 +194,58 @@ export class View{
   if(p.reached&&this.goalReached===false&&!silent&&g.celebrate!==false) this.burst({user:{name:"🎉"},gift:"تم تحقيق الهدف",value:p.target,goal:g});
   this.goalReached=p.reached }
  goalStars(){ const box=document.createElement("div"); box.className="g-stars"; let h=""; for(let i=0;i<14;i++) h+=`<i style="left:${Math.random()*100}%;top:${20+Math.random()*60}%;animation-delay:${(Math.random()*.4).toFixed(2)}s">✦</i>`; box.innerHTML=h; this.el.appendChild(box); setTimeout(()=>box.remove(),1600) }
- donChip(d,DC,label,mainText){ const ds=this.dsg||SOCIAL_DESIGNS[0], tr=tierFor(DC,d.amount), w=this.w;
+ donChip(d,DC,label,mainText,split){ const ds=this.dsg||SOCIAL_DESIGNS[0], tr=tierFor(DC,d.amount), w=this.w, ico=w.dnIcon==="custom"?String(w.dnIconTx||"").slice(0,4):(w.dnIcon||"");
   const name=displayName(d,DC), av=(!d.anonymous&&d.avatar)?`<span class="av2"><img src="${esc(d.avatar)}" alt=""></span>`:"";
   ensureCSS(); const dd=designOf(ds.id);
-  return `<div class="sc dn tier-${esc(tr.fx)}" data-don="${esc(d.id)}" style="--pc:#22c55e;--hh:${dd.hh}"><div class="ib sd-${dd.id} ly-${dd.ly==="top"||dd.ly==="medal"||dd.ly==="badge"?"row":dd.ly}"><span class="bgx"><span class="swp"><i></i></span></span><span class="lg"><b class="emo">${esc(tr.emoji)}</b></span><span class="tx">${label?`<i class="pf">${esc(label)}</i>`:""}<b class="un">${esc(mainText||(name+" — "+fmtMoney(d.amount,d.currency)))}</b>${w.showMessage&&d.message?`<i class="tt">${esc(d.message)}</i>`:""}</span>${av}</div></div>` }
+  return `<div class="sc dn tier-${esc(tr.fx)}" data-don="${esc(d.id)}" style="--pc:#22c55e;--hh:${dd.hh}"><div class="ib sd-${dd.id} ly-${dd.ly==="top"||dd.ly==="medal"||dd.ly==="badge"?"row":dd.ly}"><span class="bgx"><span class="swp"><i></i></span></span>${ico==="none"?"":`<span class="lg"><b class="emo${ico&&!/\p{Extended_Pictographic}/u.test(ico)?" emo-tx":""}">${esc(ico||tr.emoji)}</b></span>`}<span class="tx">${label?`<i class="pf">${esc(label)}</i>`:""}<b class="un">${split?`<span class="tk-n">${esc(name)}</span> <span class="tk-x">—</span> ${tkMoney(d.amount,d.currency)}`:esc(mainText||(name+" — "+fmtMoney(d.amount,d.currency)))}</b>${w.showMessage&&d.message?`<i class="tt">${esc(d.message)}</i>`:""}</span>${av}</div></div>` }
  refreshDonChip(src){ const w=this.w, DC=src.DC||defaultDonCfg(), DN=src.DN||{list:[]};
+  if(w.dnIconC) this.el.style.setProperty("--dnic",w.dnIconC); else this.el.style.removeProperty("--dnic");
+  const isig=[w.dnIcon,w.dnIconTx].join("|"); if(this.dnIsig!==undefined&&this.dnIsig!==isig){ this.curKey=undefined; this.socSig=null } this.dnIsig=isig;
   if(w.type==="donTicker"){
-   const cur=w.currency||DC.currency, hide=w.hideAnon||DC.hideAnon;
-   const items=w.order==="top"?donorTotals(DN,DC,{period:w.period,currency:cur,now:Date.now()+(src.skew||0),hideAnon:hide}).slice(0,w.topN).map(r=>({id:r.k,name:r.anon?"":r.name,anonymous:r.anon,amount:r.v,currency:cur,avatar:r.av}))
-     :recentDonations(DN,DC,{currency:cur,hideAnon:hide,limit:w.topN});
-   const sig=JSON.stringify([items,w.design,w.speed,w.dir,w.showMessage]); if(sig===this.socSig) return; this.socSig=sig;
-   const html=items.length?items.map(d=>this.donChip({...d,message:""},DC)).join(""):`<div class="sc"><div class="ib sd-minimalDark ly-row"><span class="bgx"></span><span class="tx"><b class="un">💚 كن أول داعم!</b></span></div></div>`;
-   this.scs.innerHTML=`<div class="trk ${w.dir==="ltr"?"ltr":""}">${html}${html}</div>`; const trk=this.scs.firstChild;
-   requestAnimationFrame(()=>{ const half=trk.scrollWidth/2||1; trk.style.animationDuration=Math.max(4,half/Math.max(10,w.speed))+"s" }); return }
+   /* كل العملات افتراضياً (بدون فلترة صامتة)، و«الأعلى مبلغاً» يحتاج عملة واحدة للمقارنة */
+   const top=w.order==="top", cur=top?(w.currency||DC.currency):(w.currency||""), hide=w.hideAnon||DC.hideAnon;
+   const items=top?donorTotals(DN,DC,{period:w.period,currency:cur,now:Date.now()+(src.skew||0),hideAnon:hide,excludeTests:true}).slice(0,w.topN).map(r=>({id:r.k,name:r.anon?"":r.name,anonymous:r.anon,amount:r.v,currency:cur,avatar:r.av}))
+     :recentDonations({...DN,list:(DN.list||[]).filter(d=>!d.test&&d.provider!=="test")},DC,{currency:cur,hideAnon:hide,limit:w.topN}); /* الشريط للدعم الحقيقي فقط */
+   const sig=JSON.stringify([items.map(d=>[d.id,d.name,d.amount,d.currency,d.anonymous]),w.design,w.tkStyle,w.tkGap,w.tkAnim,w.tkSep,w.tkDiv]); this.tkStyle();
+   if(sig===this.socSig&&this.tk&&this.tk.trk&&this.tk.trk.isConnected) return; this.socSig=sig;
+   const sep=w.tkDiv??"✦", sepH=sep?`<span class="tk-div">${esc(sep)}</span>`:"";
+   const chip=d=>{ const tr=tierFor(DC,d.amount), nm=displayName(d,DC);
+    if(w.tkStyle==="text") return `<span class="tk-it"><span class="tk-x">${esc(tr.emoji)}</span><span class="tk-n">${esc(nm)}</span><span class="tk-x">${esc(w.tkSep??"—")}</span>${tkMoney(d.amount,d.currency)}</span>`;
+    return this.donChip({...d,message:""},DC,"",null,true) };
+   const unit=items.length?items.map(d=>chip(d)+sepH).join(""):`<span class="tk-it"><span class="tk-x">💚</span><span class="tk-n">كن أول داعم!</span></span>${sepH}`;
+   this.tkBuild(unit); return }
   if(w.type==="donLatest"){
    const d=recentDonations(DN,DC,{currency:w.currency||"",hideAnon:w.hideAnon,limit:1})[0];
    const key=d?d.id:null; if(key===this.curKey) return; const first=this.curKey===undefined; this.curKey=key;
    const old=this.cur; this.cur=null; const fx=!this.el.classList.contains("no-fx")&&!this.opts.editor&&!first;
    if(old){ if(fx){ const a=this.play(old.el,w.exit,w.exitMs,0,true); a.onfinish=()=>old.el.remove() } else old.el.remove() }
-   const n=document.createElement("div"); n.innerHTML=d?this.donChip(d,DC,w.title):`<div class="sc ghost"><div class="ib sd-${designOf((this.dsg||{}).id).id} ly-row"><span class="bgx"></span><span class="tx"><i class="pf">${esc(w.title)}</i><b class="un">بانتظار أول داعم…</b></span></div></div>`;
+   const n=document.createElement("div"); n.innerHTML=d?this.donChip(d,DC,w.title,null,true):`<div class="sc ghost"><div class="ib sd-${designOf((this.dsg||{}).id).id} ly-row"><span class="bgx"></span><span class="tx"><i class="pf">${esc(w.title)}</i><b class="un">بانتظار أول داعم…</b></span></div></div>`;
    const c=n.firstChild; this.scs.appendChild(c); this.cur={el:c}; if(fx) this.play(c,w.enter,w.enterMs,old?w.exitMs*.6:0); return }
-  if(w.type==="donAlert"&&this.opts.editor&&!this.scs.firstChild){ const n=document.createElement("div"); n.innerHTML=this.donChip({id:"x",name:"محمد",amount:100,currency:DC.currency,message:"تنبيه تجريبي في المحرر"},DC,"تنبيه دونيشن"); this.scs.appendChild(n.firstChild) }
+  if(w.type==="donAlert"&&this.opts.editor&&!this.scs.firstChild){ const n=document.createElement("div"); n.innerHTML=this.donChip({id:"x",name:"محمد",amount:100,currency:DC.currency,message:"تنبيه تجريبي في المحرر"},DC,"تنبيه دونيشن",null,true); this.scs.appendChild(n.firstChild) }
  }
+ /** شريط الدعم: ألوان/خط/مسافة/خلفية — بدون إعادة بناء المحتوى */
+ tkStyle(){ const w=this.w, st=this.el.style, hexA=(h,a)=>{ const m=/^#?([0-9a-f]{6})$/i.exec(h||""); if(!m) return ""; const n=parseInt(m[1],16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${Math.max(0,Math.min(1,+a))})` };
+  for(const [k,v] of [["tkNameC","--tkn"],["tkAmtC","--tka"],["tkTxtC","--tkx"],["tkCurC","--tkc"],["tkDivC","--tkd"]]) if(w[k]) st.setProperty(v,w[k]); else st.removeProperty(v);
+  st.setProperty("--tkfs",String(+w.tkFs||1)); st.setProperty("--tkgap",(w.tkGap??1)+"em");
+  const bg=w.tkBg?hexA(w.tkBg,w.tkBgA??.6):""; if(bg) st.setProperty("--tkbg",bg); else st.removeProperty("--tkbg");
+  this.el.classList.add("tk-on"); this.el.classList.toggle("tk-text",w.tkStyle==="text") }
+ /** Marquee حقيقي: وحدة واحدة تُقاس، تُكرَّر حتى تغطي العرض + نسخة، والموضع يُحفظ عبر التحديثات (لا قفز ولا فراغ) */
+ tkBuild(unit){ const w=this.w, box=this.scs; if(!box) return;
+  if(!this.tk||!this.tk.trk||!this.tk.trk.isConnected){ box.innerHTML='<div class="trk tk-js"></div>'; this.tk={trk:box.firstChild,pos:this.tk?this.tk.pos:0,uw:0,last:0,raf:0} }
+  const T=this.tk; T.unit=unit; T.trk.innerHTML=`<div class="tk-u">${unit}</div>`; T.measure=true; this.tkMeasure(); if(!T.raf) this.tkLoop() }
+ tkMeasure(){ const T=this.tk, box=this.scs; if(!T||!T.trk) return; const u=T.trk.firstChild; if(!u) return; const uw=u.offsetWidth, vw=box.clientWidth||this.el.clientWidth||0; /* بكسلات التخطيط (لا الشاشة) — المحرر مُصغَّر */
+  if(!(uw>0)||!(vw>0)){ T.measure=true; return } /* لم يُرسم بعد — نعيد القياس في الإطار التالي */
+  const n=Math.max(2,Math.ceil(vw/uw)+2); T.trk.innerHTML=Array.from({length:n},()=>`<div class="tk-u">${T.unit}</div>`).join("");
+  if(T.uw>0&&T.uw!==uw) T.pos=(T.pos/T.uw)*uw; T.uw=uw; T.vw=vw; T.pos=((T.pos%uw)+uw)%uw; T.measure=false; this.tkPlace() }
+ tkPlace(){ const T=this.tk, w=this.w; if(!T||!(T.uw>0)) return; const right=(w.tkDir||"lr")==="lr";
+  const x=w.tkAnim===false?0:(right?T.pos-T.uw:-T.pos); T.trk.style.transform=`translate3d(${x.toFixed(2)}px,0,0)` }
+ tkLoop(){ const T=this.tk; if(!T) return; const step=t=>{ if(!this.tk||this.tk!==T) return;
+   if(!this.el.isConnected&&T.seen){ T.raf=0; return } if(this.el.isConnected) T.seen=true;
+   const w=this.w, dt=T.last?Math.min(.1,(t-T.last)/1000):0; T.last=t;
+   if(T.measure) this.tkMeasure();
+   else{ const vw=this.scs.clientWidth; if(Math.abs(vw-(T.vw||0))>1||T.trk.firstChild&&Math.abs(T.trk.firstChild.offsetWidth-T.uw)>1) this.tkMeasure() }
+   if(T.uw>0&&w.tkAnim!==false){ const sp=+w.tkCycle>0?T.uw/(+w.tkCycle):Math.max(5,+w.speed||110); T.pos=(T.pos+sp*dt)%T.uw; this.tkPlace() }
+   T.raf=requestAnimationFrame(step) }; T.raf=requestAnimationFrame(step) }
  /** قائمة انتظار التنبيهات: تنبيه واحد في كل مرة، بدون تداخل */
  alertPush(ev,src){ const DC=src.DC||defaultDonCfg(); const A=DC.alert||{}; if((+ev.amount||0)<(+A.minAmount||0)) return;
   this.queue.push({...ev}); if(this.queue.length>50) this.queue.shift(); if(!this.busy) this.nextAlert(src) }

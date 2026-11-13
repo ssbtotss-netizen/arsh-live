@@ -100,7 +100,7 @@ const url='file:///home/claude/najd/demo/index.html';
  await send({id:"D7",type:"donation",provider:"streamlabs",name:"ريم",amount:40,currency:"EUR"}); await ob1.waitForTimeout(1500);
  ok((await ob1.evaluate(()=>document.querySelector('.dc-card:not(.dc-out) .dc-name')?.textContent))==="ريم"&&/40/.test(await ob1.evaluate(()=>document.querySelector('.dc-card:not(.dc-out) .dc-amt').textContent)),'OBS: «آخر دعم» يتحدّث لحظياً بدون إعادة تحميل');
  ok((await ob2.evaluate(()=>document.querySelector('.d5-row .d5-name').textContent))==="ريم"&&(await ob2.evaluate(()=>[...document.querySelectorAll('.d5-row:not(.d5-empty)')].length))===5,'OBS: «آخر 5» يتحدّث لحظياً (ريم أولاً، يبقى 5)');
- /* إعادة الاتصال تُختبر على الخادم الحقيقي: الـ hub يرسل حالة DN المحفوظة عند الاتصال */
+ await ob1.reload(); await ob1.waitForTimeout(900); ok((await ob1.evaluate(()=>document.querySelector('.dc-name')?.textContent))==="ريم",'بعد تحديث صفحة OBS يبقى آخر دعم');
  await ob1.close(); await ob2.close(); await p.click('.nav [data-go="studio"]'); await p.waitForTimeout(300); await p.click(`#stage .wd[data-id="${ids.f}"]`); await p.waitForTimeout(300);
  // النسخ لمشهد آخر + الحفظ
  const dst=await p.evaluate(()=>S.layouts.find(l=>l.id!==S.active).id);

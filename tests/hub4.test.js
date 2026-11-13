@@ -15,7 +15,7 @@ const { spawn } = require('child_process');
  await dash.click('.nav [data-go="obs"]'); const href=await dash.locator('a[href*="#/overlay"]').first().getAttribute('href');
  const obs=await (await b.newContext({viewport:{width:540,height:960}})).newPage(); obs.on('pageerror',e=>errs.push('obs '+e.message)); await obs.goto(href); await obs.waitForTimeout(700);
  await dash.click('.nav [data-go="donations"]'); await dash.click('[data-dontab="overview"]'); await dash.click('[data-don-sim="50"]'); await obs.waitForTimeout(600);
- ok(/50 ر.س/.test(await obs.locator('.wd.t-donLatest .sc .un').last().textContent()),'server relayed donation to OBS in separate browser');
+ ok(/50 ?ر.س/.test(await obs.locator('.wd.t-donLatest .sc .un').last().textContent()),'server relayed donation to OBS in separate browser');
  const d=await dash.evaluate(()=>window.__arsh.R().DN.list.at(-1)); ok(d.test===true&&d.provider==='test'&&d.id.startsWith('test:'),'server forced test flag on simulated donation');
  // forged refund of a non-test id is ignored
  await dash.evaluate(()=>window.__arsh.send({t:'sim',ev:{type:'donation_refund',id:'moyasar:pay_x'}})); await dash.waitForTimeout(200); ok(true,'forged refund of real donation ignored by server');

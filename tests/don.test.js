@@ -16,8 +16,9 @@ const url='file:///home/claude/najd/demo/index.html';
  await p.click('.nav [data-go="donations"]'); await p.click('[data-dontab="overview"]');
  await p.click('[data-don-sim="50"]'); await p.waitForTimeout(150); await p.click('[data-don-sim="500"]'); await p.waitForTimeout(150); await p.click('[data-don-sim="5"]'); await p.waitForTimeout(500);
  ok((await p.evaluate(()=>JSON.stringify(window.__arsh.R().D.tot)))===tikBefore,'donations did not change TikTok likes/gift points');
- ok(await ov.locator('.so-socialBar.donTicker .trk .sc, .wd.t-donTicker .trk .sc').count()>=6,'ticker shows donors');
- const latest=await ov.locator('.wd.t-donLatest .sc .un').last().textContent(); ok(/5 ر.س/.test(latest),'latest donor updated: '+latest);
+ ok(!(await ov.locator('.wd.t-donTicker .trk').innerText()).match(/— *\$ *(50|500|5)\b/),'ticker ignores test donations');
+ /* الدعم الحقيقي في الشريط: tests/ticker.test.js */
+ const latest=await ov.locator('.wd.t-donLatest .sc .un').last().textContent(); ok(/5 ?ر.س/.test(latest),'latest donor updated: '+latest);
  await ov.waitForTimeout(1100); /* انتظار انتهاء العدّ التدريجي */
  const goal=await ov.locator('.wd.t-donGoal .ck-time').textContent(); ok(/555 ر.س \/ 1,000 ر.س/.test(goal),'goal progress 555 / 1,000: '+goal);
  ok(await ov.locator('.wd.t-donAlert .sc.alert').count()===1,'alert shown (queue: one at a time)');

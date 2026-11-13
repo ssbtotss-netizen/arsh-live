@@ -9,7 +9,8 @@ import { mkdtemp, rm, open as fopen, readFile } from "fs/promises";
 import { tmpdir } from "os";
 import { join } from "path";
 import { viewer } from "@/server/alerts-svc";
-import { putAssetRaw, putAssetFile, usedBytes } from "@/server/alert-store";
+import { putAssetRaw, putAssetFile, usedBytes, platformStorage, MUSIC_SLOTS } from "@/server/alert-store";
+import { prisma } from "@/lib/db";
 import { processFile, ffmpegPath, serial } from "@/server/media";
 import { AL_LIMITS, AL_ERR, alCheckFile, alInspect, alMeta } from "@/engine/alerts.js";
 
@@ -22,7 +23,9 @@ const LIM: Record<string, number> = { media: AL_LIMITS.media, audio: AL_LIMITS.a
 
 export async function GET() {
   const { user } = await viewer(); if (!user) return fail("unauthorized", 401);
-  return NextResponse.json({ used: await usedBytes(user.id), quota: AL_LIMITS.quota, limits: LIM, converter: !!ffmpegPath(), maxDuration: null });
+  const ps = await platformStorage();
+  const files = await prisma.alertAsset.count({ where: { ownerId: user.id, slot: { notIn: MUSIC_SLOTS } } });
+  return NextResponse.json({ used: await usedBytes(user.id), files, quota: null, platform: { pct: Math.round(ps.pct * 1000) / 10, ok: ps.pct < 0.9 }, limits: LIM, converter: !!ffmpegPath(), maxDuration: null });
 }
 
 /** يكتب جسم الطلب إلى ملف مع حد للحجم — بدون تحميل الملف في الذاكرة */
@@ -45,7 +48,7 @@ async function head(path: string, n: number) { const f = await fopen(path, "r");
 export async function POST(req: Request) {
   const { user } = await viewer(); if (!user) return fail("unauthorized", 401);
   const now = Date.now(), h = (hits.get(user.id) || []).filter(t => now - t < 60_000); h.push(now); hits.set(user.id, h);
-  if (h.length > 20) return fail("rate_limited", 429);
+  if (h.length > 60) return fail("rate_limited", 429); /* يسمح برفع دفعات كبيرة (20+ ملف) */
   const slot = String(req.headers.get("x-slot") || "media"), name = decodeURIComponent(req.headers.get("x-filename") || "file").slice(0, 120);
   if (!LIM[slot]) return fail("bad_form");
   const len = +(req.headers.get("content-length") || 0); if (len > LIM[slot]) return fail("too_large", 413, { max: LIM[slot] });
@@ -63,7 +66,7 @@ export async function POST(req: Request) {
       if (slot === "cover" && insp.family !== "image") return fail("bad_type");
       if (slot === "audio" && insp.family !== "audio") return fail("bad_type");
       const r = await putAssetRaw(user.id, slot, new Uint8Array(await readFile(src)), insp.mime, {});
-      if (!r.ok) return fail((r as any).error); return NextResponse.json({ ok: true, id: r.id, mime: r.mime, size: r.size, url: `/api/alerts/media/${r.id}` });
+      if (!r.ok) return fail((r as any).error); return NextResponse.json({ ok: true, dup: !!(r as any).dup, id: r.id, mime: r.mime, size: r.size, url: `/api/alerts/media/${r.id}` });
     }
     const pr = await serial(() => processFile(src, dir, insp, w.size));
     if (!pr.ok) return fail(pr.error, 422, { detail: (pr as any).detail || "" });
@@ -74,7 +77,7 @@ export async function POST(req: Request) {
     const c = pr.cover ? await putAssetRaw(user.id, "cover", pr.cover.bytes, pr.cover.mime, {}) : null;
     const p = pr.preview ? await putAssetFile(user.id, "preview", pr.preview.path, pr.preview.size, pr.preview.mime, meta) : null;
     const u = (x: any) => (x && x.ok ? `/api/alerts/media/${x.id}` : "");
-    return NextResponse.json({ ok: true, kind: pr.kind, slot: mainSlot, id: m.id, mime: m.mime, size: m.size, url: u(m), meta, coverId: c && c.ok ? c.id : null, coverUrl: u(c), previewId: p && p.ok ? p.id : null, previewUrl: u(p), converted: !!meta.converted });
+    return NextResponse.json({ ok: true, dup: !!(m as any).dup, kind: pr.kind, slot: mainSlot, id: m.id, mime: m.mime, size: m.size, url: u(m), meta, coverId: c && c.ok ? c.id : null, coverUrl: u(c), previewId: p && p.ok ? p.id : null, previewUrl: u(p), converted: !!meta.converted });
   } catch (e: any) {
     console.error("[alerts/upload]", e?.message || e);
     return fail("server_error", 500, { detail: String(e?.message || e).slice(0, 160) });
