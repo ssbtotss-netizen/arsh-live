@@ -19,5 +19,16 @@ const { chromium } = require('/opt/npm-tools/node_modules/playwright');
  await p.waitForTimeout(2100); const d=await st(); ok(/ab-txgone/.test(d)||d==="none",'بعد ثانيتين من ظهوره: الكلام اختفى: '+d);
  const css=await p.evaluate(()=>{ const r=document.createElement('div'); r.className='ab-root ab-hideav'; const a=document.createElement('div'); a.className='ab-av'; r.appendChild(a); document.body.appendChild(r); const v=getComputedStyle(a).display; r.remove(); return v }); ok(css==="none",'CSS يخفي الصورة فعلياً');
  await p.goto(U); await p.waitForTimeout(300); ok(await p.evaluate(k=>{ const x=S.bots.alerts.lib.don.levels.find(l=>l.id===k); return x.textDelay===1.5&&x.show.avatar===false },k),'يبقى بعد إعادة التحميل');
+ // رفع الكلام وتكبيره
+ await p.click('.nav [data-go="alerts"]'); await p.waitForTimeout(300); await p.click('[data-mlsec="don"]'); await p.waitForTimeout(300);
+ await p.click(`[data-ml="txup"][data-k="${k}"]`); await p.waitForTimeout(150); await p.click(`[data-ml="txup"][data-k="${k}"]`); await p.waitForTimeout(150);
+ ok(await p.evaluate(k=>mlLib().don.levels.find(l=>l.id===k).textShift,k)===-10,'زر ⬆️ ارفع مرتين ← الكلام أعلى بـ 10%');
+ await p.$eval(`[data-mlf="textScale"][data-k="${k}"]`,e=>{ e.value="150"; e.dispatchEvent(new Event("change",{bubbles:true})) }); await p.waitForTimeout(150);
+ await p.evaluate(k=>{ const x=mlLib().don.levels.find(l=>l.id===k); x.textDelay=0; x.textDur=0; mlSave() },k); await p.waitForTimeout(150);
+ await p.click(`[data-ml="test"][data-k="${k}"]`); await p.waitForTimeout(900);
+ const tx=await p.evaluate(()=>{ const r=document.querySelector('#al-pv .ab-root'); const t=r&&r.querySelector('.ab-tx,.fa-tx'); return r&&{s:r.style.getPropertyValue('--txs'),z:r.style.getPropertyValue('--txz'),tr:t?getComputedStyle(t).translate:"",sc:t?getComputedStyle(t).scale:""} });
+ ok(tx&&parseFloat(tx.s)<0&&tx.z==="1.5"&&/-/.test(tx.tr)&&tx.sc==="1.5",'الكلام مرفوع ومكبّر فعلياً في المشغّل: '+JSON.stringify(tx));
+ await p.click(`[data-ml="txreset"][data-k="${k}"]`); await p.waitForTimeout(150);
+ ok(await p.evaluate(k=>{ const x=mlLib().don.levels.find(l=>l.id===k); return x.textShift===0&&x.textScale===100 },k),'↺ الأصلي يرجّع المكان والحجم');
  ok(!errs.length,'no page errors '+errs.join(' | ')); await b.close();
 })();
