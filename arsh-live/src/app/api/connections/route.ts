@@ -12,7 +12,9 @@ export async function GET() {
     const r = rows.find(x => x.platform === p);
     out[p] = { configured: p === "tiktok" ? true : oauthMissing(p, process.env as any).length === 0, status: r?.status || "disconnected", accountName: r?.accountName || null, avatarUrl: r?.avatarUrl || null, lastEventAt: r?.lastEventAt || null, lastError: r?.lastError || null };
   }
-  return NextResponse.json({ connections: out });
+  const pub: any = {};
+  for (const p of ["twitch", "youtube", "kick"]) { const r = rows.find(x => x.platform === p + "_pub"); pub[p] = r ? { channel: r.accountName, status: r.status, lastError: r.lastError, lastEventAt: r.lastEventAt } : null; }
+  return NextResponse.json({ connections: out, pub });
 }
 export async function DELETE(req: Request) {
   const u = await currentUser(); if (!u) return NextResponse.json({ error: "unauthorized" }, { status: 401 });

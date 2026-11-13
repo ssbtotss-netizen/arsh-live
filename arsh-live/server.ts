@@ -9,6 +9,7 @@ import { ffmpegPath } from "./src/server/media";
 import { createYouTube } from "./src/server/youtube";
 const youtube = createYouTube();
 import { createPlatformService } from "./src/server/platforms";
+import { createPubChat } from "./src/server/pubchat";
 import { createNotifyService } from "./src/server/notify";
 import { canvasValid } from "./src/engine/defs.js";
 import { createDonationService } from "./src/server/donations/service";
@@ -110,7 +111,9 @@ app.prepare().then(() => {
   // ربط المنصات (YouTube / Twitch / Kick) — يعمل فقط عند ضبط مفاتيح المطوّر على الخادم
   const platforms = createPlatformService(prisma, hub);
   const notify = createNotifyService(prisma);
-  (globalThis as any).__b6o6 = { donations, connectors, platforms, notify, hub, youtube };
+  const pubchat = createPubChat(prisma, hub);
+  (globalThis as any).__b6o6 = { donations, connectors, platforms, notify, hub, youtube, pubchat };
+  pubchat.startAll().catch(e => console.error("pubchat", e));
   platforms.startAll().catch(e => console.error("platforms", e));
   connectors.startAll().catch(e => console.error("donation connectors", e));
 

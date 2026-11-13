@@ -10481,7 +10481,26 @@ setInterval(()=>{ if(S.page!=="music") return; const M=R.C.music, c=M&&M.current
 // ====== مركز ربط البثوث | Multi-Platform Connection Hub ======
 const CONN_P=["tiktok","youtube","kick","twitch"];
 const CONN_ST={connected:["متصل","ok"],connecting:["جارٍ الاتصال","warn"],error:["خطأ","bad"],disconnected:["غير متصل",""],unconfigured:["غير مضبوط على الخادم","bad"]};
-async function connLoad(){ if(!CFG) return; try{ const r=await fetch("/api/connections"); if(r.ok){ S.conns=(await r.json()).connections; if(S.page==="connections") renderPage(true) } }catch(e){} }
+async function connLoad(){ if(!CFG) return; try{ const r=await fetch("/api/connections"); if(r.ok){ const j=await r.json(); S.conns=j.connections; S.pub=j.pub||{}; if(S.page==="connections") renderPage(true);
+  clearTimeout(S.pubT); if(S.page==="connections"&&Object.values(S.pub).some(x=>x&&(x.status==="connecting"||x.status==="offline"))) S.pubT=setTimeout(connLoad,8000) } }catch(e){} }
+/** قراءة الشات العام باسم القناة — حالة صادقة: «يستقبل» فقط عند الاتصال الفعلي */
+const PUB_ST={connected:["🟢 يستقبل الشات","ok"],connecting:["⏳ جاري الاتصال…",""],offline:["⚪ القناة غير مباشرة الآن",""],error:["🔴 خطأ","bad"]};
+const PUB_HINT={twitch:"اسم القناة أو الرابط، مثل: twitch.tv/ninja",youtube:"@اسم_القناة أو رابط البث المباشر",kick:"اسم القناة أو الرابط، مثل: kick.com/xqc"};
+const PUB_NOTE={twitch:"عبر IRC الرسمي من Twitch بدون تسجيل دخول — قراءة فقط.",youtube:"من صفحة الشات العامة للبث (غير رسمي، بدون حصة API) — قراءة فقط، ويبدأ تلقائياً عند بدء البث.",kick:"من غرفة الشات العامة (غير رسمي وقد يتغير) — قراءة فقط."};
+function pubChatHTML(p){ const x=(S.pub||{})[p], P=LIVE_PLATFORMS[p];
+ const [l,c]=x?PUB_ST[x.status]||[x.status,""]:["غير مربوط",""];
+ return `<div class="pub-chat" data-pub="${p}" style="margin-top:10px;padding:10px;border:1px dashed var(--line);border-radius:10px">
+  <div class="row" style="justify-content:space-between;gap:6px"><b class="small">💬 قراءة الشات باسم القناة — بدون تسجيل دخول</b><span class="tag ${c}" data-pubst="${p}">${l}</span></div>
+  ${x?`<div class="small" style="margin-top:6px"><b>القناة:</b> ${esc(String(x.channel||"").replace(/^[vc]:/,""))}${x.lastEventAt?` · <span class="mut">آخر رسالة: ${new Date(x.lastEventAt).toLocaleTimeString("ar-SA")}</span>`:""}</div>${x.lastError&&x.status!=="connected"?`<div class="small" style="color:${x.status==="error"?"#f87171":"var(--mut)"}">${esc(x.lastError)}</div>`:""}
+   <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-pubdel="${p}">فصل الشات</button><button class="btn sm" data-pubrefresh>🔄 تحديث الحالة</button></div>`
+  :`<div class="row" style="gap:6px;margin-top:6px"><input class="inp" data-pubin="${p}" placeholder="${esc(PUB_HINT[p])}" style="flex:1;min-width:0"><button class="btn sm pri" data-pubgo="${p}" style="background:${P.color};border-color:${P.color}">ربط القناة</button></div>`}
+  <p class="mut small" style="margin:6px 0 0">${PUB_NOTE[p]} المتابعات والاشتراكات وإرسال الردود تحتاج «ربط ${P.name}» الرسمي.</p></div>` }
+async function pubGo(p){ if(!CFG) return toast("قراءة الشات تعمل من لوحة التحكم على الخادم");
+ const i=document.querySelector(`[data-pubin="${p}"]`), v=i&&i.value.trim(); if(!v) return toast("اكتب اسم القناة أو الرابط");
+ const b=document.querySelector(`[data-pubgo="${p}"]`); if(b){ b.disabled=true; b.textContent="⏳ جاري الربط…" }
+ try{ const r=await fetch("/api/connections/public",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({platform:p,channel:v})}); const j=await r.json().catch(()=>({}));
+  if(!r.ok){ toast("❌ "+(j.message||"تعذر الربط")); if(b){ b.disabled=false; b.textContent="ربط القناة" } return }
+  toast("⏳ جاري الاتصال بشات "+LIVE_PLATFORMS[p].name+" — تظهر الحالة الحقيقية خلال ثوانٍ"); S.connsAt=0; setTimeout(connLoad,1500) }catch(e){ toast("❌ خطأ شبكة"); if(b){ b.disabled=false; b.textContent="ربط القناة" } } }
 function connState(p){ if(p==="tiktok") return wsReady&&liveStatus.live?"connected":wsReady&&S.settings.tiktok?"connecting":"disconnected";
  const c=(S.conns||{})[p]; if(!c||!c.configured) return "unconfigured"; return c.status||"disconnected" }
 function connHTML(){ if(CFG&&!S.connsAt){ S.connsAt=Date.now(); connLoad() }
@@ -10497,7 +10516,7 @@ function connHTML(){ if(CFG&&!S.connsAt){ S.connsAt=Date.now(); connLoad() }
    ${st==="unconfigured"?`<p class="mut small">${CFG?"لم يضف مالك المنصة مفاتيح تطبيق "+P.name+" بعد: "+esc(((OAUTH[p]||{}).env||[]).join(" + ")):"الربط الرسمي يعمل من خادم المنصة (لوحة التحكم المنشورة)، وليس من نسخة التجربة هذه."}</p>`:""}
    ${c.lastError&&st!=="connected"?`<p class="small" style="color:#f87171">${esc(c.lastError)}</p>`:""}
    <div class="row" style="margin-top:8px">${p==="tiktok"?`<button class="btn sm pri" data-tiktok>اتصال</button><button class="btn sm" data-disconnect>فصل</button>`:`<button class="btn sm pri" data-connect="${p}" ${st==="unconfigured"?"disabled":""}>${st==="connected"?"إعادة الربط":"ربط "+P.name}</button>${st==="connected"?`<button class="btn sm" data-conndel="${p}">فصل</button>`:""}`}
-    <button class="btn sm" data-connguide="${p}">❓ كيف أربط حسابي؟</button><button class="btn sm" data-conntest="${p}">🧪 رسالة تجربة</button><button class="btn sm" data-go="settings">⚙️ الإعدادات</button></div></div>` }).join("")}</div>
+    <button class="btn sm" data-connguide="${p}">❓ كيف أربط حسابي؟</button><button class="btn sm" data-conntest="${p}">🧪 رسالة تجربة</button><button class="btn sm" data-go="settings">⚙️ الإعدادات</button></div>${p!=="tiktok"&&CFG?pubChatHTML(p):p!=="tiktok"?`<p class="mut small" style="margin-top:8px">💬 قراءة الشات باسم القناة متاحة في لوحة التحكم على الخادم.</p>`:""}</div>` }).join("")}</div>
  <div class="card" style="margin-top:14px"><h3>حالة دعم الميزات لكل منصة</h3><div style="overflow:auto"><table class="tbl"><tr><th>الميزة</th>${caps.map(c=>`<th>${c.name}</th>`).join("")}</tr>
   ${[["comment","التعليقات"],["like","اللايكات"],["gift","الهدايا"],["follow","المتابعات"],["subscribe","الاشتراكات"],["share","المشاركات"],["join","دخول المشاهدين"],["viewers","عدد المشاهدين"],["sendChat","إرسال رد في الشات"],["moderate","أوامر الإشراف"]].map(([f,l])=>`<tr><td>${l}</td>${caps.map(c=>{ const x=c.caps.find(y=>y.feature===f); return `<td><span class="tag ${x?x.tone:"bad"}">${x?x.label:CAP.no[0]}</span></td>` }).join("")}</tr>`).join("")}</table></div>
   <p class="mut small">«تجريبية» لـ TikTok = اتصال LIVE غير رسمي بالاسم فقط. «تتطلب تفويضاً» = تعمل بعد الربط عبر OAuth الرسمي. لا نعرض «متصل» قبل التحقق من الحساب فعلياً.</p></div>
@@ -10512,6 +10531,9 @@ const CONN_TEST={tiktok:["محمد","السلام عليكم"],youtube:["أحم�
 function connTest(p){ for(const q of p==="all"?CONN_P:[p]){ const [n,t]=CONN_TEST[q]; sim({id:"t_"+q+"_"+uid()+Date.now(),type:"comment",platform:q,user:{id:"t_"+q+n,name:n,mod:q==="kick",sub:q==="youtube"},text:t,test:true}) } }
 function connClick(t,d){
  if(d.connguide){ connGuide(d.connguide); return true }
+ if(d.pubgo){ pubGo(d.pubgo); return true }
+ if(d.pubdel){ if(CFG) fetch("/api/connections/public?platform="+d.pubdel,{method:"DELETE"}).then(()=>{ toast("فُصل الشات"); S.connsAt=0; connLoad() }); return true }
+ if(t.hasAttribute("data-pubrefresh")){ S.connsAt=0; connLoad(); return true }
  if(d.conntest){ connTest(d.conntest); toast("أُرسلت رسالة تجربة (مُعلَّمة)"); return true }
  if(d.connect){ if(!CFG) return toast("الربط الرسمي متاح في لوحة التحكم المنشورة على الخادم"),true; location.href="/api/connect/"+d.connect; return true }
  if(d.conndel){ if(CFG) fetch("/api/connections?platform="+d.conndel,{method:"DELETE"}).then(()=>{ S.connsAt=0; connLoad() }); return true }
