@@ -39,6 +39,7 @@ export * from "../engine/plans.js";
 export * from "../engine/fc_designs.js";
 export * from "../engine/fachars.js";
 export * from "../engine/lb_art.js";
+export * from "../engine/lb_ref.js";
 export * from "../engine/faview.js";
 export * from "../engine/alerts.js";
 export * from "../engine/layoutshare.js";

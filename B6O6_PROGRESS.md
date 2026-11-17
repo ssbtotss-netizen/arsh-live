@@ -77,7 +77,8 @@
 - ✅ PRO على الخادم: `plans.js` → `isProDesign` (معرّفات r…/x…)، `proViolations` — الحساب غير المشترك لا يضيف تصميم PRO جديداً (402 `pro_design`)، والتصاميم المحفوظة سابقاً تبقى ولا تُحذف. شارة PRO/🔒 في المكتبة.
 - ✅ التجربة تبدأ مع أول بث: حقل `trialPending` (db push غير مدمّر). الحسابات الجديدة «معلّقة» بكل الميزات حتى أول بث TikTok حقيقي (onLiveStatus) أو 60 يوماً كحد أقصى؛ الحسابات القديمة لم تتغير.
 - اختبارات: `npx tsx ../tests/pro-trial.test.mts` (15)، `node tests/pro-ui.test.js` (10).
-- التالي: تكوينات التوب (Crystal Butterfly، Imperial Gates، Obsidian Race…)، التحديات الأربعة، 30 تصميماً حصرياً، شريط الفئات + المودال + PRO/التجربة 30 يوماً.
+- ✅ الدفعة 2: `src/engine/lb_ref.js` — 14 قائمة توب PRO (فئة «المرجع: قوائم التوب»): Diamond Rose، Pearl Bow، Soft Bow، Highest Gift، Imperial Gates، Royal Bloom، Luxe Gem Halo، Obsidian Race، Top 5 Podium، Top Gifter Ranking، Crystal Butterfly Top، Neon Shards، Neon Diamond، Top 20 Shimmer. أجزاء جديدة في المحرك: ترتيب «سباق» (race) + زخرفة «فيونكة» و«بوابة». اختبار `node tests/lb-ref.test.js` (11)؛ lb.test.js حُدّث إلى 259 تصميماً.
+- التالي (بعد القوائم): تكوينات التوب (Crystal Butterfly، Imperial Gates، Obsidian Race…)، التحديات الأربعة، 30 تصميماً حصرياً، شريط الفئات + المودال + PRO/التجربة 30 يوماً.
 
 ## الأخطاء غير المحلولة
 - `rot` و`socials` يفشلان أحياناً بسبب التوقيت عند التشغيل المتتالي، وينجحان عند الإعادة (معروف).

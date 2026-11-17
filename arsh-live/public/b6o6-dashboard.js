@@ -2650,12 +2650,12 @@ ${[1,2,3,4,5,6,7,8,9,10].map(i=>`.lbw.lbb-steps .lr.r${i}{scale:${(1-(i-1)*.035)
 
 
 Object.assign(LB_CATS,{legRoyal:"أسطورية: ملكية",legFlower:"أسطورية: فراشات وورد",legGaming:"أسطورية: ألعاب",legGalaxy:"أسطورية: فضاء",legMinimal:"أسطورية: بسيطة وشفافة",legSaudi:"أسطورية: سعودية وB6O6"});
-const LB_ARRS={column:"عمودي نحيف",row:"أفقي",podium:"منصة تتويج",hero:"الأول كبير",ring:"دائري حول الأول",stairs:"درجات",triangle:"مثلث",crescent:"هلال",float:"طافٍ بدون خلفيات",zigzag:"متعرج",wings:"أجنحة",medals:"ميداليات",planets:"كواكب",text:"نصي بسيط",rotate:"متناوب (داعم كل عدة ثوانٍ)"};
+const LB_ARRS={column:"عمودي نحيف",row:"أفقي",podium:"منصة تتويج",hero:"الأول كبير",ring:"دائري حول الأول",stairs:"درجات",triangle:"مثلث",crescent:"هلال",float:"طافٍ بدون خلفيات",zigzag:"متعرج",wings:"أجنحة",medals:"ميداليات",planets:"كواكب",text:"نصي بسيط",rotate:"متناوب (داعم كل عدة ثوانٍ)",race:"سباق (مسارات)"};
 const LB_FRAMES={ring:"حلقة",shield:"درع",medal:"ميدالية",hex:"سداسي",diamond:"ماسي",crystal:"كريستال",arch:"بوابة",soft:"توهج ناعم",planet:"كوكب بحلقة",squircle:"مربع ناعم",moon:"أطوار القمر",none:"بدون صورة"};
 const LB_RKS={circle:"دائرة",diamond:"ألماسة",shield:"درع",ribbon:"شريطة",big:"رقم كبير",hex:"سداسي",none:"مخفي"};
 const LB_NMS={none:"نص فقط",capsule:"كبسولة",ribbon:"شريطة نحيفة",line:"خط ذهبي",glass:"زجاجي",plate:"لوحة داكنة",carbon:"كربون"};
 const LB_AMBS={none:"بدون",butterflies:"فراشات",petals:"بتلات ورد",stars:"نجوم",sparks:"شرارات ذهبية",hearts:"قلوب",clouds:"غيوم",bolts:"برق",flames:"لهب",shards:"شظايا ثلج",meteors:"شهب",coins:"عملات ذهبية",steam:"بخار",dust:"غبار سحري",circuit:"دوائر إلكترونية",diamonds:"ألماس",nebula:"سديم"};
-const LB_D1S={none:"بدون",crown:"تاج",throne:"عرش",lion:"أسد",swords:"سيفان",wings:"أجنحة",rosecrown:"تاج ورد",dragon:"تنين",palm:"نخلة",falcon:"صقر",duck:"بطة بطوط الملك",blackhole:"ثقب أسود",eclipse:"كسوف",firering:"حلقة نار",cosmic:"تاج نجوم",storm:"برق",moonbf:"هلال وفراشة",horse:"حصان عربي",dallah:"دلة"};
+const LB_D1S={none:"بدون",crown:"تاج",throne:"عرش",lion:"أسد",swords:"سيفان",wings:"أجنحة",rosecrown:"تاج ورد",dragon:"تنين",palm:"نخلة",falcon:"صقر",duck:"بطة بطوط الملك",blackhole:"ثقب أسود",eclipse:"كسوف",firering:"حلقة نار",cosmic:"تاج نجوم",storm:"برق",moonbf:"هلال وفراشة",horse:"حصان عربي",dallah:"دلة",bow:"فيونكة لؤلؤ",gate:"بوابة إمبراطورية"};
 const LB_CELS={crown:"نزول التاج",wings:"فتح الأجنحة",stars:"انفجار نجوم",butterflies:"ظهور فراشات",diamonds:"تجمع الألماس",falcon:"ظهور صقر",lion:"ظهور أسد",coins:"عملات ذهبية",firering:"حلقة نار",halo:"هالة ملكية",hearts:"قلوب",petals:"بتلات",lightning:"برق",planets:"كواكب",confetti:"قصاصات احتفال"};
 
 // ---------- رموز SVG صغيرة (أصلية) ----------
@@ -2708,6 +2708,8 @@ const D1={
  horse:`<svg viewBox="0 0 100 100" class="d1-side"><path d="M30 96C26 70 34 46 52 34L50 22L60 30C72 28 84 38 86 52L92 66C94 70 90 74 86 72L76 66C70 70 68 80 70 96Z" fill="#e9e4dc" stroke="#6b5a48" stroke-width="2"/><circle cx="72" cy="46" r="2.6" fill="#111"/>${[0,1,2,3].map(i=>`<path d="M${52-i*5} ${30+i*10}q-16 -2 -24 6" fill="none" stroke="#3a2a1a" stroke-width="4" stroke-linecap="round" class="mn" style="animation-delay:${i*.15}s"/>`).join("")}</svg>`,
  dallah:`<svg viewBox="0 0 100 100" class="d1-side"><path d="M34 92H66L62 64C70 52 68 38 58 32L60 20H40L42 32C32 38 30 52 38 64Z" fill="#d4a017" stroke="#fff3c4" stroke-width="2"/><path d="M38 60Q16 52 8 30L14 28Q22 46 38 52" fill="#f6c94a"/><path d="M44 20L50 8L56 20Z" fill="#ffe08a"/>${[0,1].map(i=>`<path d="M${8+i*6} 24q-6 -8 0 -16" stroke="#fff" stroke-width="2" fill="none" class="stm" style="animation-delay:${i*.6}s"/>`).join("")}</svg>`,
 };
+D1.bow=`<svg viewBox="0 0 100 100" class="d1-top"><path d="M50 50C34 30 10 28 12 48C14 64 34 62 50 50Z" fill="#fbcfe8" stroke="#fff" stroke-width="2"/><path d="M50 50C66 30 90 28 88 48C86 64 66 62 50 50Z" fill="#fbcfe8" stroke="#fff" stroke-width="2"/><path d="M46 52L36 84L46 78L50 88L54 78L64 84L54 52Z" fill="#f9a8d4" stroke="#fff" stroke-width="1.5"/>${[18,26,34,74,82].map((x,i)=>`<circle cx="${x}" cy="${i<3?44+i*2:44+(i-3)*2}" r="2.6" fill="#fff" class="tw" style="animation-delay:${i*.3}s"/>`).join("")}<circle cx="50" cy="50" r="7" fill="#fff" stroke="#f9a8d4" stroke-width="2"/></svg>`;
+D1.gate=`<svg viewBox="0 0 100 100" class="d1-back"><path d="M10 98V44C10 18 28 4 50 4C72 4 90 18 90 44V98H80V46C80 26 66 14 50 14C34 14 20 26 20 46V98Z" fill="#d4a017" stroke="#fff3c4" stroke-width="1.5"/><path d="M4 98H96" stroke="#f6c94a" stroke-width="5"/>${[[10,40],[90,40],[50,6]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4" fill="#fde68a" class="tw"/>`).join("")}<path d="M38 8L44 0L50 6L56 0L62 8Z" fill="#fde68a"/></svg>`;
 function lbD1HTML(k){ if(k==="duck") return `<span class="d1-side d1-duck">${duckSVG({acc:["crown"],aura:"#f6c94a"})}</span>`; return D1[k]||"" }
 
 // ---------- طرق الترتيب (15) ----------
@@ -2730,6 +2732,7 @@ function lbArtSlots(arr,N,W,H,g){ const S=[], m=Math.min(W,H);
   case "wings": { const s0=Math.min(W*.28,H*.5/1.45), s=s0*.72; S[0]=T((W-s0)/2,0,s0); for(let i=1;i<N;i++){ const side=i%2?1:-1, step=Math.ceil(i/2), x=W/2+side*(s0*.55+step*(s+g)*1.02)-s/2, y=s0*.3+step*s*.55; S[i]=T(Math.max(0,Math.min(W-s,x)),Math.min(H-s*1.45,y),s*(1-step*.05)) } break }
   case "medals": grid(N,0,0,0,W,H); break;
   case "planets": { const P=[[.5,.12,1],[.18,.05,.7],[.8,.08,.66],[.3,.55,.6],[.72,.52,.58],[.08,.62,.5],[.92,.6,.5],[.5,.7,.48],[.2,.85,.44],[.8,.86,.44]]; if(N>10){ grid(N,0,0,0,W,H); break } const base=Math.min(W*.3,H*.36/1.45*1.45); for(let i=0;i<N;i++){ const [px,py,sc]=P[i], s=base*sc; S[i]=T(Math.max(0,Math.min(W-s,px*W-s/2)),Math.max(0,Math.min(H-s*1.45,py*H)),s) } break }
+  case "race": { const lh=H/Math.max(N,1), s=Math.min(lh/1.45*.92,W*.16); for(let i=0;i<N;i++){ const lead=(N-i)/N; S[i]=T((W-s)*(1-lead)*.85,i*lh+(lh-s*1.45)/2,s) } break }
   case "rotate": { const s=Math.min(W*.5,H/1.45); for(let i=0;i<N;i++) S[i]=T((W-s)/2,(H-s*1.45)/2,s); break }
   default: rows(N,0,0,W,H,0);
  }
@@ -2906,6 +2909,39 @@ function lbCelebrateArt(host,kind,cx,cy,av){ const add=(html,cls,x,y,sz)=>{ cons
   case "planets": burst("planet",["#fbbf24","#a5b4fc","#f472b6","#7dd3fc"],8,av*1.7,1800); break;
   default: burst("confetti",["#f43f5e","#3b82f6","#22c55e","#f59e0b","#a855f7"],18,av*1.8,1500,true);
  } }
+
+/* ---- engine/lb_ref.js ---- */
+// ====== قوائم التوب «المرجع» — تكوينات أصلية مستوحاة من فيديو المرجع (#401+) ======
+// تُبنى من أجزاء محرك القوائم (ترتيب + إطار + رقم + اسم + مؤثرات + زخرفة المتصدر + احتفال) — بدون نسخ أي ملف أو شعار.
+// المعرّفات تبدأ بـ r = تصاميم PRO (يُفرض على الخادم).
+
+Object.assign(LB_CATS,{refTop:"المرجع: قوائم التوب (PRO)"});
+const RC=s=>s.split(",");
+// [id, الاسم, الوصف, ترتيب, إطار, رقم, اسم, مؤثرات, زخرفة الأول, احتفال, ألوان, خط]
+const ART=[
+ ["rDiamondRose","Diamond Rose","وردة ألماسية: إطارات كريستال وتاج ورد للمتصدر وبتلات تتساقط","column","crystal","diamond","glass","petals","rosecrown","petals","#f9a8d4,#e0f2fe,#fda4af,#c4b5fd,#fecdd3","Changa"],
+ ["rPearlBow","Pearl Bow","فيونكة لؤلؤ فوق الأول وصفوف ناعمة بألوان الباستيل","row","soft","circle","capsule","dust","bow","hearts","#fbcfe8,#fde68a,#e9d5ff,#bae6fd,#fecdd3","Changa"],
+ ["rSoftBow","Soft Bow","المتصدر كبير بفيونكة وردية والبقية تحته بلطف","hero","soft","circle","capsule","petals","bow","petals","#f9a8d4,#fbcfe8,#f5d0fe,#fecdd3,#e9d5ff","Changa"],
+ ["rHighestGift","Highest Gift","أعلى هدية: داعم واحد كبير بتاج متوّج يتبدل كل عدة ثوانٍ","rotate","ring","none","plate","sparks","crown","crown","#f6c94a,#fde68a,#fbbf24,#fff7d1,#eab308","Changa"],
+ ["rImperialGates","Imperial Gates","بوابات إمبراطورية: ذهبي وفضي وبرونزي على منصة التتويج","podium","arch","shield","plate","sparks","gate","halo","#f6c94a,#e5e7eb,#cd7f32,#fde68a,#fbbf24","Amiri"],
+ ["rRoyalBloom","Royal Bloom","هلال من الورود الملكية وتاج ورد للمتصدر","crescent","ring","ribbon","ribbon","petals","rosecrown","petals","#e11d48,#f9a8d4,#be185d,#fde68a,#fb7185","Changa"],
+ ["rLuxeGemHalo","Luxe Gem Halo","هالات جواهر على منصة: خمس حلقات كريستالية مضيئة","podium","crystal","hex","glass","diamonds","cosmic","diamonds","#a5f3fc,#c4b5fd,#f0abfc,#e0f2fe,#93c5fd","Readex Pro"],
+ ["rObsidianRace","Obsidian Race","سباق الداعمين: كل داعم في مساره والأقوى في المقدمة مع شهب","race","ring","circle","plate","meteors","firering","confetti","#f97316,#22d3ee,#a855f7,#facc15,#ef4444","Orbitron"],
+ ["rTop5Podium","Top 5 Podium","منصة أفضل 5 بميداليات وعرش للمتصدر وعملات ذهبية","podium","medal","big","plate","coins","throne","coins","#f6c94a,#cbd5e1,#d08a52,#60a5fa,#c084fc","Changa"],
+ ["rTopGifterRank","Top Gifter Ranking","درجات سداسية متصاعدة وتاج للأقوى","stairs","hex","hex","carbon","sparks","crown","stars","#22e1ff,#f0abfc,#a3e635,#facc15,#fb7185","Orbitron"],
+];
+// [id, الاسم, الوصف, شكل الشريط, الزخرفة, ألوان, خط]
+const BARS=[
+ ["rCrystalButterflyTop","Crystal Butterfly Top","أشرطة زجاج بنفسجية وفراشة كريستالية ترفرف فوق القائمة","glass","butterfly","#c084fc,#a78bfa,#e9d5ff,#f0abfc,#8b5cf6","Changa"],
+ ["rNeonShards","Neon Shards","حدود نيون مع شظايا متطايرة","neonline","shards","#f0abfc,#22d3ee,#a78bfa,#f472b6,#67e8f9","Orbitron"],
+ ["rNeonDiamond","Neon Diamond","صفوف صغيرة مضغوطة لعشرة داعمين مع ومضات نيون","mini","sparks","#22d3ee,#f0abfc,#a3e635,#facc15,#fb7185","Orbitron"],
+ ["rTop20Shimmer","Top 20 Shimmer","زجاج سائل للمراكز العشرين بلمعة تمر على الأشرطة","liquid","sparks","#fde68a,#e0f2fe,#f5d0fe,#bae6fd,#fef3c7","Readex Pro"],
+];
+const LB_REF_DESIGNS=[
+ ...ART.map(([id,name,desc,arr,frame,rk,nm,amb,d1,cel,colors,font],i)=>({id,n:401+i,name,cat:"refTop",desc,layout:"art",arr,frame,rk,nm,amb,d1,cel,colors:RC(colors),font,row:"art",halo:"none",pro:true})),
+ ...BARS.map(([id,name,desc,bar,deco,colors,font],i)=>({id,n:401+ART.length+i,name,cat:"refTop",desc,layout:"bars",bar,deco,colors:RC(colors),font,row:"bar",halo:"none",pro:true})),
+];
+LB_DESIGNS.push(...LB_REF_DESIGNS.filter(d=>!LB_DESIGNS.some(x=>x.id===d.id)));
 
 /* ---- engine/bots.js ---- */
 // ====== مركز البوتات والذكاء الصوتي: محرك موحّد (دوال نقية) ======
@@ -8438,7 +8474,7 @@ function renderPage(soft){
   const tgt=pool.find(w=>w.id===S.libTarget)||pool[0];
   const favs=S.settings.lbFav||[], q=(S.lbQ||"").trim().toLowerCase();
   const list=tab==="pro"?LB_DESIGNS.filter(d=>(!S.lbCat||S.lbCat===d.cat)&&(!S.lbFavOnly||favs.includes(d.id))&&(!q||(d.name+" "+d.desc+" "+d.n).toLowerCase().includes(q))):tab==="goals"?SG_DESIGNS.filter(d=>!S.gcat||(S.gcat==="bar"?!d.vg:d.cat===S.gcat)).sort((a,b)=>(b.vg?1:0)-(a.vg?1:0)):tab==="fcount"?FC_DESIGNS.filter(d=>(!S.fcF||(S.fcF.startsWith("cat:")?d.cat===S.fcF.slice(4):fcTags(d).includes(S.fcF)))&&(!S.fcFavOnly||(S.settings.fcFav||[]).includes(d.id))):tab==="nowplay"?NP_DESIGNS:tab==="uchat"?UC_DESIGNS:tab==="levent"?LE_DESIGNS.filter(d=>(!S.leFavOnly||(S.settings.leFav||[]).includes(d.id))&&(!S.leGrp||d.cat===S.leGrp)):tab==="rules"?RB_DESIGNS:tab==="clocks"?CLOCK_DESIGNS:tab==="socials"?SOCIAL_DESIGNS:DESIGNS;
-  const LB_PLAN={circle:15,cloud:10,royal:15,neon:15,glass:15,d3:15,mini:15,basic:4,boys:20,girls:20,ptrans:20,creative:20,legRoyal:10,legFlower:10,legGaming:10,legGalaxy:10,legMinimal:11,legSaudi:10};
+  const LB_PLAN={circle:15,cloud:10,royal:15,neon:15,glass:15,d3:15,mini:15,basic:4,boys:20,girls:20,ptrans:20,creative:20,legRoyal:10,legFlower:10,legGaming:10,legGalaxy:10,legMinimal:11,legSaudi:10,refTop:14};
   h=head(tab==="pro"?"🎨 مكتبة تصاميم القوائم":"مكتبة التصاميم","معاينة حيّة — التصميم يُطبَّق على العنصر المختار فقط",layoutPicker())+
   `<div class="row" style="margin-bottom:12px"><button class="btn sm ${tab==="pro"?"on":""}" data-libtab="pro">✨ قوائم الداعمين (${LB_DESIGNS.length})</button><button class="btn sm ${tab==="goals"?"on":""}" data-libtab="goals">🎯 أهداف الدعم (${SG_DESIGNS.length})</button><button class="btn sm ${tab==="nowplay"?"on":""}" data-libtab="nowplay">🎵 الأغنية الحالية (${NP_DESIGNS.length})</button><button class="btn sm ${tab==="uchat"?"on":""}" data-libtab="uchat">💬 الشات الموحد (${UC_DESIGNS.length})</button><button class="btn sm ${tab==="levent"?"on":""}" data-libtab="levent">✨ آخر التفاعلات (${LE_DESIGNS.length}/${LE_PLAN_TOTAL})</button><button class="btn sm ${tab==="fcount"?"on":""}" data-libtab="fcount">👥 عدادات المتابعين (${FC_DESIGNS.length}/60)</button><button class="btn sm ${tab==="rules"?"on":""}" data-libtab="rules">📜 قوانين السبثون (${RB_DESIGNS.length}/40)</button><button class="btn sm ${tab==="boards"?"on":""}" data-libtab="boards">🏆 قوائم الترتيب (${DESIGNS.length})</button><button class="btn sm ${tab==="clocks"?"on":""}" data-libtab="clocks">⏳ السبثون والمؤقتات (${CLOCK_DESIGNS.length})</button><button class="btn sm ${tab==="socials"?"on":""}" data-libtab="socials">🌐 الحسابات (${SOCIAL_DESIGNS.length})</button></div>
   <div class="card" style="margin-bottom:14px"><div class="row"><span class="mut">تطبيق على:</span>${pool.length?`<select class="inp" data-act="libTarget" style="width:auto">${pool.map(w=>`<option value="${w.id}" ${tgt&&w.id===tgt.id?"selected":""}>${TYPES[w.type].icon} ${esc(w.name)} — ${wdname(w)}</option>`).join("")}</select>`:`<span class="mut small">لا يوجد عنصر من هذا النوع في التخطيط</span> ${tab==="pro"?`<button class="btn sm" data-add-lb="5">+ إضافة قائمة Pro</button>`:`<button class="btn sm" data-add="${tab==="clocks"?"subathon":tab==="socials"?"social":tab==="goals"?"sgoal":tab==="rules"?"srules":tab==="fcount"?"fcount":"gifts"}">+ إضافة</button>`}`}</div></div>
