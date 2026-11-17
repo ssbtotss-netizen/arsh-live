@@ -276,3 +276,28 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .ml-lv.ml-new{outline:2px solid var(--pri,#ffcc00);outline-offset:2px}
 
 .probadge{position:absolute;top:8px;right:8px;z-index:3;font:800 10px/1 system-ui;letter-spacing:.06em;padding:4px 7px;border-radius:999px;color:#1a1204;background:linear-gradient(135deg,#ffe08a,#f5b301);box-shadow:0 2px 10px #f5b30155}
+/* ===== استوديو القائمة (قسم القوائم الموحّد) ===== */
+.ls-sec h3{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap}
+.ls-card{display:grid;grid-template-columns:150px 1fr auto;gap:12px;align-items:center;padding:10px;margin-bottom:10px;border:1px solid var(--line);border-radius:16px;background:linear-gradient(135deg,#ffffff06,#ffffff02);transition:border-color .2s,box-shadow .2s}
+.ls-card.on,.ls-card:hover{border-color:#3d8bff88;box-shadow:0 0 0 1px #3d8bff33,0 10px 30px #0006}
+.ls-thumb{position:relative;height:96px;border-radius:12px;overflow:hidden;background:repeating-conic-gradient(#1a2130 0 25%,#141a26 0 50%) 0 0/16px 16px}
+.ls-info{min-width:0;display:flex;flex-direction:column;gap:3px}.ls-nm{font-size:15px}
+.ls-acts{display:flex;flex-direction:column;gap:6px;align-items:stretch}.ls-copy{font-weight:800}
+.probadge.sm{position:static;display:inline-block;font-size:9px;padding:2px 6px;vertical-align:middle}
+.ls-ed{margin-top:14px;border-color:#3d8bff55}
+.ls-steps{display:flex;gap:6px;flex-wrap:wrap;margin:10px 0}.ls-steps a{cursor:pointer;padding:5px 10px;border-radius:999px;background:#ffffff0d;font-size:12px}.ls-steps a:hover{background:#3d8bff33}
+.ls-grid{display:grid;grid-template-columns:minmax(0,1fr) 380px;gap:16px;align-items:start}
+.ls-side{position:sticky;top:10px;display:flex;flex-direction:column;gap:14px}
+.ls-main section,.ls-side section{scroll-margin-top:12px;margin-bottom:16px}
+.ls-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin-top:10px;max-height:620px;overflow:auto;padding:2px}
+.ls-d{position:relative;border:1px solid var(--line);border-radius:14px;overflow:hidden;cursor:pointer;background:#0d1220;transition:transform .15s,border-color .15s,box-shadow .15s}
+.ls-d:hover{transform:translateY(-2px);border-color:#3d8bff99;box-shadow:0 8px 22px #0008}
+.ls-d.on{border-color:#22e07a;box-shadow:0 0 0 2px #22e07a66}
+.ls-pv{position:relative;height:120px;overflow:hidden;background:repeating-conic-gradient(#1a2130 0 25%,#141a26 0 50%) 0 0/14px 14px}
+.ls-d:hover .ls-pv *,.ls-d:hover .ls-pv *::before,.ls-d:hover .ls-pv *::after{animation-play-state:running!important}
+.ls-dn{padding:6px 8px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ls-on{position:absolute;bottom:34px;left:6px;z-index:3;font:800 10px/1 system-ui;padding:4px 7px;border-radius:999px;background:#22e07a;color:#03140a}
+.ls-live{position:relative;height:300px;border-radius:14px;overflow:hidden;background:repeating-conic-gradient(#1a2130 0 25%,#141a26 0 50%) 0 0/18px 18px;border:1px solid var(--line)}
+.ls-big{position:relative;height:min(62vh,560px);width:min(80vw,820px);border-radius:14px;overflow:hidden;margin-top:10px;background:repeating-conic-gradient(#1a2130 0 25%,#141a26 0 50%) 0 0/18px 18px}
+.ls-props #props,.ls-props{background:none;border:0;padding:0}
+@media (max-width:1100px){.ls-grid{grid-template-columns:1fr}.ls-side{position:static}.ls-card{grid-template-columns:110px 1fr}.ls-acts{grid-column:1/-1}}
