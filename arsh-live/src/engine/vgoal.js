@@ -120,12 +120,13 @@ Object.assign(View.prototype,{
     <div class="vg-last"></div><div class="vg-meta"></div></div><div class="vg-fx"></div>`+ed;
   const q=s=>this.el.querySelector(s);
   this.vg={d,cur:q(".vg-cur"),tgt:q(".vg-tgt"),pc:[...this.el.querySelectorAll(".vg-pc")],last:q(".vg-last"),meta:q(".vg-meta"),fx:q(".vg-fx"),art:q(".vg-art"),
-   facets:[...this.el.querySelectorAll(".vg-fc")].sort((a,b)=>(+a.dataset.i||0)-(+b.dataset.i||0)),ticks:[...this.el.querySelectorAll(".vg-tk")],arc:q(".vg-arc"),head:q(".vg-head"),liq:q(".vg-liq"),pile:q(".vg-pile"),lid:q(".vg-lid"),prevCur:null,prevStage:null,lastSup:null};
+   facets:[...this.el.querySelectorAll(".vg-fc")].sort((a,b)=>(+a.dataset.i||0)-(+b.dataset.i||0)),ticks:[...this.el.querySelectorAll(".vg-tk")],arc:q(".vg-arc"),head:q(".vg-head"),liq:q(".vg-liq"),pile:q(".vg-pile"),hf:[...this.el.querySelectorAll(".vg-hf")],kn:[...this.el.querySelectorAll(".vg-kn")],lid:q(".vg-lid"),prevCur:null,prevStage:null,lastSup:null};
  },
  /** تطبيق النسبة على التصميم (محرك التعبئة) */
  vgFill(p){ const V=this.vg; this.el.style.setProperty("--p",String(p));
   if(V.liq){ const top=+(V.liq.dataset.top||34), bot=+(V.liq.dataset.bot||152); V.liq.style.transform=`translateY(${bot-(bot-top)*p+(p>=1?-4:0)}px)` }
   if(V.facets.length){ const n=V.facets.length, f=p*n; V.facets.forEach((el,i)=>{ const on=Math.max(0,Math.min(1,f-i)); el.style.setProperty("--on",String(on)); el.classList.toggle("lit",on>=1) }) }
+  if(V.hf.length){ for(const r of V.hf){ const w=+(r.dataset.w||100); r.setAttribute("width",String(Math.max(0.01,w*p))) } for(const k of V.kn){ k.style.transform=`translateX(${(+(k.dataset.w||100))*p}px)` } } /* أشرطة أفقية */
   if(V.pile){ V.pile.style.transform=`translateY(${(1-p)*(+(V.pile.dataset.h||48))}px)` }
   if(V.lid){ const o=Math.min(1,p*1.15); V.lid.style.transform=`translateY(${-o*30}px) scaleY(${1-o*.55})` }
   if(V.arc){ V.arc.style.strokeDasharray=`${p*100} 100`; if(V.head) V.head.style.transform=`rotate(${p*360}deg)`; const n=V.ticks.length; V.ticks.forEach((t,i)=>t.classList.toggle("on",i/n<p)) }

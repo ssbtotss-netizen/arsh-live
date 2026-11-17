@@ -37,7 +37,7 @@ const url='file:///home/claude/najd/demo/index.html';
  // المكتبة + شريط التجربة
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="goals"]'); await p.waitForTimeout(500);
  ok(await p.evaluate(()=>document.querySelectorAll('[data-gcat2]').length===2+Object.keys(VG_CATS).length),'goal library: all categories shown');
- await p.click('[data-gcat2="vessel"]'); await p.waitForTimeout(400); ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc').length)===1,'category filter (vessels)');
+ await p.click('[data-gcat2="vessel"]'); await p.waitForTimeout(400); ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc').length===VG_DESIGNS.filter(d=>d.cat==='vessel').length),'category filter (vessels)');
  await p.click('[data-gcat2=""]'); await p.waitForTimeout(500);
  await p.evaluate(()=>{const r=document.querySelector('[data-act="gpct"]'); r.value=30; r.dispatchEvent(new Event('input',{bubbles:true}))}); await p.waitForTimeout(200);
  const [ps,VGN]=await p.evaluate(()=>[[...document.querySelectorAll('#lib .vgw')].map(e=>+getComputedStyle(e).getPropertyValue('--p')),VG_DESIGNS.length]); ok(ps.length===VGN&&ps.every(x=>Math.abs(x-.3)<1e-6),'slider drives all '+ps.length+' previews to 30%');

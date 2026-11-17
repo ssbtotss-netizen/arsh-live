@@ -12,6 +12,7 @@ export * from "../engine/lbview.js";
 export * from "../engine/rboard.js";
 export * from "../engine/vgoal.js";
 export * from "../engine/vgoal80.js";
+export * from "../engine/vgoal_ref.js";
 export * from "../engine/bots.js";
 export * from "../engine/botview.js";
 export * from "../engine/followers.js";
