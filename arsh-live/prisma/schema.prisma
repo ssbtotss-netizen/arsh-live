@@ -37,6 +37,7 @@ model User {
   plan           String      @default("free")  // free | pro | comp (منحة)
   planUntil      DateTime?
   trialEndsAt    DateTime?                     // نهاية التجربة المجانية (يحددها التسجيل أو المشرف)
+  trialPending   Boolean   @default(false)       // حساب جديد: التجربة تبدأ مع أول بث مباشر
   disabled       Boolean     @default(false)   // إيقاف الحساب من لوحة الإدارة
   lastSeenAt     DateTime?
   subscriptions  Subscription[]

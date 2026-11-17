@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { currentUser, token, isAdmin } from "@/lib/auth";
-import { subStatus, planCheck } from "@/engine/plans.js";
+import { subStatus, planCheck, proViolations } from "@/engine/plans.js";
 import { getBilling } from "@/server/appconfig";
 
 import { canvasValid } from "@/engine/defs.js";
@@ -41,6 +41,10 @@ export async function PUT(req: Request) {
     const bc = await getBilling();
     const over = planCheck(u, "layouts", body.layouts.length, bc) || planCheck(u, "widgets", body.layouts.reduce((n: number, l: any) => n + (Array.isArray(l?.widgets) ? l.widgets.length : 0), 0), bc);
     if (over) return NextResponse.json({ error: over, code: "plan_limit" }, { status: 402 });
+    // تصاميم PRO: الحساب غير المشترك لا يضيف تصاميم PRO جديدة (المحفوظة سابقاً تبقى ولا تُحذف)
+    const prev = await prisma.layout.findMany({ where: { userId: u.id }, select: { widgets: true } });
+    const pro = proViolations(u, body.layouts, prev, bc);
+    if (pro.length) return NextResponse.json({ error: `هذا التصميم من PRO — اشترك أو ابدأ تجربتك لاستخدامه (${pro.slice(0, 3).map(x => x.split(":")[1]).join("، ")})`, code: "pro_design", designs: pro }, { status: 402 });
     const ids: string[] = [];
     body.layouts.forEach((l: any, i: number) => {
       if (typeof l?.id !== "string" || !Array.isArray(l.widgets) || l.widgets.length > 60 || JSON.stringify(l.widgets).length > 6_000_000) return;

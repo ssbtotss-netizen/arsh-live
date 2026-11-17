@@ -17,7 +17,8 @@ export async function POST(req: Request) {
     const bc = await getBilling();
     const user = await prisma.user.create({
       data: {
-        trialEndsAt: bc.trialEnabled && bc.trialDays > 0 ? new Date(Date.now() + bc.trialDays * 864e5) : new Date(),
+        // التجربة لا تبدأ عند التسجيل — تبدأ مع أول بث مباشر (trialPending)
+        trialEndsAt: null, trialPending: !!(bc.trialEnabled && bc.trialDays > 0),
         email: em, name: String(name || "صانع محتوى").slice(0, 60), passwordHash: hashPassword(password),
         overlayToken: "ov_" + token(12), editKey: "ek_" + token(24), activeLayoutId: layouts[0].id,
         settings: { bigGift: 1000, fx: true, tiktok: "" },

@@ -10,6 +10,8 @@ import { createYouTube } from "./src/server/youtube";
 const youtube = createYouTube();
 import { createPlatformService } from "./src/server/platforms";
 import { createPubChat } from "./src/server/pubchat";
+import { trialStartPatch } from "./src/engine/plans.js";
+import { getBilling } from "./src/server/appconfig";
 import { createNotifyService } from "./src/server/notify";
 import { canvasValid } from "./src/engine/defs.js";
 import { createDonationService } from "./src/server/donations/service";
@@ -57,7 +59,11 @@ app.prepare().then(() => {
       const t = rep.totals || {}; const m = Math.round((rep.durationMs || 0) / 60000);
       await (globalThis as any).__b6o6?.notify?.send(userId, "stats", { duration: `${Math.floor(m / 60)}:${String(m % 60).padStart(2, "0")}`, likes: t.likes ?? 0, gifts: t.gifts ?? 0, follows: t.follows ?? 0 }).catch(() => {});
     },
-    onLiveStatus(room: string, live: boolean) { (globalThis as any).__b6o6?.notify?.live(room, live, process.env.PUBLIC_URL || "").catch(() => {}); },
+    onLiveStatus(room: string, live: boolean) {
+      (globalThis as any).__b6o6?.notify?.live(room, live, process.env.PUBLIC_URL || "").catch(() => {});
+      // أول بث مباشر حقيقي (اتصال TikTok فعلي — ليس محاكاة) يبدأ التجربة المجانية للحساب الجديد
+      if (live) userIdOf(room).then(async uid => { if (!uid) return; const u = await prisma.user.findUnique({ where: { id: uid }, select: { trialPending: true } }); const patch = trialStartPatch(u, await getBilling()); if (patch) await prisma.user.updateMany({ where: { id: uid, trialPending: true }, data: { trialPending: false, trialEndsAt: new Date(patch.trialEndsAt) } }); }).catch(() => {});
+    },
     // الغرفة = overlayToken (قراءة فقط في روابط OBS). التعديل يحتاج editKey السري لنفس المستخدم.
     async authorize(room, key) {
       if (!key) return false;

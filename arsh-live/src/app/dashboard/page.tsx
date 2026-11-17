@@ -20,7 +20,7 @@ export default function DashboardPage() {
         wsUrl: `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`,
         room: d.user.overlayToken, key: d.user.editKey,
         overlayURL: (layoutId: string, only?: string, acc?: string) => `${location.origin}/overlay/${d.user.overlayToken}?layout=${layoutId}${only ? `&only=${only}` : ""}${acc ? `&acc=${acc}` : ""}${(window as any).__arshPM && (window as any).__arshPM !== "hq" ? `&pm=${(window as any).__arshPM}` : ""}`,
-        persist: (body: any) => fetch("/api/me", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(x => { if (!x.ok) throw new Error(); }),
+        persist: (body: any) => fetch("/api/me", { method: "PUT", headers: { "content-type": "application/json" }, body: JSON.stringify(body) }).then(async x => { if (!x.ok) { const j = await x.json().catch(() => null); throw new Error((j && j.error) || "save"); } }),
         logout: () => fetch("/api/auth", { method: "DELETE" }).then(() => (location.href = "/login")),
       };
       const s = document.createElement("script");

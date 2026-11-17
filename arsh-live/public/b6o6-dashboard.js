@@ -970,12 +970,24 @@ function billingCfg(c){ c=c||{}; const d=BILLING_DEFAULTS;
   priceUsd:Math.max(1,Math.min(1000,Math.round((+c.priceUsd>0?+c.priceUsd:d.priceUsd)*100)/100)), months:d.months,
   limits:{full:{...d.limits.full},expired:{...d.limits.expired,...((c.limits&&c.limits.expired)||{}),...(c.expiredLimits||{})}}, perks:Array.isArray(c.perks)&&c.perks.length?c.perks.slice(0,12).map(String):d.perks} }
 const ms=x=>x?new Date(x).getTime():0;
+/** الحساب الجديد ينتظر أول بث لبدء التجربة — بحدّ أقصى لهذا الانتظار حتى لا تبقى الميزات مفتوحة بلا نهاية */
+const TRIAL_PENDING_CAP_DAYS=60;
+/** بدء التجربة عند أول بث موثوق: يُعيد بيانات التحديث أو null إن لم تكن معلّقة */
+function trialStartPatch(u,cfg,now=Date.now()){ cfg=billingCfg(cfg); if(!u||!u.trialPending) return null; return {trialPending:false,trialEndsAt:new Date(now+cfg.trialDays*864e5).toISOString()} }
+// ====== تصاميم PRO: تصاميم المرجع (r…) والحصرية (x…) — يُفرض على الخادم عند الحفظ ======
+const PRO_DESIGN_RE=/^[rx][A-Z][A-Za-z0-9]*$/;
+const isProDesign=d=>typeof d==="string"&&PRO_DESIGN_RE.test(d);
+/** كل تصاميم PRO المستخدمة في مجموعة تخطيطات (type:design) */
+function proDesignsIn(layouts){ const out=new Set(); for(const l of (Array.isArray(layouts)?layouts:[])) for(const w of (Array.isArray(l&&l.widgets)?l.widgets:[])){ if(!w) continue; for(const k of ["design","tpl","alertDesign"]) if(isProDesign(w[k])) out.add(String(w.type||"")+":"+w[k]); if(w.levels&&typeof w.levels==="object") for(const lv of Object.values(w.levels)) if(lv&&isProDesign(lv.design)) out.add(String(w.type||"")+":"+lv.design) } return out }
+/** تصاميم PRO الجديدة (غير المحفوظة سابقاً) لحساب غير مشترك — تبقى القديمة كما هي ولا تُحذف */
+function proViolations(u,next,prev,cfg,now){ if(subStatus(u,cfg,now).full) return []; const had=proDesignsIn(prev); return [...proDesignsIn(next)].filter(x=>!had.has(x)) }
 /** نهاية التجربة: الحقل المحفوظ، أو تاريخ التسجيل + مدة التجربة الحالية للحسابات القديمة */
 function trialEnd(u,cfg){ cfg=billingCfg(cfg); if(u&&u.trialEndsAt) return ms(u.trialEndsAt); if(!cfg.trialEnabled||!u) return 0; return ms(u.createdAt||Date.now())+cfg.trialDays*864e5 }
 /** حالة الحساب الآن */
 function subStatus(u,cfg,now=Date.now()){ cfg=billingCfg(cfg); const paid=ms(u&&u.planUntil), tEnd=trialEnd(u,cfg);
  if(u&&u.plan==="comp"&&(!paid||paid>now)) return {state:"comp",label:"منحة إدارية",until:paid||null,full:true};
  if(paid>now&&u.plan!=="free") return {state:"active",label:"مشترك",until:paid,full:true};
+ if(u&&u.trialPending&&cfg.trialEnabled){ const cap=ms(u.createdAt||now)+TRIAL_PENDING_CAP_DAYS*864e5; if(cap>now) return {state:"pending",label:`التجربة (${cfg.trialDays} يوماً) تبدأ مع أول بث مباشر`,until:null,full:true,trialDays:cfg.trialDays} }
  if(tEnd>now) return {state:"trial",label:"فترة تجربة مجانية",until:tEnd,daysLeft:Math.ceil((tEnd-now)/864e5),full:true};
  return {state:"expired",label:paid?"انتهى الاشتراك":"انتهت فترة التجربة",until:paid||tEnd||null,full:false} }
 function planLimit(u,key,cfg,now){ cfg=billingCfg(cfg); return cfg.limits[subStatus(u,cfg,now).full?"full":"expired"][key] }
@@ -8207,7 +8219,7 @@ let R=loadRoom(), skew=0, liveStatus={live:false,text:"وضع التجربة ا�
 const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.CHAT});
 const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
-let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),()=>toast("تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
+let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),e=>toast(e&&e.message&&e.message!=="save"?e.message:"تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
 function saveRoomNow(){ if(location.hash.startsWith("#/overlay")) return; /* رابط OBS يقرأ فقط — لا يكتب نسخة قديمة فوق حالة اللوحة */ ls("arsh.room",{D:R.D,H:R.H,C:R.C,logs:R.logs,DN:R.DN,CHAT:R.CHAT}) }
 let saveRT; function saveRoom(){clearTimeout(saveRT);saveRT=setTimeout(saveRoomNow,300)}
 addEventListener("pagehide",()=>{ if(!CFG) ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); saveRoomNow()});
@@ -8442,7 +8454,7 @@ function renderPage(soft){
    <div class="row" style="margin-top:8px;gap:6px"><span class="mut small">🧪 تجربة (بيانات تجريبية):</span><button class="btn sm" data-lbt="new">🎁 دعم جديد</button><button class="btn sm" data-lbt="top">👑 تغيير المركز الأول</button><button class="btn sm" data-lbt="add">➕ زيادة النقاط</button><button class="btn sm" data-lbt="cel">🎉 الاحتفال</button><button class="btn sm ${S.lbStill?"on":""}" data-lbt="still">⏸ إيقاف الحركة</button>
    ${(S.settings.lbPresets||[]).length?`<select class="inp" data-act="lbPreset" style="width:auto"><option value="">💾 تصاميمي المحفوظة…</option>${S.settings.lbPresets.map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join("")}</select>`:""}</div>
    ${list.length?"":`<div class="empty" style="margin-top:10px">${S.lbCat&&!LB_DESIGNS.some(d=>d.cat===S.lbCat)?"هذه الفئة ضمن الدفعات القادمة":"لا توجد نتائج"}</div>`}</div>`:""}
-  <div class="lib ${tab==="pro"?"lib-pro":""} ${S.lbStill?"pv-still":""}" id="lib">${list.map(d=>`<div class="libc ${tgt&&tgt.design===d.id?"on":""}" data-pick="${d.id}" data-name="${esc((d.name+" "+(d.desc||"")+" "+(d.n||"")).toLowerCase())}"><div class="pv" data-pv="${d.id}"></div>${tab==="pro"?`<button class="lbfav ${(S.settings.lbFav||[]).includes(d.id)?"on":""}" data-lbfav="${d.id}" title="المفضلة">★</button><button class="lbfav lepl" data-lbobs="${d.id}" title="استخدام ونسخ رابط OBS">🔗</button>`:""}${tab==="fcount"?`<button class="lbfav ${(S.settings.fcFav||[]).includes(d.id)?"on":""}" data-fcfav="${d.id}" title="المفضلة">★</button><button class="lbfav lepl" data-fcobs="${d.id}" title="نسخ رابط OBS">🔗</button>`:""}${tab==="levent"?`<button class="lbfav ${(S.settings.leFav||[]).includes(d.id)?"on":""}" data-lefav="${d.id}" title="المفضلة">★</button><button class="lbfav lepl" data-lepv="${d.id}" title="تشغيل الحركة">▶</button>${tgt?`<button class="lbfav lecu" data-lecust="${d.id}" title="تخصيص">⚙</button>`:""}`:""}<div class="meta"><b>${tab==="pro"||tab==="levent"?`<span class="tag">#${d.n}</span> `:""}${d.name}</b>${tab==="pro"||tab==="levent"||tab==="uchat"||tab==="nowplay"?`<span class="mut small" style="display:block">${d.desc}</span>`:""}<span class="tag">${tab==="uchat"||tab==="nowplay"?esc(d.ar):tab==="levent"?esc(d.ar)+" · "+LE_GROUPS[d.cat]:tab==="fcount"?FC_CATS[d.cat]:tab==="rules"?RB_CATS[d.cat]:tab==="goals"&&d.vg?VG_CATS[d.cat]:d.cat?LB_CATS[d.cat]:({list:"قائمة",grid:"شبكة",pod:"تتويج",row:"أفقي",digital:"رقمي",ring:"دائري",bar:"شريط",mini:"صغير",vertical:"عمودي",pill:"كبسولة",box:"إطار",hud:"HUD",facet:"ألماسي",bare:"بدون خلفية",ribbon:"شريطة",card:"بطاقة",spot:"إضاءة",gcard:"ألعاب",capsule:"كبسولة عائمة"})[d.shape]||d.shape}</span></div></div>`).join("")}</div>
+  <div class="lib ${tab==="pro"?"lib-pro":""} ${S.lbStill?"pv-still":""}" id="lib">${list.map(d=>`<div class="libc ${tgt&&tgt.design===d.id?"on":""} ${isProDesign(d.id)?"is-pro":""}" data-pick="${d.id}" data-name="${esc((d.name+" "+(d.desc||"")+" "+(d.n||"")).toLowerCase())}"><div class="pv" data-pv="${d.id}"></div>${isProDesign(d.id)?`<span class="probadge">${proLocked()?"🔒 ":""}PRO</span>`:""}${tab==="pro"?`<button class="lbfav ${(S.settings.lbFav||[]).includes(d.id)?"on":""}" data-lbfav="${d.id}" title="المفضلة">★</button><button class="lbfav lepl" data-lbobs="${d.id}" title="استخدام ونسخ رابط OBS">🔗</button>`:""}${tab==="fcount"?`<button class="lbfav ${(S.settings.fcFav||[]).includes(d.id)?"on":""}" data-fcfav="${d.id}" title="المفضلة">★</button><button class="lbfav lepl" data-fcobs="${d.id}" title="نسخ رابط OBS">🔗</button>`:""}${tab==="levent"?`<button class="lbfav ${(S.settings.leFav||[]).includes(d.id)?"on":""}" data-lefav="${d.id}" title="المفضلة">★</button><button class="lbfav lepl" data-lepv="${d.id}" title="تشغيل الحركة">▶</button>${tgt?`<button class="lbfav lecu" data-lecust="${d.id}" title="تخصيص">⚙</button>`:""}`:""}<div class="meta"><b>${tab==="pro"||tab==="levent"?`<span class="tag">#${d.n}</span> `:""}${d.name}</b>${tab==="pro"||tab==="levent"||tab==="uchat"||tab==="nowplay"?`<span class="mut small" style="display:block">${d.desc}</span>`:""}<span class="tag">${tab==="uchat"||tab==="nowplay"?esc(d.ar):tab==="levent"?esc(d.ar)+" · "+LE_GROUPS[d.cat]:tab==="fcount"?FC_CATS[d.cat]:tab==="rules"?RB_CATS[d.cat]:tab==="goals"&&d.vg?VG_CATS[d.cat]:d.cat?LB_CATS[d.cat]:({list:"قائمة",grid:"شبكة",pod:"تتويج",row:"أفقي",digital:"رقمي",ring:"دائري",bar:"شريط",mini:"صغير",vertical:"عمودي",pill:"كبسولة",box:"إطار",hud:"HUD",facet:"ألماسي",bare:"بدون خلفية",ribbon:"شريطة",card:"بطاقة",spot:"إضاءة",gcard:"ألعاب",capsule:"كبسولة عائمة"})[d.shape]||d.shape}</span></div></div>`).join("")}</div>
   ${tab==="boards"?`<div class="ttl">المرحلة 7: الوصول إلى 50 تصميماً للقوائم</div><div class="row">${NEXT_DESIGNS.map(n=>`<span class="tag">${n}</span>`).join("")}</div>`:""}`;
  }
  else if(p==="likes"||p==="gifts"||p==="comments"){
@@ -9149,6 +9161,7 @@ function onClick(e){
  if(d.add){ addWidget(d.add,t.hasAttribute("data-top1")?{topN:1,title:"أكبر داعم",name:"أكبر داعم",design:"podium",w:.32,h:.18}:{}); return renderPage() }
  if(d.edit){ S.sel=d.edit; return go("studio") }
  if(d.lib){ const w=findW(d.lib); S.libTab=({clock:"clocks",soc:"socials",board:"boards",lb:"pro",sg:"goals",rb:"rules",fc:"fcount",le:"levent",uc:"uchat",np:"nowplay"})[dKind(w)]; S.libTarget=d.lib; return go("library") }
+ if(d.pick&&isProDesign(d.pick)&&proLocked()) return toast("🔒 هذا التصميم من PRO — متاح أثناء التجربة المجانية أو مع الاشتراك");
  if(d.pick){ const l=L(); const pool=l.widgets.filter(w=>libPool(w,S.libTab)); const tgt=pool.find(w=>w.id===S.libTarget)||pool[0]; if(!tgt) return toast("أضف عنصراً أولاً"); tgt.design=d.pick; save(); pushLayout(); toast(`«${wdname(tgt)}» ← ${tgt.name} فقط`); return renderPage() }
  if(d.copylink) return copy(overlayURL(L(),d.copylink));
  if(t.hasAttribute("data-copyall")) return copy(overlayURL(L()));
@@ -10062,11 +10075,13 @@ function psInput(t,d,e){
 
 // ====== الاشتراك: تجربة مجانية ثم اشتراك شهري (الإعدادات من لوحة الإدارة) ======
 S.bill={months:1,data:null};
+/** حساب غير مشترك بعد انتهاء التجربة؟ (الخادم يفرض نفس القاعدة عند الحفظ) */
+function proLocked(){ const st=(S.bill&&S.bill.data&&S.bill.data.status)||(CFG&&CFG.profile&&CFG.profile.sub); return !!(CFG&&st&&st.full===false) }
 async function billLoad(){ if(!CFG) return; try{ const r=await fetch("/api/billing"); if(r.ok){ S.bill.data=await r.json(); if(S.page==="billing") renderPage(true) } }catch(e){} }
 function billHTML(){ const B=S.bill; if(CFG&&!B.data) billLoad();
  const cfg=B.data?.cfg||billingCfg({}), st=B.data?.status||(CFG?CFG.profile?.sub:null), m=B.months, total=Math.round(cfg.priceUsd*m*100)/100, dt_=x=>new Date(x).toLocaleDateString("ar-SA-u-ca-gregory-nu-latn");
  const ok=/billing-ok/.test(location.hash)?'<div class="note" style="margin-bottom:12px">✅ تم استلام الدفع. يُفعَّل الاشتراك تلقائياً فور تأكيد بوابة الدفع (عادة خلال ثوانٍ) — حدّث الصفحة.</div>':"";
- const stTxt=!CFG?"وضع التجربة المحلي — الاشتراك يعمل بعد إنشاء حساب على المنصة المنشورة":!st?"":st.state==="trial"?`🎁 فترة تجربة مجانية — متبقي <b>${st.daysLeft}</b> يوم (حتى ${dt_(st.until)})`:st.state==="active"?`✅ مشترك حتى ${dt_(st.until)}`:st.state==="comp"?`🎁 منحة إدارية${st.until?" حتى "+dt_(st.until):""}`:`⚠️ ${st.label} — بعض الميزات محدودة حتى تشترك`;
+ const stTxt=!CFG?"وضع التجربة المحلي — الاشتراك يعمل بعد إنشاء حساب على المنصة المنشورة":!st?"":st.state==="pending"?`🎁 تجربتك المجانية (<b>${st.trialDays||30}</b> يوماً) لم تبدأ بعد — تبدأ تلقائياً مع أول بث مباشر حقيقي، وكل الميزات مفتوحة لك الآن`:st.state==="trial"?`🎁 فترة تجربة مجانية — متبقي <b>${st.daysLeft}</b> يوم (حتى ${dt_(st.until)})`:st.state==="active"?`✅ مشترك حتى ${dt_(st.until)}`:st.state==="comp"?`🎁 منحة إدارية${st.until?" حتى "+dt_(st.until):""}`:`⚠️ ${st.label} — بعض الميزات محدودة حتى تشترك`;
  return head("💎 الاشتراك",stTxt)+ok+
  `<div class="grid g2" style="align-items:start"><div class="card" style="border-color:#7c5cff;box-shadow:0 0 0 2px #7c5cff55">
   <h3>B6O6 Streaming — كل الميزات</h3>
