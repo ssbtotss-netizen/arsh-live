@@ -301,3 +301,17 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .ls-big{position:relative;height:min(62vh,560px);width:min(80vw,820px);border-radius:14px;overflow:hidden;margin-top:10px;background:repeating-conic-gradient(#1a2130 0 25%,#141a26 0 50%) 0 0/18px 18px}
 .ls-props #props,.ls-props{background:none;border:0;padding:0}
 @media (max-width:1100px){.ls-grid{grid-template-columns:1fr}.ls-side{position:static}.ls-card{grid-template-columns:110px 1fr}.ls-acts{grid-column:1/-1}}
+/* ===== معرض التصاميم الشامل ===== */
+.gal-bar{display:flex;gap:8px;flex-wrap:wrap}
+.gal-chip{border:1px solid var(--line);background:#ffffff08;color:inherit;border-radius:999px;padding:8px 14px;font:700 13px/1 inherit;font-family:inherit;cursor:pointer;transition:background .15s,border-color .15s,transform .15s}
+.gal-chip span{opacity:.6;font-weight:600;margin-inline-start:4px}.gal-chip:hover{transform:translateY(-1px);border-color:#3d8bff88}
+.gal-chip.on{background:linear-gradient(135deg,#3d8bffcc,#7c5cffcc);border-color:transparent;color:#fff;box-shadow:0 6px 18px #3d8bff44}
+.gal-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:16px;margin-top:14px}
+.gal-card{position:relative;border:1px solid var(--line);border-radius:18px;overflow:hidden;background:linear-gradient(180deg,#121a2b,#0b111d);cursor:pointer;transition:transform .2s,border-color .2s,box-shadow .2s}
+.gal-card:hover{transform:translateY(-3px);border-color:#3d8bff99;box-shadow:0 14px 34px #000a,0 0 0 1px #3d8bff33}
+.gal-pv{position:relative;width:100%;overflow:hidden;background:repeating-conic-gradient(#1a2130 0 25%,#141a26 0 50%) 0 0/18px 18px}
+.gal-card:hover .gal-pv *,.gal-card:hover .gal-pv *::before,.gal-card:hover .gal-pv *::after{animation-play-state:running!important}
+.gal-meta{padding:12px 14px 14px}.gal-nm{font-size:15px;margin-bottom:6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gal-meta .tag.pro{background:linear-gradient(135deg,#ffe08a,#f5b301);color:#1a1204}.gal-meta .tag.ok{background:#22e07a22;color:#7cf3b0}
+.gal-fav{position:absolute;top:10px;left:10px;z-index:3;width:34px;height:34px;border-radius:50%;border:0;background:#000a;color:#fff8;font-size:16px;cursor:pointer}.gal-fav.on{color:#ffd54a}
+@media (max-width:760px){.gal-grid{grid-template-columns:1fr}.gal-meta .btn{min-height:40px;flex:1}}

@@ -118,7 +118,7 @@ const url = 'file://' + path.resolve(__dirname, '../demo/index.html');
   await page.waitForTimeout(200);
   ok(await page.locator('#stage .wd').count() === 4, 'switch to second layout');
   for (const c of ['horizontal', 'square']) { await page.click(`[data-canvas="${c}"]`); await page.waitForTimeout(200); await page.screenshot({ path: path.resolve(__dirname, `shot-canvas-${c}.png`) }); }
-  await page.click('.nav [data-go="library"]'); await page.waitForTimeout(300);
+  await page.click('.nav [data-go="library"]'); await page.waitForTimeout(300); await page.click('[data-libtab="boards"]'); await page.waitForTimeout(300);
   ok(await page.locator('.libc').count() === 11, '11 list designs in library');
   await page.screenshot({ path: path.resolve(__dirname, 'shot-library.png'), fullPage: true });
 

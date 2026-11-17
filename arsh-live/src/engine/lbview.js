@@ -22,6 +22,7 @@ Object.assign(View.prototype,{
   const lite=!!(w.lowPerf||this.opts.lowPerf), d=lb?lbDesignOf(w.design):(SG_DESIGNS.find(x=>x.id===w.design)||SG_DESIGNS[0]);
   e.className=`wd pro ${lb?"lbw lbd-"+d.id+(d.cat==="mini"?" lbd-mini":"")+" lbn-"+Math.max(1,w.topN):"sgw sg-"+d.id+" sgs-"+d.shape} av-${w.avShape||"circle"} f-${w.font&&w.font!=="default"?w.font:"default"}${lite?" lb-lite":""}${w.effects&&this.opts.globalFx!==false?"":" no-fx"}${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
   this.lbBars=lb&&d.layout==="bars"; this.lbArt=lb&&d.layout==="art"?lbArtOf(d,w):null;
+  if(d.css&&typeof document!=="undefined"&&!document.getElementById("lbcss-"+d.id)){ const st=document.createElement("style"); st.id="lbcss-"+d.id; st.textContent=d.css; document.head.appendChild(st) } // تنسيق خاص بالتصميم (مرة واحدة)
   if(this.lbArt){ const A=this.lbArt, T=(c,on)=>on&&e.classList.add(c); e.classList.add("lbl-art","lba-"+A.arr,"lbfr-"+(w.showAv===false?"none":A.frame),"lbrk-"+A.rk,"lbnm-"+A.nm);
    T("lb-norank",w.showRank===false); T("lb-nod1",w.crown1===false||w.showDeco===false); T("lb-noamb",w.showAmb===false); T("lb-shine",w.shine===true||(w.shine!==false&&d.id==="whiteShine"));
    const S0=e.style; S0.setProperty("--W0",String(Math.round(Math.min(W,Hh*1.6)))); S0.setProperty("--las",String(w.animSpeed||1)); S0.setProperty("--glw",String(w.glowStr??1));
@@ -64,10 +65,11 @@ Object.assign(View.prototype,{
   const P=this.pg; if(!P||!this.rows||!this.slotOf) return; const N=Math.max(1,this.w.topN), sl=this.lbSlotsOf(N,P);
   for(const [k,el] of this.rowEls){ const i=this.slotOf.get(k); if(i==null) continue; this.place(el,sl[i],i) }
  },
- lbSlotsOf(N,P){ if(this.lbArt) return lbArtSlots(this.lbArt.arr,N,P.W,P.H,P.g); if(!this.lbBars) return lbSlots(N,P.W,P.H,P.g); const sl=lbBarSlots(N,P.W,P.H,P.g); if(sl[0]) this.el.style.setProperty("--rh0",sl[0].h+"px"); return sl },
+ lbSlotsOf(N,P){ if(this.lbArt) return lbArtSlots(this.lbArt.arr==="crown3"&&this.w.podFlip?"crown3r":this.lbArt.arr,N,P.W,P.H,P.g); if(!this.lbBars) return lbSlots(N,P.W,P.H,P.g); const sl=lbBarSlots(N,P.W,P.H,P.g); if(sl[0]) this.el.style.setProperty("--rh0",sl[0].h+"px"); return sl },
  place(el,s,i){
   const w=this.w, as=(w.avatarScale||1)*(this.lbAvs||1), fsx=w.fontScale||1;
   el.style.transform=`translate(${s.x}px,${s.y}px)`; el.style.width=s.w+"px"; el.style.height=s.h+"px";
+  if(this.lbArt&&this.lbArt.arr==="crown3"&&i<3&&this.pg) el.style.setProperty("--ped",Math.max(8,this.pg.H*(this.w.topN>3?.8:.985)-(s.y+s.h))+"px"); // منصات التتويج تنتهي على أرضية واحدة
   let av,fs; if(s.k==="tok"){ av=s.w*.74*as*(i===0?(+w.firstScale||1):1); fs=Math.min(s.w*.14,s.h*.1)*fsx } else if(this.lbBars){ av=s.h*.74*as; fs=s.h*.42*fsx } else if(s.k==="row"){ av=s.h*.84*as; fs=Math.min(s.h*.36,s.w*.06)*fsx } else if(s.k==="hero"){ av=Math.min(s.w*.4,s.h*.48)*as; fs=Math.min(s.w*.075,s.h*.08)*fsx } else { av=Math.min(s.w*.66,s.h*.46)*as; fs=Math.min(s.w*.12,s.h*.08)*fsx }
   el.style.setProperty("--av",av+"px"); el.style.setProperty("--fs",fs+"px"); el.style.setProperty("--rh",(s.k==="row"?s.h:fs*2.6)+"px");
   const k="k-"+s.k; if(!el.classList.contains(k)){ el.classList.remove("k-row","k-pod","k-hero","k-tok"); el.classList.add(k) }
@@ -82,7 +84,7 @@ Object.assign(View.prototype,{
    const it=list[i]?{...list[i]}:{k:"__e"+i,name:"بانتظار…",v:0,emp:true}; const rank=i+1;
    let el=this.rowEls.get(it.k), fresh=false;
    if(!el){ fresh=true; el=document.createElement("div"); el.dataset.k=it.k;
-    el.innerHTML=`<div class="lr-card"><span class="swp"><i></i></span></div><span class="lr-rk"></span><span class="lr-av"><span class="halo">${this.lbHalo}</span><img alt=""><i class="crw">${CROWN_SVG}</i><i class="d1">${this.lbD1||""}</i></span><span class="lr-nm"></span><span class="lr-vl"><b></b><span class="ic"></span></span>`;
+    el.innerHTML=`<div class="lr-card"><span class="swp"><i></i></span></div><span class="lr-rk"></span><span class="lr-av"><span class="halo">${this.lbHalo}</span><img alt=""><i class="crw">${CROWN_SVG}</i><i class="d1">${this.lbD1||""}</i></span><span class="lr-nm"></span><span class="lr-vl"><b></b><span class="ic"></span></span><i class="ped"><b></b></i>`;
     box.appendChild(el); this.rowEls.set(it.k,el); el.dataset.v="0" }
    el.className=`lr r${rank}${rank>5?" rx":""}${it.emp?" emp":""}${el.classList.contains("k-row")?" k-row":el.classList.contains("k-pod")?" k-pod":el.classList.contains("k-hero")?" k-hero":el.classList.contains("k-tok")?" k-tok":""}`;
    el.style.setProperty("--rc",`var(--rc${Math.min(5,rank)})`); el.style.setProperty("--d",(i*.35)+"s");

@@ -5,7 +5,7 @@ import { LB_DESIGNS, LB_CATS } from "./lb.js";
 import { duckSVG } from "./fachars.js";
 
 Object.assign(LB_CATS,{legRoyal:"أسطورية: ملكية",legFlower:"أسطورية: فراشات وورد",legGaming:"أسطورية: ألعاب",legGalaxy:"أسطورية: فضاء",legMinimal:"أسطورية: بسيطة وشفافة",legSaudi:"أسطورية: سعودية وB6O6"});
-export const LB_ARRS={column:"عمودي نحيف",row:"أفقي",podium:"منصة تتويج",hero:"الأول كبير",ring:"دائري حول الأول",stairs:"درجات",triangle:"مثلث",crescent:"هلال",float:"طافٍ بدون خلفيات",zigzag:"متعرج",wings:"أجنحة",medals:"ميداليات",planets:"كواكب",text:"نصي بسيط",rotate:"متناوب (داعم كل عدة ثوانٍ)",race:"سباق (مسارات)"};
+export const LB_ARRS={column:"عمودي نحيف",row:"أفقي",podium:"منصة تتويج",hero:"الأول كبير",ring:"دائري حول الأول",stairs:"درجات",triangle:"مثلث",crescent:"هلال",float:"طافٍ بدون خلفيات",zigzag:"متعرج",wings:"أجنحة",medals:"ميداليات",planets:"كواكب",text:"نصي بسيط",rotate:"متناوب (داعم كل عدة ثوانٍ)",race:"سباق (مسارات)",crown3:"منصة تتويج TOP 3"};
 export const LB_FRAMES={ring:"حلقة",shield:"درع",medal:"ميدالية",hex:"سداسي",diamond:"ماسي",crystal:"كريستال",arch:"بوابة",soft:"توهج ناعم",planet:"كوكب بحلقة",squircle:"مربع ناعم",moon:"أطوار القمر",none:"بدون صورة"};
 export const LB_RKS={circle:"دائرة",diamond:"ألماسة",shield:"درع",ribbon:"شريطة",big:"رقم كبير",hex:"سداسي",none:"مخفي"};
 export const LB_NMS={none:"نص فقط",capsule:"كبسولة",ribbon:"شريطة نحيفة",line:"خط ذهبي",glass:"زجاجي",plate:"لوحة داكنة",carbon:"كربون"};
@@ -87,6 +87,9 @@ export function lbArtSlots(arr,N,W,H,g){ const S=[], m=Math.min(W,H);
   case "wings": { const s0=Math.min(W*.28,H*.5/1.45), s=s0*.72; S[0]=T((W-s0)/2,0,s0); for(let i=1;i<N;i++){ const side=i%2?1:-1, step=Math.ceil(i/2), x=W/2+side*(s0*.55+step*(s+g)*1.02)-s/2, y=s0*.3+step*s*.55; S[i]=T(Math.max(0,Math.min(W-s,x)),Math.min(H-s*1.45,y),s*(1-step*.05)) } break }
   case "medals": grid(N,0,0,0,W,H); break;
   case "planets": { const P=[[.5,.12,1],[.18,.05,.7],[.8,.08,.66],[.3,.55,.6],[.72,.52,.58],[.08,.62,.5],[.92,.6,.5],[.5,.7,.48],[.2,.85,.44],[.8,.86,.44]]; if(N>10){ grid(N,0,0,0,W,H); break } const base=Math.min(W*.3,H*.36/1.45*1.45); for(let i=0;i<N;i++){ const [px,py,sc]=P[i], s=base*sc; S[i]=T(Math.max(0,Math.min(W-s,px*W-s/2)),Math.max(0,Math.min(H-s*1.45,py*H)),s) } break }
+  case "crown3": case "crown3r": { // TOP 3: الأول في المنتصف أعلى وأكبر، الثاني يسار، الثالث يمين (crown3r يعكسهما) — مع مساحة للمنصات أسفلها
+   const cw=W/3, ph=H*.8, s1=Math.min(cw*1.02,ph/1.45), L=arr==="crown3r"?[[1,0,1],[2,.2,.84],[0,.28,.76]]:[[1,0,1],[0,.2,.84],[2,.28,.76]];
+   for(let i=0;i<Math.min(3,N);i++){ const [col,lift,sc]=L[i], s=s1*sc; S[i]=T(col*cw+(cw-s)/2,lift*ph*.55+(i?ph*.05:0),s) } if(N>3) rows(N-3,W*.06,ph+g,W*.88,H-ph-g,3); break }
   case "race": { const lh=H/Math.max(N,1), s=Math.min(lh/1.45*.92,W*.16); for(let i=0;i<N;i++){ const lead=(N-i)/N; S[i]=T((W-s)*(1-lead)*.85,i*lh+(lh-s*1.45)/2,s) } break }
   case "rotate": { const s=Math.min(W*.5,H/1.45); for(let i=0;i<N;i++) S[i]=T((W-s)/2,(H-s*1.45)/2,s); break }
   default: rows(N,0,0,W,H,0);

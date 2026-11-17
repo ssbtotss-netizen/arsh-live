@@ -36,7 +36,7 @@ const url='file:///home/claude/najd/demo/index.html';
  ok(Math.abs((await o.evaluate(()=>+getComputedStyle(document.querySelector('.wd')).getPropertyValue('--p')))-.8)<1e-6,'OBS updates live (80%)');
  // المكتبة + شريط التجربة
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="goals"]'); await p.waitForTimeout(500);
- ok(await p.evaluate(()=>document.querySelectorAll('[data-gcat2]').length===2+Object.keys(VG_CATS).length),'goal library: all categories shown');
+ ok(await p.evaluate(()=>document.querySelectorAll('[data-gcat2]').length===2+Object.keys(VG_CATS).filter(k=>VG_DESIGNS.some(d=>d.cat===k)).length),'goal library: all non-empty categories shown (empty ones hidden)');
  await p.click('[data-gcat2="vessel"]'); await p.waitForTimeout(400); ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc').length===VG_DESIGNS.filter(d=>d.cat==='vessel').length),'category filter (vessels)');
  await p.click('[data-gcat2=""]'); await p.waitForTimeout(500);
  await p.evaluate(()=>{const r=document.querySelector('[data-act="gpct"]'); r.value=30; r.dispatchEvent(new Event('input',{bubbles:true}))}); await p.waitForTimeout(200);

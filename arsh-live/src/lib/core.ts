@@ -41,6 +41,7 @@ export * from "../engine/fc_designs.js";
 export * from "../engine/fachars.js";
 export * from "../engine/lb_art.js";
 export * from "../engine/lb_ref.js";
+export * from "../engine/lb_top3.js";
 export * from "../engine/battle.js";
 export * from "../engine/battleview.js";
 export * from "../engine/faview.js";

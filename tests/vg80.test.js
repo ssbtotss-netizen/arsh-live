@@ -15,7 +15,7 @@ const TEN=["palmSwords","goldenPalm","dallah","falcon","diriyah","royalChest","d
  ok(res.every(r=>/vst-2/.test(r.cls)),'all 10 at stage 2 (65%)');
  // مكتبة: مجموعة السعودية
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="goals"]'); await p.waitForTimeout(400);
- const tag=await p.evaluate(()=>[...document.querySelectorAll('[data-gcat2="saudi"] .tag')].map(t=>t.textContent)[0]); ok(tag==='5/20','Saudi collection shown with real progress ('+tag+')');
+ const tag=await p.evaluate(()=>[...document.querySelectorAll('[data-gcat2="saudi"] .tag')].map(t=>t.textContent)[0]); ok(tag==='5','Saudi collection shown with its real count, no plan denominator ('+tag+')');
  await p.click('[data-gcat2="saudi"]'); await p.waitForTimeout(500); ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc .vgw').length)===5,'5 Saudi designs render live previews');
  // حدث حقيقي يملأ الدلة
  await p.click('.nav [data-go="boards"]'); await p.click('[data-add-vg="goldCup"]'); await p.waitForTimeout(200);

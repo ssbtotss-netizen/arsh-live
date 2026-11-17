@@ -59,7 +59,7 @@ function bootOverlay(q){
 // عند التشغيل داخل المنصة (Next.js) يحقن الخادم B6O6_CONFIG: الحساب، الغرفة، مفتاح التعديل، الحفظ في قاعدة البيانات
 const CFG=window.B6O6_CONFIG||null;
 const st=CFG?{layouts:CFG.layouts,active:CFG.activeLayoutId,settings:CFG.settings,profile:CFG.profile}:(ls("arsh.app")||{});
-const S={layouts:st.layouts||defaultLayouts(),active:st.active,settings:Object.assign({fx:true,bigGift:1000,wsUrl:"",room:"",key:"",tiktok:"",bg:"stream"},st.settings||{}),profile:Object.assign({name:"صانع المحتوى",plan:"تجريبي"},st.profile||{}),page:"home",sel:null,libTab:"boards",scope:"likes"};
+const S={layouts:st.layouts||defaultLayouts(),active:st.active,settings:Object.assign({fx:true,bigGift:1000,wsUrl:"",room:"",key:"",tiktok:"",bg:"stream"},st.settings||{}),profile:Object.assign({name:"صانع المحتوى",plan:"تجريبي"},st.profile||{}),page:"home",sel:null,libTab:"gallery",scope:"likes"};
 window.__arshPM=S.settings.perfMode||"hq";
 S.layouts.forEach(l=>l.widgets.forEach(migrateWidget));
 S.providers=CFG?(CFG.providers||{}):{};
@@ -288,6 +288,8 @@ function renderPage(soft){
    <div class="mut small" style="line-height:2">التصميم: <b style="color:var(--tx)">${wdname(w)}</b><br>الموقع: ${POS.find(x=>x[0]===w.pos)?.[1]||"مخصص"} · ${Math.round(w.w*100)}%×${Math.round(w.h*100)}%<br>${TYPES[w.type].board?`المراكز: ${w.topN}`:""} ${w.visible?"· ظاهر":"· مخفي"} ${w.locked?"· مقفل 🔒":""}</div>
    <div class="row" style="margin-top:10px"><button class="btn sm pri" data-edit="${w.id}">تعديل في الاستوديو</button><button class="btn sm" data-lib="${w.id}">تغيير التصميم</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button></div></div>`).join("")||'<div class="empty">لا توجد عناصر</div>'}</div>`;
  }
+ else if(p==="library"&&(S.libTab||"gallery")==="gallery"){ S.libTab="gallery";
+  h=head("🖼️ معرض تصاميم B6O6","كل التصاميم في مكان واحد — صنّفها حسب الطابع، واختر نوع العنصر منفصلاً، واستخدمها مباشرة",layoutPicker())+libTabsRow("gallery")+galHTML() }
  else if(p==="library"){
   const tab=S.libTab;
   const pool=l.widgets.filter(w=>libPool(w,tab));
@@ -296,16 +298,16 @@ function renderPage(soft){
   const list=tab==="pro"?LB_DESIGNS.filter(d=>(!S.lbCat||S.lbCat===d.cat)&&(!S.lbFavOnly||favs.includes(d.id))&&(!q||(d.name+" "+d.desc+" "+d.n).toLowerCase().includes(q))):tab==="goals"?SG_DESIGNS.filter(d=>!S.gcat||(S.gcat==="bar"?!d.vg:d.cat===S.gcat)).sort((a,b)=>(b.vg?1:0)-(a.vg?1:0)):tab==="fcount"?FC_DESIGNS.filter(d=>(!S.fcF||(S.fcF.startsWith("cat:")?d.cat===S.fcF.slice(4):fcTags(d).includes(S.fcF)))&&(!S.fcFavOnly||(S.settings.fcFav||[]).includes(d.id))):tab==="nowplay"?NP_DESIGNS:tab==="uchat"?UC_DESIGNS:tab==="levent"?LE_DESIGNS.filter(d=>(!S.leFavOnly||(S.settings.leFav||[]).includes(d.id))&&(!S.leGrp||d.cat===S.leGrp)):tab==="rules"?RB_DESIGNS:tab==="clocks"?CLOCK_DESIGNS:tab==="socials"?SOCIAL_DESIGNS:DESIGNS;
   const LB_PLAN={circle:15,cloud:10,royal:15,neon:15,glass:15,d3:15,mini:15,basic:4,boys:20,girls:20,ptrans:20,creative:20,legRoyal:10,legFlower:10,legGaming:10,legGalaxy:10,legMinimal:11,legSaudi:10,refTop:14};
   h=head(tab==="pro"?"🎨 مكتبة تصاميم القوائم":"مكتبة التصاميم","معاينة حيّة — التصميم يُطبَّق على العنصر المختار فقط",layoutPicker())+
-  `<div class="row" style="margin-bottom:12px"><button class="btn sm ${tab==="pro"?"on":""}" data-libtab="pro">✨ قوائم الداعمين (${LB_DESIGNS.length})</button><button class="btn sm ${tab==="goals"?"on":""}" data-libtab="goals">🎯 أهداف الدعم (${SG_DESIGNS.length})</button><button class="btn sm ${tab==="nowplay"?"on":""}" data-libtab="nowplay">🎵 الأغنية الحالية (${NP_DESIGNS.length})</button><button class="btn sm ${tab==="uchat"?"on":""}" data-libtab="uchat">💬 الشات الموحد (${UC_DESIGNS.length})</button><button class="btn sm ${tab==="levent"?"on":""}" data-libtab="levent">✨ آخر التفاعلات (${LE_DESIGNS.length}/${Object.values(LE_PLAN).reduce((a,x)=>a+x.length,0)})</button><button class="btn sm ${tab==="fcount"?"on":""}" data-libtab="fcount">👥 عدادات المتابعين (${FC_DESIGNS.length}/60)</button><button class="btn sm ${tab==="rules"?"on":""}" data-libtab="rules">📜 قوانين السبثون (${RB_DESIGNS.length}/40)</button><button class="btn sm ${tab==="boards"?"on":""}" data-libtab="boards">🏆 قوائم الترتيب (${DESIGNS.length})</button><button class="btn sm ${tab==="clocks"?"on":""}" data-libtab="clocks">⏳ السبثون والمؤقتات (${CLOCK_DESIGNS.length})</button><button class="btn sm ${tab==="socials"?"on":""}" data-libtab="socials">🌐 الحسابات (${SOCIAL_DESIGNS.length})</button></div>
+  `${libTabsRow(tab)}
   <div class="card" style="margin-bottom:14px"><div class="row"><span class="mut">تطبيق على:</span>${pool.length?`<select class="inp" data-act="libTarget" style="width:auto">${pool.map(w=>`<option value="${w.id}" ${tgt&&w.id===tgt.id?"selected":""}>${TYPES[w.type].icon} ${esc(w.name)} — ${wdname(w)}</option>`).join("")}</select>`:`<span class="mut small">لا يوجد عنصر من هذا النوع في التخطيط</span> ${tab==="pro"?`<button class="btn sm" data-add-lb="5">+ إضافة قائمة Pro</button>`:`<button class="btn sm" data-add="${tab==="clocks"?"subathon":tab==="socials"?"social":tab==="goals"?"sgoal":tab==="rules"?"srules":tab==="fcount"?"fcount":"gifts"}">+ إضافة</button>`}`}</div></div>
-  ${tab==="levent"?`<div class="card" style="margin-bottom:14px"><h3>✨ آخر التفاعلات <span class="tag">معاينة حيّة بنفس مكوّن OBS</span></h3><div class="row"><span class="mut">نوع المعاينة:</span>${Object.entries(LE_KINDS).map(([k,K])=>`<button class="btn sm ${(S.leKind||(tgt&&tgt.kind)||"follow")===k?"on":""}" data-lekindpv="${k}">${K.icon} ${K.label}</button>`).join("")}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-lepv="all">▶ تشغيل التجربة على الكل</button><button class="btn sm ${S.leFavOnly?"on":""}" data-lefavonly="1">★ المفضلة فقط</button>${tgt?`<button class="btn sm" data-lecopy="${tgt.id}">🔗 نسخ رابط OBS للعنصر المختار</button><button class="btn sm" data-sel="${tgt.id}" data-go="studio">⚙️ إعدادات العنصر</button>`:""}</div><div class="row" style="margin-top:8px"><button class="btn sm ${!S.leGrp?"on":""}" data-legrp="">الكل (${LE_DESIGNS.length})</button>${Object.entries(LE_GROUPS).map(([g,n])=>`<button class="btn sm ${S.leGrp===g?"on":""}" data-legrp="${g}">${n} (${LE_DESIGNS.filter(d=>d.cat===g).length}/${LE_PLAN[g].length})</button>`).join("")}</div><p class="mut small">المنفذ فعلياً: ${LE_DESIGNS.length} من ${Object.values(LE_PLAN).reduce((a,x)=>a+x.length,0)} تصميماً متحركاً — كل تصميم يعمل مع كل الأنواع بشارة وجزيئات وحركة خاصة بكل نوع. ${LE_ENTERS.length-1} حركة دخول و${LE_EXITS.length-1} حركة خروج.</p></div>`:""}
-  ${tab==="fcount"?`<div class="card" style="margin-bottom:14px"><h3>🧪 تجربة العدادات <span class="tag">بيانات تجريبية</span></h3><div class="row"><button class="btn sm" data-fcpv="up">➕ زيادة متابع</button><button class="btn sm" data-fcpv="down">➖ نقصان متابع</button><button class="btn sm" data-fcpv="goal">⭐ الوصول للهدف</button></div><p class="mut small">المعاينات تعمل بنفس كود OBS. الأرقام توضيحية.</p><div class="row" style="margin-top:8px;gap:6px"><button class="btn sm ${!S.fcF?"on":""}" data-fcf="">الكل (${FC_DESIGNS.length})</button>${Object.entries(FC_CATS).map(([k,n])=>`<button class="btn sm ${S.fcF==="cat:"+k?"on":""}" data-fcf="cat:${k}">${n} <span class="tag">${FC_DESIGNS.filter(d=>d.cat===k).length}/${FC_PLAN[k]}</span></button>`).join("")}</div>
+  ${tab==="levent"?`<div class="card" style="margin-bottom:14px"><h3>✨ آخر التفاعلات <span class="tag">معاينة حيّة بنفس مكوّن OBS</span></h3><div class="row"><span class="mut">نوع المعاينة:</span>${Object.entries(LE_KINDS).map(([k,K])=>`<button class="btn sm ${(S.leKind||(tgt&&tgt.kind)||"follow")===k?"on":""}" data-lekindpv="${k}">${K.icon} ${K.label}</button>`).join("")}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-lepv="all">▶ تشغيل التجربة على الكل</button><button class="btn sm ${S.leFavOnly?"on":""}" data-lefavonly="1">★ المفضلة فقط</button>${tgt?`<button class="btn sm" data-lecopy="${tgt.id}">🔗 نسخ رابط OBS للعنصر المختار</button><button class="btn sm" data-sel="${tgt.id}" data-go="studio">⚙️ إعدادات العنصر</button>`:""}</div><div class="row" style="margin-top:8px"><button class="btn sm ${!S.leGrp?"on":""}" data-legrp="">الكل (${LE_DESIGNS.length})</button>${Object.entries(LE_GROUPS).map(([g,n])=>`<button class="btn sm ${S.leGrp===g?"on":""}" data-legrp="${g}">${n} (${LE_DESIGNS.filter(d=>d.cat===g).length})</button>`).join("")}</div><p class="mut small">${LE_DESIGNS.length} تصميماً متحركاً — كل تصميم يعمل مع كل الأنواع. ${LE_ENTERS.length-1} حركة دخول و${LE_EXITS.length-1} حركة خروج.</p></div>`:""}
+  ${tab==="fcount"?`<div class="card" style="margin-bottom:14px"><h3>🧪 تجربة العدادات <span class="tag">بيانات تجريبية</span></h3><div class="row"><button class="btn sm" data-fcpv="up">➕ زيادة متابع</button><button class="btn sm" data-fcpv="down">➖ نقصان متابع</button><button class="btn sm" data-fcpv="goal">⭐ الوصول للهدف</button></div><p class="mut small">المعاينات تعمل بنفس كود OBS. الأرقام توضيحية.</p><div class="row" style="margin-top:8px;gap:6px"><button class="btn sm ${!S.fcF?"on":""}" data-fcf="">الكل (${FC_DESIGNS.length})</button>${Object.entries(FC_CATS).map(([k,n])=>`<button class="btn sm ${S.fcF==="cat:"+k?"on":""}" data-fcf="cat:${k}">${n} <span class="tag">${FC_DESIGNS.filter(d=>d.cat===k).length}</span></button>`).join("")}</div>
    <div class="row" style="margin-top:6px;gap:6px">${FC_FILTERS.map(([k,n])=>`<button class="btn sm ${S.fcF===k?"on":""}" data-fcf="${k}">${n}</button>`).join("")}<button class="btn sm ${S.fcGoalPv!=="0"?"on":""}" data-fcg="1">🎯 مع هدف</button><button class="btn sm ${S.fcGoalPv==="0"?"on":""}" data-fcg="0">بدون هدف</button><button class="btn sm ${S.fcFavOnly?"on":""}" data-fcfavonly>★ المفضلة (${(S.settings.fcFav||[]).length})</button></div></div>`:""}
   ${tab==="goals"?`<div class="card" style="margin-bottom:14px"><h3>🧪 تجربة الأهداف التفاعلية <span class="tag">بيانات تجريبية — لا تؤثر على البث</span></h3>
    <div class="row"><span class="mut small">نسبة التعبئة</span><input type="range" min="0" max="100" step="1" value="${S.gpct??60}" data-act="gpct" style="flex:1;min-width:200px"><b id="gpctv" style="min-width:48px">${S.gpct??60}%</b>
    <button class="btn sm" data-gtest="sup">🦁 دعم تجريبي (+8%)</button><button class="btn sm" data-gtest="done">🎉 تجربة الاكتمال</button><button class="btn sm" data-gtest="zero">↺ 0%</button></div>
-   <div class="row" style="margin-top:8px;gap:6px"><button class="btn sm ${!S.gcat?"on":""}" data-gcat2="">الكل</button><button class="btn sm ${S.gcat==="bar"?"on":""}" data-gcat2="bar">أشرطة كلاسيكية (${SG_DESIGNS.filter(d=>!d.vg).length})</button>${Object.entries(VG_CATS).map(([k,n])=>{const c=VG_DESIGNS.filter(d=>d.cat===k).length;return `<button class="btn sm ${S.gcat===k?"on":""}" data-gcat2="${k}">${n} <span class="tag">${c}/${VG_PLAN[k]||10}</span></button>`}).join("")}</div></div>`:""}
-  ${tab==="pro"?`<div class="card" style="margin-bottom:14px"><div class="row" style="gap:6px"><button class="btn sm ${!S.lbCat?"on":""}" data-lbcat="">الكل</button>${Object.entries(LB_CATS).map(([k,n])=>{const c=LB_DESIGNS.filter(d=>d.cat===k).length;return `<button class="btn sm ${S.lbCat===k?"on":""}" data-lbcat="${k}">${n} <span class="tag">${c}/${LB_PLAN[k]}</span></button>`}).join("")}</div>
+   <div class="row" style="margin-top:8px;gap:6px"><button class="btn sm ${!S.gcat?"on":""}" data-gcat2="">الكل</button><button class="btn sm ${S.gcat==="bar"?"on":""}" data-gcat2="bar">أشرطة كلاسيكية (${SG_DESIGNS.filter(d=>!d.vg).length})</button>${Object.entries(VG_CATS).filter(([k])=>VG_DESIGNS.some(d=>d.cat===k)).map(([k,n])=>{const c=VG_DESIGNS.filter(d=>d.cat===k).length;return `<button class="btn sm ${S.gcat===k?"on":""}" data-gcat2="${k}">${n} <span class="tag">${c}</span></button>`}).join("")}</div></div>`:""}
+  ${tab==="pro"?`<div class="card" style="margin-bottom:14px"><div class="row" style="gap:6px"><button class="btn sm ${!S.lbCat?"on":""}" data-lbcat="">الكل</button>${Object.entries(LB_CATS).map(([k,n])=>{const c=LB_DESIGNS.filter(d=>d.cat===k).length;return `<button class="btn sm ${S.lbCat===k?"on":""}" data-lbcat="${k}">${n} <span class="tag">${c}</span></button>`}).join("")}</div>
    <div class="row" style="margin-top:10px"><input class="inp" data-act="lbq" placeholder="🔍 ابحث باسم التصميم أو رقمه…" value="${esc(S.lbQ||"")}" style="max-width:320px"><button class="btn sm ${S.lbFavOnly?"on":""}" data-lbfavonly>★ المفضلة (${favs.length})</button></div>
    <div class="row" style="margin-top:8px;gap:6px"><span class="mut small">🧪 تجربة (بيانات تجريبية):</span><button class="btn sm" data-lbt="new">🎁 دعم جديد</button><button class="btn sm" data-lbt="top">👑 تغيير المركز الأول</button><button class="btn sm" data-lbt="add">➕ زيادة النقاط</button><button class="btn sm" data-lbt="cel">🎉 الاحتفال</button><button class="btn sm ${S.lbStill?"on":""}" data-lbt="still">⏸ إيقاف الحركة</button>
    ${(S.settings.lbPresets||[]).length?`<select class="inp" data-act="lbPreset" style="width:auto"><option value="">💾 تصاميمي المحفوظة…</option>${S.settings.lbPresets.map((x,i)=>`<option value="${i}">${esc(x.name)}</option>`).join("")}</select>`:""}</div>
@@ -390,7 +392,7 @@ function renderPage(soft){
  if(p==="poststats") psPreview();
  if(p==="falerts") faPreview();
  if(p==="alerts") alAfter();
- lsAfter();
+ lsAfter(); if(p==="library"&&S.libTab==="gallery") galAfter();
  if(p==="donalerts") dnAfter();
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
@@ -405,6 +407,95 @@ function widgetQuick(w){ const t=TYPES[w.type];
  <div class="fld" style="margin:0"><label>التصميم</label><select class="inp" data-wf="design" data-wid="${w.id}">${designsOf(w).map(d=>`<option value="${d.id}" ${w.design===d.id?"selected":""}>${d.name}</option>`).join("")}</select></div></div>
  <div class="row" style="margin-top:8px"><button class="btn sm" data-edit="${w.id}">فتح في الاستوديو</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط مستقل</button></div></div>`}
 
+/* ---- معرض التصاميم الموحّد: كل عائلات التصاميم بتصنيف «الطابع» (فراشات/بنات/شباب/ملكية/شفافة/متحركة/تتويج/أساسية) منفصلاً عن «نوع العنصر» ----
+   التصميم يظهر في أكثر من تصنيف دون تكرار سجله. «متحرك/شفاف» تُقاس من التصميم المرسوم فعلياً وتُحفظ مؤقتاً في المتصفح. */
+const GAL_FAMS={lb:{l:"قوائم الداعمين",t:"lb",list:()=>LB_DESIGNS,ar:4/3},board:{l:"القوائم الأساسية",t:"likes",list:()=>DESIGNS,ar:4/3},le:{l:"آخر التفاعلات",t:"levent",list:()=>LE_DESIGNS,ar:1},
+ sg:{l:"أهداف الدعم",t:"sgoal",list:()=>SG_DESIGNS,ar:4/3},fc:{l:"عدادات المتابعين",t:"fcount",list:()=>FC_DESIGNS,ar:2},clock:{l:"السبثون والمؤقتات",t:"subathon",list:()=>CLOCK_DESIGNS,ar:2},rb:{l:"قوانين السبثون",t:"srules",list:()=>RB_DESIGNS,ar:4/3},bt:{l:"التحديات",t:"battle",list:()=>BT_DESIGNS,ar:3}};
+const GAL_STYLES={all:"الكل",butterfly:"🦋 الفراشات",girls:"🌸 البنات",youth:"⚡ الشباب",royal:"👑 الملكية",clear:"✨ الشفافة",anim:"🎞️ المتحركة",top3:"🏆 قوائم التتويج TOP 3",basic:"🧩 الأساسية",fav:"★ المفضلة"};
+const galKey=(f,d)=>f+":"+d.id;
+const galText=d=>[d.id,d.name,d.ar,d.desc,d.cat,d.frame,d.amb,d.d1,d.cel,d.deco,d.bar,d.pal,d.fill,d.shape].filter(Boolean).join(" ").toLowerCase();
+/** تصنيفات الطابع لتصميم (قواعد كلمات + الفئة + القياس الفعلي) */
+function galTags(f,d){ const t=galText(d), F=galFlags()[galKey(f,d)]||{}, T=new Set();
+ if(/butterfl|فراش|moonbf/.test(t)) T.add("butterfly");
+ if(/pink|rose|ورد|قلب|heart|pearl|لؤلؤ|bow\b|فيونك|purple|بنفسج|lavender|crystal|كريستال|sakura|ساكورا|girl|بنات|soft|ناعم|petal|بتل|blush|princess|أميرة|flower|زهر|bloom|candy|pastel|باستيل|cloud|غيم|bunny|أرنب|butterfl|فراش/.test(t)||/^(girls|legFlower|cloud)$/.test(d.cat||"")) T.add("girls");
+ if(/neon|نيون|fire|نار|لهب|flame|bolt|برق|thunder|صاعق|rgb|gaming|قيمنق|game|ألعاب|esport|cyber|سايبر|futur|مستقبل|carbon|كربون|sport|رياض|boys|شباب|dragon|تنين|hud|matrix|hologram|هولو|storm|عاصف|lava|حمم|race|سباق|tech|electric|كهرب|shard/.test(t)||/^(boys|neon|legGaming|game|energy)$/.test(d.cat||"")) T.add("youth");
+ if(/royal|ملك|crown|تاج|gold|ذهب|diamond|ألماس|الماس|throne|عرش|silver|فضي|lux|فاخر|فخام|imperial|إمبراط|medal|ميدال|king|queen|ملكة|gate|بوابة|vip|velvet|مخمل|emerald|زمرد/.test(t)||/^(royal|legRoyal|lux|treasure|gem)$/.test(d.cat||"")) T.add("royal");
+ if(F.tr!=null?F.tr:(/trans|شفاف|clear|minimal|نص فقط|text.?only|بدون خلفية/.test(t)||/^(ptrans|legMinimal|clear)$/.test(d.cat||""))) T.add("clear");
+ if(F.anim===true) T.add("anim");
+ if(d.cat==="top3") T.add("top3");
+ if(f==="board"||/^(basic|clear)$/.test(d.cat||"")||/basic|أساسي|classic|كلاسيك|default/.test(t)) T.add("basic");
+ return T }
+/** القياسات المحفوظة (متحرك/شفاف) — تُحسب مرة لكل نسخة من التصاميم */
+function galFlags(){ if(galFlags.c) return galFlags.c; const v="b6o6.galFlags2."+(LB_DESIGNS.length+LE_DESIGNS.length+SG_DESIGNS.length+FC_DESIGNS.length+CLOCK_DESIGNS.length); galFlags.k=v; try{ galFlags.c=JSON.parse(localStorage.getItem(v)||"{}") }catch(e){ galFlags.c={} } return galFlags.c }
+function galSaveFlags(){ try{ localStorage.setItem(galFlags.k,JSON.stringify(galFlags.c)) }catch(e){} }
+/** يبني عنصراً مؤقتاً من نوع العائلة بتصميم معيّن (للمعاينة فقط — لا يدخل في التخطيط) */
+function galWidget(f,d){ const F=GAL_FAMS[f], w=F.t==="lb"?{...newWidget("lb"),...(LB_SIZE[d.topN||5]?{}:{})}:newWidget(F.t); w.design=d.id; if(f==="lb"&&d.topN) w.topN=d.topN; if(f==="lb"&&d.cat==="top3") w.topN=3; if(f==="lb"){ const [ww,hh]=LB_SIZE[w.topN]||[.3,.5]; w.w=ww; w.h=hh }
+ if(F.t==="levent") w.kind=S.leKind||"follow"; if(F.t==="sgoal"){ w.source="likes"; w.target=1000 } return w }
+function galMount(box,f,d,o={}){ const w=galWidget(f,d), v=lsMount(box,w,d.id,{key:"gal_"+f+(o.key||""),max:o.max||1});
+ try{ if(f==="le") v.lePush({type:w.kind==="like"?"like":w.kind,id:"gal"+d.id,user:{id:"u1",name:"نورة",avatar:""},gift:"وردة",count:5,value:5,amount:20,currency:"USD",name:"نورة",text:"هلا والله"}) }catch(e){}
+ if(f==="sg") try{ v.vgFill&&v.vgFill(.62) }catch(e){} return v }
+/** قياس كل التصاميم في الخلفية على دفعات (مرة واحدة ثم من الذاكرة) */
+function galMeasureAll(done){ if(galMeasureAll.run) return; const F=galFlags(), todo=[]; for(const f of Object.keys(GAL_FAMS)) for(const d of GAL_FAMS[f].list()) if(!F[galKey(f,d)]) todo.push([f,d]); if(!todo.length){ done&&done(); return }
+ galMeasureAll.run=true; const host=document.createElement("div"); host.style.cssText="position:fixed;left:-5000px;top:0;width:320px;height:240px;overflow:hidden;pointer-events:none"; document.body.appendChild(host); let i=0;
+ const step=()=>{ const t0=performance.now(); while(i<todo.length&&performance.now()-t0<14){ const [f,d]=todo[i++]; try{ const v=galMount(host,f,d,{key:"m"}); const anims=v.el.getAnimations?v.el.getAnimations({subtree:true}).length:0; const m=lsMeasure(v); F[galKey(f,d)]={anim:anims>=2,tr:m.tr} }catch(e){ F[galKey(f,d)]={anim:true,tr:false} } host.innerHTML="" }
+  if(i<todo.length) (window.requestIdleCallback||setTimeout)(step,{timeout:200}); else { host.remove(); galMeasureAll.run=false; galSaveFlags(); done&&done() } };
+ step() }
+/** الأكثر استخداماً: عدّ مجمّع من الخادم (بدون بيانات شخصية) أو من تخطيطاتك محلياً */
+function galUsage(){ if(galUsage.c) return galUsage.c; const c={}; for(const l of S.layouts) for(const w of l.widgets){ if(w.design) c[w.design]=(c[w.design]||0)+1 } galUsage.c=c;
+ if(CFG&&!galUsage.req){ galUsage.req=true; fetch("/api/designs/usage").then(r=>r.ok?r.json():null).then(j=>{ if(j&&j.counts){ galUsage.c=j.counts; if(S.page==="library"&&S.libTab==="gallery"&&S.galSort==="used") renderPage(true) } }).catch(()=>{}) } return c }
+const GAL_NEW=new Set(["top3","excl","refTop"]);
+function galList(){ const q=(S.galQ||"").trim().toLowerCase(), st=S.galStyle||"all", fav=new Set(S.galFav||[]), F=galFlags(), out=[];
+ for(const [f,Fm] of Object.entries(GAL_FAMS)){ if(S.galFam&&S.galFam!==f) continue; const L=Fm.list();
+  L.forEach((d,ix)=>{ const k=galKey(f,d), tags=galTags(f,d);
+   if(st==="fav"?!fav.has(k):st!=="all"&&!tags.has(st)) return;
+   if(S.galTier==="free"&&isProDesign(d.id)||S.galTier==="pro"&&!isProDesign(d.id)) return;
+   if(S.galAn&&F[k]&&(S.galAn==="an")!==!!F[k].anim) return;
+   if(q&&!(galText(d)+" "+Fm.l).toLowerCase().includes(q)) return;
+   out.push({f,d,k,tags,ix,nw:(GAL_NEW.has(d.cat)||/^r[A-Z]/.test(d.id)?1e6:0)+(+d.n||ix)}) }) }
+ if(S.galSort==="new") out.sort((a,b)=>b.nw-a.nw); else if(S.galSort==="used"){ const u=galUsage(); out.sort((a,b)=>(u[b.d.id]||0)-(u[a.d.id]||0)||b.nw-a.nw) }
+ return out }
+function galHTML(){ const list=galList(), F=galFlags(), fav=new Set(S.galFav||[]), st=S.galStyle||"all", per=24, shown=list.slice(0,S.galN||per);
+ const cnt=k=>{ let n=0; for(const [f,Fm] of Object.entries(GAL_FAMS)) for(const d of Fm.list()){ if(k==="all"||(k==="fav"?fav.has(galKey(f,d)):galTags(f,d).has(k))) n++ } return n };
+ const chip=(k,v,l)=>`<button class="btn sm ${(S[k]||"")===v?"on":""}" data-galset="${k}" data-v="${v}">${l}</button>`;
+ const counts=Object.fromEntries(Object.keys(GAL_STYLES).map(k=>[k,cnt(k)]));
+ return `<div class="card gal-top"><div class="gal-bar">${Object.entries(GAL_STYLES).filter(([k])=>k==="all"||k==="fav"||counts[k]>0).map(([k,l])=>`<button class="gal-chip ${st===k?"on":""}" data-galset="galStyle" data-v="${k==="all"?"":k}">${l} <span>${counts[k]}</span></button>`).join("")}</div>
+  <div class="row" style="gap:8px;flex-wrap:wrap;margin-top:10px"><input class="inp" data-galq placeholder="🔍 ابحث باسم التصميم…" value="${esc(S.galQ||"")}" style="max-width:260px">
+   <select class="inp" data-galfam style="max-width:220px"><option value="">كل أنواع العناصر</option>${Object.entries(GAL_FAMS).map(([f,x])=>`<option value="${f}" ${S.galFam===f?"selected":""}>${x.l} (${x.list().length})</option>`).join("")}</select>
+   ${chip("galTier","","مجاني + PRO")}${chip("galTier","free","مجاني")}${chip("galTier","pro","PRO")}<span class="mut">|</span>${chip("galAn","","الكل")}${chip("galAn","an","متحرك")}${chip("galAn","st","ثابت")}<span class="mut">|</span>
+   ${chip("galSort","","الترتيب الافتراضي")}${chip("galSort","new","الأحدث")}${chip("galSort","used","الأكثر استخداماً")}</div>
+  <div class="small mut" style="margin-top:6px">${list.length} تصميماً — كل صورة مرسومة من التصميم الحقيقي بنفس محرك البث. مرّر الماوس لتشغيل الحركة، واضغط للمعاينة الكبيرة.${galMeasureAll.run?" ⏳ جارٍ قياس الحركة والشفافية…":""}</div></div>
+ <div class="gal-grid">${shown.map(({f,d,k,tags})=>{ const m=F[k], pro=isProDesign(d.id); return `<div class="gal-card" data-galk="${k}"><div class="gal-pv pv-off" data-galpv="${k}" style="aspect-ratio:${GAL_FAMS[f].ar>1.6?"2/1":GAL_FAMS[f].ar===1?"1/1":"4/3"}"></div>
+   <button class="gal-fav ${fav.has(k)?"on":""}" data-galfav="${k}" title="المفضلة">★</button>
+   <div class="gal-meta"><div class="gal-nm"><b>${esc(d.ar||d.name)}</b>${d.ar&&d.name?`<span class="mut small"> · ${esc(d.name)}</span>`:""}</div>
+    <div class="row small" style="gap:4px;flex-wrap:wrap"><span class="tag">${GAL_FAMS[f].l}</span><span class="tag ${m?(m.anim?"ok":""):""}">${m?(m.anim?"🎞️ متحرك":"🖼️ ثابت"):"…"}</span><span class="tag ${pro?"pro":"ok"}">${pro?"PRO":"مجاني"}</span>${[...tags].filter(x=>x!=="anim"&&x!=="basic").slice(0,2).map(x=>`<span class="tag">${GAL_STYLES[x].split(" ")[0]}</span>`).join("")}</div>
+    <div class="row" style="gap:6px;margin-top:6px"><button class="btn sm" data-galbig="${k}">👁 معاينة</button><button class="btn sm pri" data-galuse="${k}">${pro&&proLocked()?"🔒 PRO":"✓ استخدام التصميم"}</button></div></div></div>` }).join("")||'<div class="empty">لا توجد تصاميم بهذه الفلاتر</div>'}</div>
+ ${list.length>shown.length?`<div class="row" style="justify-content:center;margin:14px"><button class="btn" data-galmore>عرض المزيد (${list.length-shown.length})</button></div>`:""}` }
+const galFind=k=>{ const [f,...r]=k.split(":"), id=r.join(":"), d=GAL_FAMS[f]&&GAL_FAMS[f].list().find(x=>x.id===id); return d?{f,d}:null };
+function galAfter(){ const g=document.querySelector(".gal-grid"); if(!g) return;
+ const mount=b=>{ if(b.dataset.done) return; b.dataset.done="1"; const x=galFind(b.dataset.galpv); if(x) galMount(b,x.f,x.d) };
+ try{ if(window.__galIO) window.__galIO.disconnect(); window.__galIO=new IntersectionObserver(es=>es.forEach(en=>{ if(en.isIntersecting) mount(en.target) }),{rootMargin:"400px"}); g.querySelectorAll("[data-galpv]").forEach(b=>window.__galIO.observe(b)) }catch(e){}
+ setTimeout(()=>{ if(!g.querySelector("[data-galpv][data-done]")) [...g.querySelectorAll("[data-galpv]")].slice(0,12).forEach(mount) },1500);
+ g.querySelectorAll(".gal-card").forEach(c=>c.addEventListener("pointerenter",()=>mount(c.querySelector("[data-galpv]")),{once:true}));
+ if(!galMeasureAll.run&&Object.keys(galFlags()).length<Object.values(GAL_FAMS).reduce((a,F)=>a+F.list().length,0)) setTimeout(()=>galMeasureAll(()=>{ if(S.page==="library"&&S.libTab==="gallery") renderPage(true) }),800) }
+function galBig(k){ const x=galFind(k); if(!x) return; const {f,d}=x, pro=isProDesign(d.id), lock=pro&&proLocked();
+ const m=modal(`<div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(d.ar||d.name)} ${pro?'<span class="probadge sm">PRO</span>':""}</h3><button class="btn sm" data-close>✕</button></div><div class="small mut">${esc(GAL_FAMS[f].l)} — ${esc(d.desc||d.name||"")}</div>
+  <div class="ls-big" data-galbigbox></div><div class="row" style="gap:8px;margin-top:10px"><button class="btn pri" data-galuse="${k}" ${lock?"disabled":""}>${lock?"🔒 متاح مع PRO":"✓ استخدام هذا التصميم"}</button><button class="btn" data-close>إغلاق</button></div>`);
+ const box=document.querySelector("[data-galbigbox]"); if(box) galMount(box,f,d,{key:"big",max:2.2}) }
+/** استخدام: يطبّق على العنصر المحدد من نفس النوع، أو ينشئ عنصراً جديداً ويفتح محرر القائمة/الاستوديو */
+function galUse(k){ const x=galFind(k); if(!x) return; const {f,d}=x; if(isProDesign(d.id)&&proLocked()) return toast("🔒 هذا التصميم من PRO — متاح أثناء التجربة المجانية أو مع الاشتراك");
+ document.querySelectorAll(".modal").forEach(m=>m.remove()); const t=S.libTarget&&findW(S.libTarget);
+ if(t&&dKind(t)===dKind({type:GAL_FAMS[f].t})){ t.design=d.id; if(d.cat==="top3"&&t.type==="lb"){ t.topN=3; [t.w,t.h]=LB_SIZE[3]||[t.w,t.h] } save(); pushLayout(); toast("✓ طُبّق «"+(d.ar||d.name)+"» على «"+t.name+"» — يتحدث في البث بنفس الرابط"); renderPage(true); return }
+ const ty=GAL_FAMS[f].t, w=ty==="lb"?addLB(d.cat==="top3"?3:(d.topN||5)):addWidget(ty); if(!w) return; w.design=d.id; if(d.cat==="top3"){ w.topN=3; w.name="قائمة التتويج TOP 3" } save(); pushLayout();
+ const page=f==="lb"?"boards":f==="board"?"likes":null; if(page){ S.page=page; lsOpen(w.id,"settings"); toast("✓ أُنشئت قائمة بتصميم «"+(d.ar||d.name)+"» — اختر المصدر وانسخ رابطها") } else { S.sel=w.id; go("studio"); toast("✓ أُضيف «"+(d.ar||d.name)+"» — خصّصه وانسخ رابطه") } }
+function galClick(t){ const d=t.dataset;
+ if(d.galset!==undefined){ S[d.galset]=d.v||""; S.galN=0; renderPage(true); return true }
+ if(d.galfav){ const s=new Set(S.galFav||[]); s.has(d.galfav)?s.delete(d.galfav):s.add(d.galfav); S.galFav=[...s]; try{ localStorage.setItem("b6o6.galFav",JSON.stringify(S.galFav)) }catch(e){} t.classList.toggle("on"); return true }
+ if(d.galbig){ galBig(d.galbig); return true } if(d.galuse){ galUse(d.galuse); return true }
+ if(t.hasAttribute("data-galmore")){ S.galN=(S.galN||24)+24; renderPage(true); return true }
+ const c=t.closest&&t.closest(".gal-card"); if(c&&!t.closest("button")){ galBig(c.dataset.galk); return true } return false }
+try{ S.galFav=JSON.parse(localStorage.getItem("b6o6.galFav")||"[]") }catch(e){ S.galFav=[] }
+
+function libTabsRow(tab){ return `<div class="row lib-tabs" style="margin-bottom:12px"><button class="btn sm ${tab==="gallery"?"on":""}" data-libtab="gallery">🖼️ المعرض الشامل</button><span class="mut small">حسب نوع العنصر:</span><button class="btn sm ${tab==="pro"?"on":""}" data-libtab="pro">✨ قوائم الداعمين (${LB_DESIGNS.length})</button><button class="btn sm ${tab==="goals"?"on":""}" data-libtab="goals">🎯 أهداف الدعم (${SG_DESIGNS.length})</button><button class="btn sm ${tab==="nowplay"?"on":""}" data-libtab="nowplay">🎵 الأغنية الحالية (${NP_DESIGNS.length})</button><button class="btn sm ${tab==="uchat"?"on":""}" data-libtab="uchat">💬 الشات الموحد (${UC_DESIGNS.length})</button><button class="btn sm ${tab==="levent"?"on":""}" data-libtab="levent">✨ آخر التفاعلات (${LE_DESIGNS.length})</button><button class="btn sm ${tab==="fcount"?"on":""}" data-libtab="fcount">👥 عدادات المتابعين (${FC_DESIGNS.length})</button><button class="btn sm ${tab==="rules"?"on":""}" data-libtab="rules">📜 قوانين السبثون (${RB_DESIGNS.length})</button><button class="btn sm ${tab==="boards"?"on":""}" data-libtab="boards">🏆 قوائم الترتيب (${DESIGNS.length})</button><button class="btn sm ${tab==="clocks"?"on":""}" data-libtab="clocks">⏳ السبثون والمؤقتات (${CLOCK_DESIGNS.length})</button><button class="btn sm ${tab==="socials"?"on":""}" data-libtab="socials">🌐 الحسابات (${SOCIAL_DESIGNS.length})</button></div>` }
 /* ---- «استوديو القائمة»: إنشاء/تخصيص/نسخ رابط أي قائمة من قسمها الأصلي (بدون فتح الاستوديو) ----
    الرابط مرتبط بمعرّف القائمة الثابت (w.id داخل التخطيط) وليس بالتصميم: أي تعديل يُرسل فوراً (pushLayout) للرابط المفتوح في OBS ويُحفظ في قاعدة البيانات. */
 const LS_EXTRA=new Set(["lb","goal","sgoal","donBoard","donTop","donLatest","donLast5","donCard","donTicker","donText","donGoal"]);
@@ -431,8 +522,10 @@ function lsMount(box,w,design,o={}){ box.innerHTML=""; const cv=CV(), W=Math.max
  const real=o.real&&lsHasReal(), src=real?SRC:lsSample; const v=new View(pw,{w:W,h:H},{globalFx:S.settings.fx,mute:true,data:src}); stg.appendChild(v.el); try{ v.refresh(src(),true) }catch(e){} if(real) liveViews.add(v); return v }
 /** خصائص مقاسة من التصميم المرسوم فعلياً: متحرك؟ شفاف؟ */
 function lsMeasure(v){ try{ const root=v.el, r0=root.getBoundingClientRect(), A=Math.max(1,r0.width*r0.height); const anim=(root.getAnimations?root.getAnimations({subtree:true}).length:0)>0;
-  let opaque=false; for(const e of [root,...root.querySelectorAll("*")].slice(0,250)){ const r=e.getBoundingClientRect(); if(r.width*r.height<A*.55) continue; const cs=getComputedStyle(e), m=cs.backgroundColor.match(/[\d.]+/g); if((m&&(m[3]===undefined?1:+m[3])>.35&&!(+m[0]===0&&+m[1]===0&&+m[2]===0&&m[3]!==undefined&&+m[3]===0))||(cs.backgroundImage&&cs.backgroundImage!=="none"&&!/url\(/.test(cs.backgroundImage)&&/gradient/.test(cs.backgroundImage)&&r.width*r.height>=A*.7)){ opaque=true; break } }
-  return {anim,tr:!opaque} }catch(e){ return {anim:true,tr:true} } }
+  /* «شفاف» = مجموع مساحات الخلفيات/البنرات المرسومة أقل من 22% من مساحة العنصر (الصور والأيقونات الصغيرة لا تُحسب) */
+  let cov=0; for(const e of [root,...root.querySelectorAll("*")].slice(0,400)){ if(e.tagName==="IMG"||e.closest("svg")&&e.tagName!=="svg") continue; const r=e.getBoundingClientRect(), a=r.width*r.height; if(a<A*.02) continue; const cs=getComputedStyle(e); if(cs.display==="none"||cs.visibility==="hidden"||+cs.opacity<.2) continue; const m=cs.backgroundColor.match(/[\d.]+/g), alpha=m?(m[3]===undefined?1:+m[3]):0, grad=/gradient/.test(cs.backgroundImage||"");
+   if(alpha>.3||grad) cov+=Math.min(a,A)*(grad?.8:alpha) }
+  return {anim,tr:cov/A<.22} }catch(e){ return {anim:true,tr:true} } }
 S.lsFlags=S.lsFlags||{};
 function lsCard(w){ const lyt=lsLayoutOf(w.id), live=wsReady&&R.live, st=!CFG?"⚪ وضع التجربة — الرابط يعمل بعد تسجيل الدخول":live?"🟢 يستقبل بيانات البث الآن":wsReady?"🟡 الرابط جاهز — يعرض البيانات عند بدء البث":"🔴 غير متصل بالخادم الآن";
  return `<div class="ls-card ${S.lsOpen===w.id?"on":""}" data-lscard="${w.id}"><div class="ls-thumb" data-lsthumb="${w.id}"></div>
@@ -440,7 +533,7 @@ function lsCard(w){ const lyt=lsLayoutOf(w.id), live=wsReady&&R.live, st=!CFG?"�
   <div class="ls-acts"><button class="btn pri ls-copy" data-lscopy="${w.id}">🔗 نسخ رابط البث</button>
    <div class="row" style="gap:4px"><button class="btn sm" data-lsopen="${w.id}" data-lssec="gallery">🎨 تغيير التصميم</button><button class="btn sm" data-lsopen="${w.id}" data-lssec="settings">⚙️ الإعدادات</button><button class="btn sm" data-lspv="${w.id}">👁 المعاينة</button><button class="btn sm" data-lsdel="${w.id}" title="حذف القائمة">🗑</button></div></div></div>` }
 function lsEditor(w){ const t=TYPES[w.type], ds=lsDesigns(w), cats=lsCats(w), q=(S.lsQ||"").trim().toLowerCase(), F=S.lsFlags, fk=d=>dKind(w)+":"+d.id;
- const list=ds.filter(d=>(!S.lsCat||lsCatOf(w,d)===S.lsCat)&&(!q||(d.name+" "+(d.desc||"")+" "+(d.n||"")+" "+d.id).toLowerCase().includes(q))&&(S.lsTier!=="free"||!isProDesign(d.id))&&(S.lsTier!=="pro"||isProDesign(d.id))
+ const gf=GAL_FAMS[dKind(w)]?dKind(w):null; const list=ds.filter(d=>(!S.lsSty||!gf||galTags(gf,d).has(S.lsSty))&&(!S.lsCat||lsCatOf(w,d)===S.lsCat)&&(!q||(d.name+" "+(d.desc||"")+" "+(d.n||"")+" "+d.id).toLowerCase().includes(q))&&(S.lsTier!=="free"||!isProDesign(d.id))&&(S.lsTier!=="pro"||isProDesign(d.id))
   &&(!S.lsTr||!F[fk(d)]||(S.lsTr==="tr")===F[fk(d)].tr)&&(!S.lsAn||!F[fk(d)]||(S.lsAn==="an")===F[fk(d)].anim));
  const ranked=t.board||w.type==="lb", N=[1,3,5,10], custom=ranked&&!N.includes(+w.topN);
  const srcSel=w.type==="lb"?[["source","نوع البيانات",LB_SOURCES]]:w.type==="gifts"?[["sortBy","ترتيب القائمة حسب",SORTS]]:[];
@@ -455,10 +548,11 @@ function lsEditor(w){ const t=TYPES[w.type], ds=lsDesigns(w), cats=lsCats(w), q=
   ${"title" in w?`<div class="fld"><label>العنوان الظاهر في البث</label><input class="inp" data-lsf="title" value="${esc(w.title||"")}" maxlength="60"></div>`:""}
   ${srcSel.map(([k,l,o])=>`<div class="fld"><label>${l}</label><select class="inp" data-lsf="${k}">${o.map(x=>`<option value="${x[0]}" ${String(w[k])===String(x[0])?"selected":""}>${x[1]}</option>`).join("")}</select></div>`).join("")}
   ${ranked?`<div class="fld" style="grid-column:1/-1"><label>عدد المراكز</label><div class="row" style="gap:6px">${N.map(n=>`<button class="btn sm ${+w.topN===n?"on":""}" data-lstop="${n}">${n===1?"الأول فقط":"أفضل "+n}</button>`).join("")}<label class="row small" style="gap:4px">مخصص <input class="inp" type="number" min="1" max="20" data-lstopn value="${custom?w.topN:""}" placeholder="—" style="width:70px"></label></div></div>`:""}
-  </div><div class="row" style="gap:12px;margin-top:6px">${tg("showTitle","إظهار العنوان")}${tg("showAvatar","إظهار الصور")}${tg("showAv","إظهار الصور")}${tg("showRank","إظهار الأرقام")}${tg("effects","المؤثرات والحركة")}${tg("sweepOn","لمعة متحركة")}</div></section>
+  </div><div class="row" style="gap:12px;margin-top:6px">${tg("showTitle","إظهار العنوان")}${tg("showAvatar","إظهار الصور")}${tg("showAv","إظهار الصور")}${tg("showRank","إظهار الأرقام")}${tg("effects","المؤثرات والحركة")}${tg("sweepOn","لمعة متحركة")}${w.type==="lb"&&(LB_DESIGNS.find(x=>x.id===w.design)||{}).arr==="crown3"?`<label class="row small" style="gap:6px"><input type="checkbox" data-lsf="podFlip" ${w.podFlip?"checked":""}> عكس المركزين الثاني والثالث</label>`:""}</div></section>
  <section data-lssecn="gallery"><div class="ttl">🎨 معرض التصاميم <span class="tag">${list.length} / ${ds.length}</span></div>
   ${ds.length>1?`<div class="row" style="gap:6px;flex-wrap:wrap"><input class="inp" data-lsq placeholder="🔍 ابحث باسم التصميم أو رقمه…" value="${esc(S.lsQ||"")}" style="max-width:240px">
    ${chip("lsTier","","الكل")}${chip("lsTier","free","مجاني")}${chip("lsTier","pro","PRO")}<span class="mut">|</span>${chip("lsAn","","الكل")}${chip("lsAn","an","متحرك")}${chip("lsAn","st","ثابت")}<span class="mut">|</span>${chip("lsTr","","الكل")}${chip("lsTr","tr","شفاف")}${chip("lsTr","op","بخلفية")}</div>
+   ${gf?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px"><span class="mut small">الطابع:</span>${chip("lsSty","","الكل")}${["butterfly","girls","youth","royal","clear","anim","top3","basic"].filter(k=>ds.some(d=>galTags(gf,d).has(k))).map(k=>chip("lsSty",k,GAL_STYLES[k])).join("")}</div>`:""}
    ${cats?`<div class="row" style="gap:6px;flex-wrap:wrap;margin-top:6px">${chip("lsCat","","كل الفئات")}${Object.entries(cats).filter(([k])=>ds.some(d=>lsCatOf(w,d)===k)).map(([k,n])=>chip("lsCat",k,n)).join("")}</div>`:""}
    <div class="small mut" style="margin-top:4px">مرّر الماوس على أي تصميم لتشغيل حركته، واضغطه لمعاينة كبيرة. «متحرك/شفاف» مقاسة من التصميم المرسوم فعلياً.</div>
    <div class="ls-gal">${list.map(d=>`<div class="ls-d ${w.design===d.id?"on":""}" data-lsd="${d.id}" title="${esc(d.desc||d.name)}"><div class="ls-pv pv-off" data-lspvbox="${d.id}"></div>${isProDesign(d.id)?`<span class="probadge">${proLocked()?"🔒 ":""}PRO</span>`:""}${w.design===d.id?'<span class="ls-on">✓ المستخدم</span>':""}<div class="ls-dn">${esc(d.name)}</div></div>`).join("")||'<div class="empty">لا توجد تصاميم بهذه الفلاتر</div>'}</div>`
@@ -485,13 +579,14 @@ function lsAfter(){ document.querySelectorAll("[data-lsthumb]").forEach(b=>{ con
 function lsLive(w){ const b=document.querySelector("[data-lslive]"); if(!b||!w) return; for(const v of [...liveViews]) if(String(v.w.id).startsWith("pv_ls_live")) liveViews.delete(v); lsMount(b,w,w.design,{key:"live",real:S.lsReal,max:1}); const th=document.querySelector(`[data-lsthumb="${w.id}"]`); if(th) lsMount(th,w,w.design,{key:"th_"}) }
 /** تعديل حقل → حفظ + إرسال فوري للرابط المفتوح (نفس الرابط) + تحديث المعاينة */
 function lsSet(w,f,v){ w[f]=v; if(w.type==="lb"&&f==="topN"&&LB_SIZE[v]){ [w.w,w.h]=LB_SIZE[v]; w.x=clamp(w.x,0,1-w.w); w.y=clamp(w.y,0,1-w.h) } save(); pushLayout(); refreshView&&refreshView(w) }
-function lsOpen(id,sec){ S.lsOpen=id; S.lsJump=sec||"settings"; S.lsQ=""; S.lsCat=""; renderPage(true) }
+function lsOpen(id,sec){ S.lsOpen=id; S.lsJump=sec||"settings"; S.lsQ=""; S.lsCat=""; S.lsSty=""; renderPage(true) }
 function lsBig(w,d){ const ok=proLocked()&&isProDesign(d.id); const m=modal(`<div class="row" style="justify-content:space-between"><h3 style="margin:0">${esc(d.name)} ${isProDesign(d.id)?'<span class="probadge sm">PRO</span>':""}</h3><button class="btn sm" data-close>✕</button></div><div class="small mut">${esc(d.desc||"")}</div><div class="ls-big" data-lsbig></div>
   <div class="row" style="gap:8px;margin-top:10px"><button class="btn pri" data-lsuse="${d.id}" ${ok?"disabled":""}>${ok?"🔒 متاح مع PRO":"✓ استخدام هذا التصميم"}</button><button class="btn" data-close>إلغاء</button></div>`);
  const box=document.querySelector(".modal:last-child [data-lsbig]")||document.querySelector("[data-lsbig]"); if(box) lsMount(box,w,d.id,{key:"big_",max:2});
  const mm=box&&box.closest(".modal"); if(mm) mm.addEventListener("click",e=>{ const u=e.target.closest("[data-lsuse]"); if(!u) return; if(lsUse(w,u.dataset.lsuse)) mm.remove() }) }
 function lsUse(w,id){ if(isProDesign(id)&&proLocked()){ toast("🔒 هذا التصميم من PRO — متاح أثناء التجربة المجانية أو مع الاشتراك"); return false } lsSet(w,"design",id); toast("✓ تم تطبيق «"+lsDName(w)+"» — يتحدث في البث تلقائياً بنفس الرابط"); renderPage(true); return true }
 function lsClick(t){ const d=t.dataset;
+ if(d.lsadd==="top3"){ const w=addLB(3); if(w){ w.design="top3Royal"; w.topN=3; w.name="قائمة التتويج TOP 3"; save(); pushLayout(); S.lsSty="top3"; lsOpen(w.id,"gallery"); S.lsSty="top3"; renderPage(true) } return true }
  if(d.lsadd){ const ty=d.lsadd, w=ty==="lb"?addLB(5):addWidget(ty); if(w) lsOpen(w.id,"gallery"); return true }
  if(d.lsopen){ lsOpen(d.lsopen,d.lssec); return true }
  if(t.hasAttribute("data-lsclose")){ S.lsOpen=null; renderPage(true); return true }
@@ -515,7 +610,7 @@ function lsInput(t,e){ const d=t.dataset, w=lsW(S.lsOpen); if(!w) return false;
  return false }
 /** قسم القوائم الموحّد لأي صفحة: بطاقات + محرر داخل الصفحة */
 function lsSection(types,addTypes,title){ const l=L(); const ws_=l.widgets.filter(w=>types.includes(w.type)); const open=ws_.find(w=>w.id===S.lsOpen);
- return `<div class="card ls-sec"><h3>${title||"القوائم"} <span class="row" style="gap:6px">${(addTypes||types).map(t=>`<button class="btn sm pri" data-lsadd="${t}">+ ${TYPES[t].icon} ${TYPES[t].label}</button>`).join("")}</span></h3>
+ return `<div class="card ls-sec"><h3>${title||"القوائم"} <span class="row" style="gap:6px">${(addTypes||types).map(t=>`<button class="btn sm pri" data-lsadd="${t}">+ ${TYPES[t].icon} ${TYPES[t].label}</button>`).join("")}${types.includes("lb")?`<button class="btn sm pri" data-lsadd="top3">+ 🏆 قائمة تتويج TOP 3</button>`:""}</span></h3>
  ${ws_.map(w=>lsCard(w)).join("")||'<div class="empty">لا توجد قائمة — اضغط «+» لإنشاء واحدة، ثم اختر تصميمها وانسخ رابطها من هنا مباشرة</div>'}
  <div class="small mut" style="margin-top:6px">💡 الاستوديو اختياري: استخدمه فقط لدمج عدة عناصر في مشهد واحد. كل قائمة هنا لها رابط مستقل خاص بها.</div></div>${open?lsEditor(open):""}` }
 
@@ -1060,6 +1155,8 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
+ { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
  { const lb=e.target.closest&&e.target.closest("[data-leladd],[data-leldel]"); if(lb){ const w=findW(lb.dataset.wid); if(w){ w.lvls=Array.isArray(w.lvls)?w.lvls:[]; if(lb.dataset.leladd!==undefined){ const v=lb.dataset.leladd, base=w.design; if(v==="custom") w.lvls.push(w.kind==="gift"?{gift:"",design:base}:{at:100,design:base}); else if(v.startsWith("gift:")) w.lvls.push({gift:v.slice(5),design:base}); else w.lvls.push({at:+v,design:base}) } else w.lvls.splice(+lb.dataset.leldel,1); save(); pushLayout(); refreshView(w); renderProps() } return } }
  { const ls=e.target.closest&&e.target.closest("[data-lsopen],[data-lsclose],[data-lsjump],[data-lscopy],[data-lspv],[data-lssave],[data-lsdel],[data-lsreissue],[data-lstop],[data-lsflt],[data-lsreal],[data-lsd],[data-lsadd]"); if(ls&&lsClick(ls)) return }
  { const bb=e.target.closest&&e.target.closest("[data-btop]"); if(bb){ const op=bb.dataset.btop; if(op==="test"){ btSend("start",{test:true}); setTimeout(btSim,400); return } if(op==="stop"&&!confirm("إنهاء التحدي الآن وإعلان الفائز؟")) return; btSend(op,op==="addTime"?{ms:+bb.dataset.ms||60000}:{}); return } }
@@ -1177,6 +1274,8 @@ function previewOverlay(only){
 function onInput(e){
  const t=e.target, d=t.dataset;
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
+ if(d.galq!==undefined){ if(e.type!=="input") return; S.galQ=t.value; S.galN=0; clearTimeout(onInput.gq); onInput.gq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-galq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
+ if(t.hasAttribute&&t.hasAttribute("data-galfam")){ if(e.type!=="change") return; S.galFam=t.value; S.galN=0; renderPage(true); return }
  if(d.lelv!==undefined){ if(e.type!=="change"&&t.tagName!=="INPUT") return; if(t.type==="number"&&e.type!=="change") return; const w=findW(d.wid), x=w&&w.lvls&&w.lvls[+d.lelv]; if(!x) return; const f=d.lelf; x[f]=f==="on"?t.checked:f==="at"?(+t.value||0):String(t.value).slice(0,120); save(); pushLayout(); refreshView(w); if(S.lsOpen===w.id) lsLive(w); return }
  if(d.btl){ if(e.type!=="change") return; const B=(R.C&&R.C.battle)||newBattle(), cfg={};
   if(d.btl==="mode") cfg.mode=t.value; else if(d.btl==="dur") cfg.durMs=Math.round((+t.value||5)*60000); else if(d.btl==="like") cfg.likePts=+t.value||0;
