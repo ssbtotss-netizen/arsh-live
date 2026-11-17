@@ -5223,6 +5223,15 @@ const LE_EXITS=[["auto","تلقائي (خفوت الإضاءة)"],["fade","تل�
 const LE_FONTS=[["","افتراضي"],["Readex Pro","Readex Pro — عصري"],["Changa","Changa — عريض"],["Amiri","Amiri — كلاسيكي"],["Orbitron","Orbitron — ألعاب"]];
 const LE_LAYOUTS=[["","حسب التصميم"],["stack","الصورة فوق الاسم"],["stackTop","الاسم فوق الصورة"],["row","الصورة يسار والاسم يمين"],["rowR","الصورة يمين والاسم يسار"]];
 const LE_DESIGNS=[];
+/** مستويات النشاط: تصميم مختلف حسب المستوى — لايكات المستخدم في البث (1k/2k/5k/10k…)، الهدية (اسمها أو قيمتها بالعملات)، مبلغ الدونيشن.
+ *  w.lvls=[{at:رقم أو gift:"اسم", design}] — يُختار أعلى مستوى ينطبق؛ وإلا تصميم العنصر الأساسي. */
+const LE_LVL_KINDS={like:"عدد لايكات الشخص في البث",gift:"اسم الهدية أو قيمتها بالعملات",donation:"مبلغ الدعم",subscribe:"",follow:"",share:"",join:"",comment:""};
+function leLevelDesign(w,e,src){ const L=Array.isArray(w.lvls)?w.lvls.filter(x=>x&&x.design&&x.on!==false):[]; if(!L.length||!e) return "";
+ const k=e.kind; let v=0;
+ if(k==="like"){ const u=src&&src.D&&src.D.likes&&src.D.likes[e.uid]; v=Math.max(+e.count||0,u?+u.v||0:0) }
+ else if(k==="gift"){ const g=String(e.gift||"").trim().toLowerCase(); const byName=L.find(x=>x.gift&&String(x.gift).split(/[,،]/).some(n=>n.trim().toLowerCase()===g)); if(byName) return byName.design; v=(+e.value||0) }
+ else if(k==="donation") v=+e.amount||0; else return "";
+ let best=null; for(const x of L) if(x.at!=null&&x.at!==""&&!x.gift&&v>=+x.at&&(!best||+x.at>+best.at)) best=x; return best?best.design:"" }
 const leDesignOf=id=>LE_DESIGNS.find(d=>d.id===id)||LE_DESIGNS[0];
 let LE_XCSS="";
 function leRegister(list){ for(const d of list){ const i=LE_DESIGNS.findIndex(x=>x.id===d.id); if(i>=0) LE_DESIGNS[i]=d; else LE_DESIGNS.push(d); if(d.css) LE_XCSS+=d.css } LE_DESIGNS.sort((a,b)=>a.n-b.n) }
@@ -5293,7 +5302,7 @@ Object.assign(View.prototype,{
  leCurrent(){ const w=this.w, src=this.opts.data?this.opts.data():null; const L=src&&src.C&&src.C.latest||{}; const e=LE_KINDS[w.kind]?.derived?leDerive(w.kind,src,lbEntries,topsList):L[w.kind];
   if(e) return e; if(this.opts.editor||String(w.id).startsWith("pv_")) return leSample(w.kind); return null },
  /** بناء بطاقة لحدث واحد */
- leCard(e){ const w=this.w, d=leDesignOf(w.design), k=w.kind, R=leRnd(7+(d.n||1)*13);
+ leCard(e){ const w=this.w, d=leDesignOf(this.leD||w.design), k=w.kind, R=leRnd(7+(d.n||1)*13);
   const PN=Math.max(0,Math.min(24,w.ptN==null||w.ptN===""?10:+w.ptN)); const pts=Array.from({length:PN},(_,i)=>{ const a=i/Math.max(1,PN)*Math.PI*2+R()*.5, r=58+R()*30, x=leF1(100+Math.cos(a)*r), y=leF1(100+Math.sin(a)*r*.92); const fx=leF1(Math.cos(a)*130), fy=leF1(Math.sin(a)*130);
    return `<b style="left:${x/2}%;top:${y/2}%;--fx:${fx}%;--fy:${fy}%;--s:${leF1(.55+R()*.7)};--dl:${leF1(R()*.35)}s;--fd:${leF1(2.6+R()*2.4)}s">${PT[k]||PT.follow}</b>` }).join("");
   const c=document.createElement("div"); c.className="le-card";
@@ -5318,10 +5327,12 @@ Object.assign(View.prototype,{
   if(e&&!silent&&!sameUser&&st.swapAt&&nowT-st.swapAt<HOLD){ st.pending=e; if(!st.pt) st.pt=setTimeout(()=>{ st.pt=0; const p=st.pending; st.pending=null; if(p&&this.el.isConnected) this.leShow(p,false) },HOLD-(nowT-st.swapAt)); return }
   const old=this.el.querySelector(".le-card:not(.le-exit)");
   if(!e){ if(old) this.leHide(); st.cur=null; return }
-  const same=st.cur&&old&&(st.cur.id===e.id||(LE_KINDS[e.kind]?.derived&&st.cur.uid===e.uid)||(st.cur.uid&&st.cur.uid===e.uid&&st.cur.kind===e.kind&&e.at-st.cur.at<15000&&e.kind==="like"));
+  let same=st.cur&&old&&(st.cur.id===e.id||(LE_KINDS[e.kind]?.derived&&st.cur.uid===e.uid)||(st.cur.uid&&st.cur.uid===e.uid&&st.cur.kind===e.kind&&e.at-st.cur.at<15000&&e.kind==="like"));
+  if(same&&w.lvls&&w.lvls.length){ const lv=leLevelDesign(w,e,this.opts.data?this.opts.data():null)||""; if(lv!==(this.leD||"")) same=false } // تجاوز مستوى ← بطاقة جديدة بتصميم المستوى
   st.cur=e;
   if(same){ this.leFill(old,e); if(!silent) this.lePulse(old); }
   else { if(!silent) st.swapAt=nowT; this.el.querySelectorAll(".le-card.le-exit").forEach(x=>x.remove()); if(old) this.leOut(old);
+   { const src=this.opts.data?this.opts.data():null, lv=leLevelDesign(w,e,src)||"", want=leDesignOf(lv||w.design).id, curC=[...this.el.classList].find(c=>c.startsWith("led-")); this.leD=lv&&LE_DESIGNS.some(d=>d.id===lv)?lv:""; if(curC!=="led-"+want){ if(curC) this.el.classList.remove(curC); this.el.classList.add("led-"+want) } e.lvl=this.leD||"" }
    const c=this.leCard(e); this.leFill(c,e); const rh=this.el.querySelector(".rh"); this.el.insertBefore(c,rh||null);
    if(silent||leReduced()) c.classList.add("le-idle"); else { c.classList.add("le-enter"); if(w.enter&&w.enter!=="auto") c.classList.add("lei-"+w.enter); const as=+w.animSpeed||1; setTimeout(()=>{ if(c.isConnected){ c.classList.remove("le-enter","lei-"+w.enter); c.classList.add("le-idle") } },2200/as); setTimeout(()=>c.isConnected&&this.lePulse(c,true),1100/as) } }
   clearTimeout(st.timer);
@@ -5332,7 +5343,7 @@ Object.assign(View.prototype,{
  /** تشغيل الحركة كاملة من البداية (المكتبة/الاستوديو) */
  leReplay(){ const e=this.le&&this.le.cur||this.leCurrent(); if(!e) return; const c=this.el.querySelector(".le-card:not(.le-exit)"); if(c) c.remove(); if(this.le) this.le.cur=null; this.leShow({...e,id:e.id+"_r"+Date.now()},false) },
  lePulse(c,first){ if(!c||this.el.classList.contains("le-still")||leReduced()) return; c.classList.remove("le-bump"); void c.offsetWidth; c.classList.add("le-bump"); setTimeout(()=>c.classList.remove("le-bump"),900);
-  const d=leDesignOf(this.w.design); if(d.pulse) try{ d.pulse(c,this.w,first) }catch(err){} },
+  const d=leDesignOf(this.leD||this.w.design); if(d.pulse) try{ d.pulse(c,this.w,first) }catch(err){} },
  refreshLe(src,silent){ if(LE_KINDS[this.w.kind]?.derived){ const d=leDerive(this.w.kind,src,lbEntries,topsList); if(d&&(!this.le||!this.le.cur||this.le.cur.id!==d.id||this.le.cur.count!==d.count)) this.leShow(d,silent); return }
   const e=src&&src.C&&src.C.latest&&src.C.latest[this.w.kind]; if(e&&(!this.le||!this.le.cur||this.le.cur.id!==e.id||this.le.cur.count!==e.count)) this.leShow({...e},silent) },
  /** حدث مباشر (يشمل أحداث الاختبار — تُعرض ولا تُحفظ) */
@@ -6873,6 +6884,169 @@ const duckUltimate=lkDef({id:"duckUltimate",n:80,cat:"b6o6",name:"B6O6 Ultimate 
  css:`.D .du-w{transform-box:view-box;transform-origin:84px 100px;animation:du-fl calc(2.6s / var(--as,1)) ease-in-out infinite}@keyframes du-fl{50%{transform:rotate(-10deg) scaleY(.94)}}`,...PL(0,"#f6c94a","#ffb02088","#231806f0","#110c02f0")});
 
 lkRegister([duckRoyal,duckNeon,duckDiamond,duckFire,duckGalaxy,duckButterfly,duckCyber,duckSaudi,duckCrystal,duckUltimate]);
+
+/* ---- engine/le_x.js ---- */
+// ====== آخر التفاعلات — مجموعة «B6O6 الحصرية PRO» (81–110): 30 تصميماً أصلياً ======
+// كل تصميم يعمل مع كل الأنشطة (متابعة، هدية، لايك، مشاركة، انضمام، اشتراك، دونيشن…) — نفس محرك leview.
+// المعرّفات تبدأ بـ x = تصاميم PRO (يُفرض على الخادم). رسم SVG أصلي بالكامل (بدون شعارات أو ملفات محمية).
+
+
+Object.assign(LE_GROUPS,{excl:"B6O6 الحصرية PRO"});
+
+const lxRing=(r,c,w=2,cls="",dash="")=>`<circle cx="100" cy="100" r="${r}" fill="none" stroke="${c}" stroke-width="${w}" ${dash?`stroke-dasharray="${dash}"`:""} class="${cls}"/>`;
+const lxRays=(n,r1,r2,c,w=2,cls="")=>`<g class="${cls}">${Array.from({length:n},(_,i)=>{ const a=i*360/n, [x1,y1]=lkP(100,100,a,r1), [x2,y2]=lkP(100,100,a,r2); return `<path d="M${x1} ${y1}L${x2} ${y2}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"/>` }).join("")}</g>`;
+const lxAround=(n,r,fn,from=0,span=360)=>Array.from({length:n},(_,i)=>{ const a=from+i*span/(span===360?n:Math.max(1,n-1)), [x,y]=lkP(100,100,a,r); return fn(x,y,a,i) }).join("");
+const lxSparks=(n,r,c,seed=1)=>{ const R=lkSeed(seed); return lxAround(n,r,(x,y,a,i)=>`<path d="${lkSpark(x+(R()-.5)*14,y+(R()-.5)*14,2.5+R()*3)}" fill="${c}" class="lx-tw" style="animation-delay:${(-R()*2.4).toFixed(2)}s"/>`) };
+const lxHeart=(x,y,s,c)=>`<path transform="translate(${x} ${y}) scale(${s})" d="M0 6C-7 0-9-4-6-7C-4-9-1-8 0-5C1-8 4-9 6-7C9-4 7 0 0 6Z" fill="${c}"/>`;
+const lxCrown=(x,y,s,c1,c2)=>`<g transform="translate(${x} ${y}) scale(${s})"><path d="M-20 10L-23-12L-10 0L0-18L10 0L23-12L20 10Z" fill="${c1}" stroke="#fff6d0" stroke-width="1.2"/><rect x="-21" y="9" width="42" height="6" rx="2" fill="${c2}"/>${[-12,0,12].map(cx=>`<circle cx="${cx}" cy="4" r="2.6" fill="${cx?"#22e1ff":"#ff2d55"}"/>`).join("")}</g>`;
+const lxWing=(side,c1,c2,cls="")=>{ const m=side<0?`translate(200 0) scale(-1 1)`:""; return `<g transform="${m}"><g class="${cls}">${[0,1,2,3,4].map(i=>`<path d="M140 ${92-i*3}C${160+i*6} ${70-i*12} ${178+i*3} ${70-i*6} ${190-i*2} ${60+i*8}C${176-i*4} ${84+i*2} ${160-i*2} ${96} 142 ${104-i*2}Z" fill="${i%2?c2:c1}" opacity="${1-i*.1}" stroke="#ffffff55" stroke-width=".5"/>`).join("")}</g></g>` };
+const lxFlame=(x,y,s,a,c="#ff5a1f",cls="lx-fl")=>`<path transform="translate(${x} ${y}) rotate(${a}) scale(${s})" d="M0 0C-6-3-8-11-3-18C-2-12 0-11 1-14C3-19 1-23 3-27C8-20 10-10 5-3Z" fill="${c}" class="${cls}"/>`;
+const lxPL=(c1,c2,b1,b2,r=.5)=>({plateCss:[c1,c2,b1,b2,r]});
+const X=(o)=>lkDef({cat:"excl",frame:"auto",...o});
+
+const LX=[
+ // 1) Royal Crown — تاج ملكي ينزل وهالة أشعة ذهبية
+ X({id:"xRoyalCrown",n:81,name:"Royal Crown",ar:"التاج الملكي",pal:"gold",frame:"gold",desc:"تاج ذهبي مرصّع ينزل فوق الصورة مع هالة أشعة ذهبية تدور ببطء",
+  back:()=>`${LK_SVG}<g class="lk-spin" style="--sd:40s">${lxRays(24,62,90,"#f6c94a66",3)}</g>${lxRing(66,"#f6c94a",2.5)}${lxRing(71,"#fff3c4",.8,"","3 5")}</svg>`,
+  front:()=>`${LK_SVG}<g class="xrc-c">${lxCrown(100,26,1.15,"#f6c94a","#b8862b")}</g>${lxSparks(6,80,"#fff3c4",3)}</svg>`,
+  css:`.D .xrc-c{transform-box:fill-box;transform-origin:50% 100%}.D .le-enter .xrc-c,.led-xRoyalCrown.le-enter .xrc-c{animation:xrc-down .9s cubic-bezier(.2,1.4,.3,1) both}@keyframes xrc-down{from{transform:translateY(-40px);opacity:0}}`,...lxPL("#f6c94a","#f6c94a66","#241805f2","#0f0a02f2")}),
+ // 2) Diamond Storm — عاصفة ألماس تدور
+ X({id:"xDiamondStorm",n:82,name:"Diamond Storm",ar:"عاصفة الألماس",pal:"blue",frame:"crystal",desc:"ألماسات زرقاء تدور حول الصورة في دوامة مع ومضات بيضاء",
+  back:()=>`${LK_SVG}<g class="lk-spin" style="--sd:9s">${lxAround(8,74,(x,y,a,i)=>lkGem(x,y,5+(i%3)*2,"#9fe3ff","#2b7bd8"))}</g><g class="lk-spinr" style="--sd:14s">${lxAround(6,58,(x,y)=>lkGem(x,y,3.5,"#e9fbff","#7cc4ff"))}</g></svg>`,
+  front:()=>`${LK_SVG}${lxSparks(8,86,"#ffffff",5)}</svg>`,...lxPL("#9fe3ff","#3ba8ff66","#06122af2","#020814f2")}),
+ // 3) Neon Pulse — نبض نيون
+ X({id:"xNeonPulse",n:83,name:"Neon Pulse",ar:"نبض النيون",pal:"pink",frame:"neon",desc:"حلقات نيون وردية وزرقاء تنبض للخارج مع كل نشاط",
+  back:()=>`${LK_SVG}${lxRing(64,"#ff2d95",3,"xnp-a")}${lxRing(64,"#22e1ff",2,"xnp-b")}${lxRing(70,"#ff2d95",1.2,"","2 6")}</svg>`,
+  front:()=>`${LK_SVG}<path d="M20 100H52L60 84L70 116L80 94L86 100H114L120 88L130 112L138 100H180" fill="none" stroke="#22e1ff" stroke-width="2" class="xnp-ecg" style="filter:drop-shadow(0 0 3px #22e1ff)"/></svg>`,
+  css:`.D .xnp-a,.D .xnp-b{transform-box:view-box;transform-origin:100px 100px;animation:xnp-p calc(1.8s / var(--as,1)) ease-out infinite;filter:drop-shadow(0 0 4px currentColor)}.D .xnp-b{animation-delay:-.9s}@keyframes xnp-p{from{transform:scale(.9);opacity:1}to{transform:scale(1.35);opacity:0}}.D .xnp-ecg{stroke-dasharray:240;animation:xnp-e 2s linear infinite}@keyframes xnp-e{from{stroke-dashoffset:240}to{stroke-dashoffset:-240}}`,...lxPL("#ff2d95","#22e1ff66","#1f0614f2","#0e020af2")}),
+ // 4) Galaxy Portal — بوابة مجرة
+ X({id:"xGalaxyPortal",n:84,name:"Galaxy Portal",ar:"بوابة المجرة",pal:"purple",frame:"stars",desc:"بوابة مجرية دوّارة بأذرع حلزونية ونجوم خلف الصورة",
+  back:()=>`${LK_SVG}<defs><radialGradient id="xgp"><stop offset=".55" stop-color="#8b3dff00"/><stop offset=".75" stop-color="#8b3dff88"/><stop offset="1" stop-color="#22e1ff00"/></radialGradient></defs><circle cx="100" cy="100" r="88" fill="url(#xgp)"/><g class="lk-spin" style="--sd:12s">${[0,90,180,270].map(a=>`<path transform="rotate(${a} 100 100)" d="M100 100C130 70 170 80 178 110" fill="none" stroke="#e0b8ff" stroke-width="2" opacity=".7"/>`).join("")}</g>${lkStars(84,26)}</svg>`,
+  front:()=>``,...lxPL("#b56bff","#8b3dff66","#12061ff2","#06020ef2")}),
+ // 5) Crystal Glass — زجاج كريستالي
+ X({id:"xCrystalGlass",n:85,name:"Crystal Glass",ar:"الزجاج الكريستالي",pal:"white",frame:"crystal",desc:"أوجه زجاجية سداسية شفافة بلمعة بيضاء تمر عليها",
+  back:()=>`${LK_SVG}<path d="${lkPoly(100,100,74,6)}" fill="#ffffff12" stroke="#e0f2fe" stroke-width="1.5"/><path d="${lkPoly(100,100,64,6,-60)}" fill="none" stroke="#bae6fd" stroke-width="1"/>${lxAround(6,74,(x,y)=>`<path d="M100 100L${x} ${y}" stroke="#ffffff33"/>`,-90)}<clipPath id="xcgc"><path d="${lkPoly(100,100,74,6)}"/></clipPath><g clip-path="url(#xcgc)"><rect x="20" y="-40" width="26" height="280" fill="#ffffff2a" class="xcg-sh"/></g></svg>`,
+  front:()=>`${LK_SVG}${lxSparks(4,80,"#ffffff",9)}</svg>`,
+  css:`.D .xcg-sh{animation:xcg 3.4s ease-in-out infinite}@keyframes xcg{0%{transform:translateX(-80px) rotate(25deg)}60%,100%{transform:translateX(220px) rotate(25deg)}}`,...lxPL("#e0f2fe","#ffffff55","#0e1420e0","#06090fe0")}),
+ // 6) Cyber Dragon — تنين سايبر
+ X({id:"xCyberDragon",n:86,name:"Cyber Dragon",ar:"التنين السايبر",pal:"green",frame:"neon",desc:"تنين إلكتروني بخطوط دوائر خضراء يلتف حول الصورة",
+  back:()=>`${LK_SVG}<path d="M40 150C10 100 40 30 100 26C160 22 192 80 168 132C160 150 140 166 120 172" fill="none" stroke="#2ee59d" stroke-width="5" stroke-linecap="round" class="xcd-b"/><path d="M40 150C10 100 40 30 100 26C160 22 192 80 168 132" fill="none" stroke="#0b3d2a" stroke-width="1.5" stroke-dasharray="4 4"/>${lxAround(10,80,(x,y)=>`<rect x="${x-2}" y="${y-2}" width="4" height="4" fill="#7dffc4" class="lx-tw"/>`,200,280)}</svg>`,
+  front:()=>`${LK_SVG}<g transform="translate(120 172)"><path d="M0 0L16 -6L26 2L16 6L6 14Z" fill="#11c47a" stroke="#7dffc4"/><circle cx="16" cy="-1" r="1.6" fill="#ff2d55"/></g></svg>`,
+  css:`.D .xcd-b{stroke-dasharray:420;animation:xcd 2.2s ease-out both;filter:drop-shadow(0 0 4px #2ee59d)}@keyframes xcd{from{stroke-dashoffset:420}}`,...lxPL("#2ee59d","#2ee59d66","#04170ff2","#020a06f2")}),
+ // 7) Pink Butterfly — فراشات وردية
+ X({id:"xPinkButterfly",n:87,name:"Pink Butterfly",ar:"الفراشة الوردية",pal:"pink",frame:"butterfly",desc:"فراشتان ورديتان كبيرتان ترفرفان على جانبي الصورة وقلوب صغيرة",
+  back:()=>`${LK_SVG}${[[-1,30],[1,170]].map(([s,x])=>`<g transform="translate(${x} 70) scale(${s} 1)"><g class="xpb-w"><path d="M0 0C-26-30-50-10-36 14C-28 26-10 18 0 6Z" fill="#ff9ad0" stroke="#fff" stroke-width="1"/><path d="M0 6C-18 18-28 40-12 40C-4 40 0 24 0 10Z" fill="#ff5fb8" stroke="#fff" stroke-width=".8"/></g></g>`).join("")}</svg>`,
+  front:()=>`${LK_SVG}${lxAround(5,84,(x,y,a,i)=>`<g class="lk-bob" style="animation-delay:${-i*.5}s">${lxHeart(x,y,.8,"#ffb3dc")}</g>`,200,140)}</svg>`,
+  css:`.D .xpb-w{transform-box:fill-box;transform-origin:100% 50%;animation:lk-flap calc(.7s / var(--as,1)) ease-in-out infinite}`,...lxPL("#ff9ad0","#ff2d9566","#1f0614f2","#0e020af2")}),
+ // 8) Golden Lion — لبدة أسد ذهبية
+ X({id:"xGoldenLion",n:88,name:"Golden Lion",ar:"الأسد الذهبي",pal:"gold",frame:"gold",desc:"لبدة أسد ذهبية متموجة تحيط بالصورة وزئير من الشرارات",
+  back:()=>`${LK_SVG}<g class="xgl-m">${lxAround(22,74,(x,y,a)=>`<path transform="translate(${x} ${y}) rotate(${a+90})" d="M-7 6C-8-6-2-16 0-18C2-16 8-6 7 6Z" fill="${Math.round(a/16)%2?"#d4a017":"#f6c94a"}" stroke="#7a5200" stroke-width=".6"/>`)}</g>${lxRing(62,"#7a5200",3)}</svg>`,
+  front:()=>`${LK_SVG}${lxSparks(6,92,"#fde68a",11)}</svg>`,
+  css:`.D .xgl-m{transform-box:view-box;transform-origin:100px 100px;animation:xgl 3s ease-in-out infinite}@keyframes xgl{50%{transform:scale(1.05) rotate(3deg)}}`,...lxPL("#f6c94a","#d4a01766","#241805f2","#0f0a02f2")}),
+ // 9) Fire Phoenix — طائر العنقاء الناري
+ X({id:"xFirePhoenix",n:89,name:"Fire Phoenix",ar:"العنقاء النارية",pal:"red",frame:"fire",desc:"جناحا عنقاء من لهب يفتحان خلف الصورة مع ريش ناري متصاعد",
+  back:()=>`${LK_SVG}${lxWing(1,"#ff5a1f","#ffb020","xfp-w")}${lxWing(-1,"#ff5a1f","#ffb020","xfp-w")}${lxAround(9,64,(x,y,a,i)=>lxFlame(x,y,.9,a+90,i%2?"#ff7a00":"#ff3b1f"),30,120)}</svg>`,
+  front:()=>`${LK_SVG}${lxAround(5,40,(x,y,a,i)=>`<circle cx="${x}" cy="${y+60}" r="2" fill="#ffd000" class="xfp-e" style="animation-delay:${-i*.4}s"/>`,200,140)}</svg>`,
+  css:`.D .xfp-w{transform-box:view-box;transform-origin:140px 100px;animation:xfp 2.4s ease-in-out infinite}@keyframes xfp{50%{transform:rotate(-6deg)}}.D .lx-fl{transform-box:fill-box;transform-origin:50% 100%;animation:fl-flick .5s ease-in-out infinite alternate}.D .xfp-e{animation:lk-rise 2s ease-out infinite}`,...lxPL("#ff5a1f","#ff2d0066","#2a0804f2","#120302f2")}),
+ // 10) Luxury Minimal — فخامة بسيطة
+ X({id:"xLuxuryMinimal",n:90,name:"Luxury Minimal",ar:"الفخامة البسيطة",pal:"white",frame:"circle",desc:"خط ذهبي رفيع وحلقة واحدة أنيقة بدون أي زخرفة زائدة",
+  back:()=>`${LK_SVG}${lxRing(62,"#e8c46a",1.2)}<path d="M38 168H162" stroke="#e8c46a" stroke-width="1" class="xlm-l"/></svg>`,front:()=>``,
+  css:`.D .xlm-l{stroke-dasharray:124;animation:xlm 1.2s ease-out both}@keyframes xlm{from{stroke-dashoffset:124}}`,...lxPL("#e8c46a","#00000000","#000000a0","#00000080",.2)}),
+ // 11) RGB Gaming — ألوان RGB متدرجة
+ X({id:"xRgbGaming",n:91,name:"RGB Gaming",ar:"قيمنق RGB",pal:"blue",frame:"neon",desc:"حلقة RGB تتدرج ألوانها باستمرار وزوايا HUD مقطوعة",
+  back:()=>`${LK_SVG}<defs><linearGradient id="xrg" x1="0" x2="1"><stop offset="0" stop-color="#ff2d55"/><stop offset=".33" stop-color="#2ee59d"/><stop offset=".66" stop-color="#3ba8ff"/><stop offset="1" stop-color="#b56bff"/></linearGradient></defs><g class="lk-spin" style="--sd:4s">${lxRing(66,"url(#xrg)",5)}</g>${[[28,28,1,1],[172,28,-1,1],[28,172,1,-1],[172,172,-1,-1]].map(([x,y,a,b])=>`<path d="M${x} ${y+16*b}V${y}H${x+16*a}" fill="none" stroke="#ffffff" stroke-width="2"/>`).join("")}</svg>`,
+  front:()=>``,css:`.D .lk-spin{filter:drop-shadow(0 0 6px #b56bff) hue-rotate(0deg);animation:lk-spin calc(4s / var(--as,1)) linear infinite,xrg-h 3s linear infinite}@keyframes xrg-h{to{filter:drop-shadow(0 0 6px #b56bff) hue-rotate(360deg)}}`,...lxPL("#3ba8ff","#b56bff66","#06111ff2","#02060ff2",.15)}),
+ // 12) Saudi Emerald — زمرد سعودي
+ X({id:"xSaudiEmerald",n:92,name:"Saudi Emerald",ar:"الزمرد السعودي",pal:"green",frame:"gold",desc:"نجمة ثمانية زمردية بإطار ذهبي وزخرفة نجدية متكررة",
+  back:()=>`${LK_SVG}<path d="${lkStar8(100,100,82,68)}" fill="#05301e" stroke="#c9a227" stroke-width="2"/><path d="${lkStar8(100,100,74,62)}" fill="none" stroke="#11c47a" stroke-width="1" stroke-dasharray="3 3" class="lk-spin" style="--sd:30s"/>${lxAround(8,78,(x,y)=>`<path d="${lkPoly(x,y,4,4)}" fill="#c9a227"/>`,22.5)}</svg>`,
+  front:()=>`${LK_SVG}${lxSparks(4,90,"#fde68a",13)}</svg>`,...lxPL("#11c47a","#c9a22766","#04170ff2","#020a06f2")}),
+ // 13) Ocean Wave — موج المحيط
+ X({id:"xOceanWave",n:93,name:"Ocean Wave",ar:"موج البحر",pal:"blue",frame:"circle",desc:"أمواج زرقاء تتحرك أسفل الصورة وفقاعات صاعدة",
+  back:()=>`${LK_SVG}<clipPath id="xow"><circle cx="100" cy="100" r="80"/></clipPath><g clip-path="url(#xow)"><path class="xow-w" d="M-100 150Q-75 140 -50 150T0 150T50 150T100 150T150 150T200 150T250 150T300 150V200H-100Z" fill="#1e7bff99"/><path class="xow-w2" d="M-100 160Q-75 150 -50 160T0 160T50 160T100 160T150 160T200 160T250 160T300 160V200H-100Z" fill="#3ba8ffcc"/></g>${lxRing(80,"#9fd3ff",1.5)}</svg>`,
+  front:()=>`${LK_SVG}${[60,90,130,150].map((x,i)=>`<circle cx="${x}" cy="170" r="${2+i%2}" fill="none" stroke="#e0f2fe" class="xow-b" style="animation-delay:${-i*.6}s"/>`).join("")}</svg>`,
+  css:`.D .xow-w{animation:xow 3s linear infinite}.D .xow-w2{animation:xow 2.2s linear infinite reverse}@keyframes xow{to{transform:translateX(100px)}}.D .xow-b{animation:lk-rise 2.6s ease-out infinite}`,...lxPL("#3ba8ff","#1e7bff66","#06111ff2","#02060ff2")}),
+ // 14) Thunder Bolt — برق
+ X({id:"xThunderBolt",n:94,name:"Thunder Bolt",ar:"الصاعقة",pal:"blue",frame:"neon",desc:"صواعق صفراء تضرب من الأعلى مع وميض عند كل نشاط",
+  back:()=>`${LK_SVG}${lxRing(68,"#facc15",2,"","10 6")}${[[40,20,-15],[160,20,15]].map(([x,y,r])=>`<path transform="translate(${x} ${y}) rotate(${r})" d="M6 0L-4 22H4L-2 40L14 14H6L12 0Z" fill="#facc15" stroke="#fff" class="xtb-b"/>`).join("")}</svg>`,
+  front:()=>`${LK_SVG}<circle cx="100" cy="100" r="90" fill="#ffffff" class="xtb-f"/></svg>`,
+  css:`.D .xtb-b{animation:xtb 1.6s steps(1) infinite;filter:drop-shadow(0 0 6px #facc15)}@keyframes xtb{0%,40%,60%,100%{opacity:1}50%{opacity:.2}}.D .xtb-f{opacity:0}.lk-hit.led-xThunderBolt .xtb-f{animation:xtb-f .5s ease-out}@keyframes xtb-f{0%{opacity:.5}100%{opacity:0}}`,...lxPL("#facc15","#facc1566","#14130af2","#070600f2")}),
+ // 15) Rose Garden — حديقة ورد
+ X({id:"xRoseGarden",n:95,name:"Rose Garden",ar:"حديقة الورد",pal:"red",frame:"circle",desc:"إكليل ورود حمراء حول الصورة وبتلات تتساقط",
+  back:()=>`${LK_SVG}${lxAround(12,70,(x,y,a,i)=>`<g transform="translate(${x} ${y}) rotate(${a})"><path d="M0 -8C6 -8 8 -2 4 2C8 4 4 9 0 7C-4 9 -8 4 -4 2C-8 -2 -6 -8 0 -8Z" fill="${i%2?"#e11d48":"#be123c"}" stroke="#fecdd3" stroke-width=".6"/><path d="M-10 0L-16 -4" stroke="#15803d" stroke-width="2"/></g>`)}</svg>`,
+  front:()=>`${LK_SVG}${[40,80,120,160].map((x,i)=>`<path d="M${x} 10q4-5 8 0q-4 5-8 0z" fill="#fda4af" class="xrg-p" style="animation-delay:${-i*.9}s"/>`).join("")}</svg>`,
+  css:`.D .xrg-p{animation:lk-fall 3.6s linear infinite}`,...lxPL("#e11d48","#be123c66","#1c0508f2","#0e0203f2")}),
+ // 16) Moon Night — ليلة القمر
+ X({id:"xMoonNight",n:96,name:"Moon Night",ar:"ليلة القمر",pal:"silver",frame:"stars",desc:"هلال فضي كبير خلف الصورة ونجوم متلألئة وسحاب خفيف",
+  back:()=>`${LK_SVG}<path d="M130 20A80 80 0 1 0 186 120A64 64 0 1 1 130 20Z" fill="#e5e7eb" opacity=".9" class="xmn-m"/>${lkStars(96,20)}<path d="M20 170C30 160 50 162 56 170C66 164 84 168 84 178H20Z" fill="#ffffff22"/></svg>`,
+  front:()=>``,css:`.D .xmn-m{filter:drop-shadow(0 0 10px #e5e7eb88)}`,...lxPL("#d6dde8","#9fb0c866","#0e1218f2","#05070af2")}),
+ // 17) Ice Queen — ملكة الجليد
+ X({id:"xIceQueen",n:97,name:"Ice Queen",ar:"ملكة الجليد",pal:"blue",frame:"crystal",desc:"تاج جليدي من شظايا كريستال ورقاقات ثلج تتساقط",
+  back:()=>`${LK_SVG}${lxAround(9,72,(x,y,a)=>`<path transform="translate(${x} ${y}) rotate(${a+90})" d="M0 -14L5 0L0 10L-5 0Z" fill="#bae6fd" stroke="#fff" stroke-width=".6"/>`,200,140)}${lxRing(64,"#e0f2fe",1)}</svg>`,
+  front:()=>`${LK_SVG}${[30,70,110,150,180].map((x,i)=>`<g class="xiq-s" style="animation-delay:${-i*.8}s"><path transform="translate(${x} 0)" d="M0-5V5M-4.3-2.5L4.3 2.5M-4.3 2.5L4.3-2.5" stroke="#fff" stroke-width="1.2"/></g>`).join("")}</svg>`,
+  css:`.D .xiq-s{animation:lk-fall 4s linear infinite}`,...lxPL("#bae6fd","#7dd3fc66","#06122af2","#020814f2")}),
+ // 18) Desert Falcon — صقر الصحراء
+ X({id:"xDesertFalcon",n:98,name:"Desert Falcon",ar:"صقر الصحراء",pal:"gold",frame:"gold",desc:"صقر يفرد جناحيه فوق الصورة مع كثبان رملية ذهبية",
+  back:()=>`${LK_SVG}<path d="M0 176C40 160 70 168 100 176C130 166 160 160 200 176V200H0Z" fill="#d6c4a0aa"/>${lxRing(66,"#c9a227",1.5)}</svg>`,
+  front:()=>`${LK_SVG}<g transform="translate(100 34)" class="xdf-f"><path d="M0 0C-20-8-46-6-62 4C-44 4-28 8-14 12C-8 14-4 12 0 8C4 12 8 14 14 12C28 8 44 4 62 4C46-6 20-8 0 0Z" fill="#8a6a3f" stroke="#e8dcc4" stroke-width="1"/><circle cx="0" cy="-2" r="5" fill="#e8dcc4"/><path d="M3-2L8 0L3 1Z" fill="#c9a227"/></g></svg>`,
+  css:`.D .xdf-f{transform-box:fill-box;transform-origin:center;animation:xdf 2.4s ease-in-out infinite}@keyframes xdf{50%{transform:translateY(-4px) scaleX(1.06)}}`,...lxPL("#c9a227","#d6c4a066","#1f1806f2","#0d0a02f2")}),
+ // 19) Aurora Ribbon — شريط الشفق
+ X({id:"xAuroraRibbon",n:99,name:"Aurora Ribbon",ar:"شريط الشفق",pal:"green",frame:"circle",desc:"شريط شفق قطبي أخضر وبنفسجي يتموج حول الصورة",
+  back:()=>`${LK_SVG}<defs><linearGradient id="xar" x1="0" x2="1"><stop offset="0" stop-color="#2ee59d"/><stop offset=".5" stop-color="#22d3ee"/><stop offset="1" stop-color="#b56bff"/></linearGradient></defs><path class="xar-r" d="M10 120C40 60 70 150 100 90S160 40 190 100" fill="none" stroke="url(#xar)" stroke-width="10" stroke-linecap="round" opacity=".75"/><path class="xar-r2" d="M10 140C40 90 70 170 100 120S160 70 190 130" fill="none" stroke="url(#xar)" stroke-width="5" stroke-linecap="round" opacity=".5"/></svg>`,
+  front:()=>``,css:`.D .xar-r,.D .xar-r2{filter:blur(1px) drop-shadow(0 0 6px #22d3ee);animation:xar 4s ease-in-out infinite alternate}.D .xar-r2{animation-delay:-2s}@keyframes xar{to{transform:translateY(-10px)}}`,...lxPL("#2ee59d","#b56bff66","#04170ff2","#020a06f2")}),
+ // 20) Sakura Wind — رياح الساكورا
+ X({id:"xSakuraWind",n:100,name:"Sakura Wind",ar:"رياح الساكورا",pal:"pink",frame:"circle",desc:"غصن ساكورا مزهر بجانب الصورة وبتلات تطير مع الريح",
+  back:()=>`${LK_SVG}<path d="M200 30C160 40 140 60 132 90C128 104 120 112 108 118" fill="none" stroke="#5b3a29" stroke-width="4" stroke-linecap="round"/>${[[170,40],[150,58],[136,82],[122,104]].map(([x,y])=>`<g transform="translate(${x} ${y})">${[0,72,144,216,288].map(a=>`<ellipse rx="3" ry="6" transform="rotate(${a}) translate(0 -5)" fill="#fbcfe8"/>`).join("")}<circle r="2" fill="#f472b6"/></g>`).join("")}</svg>`,
+  front:()=>`${LK_SVG}${[20,60,100,140].map((y,i)=>`<ellipse cx="190" cy="${y}" rx="2.5" ry="4" fill="#f9a8d4" class="xsw-p" style="animation-delay:${-i*1}s"/>`).join("")}</svg>`,
+  css:`.D .xsw-p{animation:xsw 4s linear infinite}@keyframes xsw{0%{transform:translate(0,0) rotate(0);opacity:0}10%{opacity:1}100%{transform:translate(-190px,40px) rotate(360deg);opacity:0}}`,...lxPL("#f9a8d4","#f472b666","#1f0614f2","#0e020af2")}),
+ // 21) Gold Coins Rain — مطر العملات
+ X({id:"xGoldRain",n:101,name:"Gold Coins Rain",ar:"مطر العملات",pal:"gold",frame:"gold",desc:"عملات ذهبية تتساقط وتلمع حول الصورة — مثالي للهدايا والدعم",
+  back:()=>`${LK_SVG}${lxRing(64,"#f6c94a",2)}</svg>`,
+  front:()=>`${LK_SVG}${[24,56,88,120,152,178].map((x,i)=>`<g class="xgr-c" style="animation-delay:${-i*.55}s"><ellipse cx="${x}" cy="0" rx="7" ry="7" fill="#f6c94a" stroke="#7a5200"/><text x="${x}" y="3" font-size="8" text-anchor="middle" fill="#7a5200" font-weight="900">$</text></g>`).join("")}</svg>`,
+  css:`.D .xgr-c{animation:xgr 2.8s linear infinite}@keyframes xgr{0%{transform:translateY(-10px);opacity:0}10%{opacity:1}100%{transform:translateY(210px) rotateY(720deg);opacity:0}}`,...lxPL("#f6c94a","#ffb02066","#241805f2","#0f0a02f2")}),
+ // 22) Hologram Grid — شبكة هولوغرام
+ X({id:"xHoloGrid",n:102,name:"Hologram Grid",ar:"شبكة الهولوغرام",pal:"blue",frame:"neon",desc:"شبكة هولوغرام سماوية بخط مسح يمر عبر الصورة",
+  back:()=>`${LK_SVG}<clipPath id="xhg"><circle cx="100" cy="100" r="82"/></clipPath><g clip-path="url(#xhg)" stroke="#22e1ff55" stroke-width=".8">${Array.from({length:11},(_,i)=>`<path d="M${18+i*16.4} 18V182M18 ${18+i*16.4}H182"/>`).join("")}<rect x="0" y="0" width="200" height="6" fill="#22e1ff88" class="xhg-s"/></g>${lxRing(82,"#22e1ff",1.5)}</svg>`,
+  front:()=>``,css:`.D .xhg-s{animation:xhg 2.4s linear infinite}@keyframes xhg{from{transform:translateY(0)}to{transform:translateY(200px)}}`,...lxPL("#22e1ff","#22e1ff66","#031319f2","#01080bf2",.15)}),
+ // 23) Black Gold — أسود وذهبي
+ X({id:"xBlackGold",n:103,name:"Black Gold",ar:"الأسود الذهبي",pal:"gold",frame:"hex",desc:"إطار سداسي أسود بحواف ذهبية وزخارف زاوية فاخرة",
+  back:()=>`${LK_SVG}<path d="${lkPoly(100,100,80,6,-90)}" fill="#0a0a0a" stroke="#d4a017" stroke-width="3"/><path d="${lkPoly(100,100,72,6,-90)}" fill="none" stroke="#f6c94a" stroke-width=".8" stroke-dasharray="1 3"/>${lxAround(6,80,(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="#f6c94a"/>`,-90)}</svg>`,
+  front:()=>``,...lxPL("#d4a017","#f6c94a44","#0a0a0af5","#000000f5",.15)}),
+ // 24) Rainbow Prism — منشور قوس قزح
+ X({id:"xRainbowPrism",n:104,name:"Rainbow Prism",ar:"منشور قوس قزح",pal:"white",frame:"crystal",desc:"منشور زجاجي يحلل الضوء لأشعة قوس قزح خلف الصورة",
+  back:()=>`${LK_SVG}<g class="lk-spin" style="--sd:20s">${["#ff2d55","#ff9f1a","#facc15","#2ee59d","#3ba8ff","#b56bff"].map((c,i)=>`<path transform="rotate(${i*60} 100 100)" d="M100 100L92 10H108Z" fill="${c}" opacity=".55"/>`).join("")}</g><path d="${lkPoly(100,100,60,3)}" fill="#ffffff18" stroke="#fff" stroke-width="1.2"/></svg>`,
+  front:()=>``,...lxPL("#ffffff","#b56bff55","#10131af2","#05070af2")}),
+ // 25) Heart Burst — انفجار القلوب
+ X({id:"xHeartBurst",n:105,name:"Heart Burst",ar:"انفجار القلوب",pal:"red",frame:"circle",desc:"قلوب حمراء ووردية تنطلق من الصورة مع كل لايك أو «أحبني»",
+  back:()=>`${LK_SVG}${lxRing(64,"#ff5f8f",2)}</svg>`,
+  front:()=>`${LK_SVG}${lxAround(10,60,(x,y,a,i)=>`<g class="xhb-h" style="--dx:${((x-100)*.6).toFixed(0)}px;--dy:${((y-100)*.6).toFixed(0)}px;animation-delay:${-(i*.22).toFixed(2)}s">${lxHeart(x,y,1.1,i%2?"#ff5f8f":"#ffb3dc")}</g>`)}</svg>`,
+  css:`.D .xhb-h{animation:xhb 2.2s ease-out infinite}@keyframes xhb{0%{transform:translate(0,0) scale(.4);opacity:0}20%{opacity:1}100%{transform:translate(var(--dx),var(--dy)) scale(1.1);opacity:0}}`,...lxPL("#ff5f8f","#ff2d5566","#1c0508f2","#0e0203f2")}),
+ // 26) Star Constellation — كوكبة النجوم
+ X({id:"xConstellation",n:106,name:"Star Constellation",ar:"كوكبة النجوم",pal:"purple",frame:"stars",desc:"كوكبة نجوم متصلة بخطوط مضيئة ترسم نفسها حول الصورة",
+  back:()=>{ const P=[[30,60],[56,30],[96,22],[140,34],[170,62],[178,110],[160,152]]; return `${LK_SVG}<path d="M${P.map(p=>p.join(" ")).join("L")}" fill="none" stroke="#e0b8ff" stroke-width="1" class="xcs-l"/>${P.map(([x,y],i)=>`<circle cx="${x}" cy="${y}" r="3" fill="#fff" class="lx-tw" style="animation-delay:${-i*.3}s"/>`).join("")}${lkStars(106,16)}</svg>` },
+  front:()=>``,css:`.D .xcs-l{stroke-dasharray:340;animation:xcs 3s ease-out both}@keyframes xcs{from{stroke-dashoffset:340}}`,...lxPL("#b56bff","#e0b8ff66","#12061ff2","#06020ef2")}),
+ // 27) Palm Oasis — واحة النخيل
+ X({id:"xPalmOasis",n:107,name:"Palm Oasis",ar:"واحة النخيل",pal:"green",frame:"gold",desc:"نخلتان ذهبيتان على جانبي الصورة وشمس غروب خلفها",
+  back:()=>`${LK_SVG}<circle cx="100" cy="100" r="78" fill="#f59e0b33"/>${[[34,1],[166,-1]].map(([x,s])=>`<g transform="translate(${x} 176) scale(${s*.62} .62)"><g class="xpo-p"><path d="M0 0C2-30 4-60 0-90" stroke="#a16207" stroke-width="5" fill="none"/>${[-60,-30,0,30,60].map(a=>`<path transform="translate(0 -90) rotate(${a})" d="M0 0C10-6 22-4 30 4C20 0 10 2 0 0Z" fill="#16a34a"/>`).join("")}</g></g>`).join("")}</svg>`,
+  front:()=>``,css:`.D .xpo-p{transform-box:fill-box;transform-origin:50% 100%;animation:lk-swing 3s ease-in-out infinite}`,...lxPL("#c9a227","#16a34a66","#071a0ef2","#020a05f2")}),
+ // 28) Pearl Shell — صدفة اللؤلؤ
+ X({id:"xPearlShell",n:108,name:"Pearl Shell",ar:"صدفة اللؤلؤ",pal:"white",frame:"circle",desc:"صدفة بحرية وردية تنفتح خلف الصورة ولآلئ تحيط بها",
+  back:()=>`${LK_SVG}<g class="xps-s"><path d="M100 170L20 90C30 40 70 18 100 18C130 18 170 40 180 90Z" fill="#fde2e4" stroke="#f9a8d4" stroke-width="1.5"/>${[-60,-36,-12,12,36,60].map(a=>`<path transform="rotate(${a} 100 170)" d="M100 170V26" stroke="#f9a8d4" stroke-width="1"/>`).join("")}</g>${lxAround(10,74,(x,y)=>`<circle cx="${x}" cy="${y}" r="4" fill="#fff" stroke="#e5e7eb"/>`,200,140)}</svg>`,
+  front:()=>``,css:`.D .xps-s{transform-box:fill-box;transform-origin:50% 100%;animation:xps 1s cubic-bezier(.2,1.3,.3,1) both}@keyframes xps{from{transform:scaleY(.2)}}`,...lxPL("#f9a8d4","#fde2e466","#1f1418f2","#0e080af2")}),
+ // 29) Comet Trail — ذيل المذنب
+ X({id:"xCometTrail",n:109,name:"Comet Trail",ar:"ذيل المذنب",pal:"blue",frame:"stars",desc:"مذنب لامع يدور حول الصورة تاركاً ذيلاً من الضوء",
+  back:()=>`${LK_SVG}${lkStars(109,18)}${lxRing(74,"#9fd3ff33",1)}<g class="lk-spin" style="--sd:3.2s"><path d="M100 26A74 74 0 0 1 164 64" fill="none" stroke="url(#xct)" stroke-width="4" stroke-linecap="round"/><circle cx="164" cy="64" r="5" fill="#fff"/></g><defs><linearGradient id="xct" x1="0" x2="1"><stop offset="0" stop-color="#3ba8ff00"/><stop offset="1" stop-color="#e0f2fe"/></linearGradient></defs></svg>`,
+  front:()=>``,...lxPL("#9fd3ff","#3ba8ff66","#06111ff2","#02060ff2")}),
+ // 30) B6O6 Legend — أسطورة B6O6
+ X({id:"xB6o6Legend",n:110,name:"B6O6 Legend",ar:"أسطورة B6O6",pal:"blue",frame:"b6o6",desc:"هوية B6O6: حلقتان بالأزرق والوردي، تاج، برق وأجنحة — للأحداث الكبيرة",
+  back:()=>`${LK_SVG}${lxWing(1,"#2f7bff","#7c5cff","xbl-w")}${lxWing(-1,"#2f7bff","#7c5cff","xbl-w")}<g class="lk-spin" style="--sd:10s">${lxRing(66,"#2f7bff",3,"","30 10")}</g><g class="lk-spinr" style="--sd:14s">${lxRing(72,"#ff2d6f",1.6,"","8 8")}</g></svg>`,
+  front:()=>`${LK_SVG}${lxCrown(100,24,.9,"#fde68a","#2f7bff")}${lxSparks(6,88,"#e0f2fe",17)}</svg>`,
+  css:`.D .xbl-w{transform-box:view-box;transform-origin:140px 100px;animation:xfp 2.6s ease-in-out infinite}`,...lxPL("#2f7bff","#ff2d6f66","#06111ff2","#02060ff2")}),
+];
+const LX_CSS=`.lx-tw{opacity:.2;animation:lk-tw calc(2.2s / var(--as,1)) ease-in-out infinite}@keyframes fl-flick{to{transform:scale(1.08,.88)}}@keyframes xfp{50%{transform:rotate(-6deg)}}`;
+LX[0].css=(LX[0].css||"")+LX_CSS;
+lkRegister(LX.map(d=>({...d,pro:true})));
+const LE_X_IDS=LX.map(d=>d.id);
+LE_PLAN.excl=LE_X_IDS.slice();
 
 /* ---- engine/qr.js ---- */
 // ====== مولّد QR Code محلي (بايت، تصحيح أخطاء M، الإصدارات 1–20) — بدون أي خدمة خارجية ======
@@ -8616,9 +8790,9 @@ function renderPage(soft){
   const list=tab==="pro"?LB_DESIGNS.filter(d=>(!S.lbCat||S.lbCat===d.cat)&&(!S.lbFavOnly||favs.includes(d.id))&&(!q||(d.name+" "+d.desc+" "+d.n).toLowerCase().includes(q))):tab==="goals"?SG_DESIGNS.filter(d=>!S.gcat||(S.gcat==="bar"?!d.vg:d.cat===S.gcat)).sort((a,b)=>(b.vg?1:0)-(a.vg?1:0)):tab==="fcount"?FC_DESIGNS.filter(d=>(!S.fcF||(S.fcF.startsWith("cat:")?d.cat===S.fcF.slice(4):fcTags(d).includes(S.fcF)))&&(!S.fcFavOnly||(S.settings.fcFav||[]).includes(d.id))):tab==="nowplay"?NP_DESIGNS:tab==="uchat"?UC_DESIGNS:tab==="levent"?LE_DESIGNS.filter(d=>(!S.leFavOnly||(S.settings.leFav||[]).includes(d.id))&&(!S.leGrp||d.cat===S.leGrp)):tab==="rules"?RB_DESIGNS:tab==="clocks"?CLOCK_DESIGNS:tab==="socials"?SOCIAL_DESIGNS:DESIGNS;
   const LB_PLAN={circle:15,cloud:10,royal:15,neon:15,glass:15,d3:15,mini:15,basic:4,boys:20,girls:20,ptrans:20,creative:20,legRoyal:10,legFlower:10,legGaming:10,legGalaxy:10,legMinimal:11,legSaudi:10,refTop:14};
   h=head(tab==="pro"?"🎨 مكتبة تصاميم القوائم":"مكتبة التصاميم","معاينة حيّة — التصميم يُطبَّق على العنصر المختار فقط",layoutPicker())+
-  `<div class="row" style="margin-bottom:12px"><button class="btn sm ${tab==="pro"?"on":""}" data-libtab="pro">✨ قوائم الداعمين (${LB_DESIGNS.length})</button><button class="btn sm ${tab==="goals"?"on":""}" data-libtab="goals">🎯 أهداف الدعم (${SG_DESIGNS.length})</button><button class="btn sm ${tab==="nowplay"?"on":""}" data-libtab="nowplay">🎵 الأغنية الحالية (${NP_DESIGNS.length})</button><button class="btn sm ${tab==="uchat"?"on":""}" data-libtab="uchat">💬 الشات الموحد (${UC_DESIGNS.length})</button><button class="btn sm ${tab==="levent"?"on":""}" data-libtab="levent">✨ آخر التفاعلات (${LE_DESIGNS.length}/${LE_PLAN_TOTAL})</button><button class="btn sm ${tab==="fcount"?"on":""}" data-libtab="fcount">👥 عدادات المتابعين (${FC_DESIGNS.length}/60)</button><button class="btn sm ${tab==="rules"?"on":""}" data-libtab="rules">📜 قوانين السبثون (${RB_DESIGNS.length}/40)</button><button class="btn sm ${tab==="boards"?"on":""}" data-libtab="boards">🏆 قوائم الترتيب (${DESIGNS.length})</button><button class="btn sm ${tab==="clocks"?"on":""}" data-libtab="clocks">⏳ السبثون والمؤقتات (${CLOCK_DESIGNS.length})</button><button class="btn sm ${tab==="socials"?"on":""}" data-libtab="socials">🌐 الحسابات (${SOCIAL_DESIGNS.length})</button></div>
+  `<div class="row" style="margin-bottom:12px"><button class="btn sm ${tab==="pro"?"on":""}" data-libtab="pro">✨ قوائم الداعمين (${LB_DESIGNS.length})</button><button class="btn sm ${tab==="goals"?"on":""}" data-libtab="goals">🎯 أهداف الدعم (${SG_DESIGNS.length})</button><button class="btn sm ${tab==="nowplay"?"on":""}" data-libtab="nowplay">🎵 الأغنية الحالية (${NP_DESIGNS.length})</button><button class="btn sm ${tab==="uchat"?"on":""}" data-libtab="uchat">💬 الشات الموحد (${UC_DESIGNS.length})</button><button class="btn sm ${tab==="levent"?"on":""}" data-libtab="levent">✨ آخر التفاعلات (${LE_DESIGNS.length}/${Object.values(LE_PLAN).reduce((a,x)=>a+x.length,0)})</button><button class="btn sm ${tab==="fcount"?"on":""}" data-libtab="fcount">👥 عدادات المتابعين (${FC_DESIGNS.length}/60)</button><button class="btn sm ${tab==="rules"?"on":""}" data-libtab="rules">📜 قوانين السبثون (${RB_DESIGNS.length}/40)</button><button class="btn sm ${tab==="boards"?"on":""}" data-libtab="boards">🏆 قوائم الترتيب (${DESIGNS.length})</button><button class="btn sm ${tab==="clocks"?"on":""}" data-libtab="clocks">⏳ السبثون والمؤقتات (${CLOCK_DESIGNS.length})</button><button class="btn sm ${tab==="socials"?"on":""}" data-libtab="socials">🌐 الحسابات (${SOCIAL_DESIGNS.length})</button></div>
   <div class="card" style="margin-bottom:14px"><div class="row"><span class="mut">تطبيق على:</span>${pool.length?`<select class="inp" data-act="libTarget" style="width:auto">${pool.map(w=>`<option value="${w.id}" ${tgt&&w.id===tgt.id?"selected":""}>${TYPES[w.type].icon} ${esc(w.name)} — ${wdname(w)}</option>`).join("")}</select>`:`<span class="mut small">لا يوجد عنصر من هذا النوع في التخطيط</span> ${tab==="pro"?`<button class="btn sm" data-add-lb="5">+ إضافة قائمة Pro</button>`:`<button class="btn sm" data-add="${tab==="clocks"?"subathon":tab==="socials"?"social":tab==="goals"?"sgoal":tab==="rules"?"srules":tab==="fcount"?"fcount":"gifts"}">+ إضافة</button>`}`}</div></div>
-  ${tab==="levent"?`<div class="card" style="margin-bottom:14px"><h3>✨ آخر التفاعلات <span class="tag">معاينة حيّة بنفس مكوّن OBS</span></h3><div class="row"><span class="mut">نوع المعاينة:</span>${Object.entries(LE_KINDS).map(([k,K])=>`<button class="btn sm ${(S.leKind||(tgt&&tgt.kind)||"follow")===k?"on":""}" data-lekindpv="${k}">${K.icon} ${K.label}</button>`).join("")}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-lepv="all">▶ تشغيل التجربة على الكل</button><button class="btn sm ${S.leFavOnly?"on":""}" data-lefavonly="1">★ المفضلة فقط</button>${tgt?`<button class="btn sm" data-lecopy="${tgt.id}">🔗 نسخ رابط OBS للعنصر المختار</button><button class="btn sm" data-sel="${tgt.id}" data-go="studio">⚙️ إعدادات العنصر</button>`:""}</div><div class="row" style="margin-top:8px"><button class="btn sm ${!S.leGrp?"on":""}" data-legrp="">الكل (${LE_DESIGNS.length})</button>${Object.entries(LE_GROUPS).map(([g,n])=>`<button class="btn sm ${S.leGrp===g?"on":""}" data-legrp="${g}">${n} (${LE_DESIGNS.filter(d=>d.cat===g).length}/${LE_PLAN[g].length})</button>`).join("")}</div><p class="mut small">المنفذ فعلياً: ${LE_DESIGNS.length} من ${LE_PLAN_TOTAL} تصميماً متحركاً — كل تصميم يعمل مع كل الأنواع بشارة وجزيئات وحركة خاصة بكل نوع. ${LE_ENTERS.length-1} حركة دخول و${LE_EXITS.length-1} حركة خروج.</p></div>`:""}
+  ${tab==="levent"?`<div class="card" style="margin-bottom:14px"><h3>✨ آخر التفاعلات <span class="tag">معاينة حيّة بنفس مكوّن OBS</span></h3><div class="row"><span class="mut">نوع المعاينة:</span>${Object.entries(LE_KINDS).map(([k,K])=>`<button class="btn sm ${(S.leKind||(tgt&&tgt.kind)||"follow")===k?"on":""}" data-lekindpv="${k}">${K.icon} ${K.label}</button>`).join("")}</div><div class="row" style="margin-top:8px"><button class="btn sm pri" data-lepv="all">▶ تشغيل التجربة على الكل</button><button class="btn sm ${S.leFavOnly?"on":""}" data-lefavonly="1">★ المفضلة فقط</button>${tgt?`<button class="btn sm" data-lecopy="${tgt.id}">🔗 نسخ رابط OBS للعنصر المختار</button><button class="btn sm" data-sel="${tgt.id}" data-go="studio">⚙️ إعدادات العنصر</button>`:""}</div><div class="row" style="margin-top:8px"><button class="btn sm ${!S.leGrp?"on":""}" data-legrp="">الكل (${LE_DESIGNS.length})</button>${Object.entries(LE_GROUPS).map(([g,n])=>`<button class="btn sm ${S.leGrp===g?"on":""}" data-legrp="${g}">${n} (${LE_DESIGNS.filter(d=>d.cat===g).length}/${LE_PLAN[g].length})</button>`).join("")}</div><p class="mut small">المنفذ فعلياً: ${LE_DESIGNS.length} من ${Object.values(LE_PLAN).reduce((a,x)=>a+x.length,0)} تصميماً متحركاً — كل تصميم يعمل مع كل الأنواع بشارة وجزيئات وحركة خاصة بكل نوع. ${LE_ENTERS.length-1} حركة دخول و${LE_EXITS.length-1} حركة خروج.</p></div>`:""}
   ${tab==="fcount"?`<div class="card" style="margin-bottom:14px"><h3>🧪 تجربة العدادات <span class="tag">بيانات تجريبية</span></h3><div class="row"><button class="btn sm" data-fcpv="up">➕ زيادة متابع</button><button class="btn sm" data-fcpv="down">➖ نقصان متابع</button><button class="btn sm" data-fcpv="goal">⭐ الوصول للهدف</button></div><p class="mut small">المعاينات تعمل بنفس كود OBS. الأرقام توضيحية.</p><div class="row" style="margin-top:8px;gap:6px"><button class="btn sm ${!S.fcF?"on":""}" data-fcf="">الكل (${FC_DESIGNS.length})</button>${Object.entries(FC_CATS).map(([k,n])=>`<button class="btn sm ${S.fcF==="cat:"+k?"on":""}" data-fcf="cat:${k}">${n} <span class="tag">${FC_DESIGNS.filter(d=>d.cat===k).length}/${FC_PLAN[k]}</span></button>`).join("")}</div>
    <div class="row" style="margin-top:6px;gap:6px">${FC_FILTERS.map(([k,n])=>`<button class="btn sm ${S.fcF===k?"on":""}" data-fcf="${k}">${n}</button>`).join("")}<button class="btn sm ${S.fcGoalPv!=="0"?"on":""}" data-fcg="1">🎯 مع هدف</button><button class="btn sm ${S.fcGoalPv==="0"?"on":""}" data-fcg="0">بدون هدف</button><button class="btn sm ${S.fcFavOnly?"on":""}" data-fcfavonly>★ المفضلة (${(S.settings.fcFav||[]).length})</button></div></div>`:""}
   ${tab==="goals"?`<div class="card" style="margin-bottom:14px"><h3>🧪 تجربة الأهداف التفاعلية <span class="tag">بيانات تجريبية — لا تؤثر على البث</span></h3>
@@ -9380,6 +9554,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const lb=e.target.closest&&e.target.closest("[data-leladd],[data-leldel]"); if(lb){ const w=findW(lb.dataset.wid); if(w){ w.lvls=Array.isArray(w.lvls)?w.lvls:[]; if(lb.dataset.leladd!==undefined){ const v=lb.dataset.leladd, base=w.design; if(v==="custom") w.lvls.push(w.kind==="gift"?{gift:"",design:base}:{at:100,design:base}); else if(v.startsWith("gift:")) w.lvls.push({gift:v.slice(5),design:base}); else w.lvls.push({at:+v,design:base}) } else w.lvls.splice(+lb.dataset.leldel,1); save(); pushLayout(); refreshView(w); renderProps() } return } }
  { const ls=e.target.closest&&e.target.closest("[data-lsopen],[data-lsclose],[data-lsjump],[data-lscopy],[data-lspv],[data-lssave],[data-lsdel],[data-lsreissue],[data-lstop],[data-lsflt],[data-lsreal],[data-lsd],[data-lsadd]"); if(ls&&lsClick(ls)) return }
  { const bb=e.target.closest&&e.target.closest("[data-btop]"); if(bb){ const op=bb.dataset.btop; if(op==="test"){ btSend("start",{test:true}); setTimeout(btSim,400); return } if(op==="stop"&&!confirm("إنهاء التحدي الآن وإعلان الفائز؟")) return; btSend(op,op==="addTime"?{ms:+bb.dataset.ms||60000}:{}); return } }
  const t=e.target.closest("button,[data-pick],[data-selw],[data-anim-try],[data-sdesign],[data-idle-set],a"); if(!t) return;
@@ -9496,6 +9671,7 @@ function previewOverlay(only){
 function onInput(e){
  const t=e.target, d=t.dataset;
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
+ if(d.lelv!==undefined){ if(e.type!=="change"&&t.tagName!=="INPUT") return; if(t.type==="number"&&e.type!=="change") return; const w=findW(d.wid), x=w&&w.lvls&&w.lvls[+d.lelv]; if(!x) return; const f=d.lelf; x[f]=f==="on"?t.checked:f==="at"?(+t.value||0):String(t.value).slice(0,120); save(); pushLayout(); refreshView(w); if(S.lsOpen===w.id) lsLive(w); return }
  if(d.btl){ if(e.type!=="change") return; const B=(R.C&&R.C.battle)||newBattle(), cfg={};
   if(d.btl==="mode") cfg.mode=t.value; else if(d.btl==="dur") cfg.durMs=Math.round((+t.value||5)*60000); else if(d.btl==="like") cfg.likePts=+t.value||0;
   else { const tm={id:d.bteam}; if(d.btl==="gifts") tm.gifts=t.value.split(/[,،]/).map(x=>x.trim()).filter(Boolean); else tm[d.btl]=t.value; cfg.teams=[tm] }
@@ -9569,7 +9745,7 @@ function onInput(e){
   save(); pushLayout();
   if(S.page!=="studio"&&S.lsOpen===w.id){ if(t.tagName==="SELECT") renderPage(true); else lsLive(w); return }
   if(S.page==="studio"&&(w.type==="donCard"||w.type==="donLast5")){ refreshView(w); if(t.tagName==="SELECT") renderProps(); else mountDcPreview(w); return }
-  if(S.page==="studio"){ refreshView(w); if(f==="name") renderLayers(); if(["design","topN","sortBy","showTitle","effects","timerId","mode","repeat","filter","order","source","target","base","tickerDir","stages","levelStages","platform","goalOn"].includes(f)) renderProps() }
+  if(S.page==="studio"){ refreshView(w); if(f==="name") renderLayers(); if(["design","topN","sortBy","showTitle","effects","timerId","mode","repeat","filter","order","source","target","base","tickerDir","stages","levelStages","platform","goalOn","kind"].includes(f)) renderProps() }
   else if(t.tagName==="SELECT"||e.type==="change") renderPage(true);
   return }
  if(d.set&&e.type==="change"){ let v=t.value; if(d.set==="fx") v=v==="1"; if(d.set==="bigGift") v=+v; S.settings[d.set]=v; if(d.set==="perfMode") window.__arshPM=v; save(); return }
@@ -10238,7 +10414,17 @@ function leHTML(){ const l=L(), ws_=l.widgets.filter(w=>w.type==="levent"), Lt=R
    <div class="row" style="margin-top:8px"><button class="btn sm" data-leadd="${k}">+ عنصر</button><button class="btn sm" data-letest="${k}">🧪 تجربة</button>${vo==null?"":`<button class="btn sm ${vo?"on":""}" data-levoice="${k}">🔊 ${vo?"إيقاف":"تشغيل"} الصوت</button>`}</div></div>` }).join("")}</div>
  ${leMineHTML(ws_)}
  <div class="note small" style="margin-top:14px">🔊 الصوت مربوط بمركز البوتات (نفس القارئ الصوتي، مصدر واحد بدون تكرار): المتابعة والمشاركة والاشتراك من «شكر المتابعة»، الدخول من «الترحيب»، الدونيشن والهدايا من «شكر الدعم». تعديل العبارات من صفحة البوتات.</div>` }
-function lePropsHTML(w,sel,rng){ const d=leDesignOf(w.design), inp=(f,l,ph="")=>`<div class="fld"><label>${l}</label><input class="inp" data-wf="${f}" data-wid="${w.id}" value="${esc(w[f]??"")}" placeholder="${esc(ph)}"></div>`, K=LE_KINDS[w.kind]||LE_KINDS.follow;
+/** مستويات النشاط لعنصر «آخر التفاعلات»: تصميم مختلف لكل مستوى (لايكات/هدية/دونيشن) */
+const LE_LVL_PRESETS={like:[["1000","1k"],["2000","2k"],["5000","5k"],["10000","10k"]],gift:[["gift:Rose,وردة","🌹 وردة"],["gift:I Love You,Love you,أحبني","💕 أحبني"],["gift:Lion,أسد","🦁 أسد"],["gift:Universe,يونيفرس","🌌 يونيفرس"],["1000","≥ 1000 عملة"]],donation:[["5","5"],["20","20"],["50","50"],["100","100"]]};
+function leLvlHTML(w){ const k=w.kind, P=LE_LVL_PRESETS[k]; if(!P) return ""; const L=w.lvls||[], opts=LE_DESIGNS.map(x=>[x.id,x.n+". "+x.ar+(isProDesign(x.id)?" (PRO)":"")]);
+ return `<div class="ttl" style="margin:10px 0 4px">🪜 مستويات «${esc(LE_KINDS[k].label)}» — تصميم لكل مستوى</div><p class="mut small">${esc(LE_LVL_KINDS[k])}. يُختار أعلى مستوى ينطبق على الحدث الحقيقي، وإلا يُستخدم التصميم الأساسي.${k==="gift"?" «أحبني» هدية TikTok وليست دعماً مالياً.":""}</p>
+ ${L.map((x,i)=>`<div class="row" style="gap:6px;margin-bottom:6px;align-items:end"><label class="row small" style="gap:4px"><input type="checkbox" data-lelv="${i}" data-lelf="on" data-wid="${w.id}" ${x.on!==false?"checked":""}></label>
+  <div class="fld" style="margin:0;flex:1"><label>${x.gift?"اسم الهدية (أكثر من اسم بفاصلة)":k==="donation"?"من مبلغ":k==="like"?"من عدد لايكات":"من قيمة (عملات)"}</label><input class="inp" data-lelv="${i}" data-lelf="${x.gift?"gift":"at"}" data-wid="${w.id}" value="${esc(x.gift||x.at||"")}" ${x.gift?"":'type="number" min="1"'}></div>
+  <div class="fld" style="margin:0;flex:1.4"><label>التصميم</label><select class="inp" data-lelv="${i}" data-lelf="design" data-wid="${w.id}">${opts.map(o=>`<option value="${o[0]}" ${x.design===o[0]?"selected":""}>${esc(o[1])}</option>`).join("")}</select></div>
+  <button class="btn sm" data-leldel="${i}" data-wid="${w.id}">🗑</button></div>`).join("")}
+ <div class="row" style="gap:4px;flex-wrap:wrap"><span class="mut small">إضافة مستوى:</span>${P.map(([v,l])=>`<button class="btn sm" data-leladd="${esc(v)}" data-wid="${w.id}">+ ${esc(l)}</button>`).join("")}<button class="btn sm" data-leladd="custom" data-wid="${w.id}">+ مخصص</button></div>` }
+function lePropsHTML(w,sel,rng){ return lePropsHTML0(w,sel,rng)+leLvlHTML(w) }
+function lePropsHTML0(w,sel,rng){ const d=leDesignOf(w.design), inp=(f,l,ph="")=>`<div class="fld"><label>${l}</label><input class="inp" data-wf="${f}" data-wid="${w.id}" value="${esc(w[f]??"")}" placeholder="${esc(ph)}"></div>`, K=LE_KINDS[w.kind]||LE_KINDS.follow;
  const col=(f,l)=>{ const P=LE_PALETTES[w.palette||d.pal]||LE_PALETTES.gold; return `<div class="fld"><label>${l}</label><input type="color" data-wf="${f}" data-wid="${w.id}" value="${w[f]||P[f]}"></div>` };
  return `<div class="grid g2" style="gap:8px">${sel("kind","نوع التفاعل",Object.entries(LE_KINDS).map(([k,x])=>[k,x.icon+" "+x.label]),w.kind)}${sel("design","التصميم",LE_DESIGNS.map(x=>[x.id,x.n+". "+x.name+" — "+x.ar]),w.design)}
   ${sel("mode","طريقة العرض",[["sticky","آخر حدث ثابت (Persistent)"],["alert","تنبيه مؤقت (Temporary)"]],w.mode)}${w.mode==="alert"?rng("dur","مدة التنبيه",2,30,1,w.dur||5,v=>v+" ث"):""}${sel("layout","مكان الصورة والاسم",LE_LAYOUTS,w.layout||"")}

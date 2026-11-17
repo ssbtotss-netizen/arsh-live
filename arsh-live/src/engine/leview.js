@@ -31,6 +31,15 @@ export const LE_EXITS=[["auto","تلقائي (خفوت الإضاءة)"],["fade"
 export const LE_FONTS=[["","افتراضي"],["Readex Pro","Readex Pro — عصري"],["Changa","Changa — عريض"],["Amiri","Amiri — كلاسيكي"],["Orbitron","Orbitron — ألعاب"]];
 export const LE_LAYOUTS=[["","حسب التصميم"],["stack","الصورة فوق الاسم"],["stackTop","الاسم فوق الصورة"],["row","الصورة يسار والاسم يمين"],["rowR","الصورة يمين والاسم يسار"]];
 export const LE_DESIGNS=[];
+/** مستويات النشاط: تصميم مختلف حسب المستوى — لايكات المستخدم في البث (1k/2k/5k/10k…)، الهدية (اسمها أو قيمتها بالعملات)، مبلغ الدونيشن.
+ *  w.lvls=[{at:رقم أو gift:"اسم", design}] — يُختار أعلى مستوى ينطبق؛ وإلا تصميم العنصر الأساسي. */
+export const LE_LVL_KINDS={like:"عدد لايكات الشخص في البث",gift:"اسم الهدية أو قيمتها بالعملات",donation:"مبلغ الدعم",subscribe:"",follow:"",share:"",join:"",comment:""};
+export function leLevelDesign(w,e,src){ const L=Array.isArray(w.lvls)?w.lvls.filter(x=>x&&x.design&&x.on!==false):[]; if(!L.length||!e) return "";
+ const k=e.kind; let v=0;
+ if(k==="like"){ const u=src&&src.D&&src.D.likes&&src.D.likes[e.uid]; v=Math.max(+e.count||0,u?+u.v||0:0) }
+ else if(k==="gift"){ const g=String(e.gift||"").trim().toLowerCase(); const byName=L.find(x=>x.gift&&String(x.gift).split(/[,،]/).some(n=>n.trim().toLowerCase()===g)); if(byName) return byName.design; v=(+e.value||0) }
+ else if(k==="donation") v=+e.amount||0; else return "";
+ let best=null; for(const x of L) if(x.at!=null&&x.at!==""&&!x.gift&&v>=+x.at&&(!best||+x.at>+best.at)) best=x; return best?best.design:"" }
 export const leDesignOf=id=>LE_DESIGNS.find(d=>d.id===id)||LE_DESIGNS[0];
 let LE_XCSS="";
 export function leRegister(list){ for(const d of list){ const i=LE_DESIGNS.findIndex(x=>x.id===d.id); if(i>=0) LE_DESIGNS[i]=d; else LE_DESIGNS.push(d); if(d.css) LE_XCSS+=d.css } LE_DESIGNS.sort((a,b)=>a.n-b.n) }
@@ -101,7 +110,7 @@ Object.assign(View.prototype,{
  leCurrent(){ const w=this.w, src=this.opts.data?this.opts.data():null; const L=src&&src.C&&src.C.latest||{}; const e=LE_KINDS[w.kind]?.derived?leDerive(w.kind,src,lbEntries,topsList):L[w.kind];
   if(e) return e; if(this.opts.editor||String(w.id).startsWith("pv_")) return leSample(w.kind); return null },
  /** بناء بطاقة لحدث واحد */
- leCard(e){ const w=this.w, d=leDesignOf(w.design), k=w.kind, R=leRnd(7+(d.n||1)*13);
+ leCard(e){ const w=this.w, d=leDesignOf(this.leD||w.design), k=w.kind, R=leRnd(7+(d.n||1)*13);
   const PN=Math.max(0,Math.min(24,w.ptN==null||w.ptN===""?10:+w.ptN)); const pts=Array.from({length:PN},(_,i)=>{ const a=i/Math.max(1,PN)*Math.PI*2+R()*.5, r=58+R()*30, x=leF1(100+Math.cos(a)*r), y=leF1(100+Math.sin(a)*r*.92); const fx=leF1(Math.cos(a)*130), fy=leF1(Math.sin(a)*130);
    return `<b style="left:${x/2}%;top:${y/2}%;--fx:${fx}%;--fy:${fy}%;--s:${leF1(.55+R()*.7)};--dl:${leF1(R()*.35)}s;--fd:${leF1(2.6+R()*2.4)}s">${PT[k]||PT.follow}</b>` }).join("");
   const c=document.createElement("div"); c.className="le-card";
@@ -126,10 +135,12 @@ Object.assign(View.prototype,{
   if(e&&!silent&&!sameUser&&st.swapAt&&nowT-st.swapAt<HOLD){ st.pending=e; if(!st.pt) st.pt=setTimeout(()=>{ st.pt=0; const p=st.pending; st.pending=null; if(p&&this.el.isConnected) this.leShow(p,false) },HOLD-(nowT-st.swapAt)); return }
   const old=this.el.querySelector(".le-card:not(.le-exit)");
   if(!e){ if(old) this.leHide(); st.cur=null; return }
-  const same=st.cur&&old&&(st.cur.id===e.id||(LE_KINDS[e.kind]?.derived&&st.cur.uid===e.uid)||(st.cur.uid&&st.cur.uid===e.uid&&st.cur.kind===e.kind&&e.at-st.cur.at<15000&&e.kind==="like"));
+  let same=st.cur&&old&&(st.cur.id===e.id||(LE_KINDS[e.kind]?.derived&&st.cur.uid===e.uid)||(st.cur.uid&&st.cur.uid===e.uid&&st.cur.kind===e.kind&&e.at-st.cur.at<15000&&e.kind==="like"));
+  if(same&&w.lvls&&w.lvls.length){ const lv=leLevelDesign(w,e,this.opts.data?this.opts.data():null)||""; if(lv!==(this.leD||"")) same=false } // تجاوز مستوى ← بطاقة جديدة بتصميم المستوى
   st.cur=e;
   if(same){ this.leFill(old,e); if(!silent) this.lePulse(old); }
   else { if(!silent) st.swapAt=nowT; this.el.querySelectorAll(".le-card.le-exit").forEach(x=>x.remove()); if(old) this.leOut(old);
+   { const src=this.opts.data?this.opts.data():null, lv=leLevelDesign(w,e,src)||"", want=leDesignOf(lv||w.design).id, curC=[...this.el.classList].find(c=>c.startsWith("led-")); this.leD=lv&&LE_DESIGNS.some(d=>d.id===lv)?lv:""; if(curC!=="led-"+want){ if(curC) this.el.classList.remove(curC); this.el.classList.add("led-"+want) } e.lvl=this.leD||"" }
    const c=this.leCard(e); this.leFill(c,e); const rh=this.el.querySelector(".rh"); this.el.insertBefore(c,rh||null);
    if(silent||leReduced()) c.classList.add("le-idle"); else { c.classList.add("le-enter"); if(w.enter&&w.enter!=="auto") c.classList.add("lei-"+w.enter); const as=+w.animSpeed||1; setTimeout(()=>{ if(c.isConnected){ c.classList.remove("le-enter","lei-"+w.enter); c.classList.add("le-idle") } },2200/as); setTimeout(()=>c.isConnected&&this.lePulse(c,true),1100/as) } }
   clearTimeout(st.timer);
@@ -140,7 +151,7 @@ Object.assign(View.prototype,{
  /** تشغيل الحركة كاملة من البداية (المكتبة/الاستوديو) */
  leReplay(){ const e=this.le&&this.le.cur||this.leCurrent(); if(!e) return; const c=this.el.querySelector(".le-card:not(.le-exit)"); if(c) c.remove(); if(this.le) this.le.cur=null; this.leShow({...e,id:e.id+"_r"+Date.now()},false) },
  lePulse(c,first){ if(!c||this.el.classList.contains("le-still")||leReduced()) return; c.classList.remove("le-bump"); void c.offsetWidth; c.classList.add("le-bump"); setTimeout(()=>c.classList.remove("le-bump"),900);
-  const d=leDesignOf(this.w.design); if(d.pulse) try{ d.pulse(c,this.w,first) }catch(err){} },
+  const d=leDesignOf(this.leD||this.w.design); if(d.pulse) try{ d.pulse(c,this.w,first) }catch(err){} },
  refreshLe(src,silent){ if(LE_KINDS[this.w.kind]?.derived){ const d=leDerive(this.w.kind,src,lbEntries,topsList); if(d&&(!this.le||!this.le.cur||this.le.cur.id!==d.id||this.le.cur.count!==d.count)) this.leShow(d,silent); return }
   const e=src&&src.C&&src.C.latest&&src.C.latest[this.w.kind]; if(e&&(!this.le||!this.le.cur||this.le.cur.id!==e.id||this.le.cur.count!==e.count)) this.leShow({...e},silent) },
  /** حدث مباشر (يشمل أحداث الاختبار — تُعرض ولا تُحفظ) */

@@ -34,6 +34,7 @@ export * from "../engine/le_crystal.js";
 export * from "../engine/le_gaming.js";
 export * from "../engine/le_saudi.js";
 export * from "../engine/le_b6o6.js";
+export * from "../engine/le_x.js";
 export * from "../engine/qr.js";
 export * from "../engine/plans.js";
 export * from "../engine/fc_designs.js";

@@ -71,7 +71,7 @@ const url='file:///home/claude/najd/demo/index.html';
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="levent"]'); await p.waitForTimeout(700);
  ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc .lew .le-card').length===LE_DESIGNS.length&&LE_DESIGNS.length>=14),'library: all implemented designs have live animated previews');
  await p.click('[data-legrp="nature"]'); await p.waitForTimeout(500); ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc').length)===10,'group filter: nature = 10 designs');
- ok(await p.evaluate(()=>Object.keys(LE_GROUPS).every(g=>LE_DESIGNS.filter(d=>d.cat===g).length===10)&&LE_DESIGNS.length===80&&LE_DESIGNS.every(d=>LE_PLAN[d.cat].includes(d.id))),'all 8 groups complete (10 each), 80 total, all match the plan');
+ ok(await p.evaluate(()=>Object.keys(LE_GROUPS).every(g=>LE_DESIGNS.filter(d=>d.cat===g).length===(g==='excl'?30:10))&&LE_DESIGNS.length===110&&LE_DESIGNS.every(d=>LE_PLAN[d.cat].includes(d.id))),'8 groups ×10 + 30 exclusive = 110, all match the plan');
  for(const g of ["crystal","gaming","saudi","b6o6"]){ await p.click(`[data-legrp="${g}"]`); await p.waitForTimeout(900); ok(await p.evaluate(()=>[...document.querySelectorAll("#lib .libc .le-card")].every(c=>c.querySelector(".le-back svg, .le-front svg"))),g+": every card renders its own artwork"); await p.screenshot({path:`/home/claude/najd/tests/le-${g}.png`}) }
  ok(await p.evaluate(()=>new Set(LE_DESIGNS.map(d=>d.id)).size===LE_DESIGNS.length&&LE_DESIGNS.every(d=>d.back||d.front)),'no duplicate designs; every design has its own artwork');
  await p.click('[data-legrp=""]'); await p.waitForTimeout(500);

@@ -6,7 +6,7 @@ const url='file:///home/claude/najd/demo/index.html';
  const p=await (await b.newContext({viewport:{width:1440,height:1000},acceptDownloads:true})).newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
  await p.goto(url); await p.evaluate(()=>localStorage.clear()); await p.goto(url);
  const n=await p.evaluate(()=>({le:LE_DESIGNS.length,uc:UC_DESIGNS.length,np:NP_DESIGNS.length,bio:BIO_DESIGNS.length,ps:PS_TEMPLATES.length,u:[LE_DESIGNS,UC_DESIGNS,NP_DESIGNS,BIO_DESIGNS].every(L=>new Set(L.map(d=>d.id)).size===L.length)}));
- ok(n.le===80&&n.uc===30&&n.np===30&&n.bio===40&&n.ps>=35&&n.u,'design counts '+JSON.stringify(n));
+ ok(n.le===110&&n.uc===30&&n.np===30&&n.bio===40&&n.ps>=35&&n.u,'design counts '+JSON.stringify(n));
  // كل تصميم بايو له CSS خاص (خلفية مختلفة)
  await p.click('.nav [data-go="bio"]'); await p.waitForTimeout(300);
  const bgs=await p.evaluate(async()=>{ const out=new Set(); for(const d of BIO_DESIGNS){ document.querySelector(`[data-biod="${d.id}"]`).click(); await new Promise(r=>setTimeout(r,20)); const e=document.querySelector('#bio-pv .bio'); out.add(getComputedStyle(e).backgroundImage+getComputedStyle(e).backgroundColor) } return out.size });
