@@ -61,6 +61,7 @@ export class View{
   if(T.abox){ this.applyAbox(w,W,Hh); return }
   if(T.le){ this.applyLe(w,W,Hh); return }
   if(T.chat){ this.applyChat(w,W,Hh); return }
+  if(T.bt){ this.applyBt(w,W,Hh); return }
   if(T.np){ this.applyNp(w,W,Hh); return }
   if(T.act){ this.applyAct(w,W,Hh); return }
   if(T.dt){ this.applyDt(w,W,Hh); return }
@@ -102,10 +103,11 @@ export class View{
   if(CHIP_TYPES.has(w.type)){ this.el.innerHTML=`<div class="in soc"><div class="scs"></div></div><div class="fxl"></div>`+ed; this.scs=this.el.querySelector(".scs"); this.cur=null; this.curKey=undefined; this.socSig=""; this.queue=[]; this.busy=false; return }
   if(t.soc){ this.el.innerHTML=`<div class="in soc"><div class="scs"></div></div>`+ed; this.scs=this.el.querySelector(".scs"); this.cur=null; this.curKey=undefined; this.socSig=""; return }
   if(t.clock||w.type==="donGoal"){
-   const deco=d.id==="wings"?`<span class="wg l">${WING}</span><span class="wg r">${WING}</span>`:d.id==="crown"||d.id==="vip"||d.id==="royal"||d.id==="b6o6"?`<span class="ckc">${SVG.crown.replace('class="crown"','')}</span>`:d.id==="bolt"?'<span class="blt l">⚡</span><span class="blt r">⚡</span>':"";
+   const deco=d.id==="wings"?`<span class="wg l">${WING}</span><span class="wg r">${WING}</span>`:d.id==="crown"||d.id==="vip"||d.id==="royal"||d.id==="b6o6"?`<span class="ckc">${SVG.crown.replace('class="crown"','')}</span>`:d.id==="bolt"?'<span class="blt l">⚡</span><span class="blt r">⚡</span>':d.id==="rRoyalSub"?`<span class="ckc">${SVG.crown.replace('class="crown"','')}</span><div class="rs-top tx" hidden><span class="rs-av"></span><span class="rs-lb">👑 أقوى داعم للوقت</span><b class="rs-nm"></b><span class="rs-v"></span></div>`:"";
    this.el.innerHTML=`<div class="in ck">${deco}<div class="ck-t tx"></div><div class="ck-face"><svg class="ck-ring" viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="45"/><circle class="prg" cx="50" cy="50" r="45" pathLength="100"/></svg><div class="ck-time tx">00:00:00</div><div class="ck-vert tx"><b>00</b><b>00</b><b>00</b></div></div><div class="ck-bar"><i></i></div><div class="ck-sub tx"></div></div><div class="fxl"></div>`+ed;
    this.q={t:this.el.querySelector(".ck-t"),time:this.el.querySelector(".ck-time"),vert:this.el.querySelectorAll(".ck-vert b"),bar:this.el.querySelector(".ck-bar i"),prg:this.el.querySelector(".prg"),sub:this.el.querySelector(".ck-sub"),fx:this.el.querySelector(".fxl")};
-   this.lastTxt=""; return;
+   this.flip=d.id==="rRoyalSub"; if(this.flip){ this.q.rs=this.el.querySelector(".rs-top"); this.q.time.classList.add("flipd") }
+   this.lastTxt=""; this.rsSig=""; return;
   }
   const ic=ICON[w.type]||SVG.chat;
   this.el.innerHTML=`<div class="in">${t.board&&w.showTitle?`<div class="wt"><span class="tx">${esc(w.title)}</span>${w.design==="royal"||w.design==="podium"||w.design==="b6o6"?SVG.crown.replace('class="crown"',''):ic}</div>`:""}${t.board?'<div class="rows"></div>':`<div class="goal"><div class="gtx tx"><span class="gt">${esc(w.title)}</span><span class="gv">0 / 0</span></div><div class="gbar"><i style="width:0%"></i></div></div>`}</div>`+ed;
@@ -120,6 +122,7 @@ export class View{
   if(t.fc) return this.refreshFc(src,silent);
   if(t.le) return this.refreshLe(src,silent);
   if(t.chat) return;
+  if(t.bt) return this.refreshBt(src);
   if(t.np) return this.refreshNp(src);
   if(t.act||t.fa) return;
   if(t.dt) return this.refreshDt(src,silent);
@@ -168,7 +171,9 @@ export class View{
    prog=tm.dir==="up"?(ms%HOUR)/HOUR:ms/Math.max(1,tm.durationMs); hours=tm.dir==="up"||tm.durationMs>=HOUR||ms>=HOUR;
    sub=tm.status==="ended"?tm.endText:tm.status==="paused"?"متوقف":tm.status==="idle"?"جاهز":""; ended=tm.status==="ended" }
   const txt=fmtClock(ms,hours);
-  if(txt!==this.lastTxt){ this.lastTxt=txt; q.time.textContent=txt; const p=txt.split(":"); if(p.length===2) p.unshift("00"); q.vert.forEach((b,i)=>b.textContent=p[i]) }
+  if(txt!==this.lastTxt&&this.flip){ const old=this.lastTxt; q.time.innerHTML=[...txt].map((c,i)=>c===":"?'<i class="sep">:</i>':`<b class="${old&&old[i]!==c?"fl":""}">${c}</b>`).join("") }
+  if(this.flip&&w.type==="subathon") this.royalTop(src);
+  if(txt!==this.lastTxt){ this.lastTxt=txt; if(!this.flip) q.time.textContent=txt; const p=txt.split(":"); if(p.length===2) p.unshift("00"); q.vert.forEach((b,i)=>b.textContent=p[i]) }
   if(q.t.textContent!==title) q.t.textContent=title;
   if(q.sub.textContent!==sub) q.sub.textContent=sub;
   const pc=clamp(prog*100,0,100); q.bar.style.width=pc+"%"; q.prg.style.strokeDasharray=`${pc} 100`;
@@ -349,6 +354,13 @@ export class View{
  /** عرض حساب عند الطلب أو من إجراء: يخرج الحساب الحالي ثم يظهر المطلوب، وبعدها يكمل التناوب */
  socFx(fx){ if(this.w.type!=="social"||this.w.mode==="single") return; this.fx=fx }
  /** تأثير إضافة/خصم وقت: +5 دقائق مع صوت اختياري */
+ /** السبثون الملكي: أقوى داعم للوقت من سجل الوقت الحقيقي للغرفة (للسبثون الحالي فقط، بدون الأحداث التجريبية) */
+ royalTop(src){ const q=this.q, s=src.C&&src.C.subathon; if(!q.rs||!s) return; const by=new Map();
+  for(const l of src.LG||[]){ if(l.subathonId!==s.id||!(l.deltaMs>0)||!l.user||l.test) continue; const k=l.user; const o=by.get(k)||{n:k,av:l.avatar||"",ms:0}; o.ms+=l.deltaMs; if(!o.av&&l.avatar) o.av=l.avatar; by.set(k,o) }
+  let top=null; for(const o of by.values()) if(!top||o.ms>top.ms) top=o;
+  const sig=top?top.n+"|"+top.ms:""; if(sig===this.rsSig) return; this.rsSig=sig; q.rs.hidden=!top; if(!top) return;
+  q.rs.querySelector(".rs-nm").textContent=top.n; q.rs.querySelector(".rs-v").textContent=fmtDelta(top.ms);
+  const av=q.rs.querySelector(".rs-av"); av.style.backgroundImage=top.av?`url("${String(top.av).replace(/"/g,"")}")`:""; av.textContent=top.av?"":(top.n||"?").slice(0,1) }
  timeFx(log){
   if(!this.q||!log.deltaMs) return;
   const fx=!this.el.classList.contains("no-fx");
@@ -377,7 +389,7 @@ function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden)
 export function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
- else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
+ else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||TYPES[v.w.type]?.bt||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
  else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ v.chatLoad(msg.CH||[]); continue } v.refresh(src,true) } }
  else if(msg.t==="alert"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxPush(msg.items) }
  else if(msg.t==="alertctl"){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxCtl(msg.op) }

@@ -39,6 +39,7 @@ export const TYPES={
  falert:{label:"تنبيهات المتابعين",icon:"🦆",title:"",listens:[],board:false,fa:true},
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
+ battle:{label:"تحدي الفريقين",icon:"⚔️",title:"تحدي الفريقين",listens:[],board:false,bt:true},
 };
 /** «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» */
 export const DC_DEFAULTS={lcBadge:"آخر دعم",lcThx:"شكراً على دعمك",lcShowBadge:true,lcShowName:true,lcShowSym:true,lcShowThx:true,
@@ -78,6 +79,7 @@ export const CLOCK_DESIGNS=[
  {id:"rgb",name:"RGB",shape:"digital"},{id:"wings",name:"أجنحة ذهبية",shape:"digital"},{id:"crown",name:"تاج",shape:"digital"},
  {id:"holo",name:"هولوغرام",shape:"digital"},{id:"future",name:"مستقبلي",shape:"digital"},{id:"mini",name:"صغير أسفل الكاميرا",shape:"mini"},
  {id:"side",name:"عمودي جانبي",shape:"vertical"},{id:"vip",name:"فاخر VIP",shape:"ring"},
+ {id:"rRoyalSub",name:"السبثون الملكي — أرقام قلّابة + أقوى داعم للوقت",shape:"digital",pro:true},
 ];
 export const NEXT_DESIGNS=["ثلاثية الأبعاد","أسد وتاج","أجنحة ذهبية","برق","رأسية","بطاقات منفصلة","دروع","هولوغرام","فضية","ألماس","بنفسجية فاخرة","RGB","كأس","معدنية","مستقبلية","بسيطة وشفافة","أطراف مضيئة","متحركة بالكامل","VIP أسطورية","أفقية شريطية"];
 export const POS=[["tr","أعلى اليمين"],["tc","أعلى المنتصف"],["tl","أعلى اليسار"],["mr","وسط اليمين"],["custom","مخصص (سحب)"],["ml","وسط اليسار"],["br","أسفل اليمين"],["bc","أسفل المنتصف"],["bl","أسفل اليسار"]];
@@ -127,6 +129,7 @@ export function newWidget(type,o={}){
  if(type==="falert"){Object.assign(base,faDefaultsLite())}
  if(type==="abox"){Object.assign(base,{x:.1,y:.25,w:.8,h:.35,abEvents:[],abGap:600,abMax:30,abMerge:true,abHideTest:false})}
  if(type==="levent"){Object.assign(base,{design:"butterfly",kind:"follow",mode:"sticky",dur:5,layout:"",frame:"auto",card:"clear",palette:"",title:"",msg:"",showTitle:true,showMsg:true,showEmblem:true,showAv:true,w:.42,h:.3,glow:1,textScale:1,animOn:true,animSpeed:1,frameImg:"",defaultAv:""})}
+ if(type==="battle"){Object.assign(base,{design:"rClash",x:.08,y:.06,w:.84,h:.2,showTop:true,showTimer:true,showTitle:true,title:"تحدي الفريقين"})}
  if(type==="fcount"){Object.assign(base,{design:"minimalGold",platform:"tiktok",accountId:"",handle:"",avatar:"",w:.46,h:.16,showHead:true,showAvatar:true,showName:true,showLogo:true,showNew:true,showUnit:true,showLast:false,goalOn:false,goal:10000,goalAuto:true,goalStep:0,goalStyle:"bar",numFmt:"full",numScale:1,color:"",animOn:true,animSpeed:1})}
  if(TYPES[type].don){Object.assign(base,{period:type==="donTop"?"week":"month",currency:"",goalId:"",order:"recent",hideAnon:false,speed:110,dir:"rtl",enter:"zoomIn",exit:"fade",enterMs:700,exitMs:500,showMessage:true,showSub:true,
    design:type==="donGoal"?"b6o6":type==="donTicker"||type==="donLatest"||type==="donAlert"?"b6o6Signature":"b6o6",exit:"fadeOut",topN:type==="donTop"?1:5,

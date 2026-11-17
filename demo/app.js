@@ -27,7 +27,7 @@ function bootOverlay(q){
  const only=q.get("only"), room=q.get("room")||"", wsUrl=q.get("ws")||"", bigT=+q.get("big")||1000;
  const PM=q.get("pm")||(q.get("lp")==="1"?"perf":"hq"); document.body.classList.add("pm-"+PM);
  const R=loadRoom(); let skew=0;
- const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT});
+ const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
  const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
  const views=new Map(); let cv;
@@ -41,9 +41,9 @@ function bootOverlay(q){
   for(const [id,v] of views) if(!seen.has(id)){v.el.remove();views.delete(id)}
  }
  function onMsg(m){
-  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now() }
+  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now() }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
-  else if(m.t==="clock"){ R.C=m.C; if(m.now) skew=m.now-Date.now() }
+  else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
   if(m.t==="bot"&&q.get("voice")==="1") for(const it of m.items||[]) if(it.say) vpPush(it);
   deliver(views.values(),m,src());
@@ -70,7 +70,7 @@ if(!S.layouts.find(l=>l.id===S.active)) S.active=S.layouts[0].id;
 if(!S.settings.room) S.settings.room="room_"+uid();
 if(CFG){ Object.assign(S.settings,{wsUrl:CFG.wsUrl,room:CFG.room,key:CFG.key}) }
 let R=loadRoom(), skew=0, liveStatus={live:false,text:"وضع التجربة المحلي — غير متصل بـ TikTok"};
-const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.CHAT});
+const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
 const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
 let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),e=>toast(e&&e.message&&e.message!=="save"?e.message:"تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
@@ -114,6 +114,7 @@ function receive(m,applied){
  else return;
  if(m.t==="actlog"){ S.actLog=m.log||[]; if(S.page==="actions"&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||"")) renderPage(true) }
  if(m.t==="act"){ for(const it of m.items||[]) if(it.kind==="goal"&&it.widgetId){ const gw=L().widgets.find(w=>w.id===it.widgetId); if(gw){ gw.base=(+gw.base||0)+(+it.n||1); save(); pushLayout() } } }
+ if(m.t==="clock"&&m.bt){ const el=document.querySelector("[data-btstatus]"); if(el&&R.C.battle){ const was=el.dataset.st; el.innerHTML=btStatus(R.C.battle); if(was&&was!==R.C.battle.status) renderProps(); el.dataset.st=R.C.battle.status } }
  if(m.t==="clock"&&MP.on) mpSync();
  if(m.t==="clock"&&m.mu&&S.page==="music") softRefresh();
  deliver(allViews(),m,SRC());
@@ -195,9 +196,9 @@ const wdname=w=>w.type==="donCard"?"Basic — آخر دعم":w.type==="donLast5"
 const isClock=w=>!!TYPES[w.type].clock;
 const isSoc=w=>!!TYPES[w.type].soc;
 const isChip=w=>["donTicker","donLatest","donAlert"].includes(w.type);
-const dKind=w=>w.type==="donText"?"dt":w.type==="levent"?"le":w.type==="fcount"?"fc":w.type==="srules"?"rb":w.type==="lb"?"lb":w.type==="sgoal"?"sg":isClock(w)||w.type==="donGoal"?"clock":isSoc(w)||isChip(w)?"soc":"board";
+const dKind=w=>w.type==="battle"?"bt":w.type==="donText"?"dt":w.type==="levent"?"le":w.type==="fcount"?"fc":w.type==="srules"?"rb":w.type==="lb"?"lb":w.type==="sgoal"?"sg":isClock(w)||w.type==="donGoal"?"clock":isSoc(w)||isChip(w)?"soc":"board";
 const libPool=(w,tab)=>tab==="nowplay"?w.type==="nowplay":tab==="uchat"?w.type==="uchat":tab==="levent"?w.type==="levent":tab==="fcount"?w.type==="fcount":tab==="rules"?w.type==="srules":tab==="pro"?w.type==="lb":tab==="goals"?w.type==="sgoal":tab==="clocks"?dKind(w)==="clock":tab==="socials"?dKind(w)==="soc":dKind(w)==="board"&&TYPES[w.type].board;
-const designsOf=w=>({clock:CLOCK_DESIGNS,soc:SOCIAL_DESIGNS,board:DESIGNS,lb:LB_DESIGNS,sg:SG_DESIGNS,rb:RB_DESIGNS,fc:FC_DESIGNS,le:LE_DESIGNS,dt:[{id:w.design,name:"Minimal Last Donation — نص فقط"}]})[dKind(w)];
+const designsOf=w=>({bt:BT_DESIGNS.map(d=>({...d,name:d.name+" (PRO)"})),clock:CLOCK_DESIGNS,soc:SOCIAL_DESIGNS,board:DESIGNS,lb:LB_DESIGNS,sg:SG_DESIGNS,rb:RB_DESIGNS,fc:FC_DESIGNS,le:LE_DESIGNS,dt:[{id:w.design,name:"Minimal Last Donation — نص فقط"}]})[dKind(w)];
 const LB_N=[[1,"الأول فقط (بطل)"],[3,"أفضل 3 (منصة تتويج)"],[5,"أفضل 5 (منصة + صفوف)"],[10,"أفضل 10 (مضغوط)"],[20,"أفضل 20 (عمودين)"]];
 const LB_SIZE={1:[.4,.22],3:[.5,.28],5:[.46,.38],10:[.46,.5],20:[.7,.55]};
 const giftOpts=()=>(S.catalog&&S.catalog.length?S.catalog.map(g=>[g.id,`${g.name} (${g.diamonds}💎)`]):GIFTS.map(g=>[g[2],`${g[0]} (${g[1]}💎)`]));
@@ -827,7 +828,7 @@ function renderProps(){
  ${ck?`<div class="grid g2" style="gap:8px">${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}${sel("showSub","سطر الحالة",[["1","ظاهر"],["0","مخفي"]],w.showSub?"1":"0")}</div>${sel("font","شكل الأرقام والخط",FONTS,w.font)}`:""}
  ${w.type==="subathon"?sel("sound","صوت عند إضافة الوقت",[["1","مفعّل"],["0","متوقف"]],w.sound?"1":"0"):""}
  ${w.type==="gifts"?sel("sortBy","ترتيب الداعمين حسب",SORTS,w.sortBy):""}
- ${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
+ ${t.bt?btPropsHTML(w,sel,rng):""}${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
  ${t.rules?rbPropsHTML(w,sel,rng):""}
  ${t.fc?fcPropsHTML(w,sel,rng):""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
@@ -943,6 +944,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const bb=e.target.closest&&e.target.closest("[data-btop]"); if(bb){ const op=bb.dataset.btop; if(op==="test"){ btSend("start",{test:true}); setTimeout(btSim,400); return } if(op==="stop"&&!confirm("إنهاء التحدي الآن وإعلان الفائز؟")) return; btSend(op,op==="addTime"?{ms:+bb.dataset.ms||60000}:{}); return } }
  const t=e.target.closest("button,[data-pick],[data-selw],[data-anim-try],[data-sdesign],[data-idle-set],a"); if(!t) return;
  const d=t.dataset;
  if(socClick(t,d)) return;
@@ -1056,6 +1058,10 @@ function previewOverlay(only){
 }
 function onInput(e){
  const t=e.target, d=t.dataset;
+ if(d.btl){ if(e.type!=="change") return; const B=(R.C&&R.C.battle)||newBattle(), cfg={};
+  if(d.btl==="mode") cfg.mode=t.value; else if(d.btl==="dur") cfg.durMs=Math.round((+t.value||5)*60000); else if(d.btl==="like") cfg.likePts=+t.value||0;
+  else { const tm={id:d.bteam}; if(d.btl==="gifts") tm.gifts=t.value.split(/[,،]/).map(x=>x.trim()).filter(Boolean); else tm[d.btl]=t.value; cfg.teams=[tm] }
+  btSend("config",{config:cfg}); return }
  if(d.wgroup!==undefined){ if(e.type!=="change") return; const w=findW(d.wgroup); if(!w) return; if(t.value==="@new") return ask("اسم المجموعة","مجموعة "+(new Set(L().widgets.map(x=>x.group).filter(Boolean)).size+1)).then(n=>{ if(n){ w.group=n.slice(0,30) } save(); renderProps() }); w.group=t.value||""; save(); pushLayout(); return renderProps() }
  if(d.leimg){ if(e.type==="change") leImgInput(t); return }
  if(musicInput(t,d,e)) return;
@@ -1303,6 +1309,27 @@ function dcCtl(w,sel,rng){ const D=w.type==="donCard"?DC_DEFAULTS:D5_DEFAULTS, g
   num:(f,l,a,b,st,u="")=>rng(f,l,a,b,st,+g(f),v=>v+u), sl:(f,l,o)=>sel(f,l,o,typeof g(f)==="boolean"?(g(f)?"1":"0"):g(f)) } }
 function dcTabsBar(w){ const cur=S.lcTab||"content"; return `<div class="row" style="gap:4px;flex-wrap:wrap;margin:6px 0">${DC_TABS.map(([k,l])=>`<button class="btn sm ${cur===k?"pri":""}" data-lctab="${k}">${l}</button>`).join("")}</div>` }
 function dcScenesHTML(w){ const others=S.layouts.filter(l=>l.id!==S.active); return `<div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" data-lcsim="${w.id}">🧪 تجربة وصول دعم (المعاينة فقط)</button><button class="btn sm" data-lcreset="${w.id}">↺ الإعدادات الافتراضية</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط OBS / LIVE Studio</button>${others.length?`<select class="inp" data-lccopy="${w.id}" style="width:auto"><option value="">📋 نسخ إلى مشهد…</option>${others.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>`:""}</div>` }
+/** تحدي الفريقين: إعدادات الغرفة (الفرق، الهدايا، الكلمات، المدة) + تشغيل/إيقاف — النقاط من أحداث البث الحقيقية */
+function btPropsHTML(w,sel,rng){ const B=(R.C&&R.C.battle)||newBattle(), run=B.status==="running", [a,b]=B.teams, mins=Math.round(B.durMs/60000*10)/10;
+ const st=btStatus(B);
+
+ const team=t=>`<div class="card" style="padding:10px;border-inline-start:4px solid ${t.color}"><div class="grid g2" style="gap:6px">
+   <label class="fld"><span>اسم الفريق</span><input class="inp" data-btl="name" data-bteam="${t.id}" value="${esc(t.name)}" maxlength="30"></label>
+   <label class="fld"><span>اللون</span><input type="color" class="inp" data-btl="color" data-bteam="${t.id}" value="${esc(t.color.slice(0,7))}"></label>
+   ${B.mode==="gift"?`<label class="fld" style="grid-column:1/-1"><span>هدايا الفريق (افصل بفاصلة)</span><input class="inp" data-btl="gifts" data-bteam="${t.id}" value="${esc(t.gifts.join("، "))}" ${run?"disabled":""}></label>`
+   :`<label class="fld" style="grid-column:1/-1"><span>كلمة الانضمام في الشات</span><input class="inp" data-btl="kw" data-bteam="${t.id}" value="${esc(t.kw)}" ${run?"disabled":""} placeholder="ازرق"></label>`}</div></div>`;
+ return `<div class="sec"><div class="ttl">⚔️ تحدي الفريقين</div><div class="note small" data-btstatus data-st="${B.status}">${st}</div>
+  <div class="grid g2" style="gap:8px;margin-top:8px"><label class="fld"><span>طريقة الانضمام</span><select class="inp" data-btl="mode" ${run?"disabled":""}>${Object.entries(BT_MODES).map(([k,n])=>`<option value="${k}" ${B.mode===k?"selected":""}>${n}</option>`).join("")}</select></label>
+  <label class="fld"><span>المدة (دقائق)</span><input type="number" class="inp" data-btl="dur" min="0.5" max="360" step="0.5" value="${mins}" ${run?"disabled":""}></label>
+  <label class="fld"><span>نقاط كل 100 لايك (0 = بدون)</span><input type="number" class="inp" data-btl="like" min="0" max="100" value="${B.likePts}" ${run?"disabled":""}></label></div>
+  <div style="display:grid;gap:8px;margin-top:8px">${team(a)}${team(b)}</div>
+  <div class="row" style="gap:6px;margin-top:10px">${run?`<button class="btn sm" data-btop="addTime" data-ms="60000">➕ دقيقة</button><button class="btn sm" data-btop="stop">⏹ إنهاء الآن</button>`:`<button class="btn sm pri" data-btop="start">▶ ابدأ التحدي</button><button class="btn sm" data-btop="test">🧪 تجربة (هدايا تجريبية)</button>`}<button class="btn sm" data-btop="reset">↺ تصفير</button></div>
+  <div class="small mut" style="margin-top:6px">${B.mode==="gift"?"كل هدية من قائمة الفريق تُضيف قيمتها بالعملات لفريقها.":"المشاهد يكتب كلمة فريقه في الشات مرة واحدة، وبعدها كل هداياه تُحسب لفريقه."} الأحداث التجريبية لا تُحسب إلا في وضع التجربة.</div></div>` }
+function btStatus(B){ const [a,b]=B.teams; return B.status==="running"?`🟢 التحدي يعمل${B.testMode?" (وضع تجربة)":""} — ${esc(a.name)} ${fmt(a.score)} : ${fmt(b.score)} ${esc(b.name)}`:B.status==="ended"?`🏁 انتهى — ${B.winner==="draw"?"تعادل":"الفائز: "+esc((B.teams.find(x=>x.id===B.winner)||{}).name||"")} (${fmt(a.score)} : ${fmt(b.score)})`:"⏸ لم يبدأ — النقاط تُحسب من الهدايا الحقيقية بعد البدء فقط" }
+function btSend(op,extra={}){ clockOp("battle",op,extra); setTimeout(renderProps,250) }
+function btSim(){ const B=R.C&&R.C.battle; if(!B) return; const [a,b]=B.teams; let i=0; const pick=t=>B.mode==="gift"?(t.gifts[0]||"Rose"):"Rose";
+ if(B.mode==="join") for(const [u,t] of [["تجربة1",a],["تجربة2",b]]) send({t:"sim",ev:{type:"comment",id:"btc"+Date.now()+u,test:true,user:{id:u,name:u},text:t.kw}});
+ const tick=()=>{ if(i++>=8) return; const t=Math.random()<.55?a:b, u=t===a?"تجربة1":"تجربة2"; send({t:"sim",ev:{type:"gift",id:"btg"+Date.now()+i,test:true,user:{id:u,name:u},gift:pick(t),value:[1,5,10,30,99][i%5],count:1}}); setTimeout(tick,600) }; setTimeout(tick,300) }
 function dcPropsHTML(w,sel,rng){ const c=dcCtl(w,sel,rng), tab=S.lcTab||"content", ON=[["1","مفعّل"],["0","متوقف"]];
  const body={content:`<div class="row" style="gap:4px;flex-wrap:wrap">${c.tg("lcShowBadge","شارة «"+esc(c.g("lcBadge"))+"»")}${c.tg("lcShowName","اسم الداعم")}${c.tg("lcShowSym","رمز العملة")}${c.tg("lcShowThx","عبارة الشكر")}</div>
    <div class="grid g2" style="gap:8px">${c.txt("lcBadge","نص الشارة")}${c.txt("lcThx","عبارة الشكر")}${c.sl("lcOrder","الترتيب",[["amt","المبلغ ثم الاسم"],["name","الاسم ثم المبلغ"]])}${c.sl("lcAlign","المحاذاة",[["right","يمين"],["center","وسط"],["left","يسار"]])}</div>`,
@@ -1574,7 +1601,10 @@ function musicHTML(){ const M=R.C.music||{queue:[],lib:[],pending:[],log:[]}, C=
  const links=CFG&&MU.data?MU.data.links:null, lib=muLib(), q=MU.q.trim(), libShown=q?musicSearchAll(lib,q,200):lib;
  const plTxt=plAlive?(pl.kind==="dashboard"?"🎧 يعمل في متصفح لوحة التحكم":"📺 يعمل في مشغل OBS / LIVE Studio"):"⚠️ لا يوجد مشغل متصل — أضف رابط المشغل في OBS أو اضغط «تشغيل في هذا المتصفح»";
  return head("🎵 بوت الأغاني","المشاهد يكتب في شات البث: !شغل اسم الأغنية ← تُضاف لقائمة الانتظار ← تُشغَّل فعلياً في مشغل OBS — بدون روابط ولا تسجيل")+
- `<div class="note small" style="margin-bottom:12px">🎧 مصدر التشغيل: ملفات صوتية ترفعها أنت (موسيقاك المرخّصة) ${CFG?"وتُحفظ على الخادم":"— في وضع التجربة تبقى في هذا المتصفح"}. لا نشغّل روابط YouTube أو Spotify ولا نستخرج صوتها (شروطها تمنع ذلك في البث). تأكد أن لديك حق بث الأغاني في TikTok LIVE.</div>
+ `${(()=>{ const rq=mcCmds().request||{}, PN={all:"الجميع",followers:"المتابعون",subs:"المشتركون",mods:"المشرفون فقط",owner:"صانع المحتوى فقط",custom:"أسماء مخصصة"}, dn=(M.log||[]).filter(l=>l.step==="denied"&&l.cmd==="request").length;
+   return rq.on===false?`<div class="note warn small" style="margin-bottom:12px">⚠️ أمر طلب الأغاني (${esc((rq.words||[])[0]||"!شغل")}) <b>معطّل</b> — لن يُقبل أي طلب من الشات.</div>`
+   :["mods","owner","custom"].includes(rq.perm)?`<div class="note warn small" style="margin-bottom:12px" data-mu-permwarn>🔒 أمر الطلب ${esc((rq.words||[])[0]||"!شغل")} مسموح حالياً لـ <b>${PN[rq.perm]}</b> — أي متابع عادي يكتبه يُرفض طلبه ولا يُبحث عن الأغنية${dn?` (رُفض ${dn} طلب مؤخراً — انظر سجل التشخيص)`:""}. تغيّرها من «أوامر الشات» أسفل الصفحة إذا أردت.</div>`:"" })()}
+ <div class="note small" style="margin-bottom:12px">${(C.source||"youtube")==="library"?`🎧 مصدر التشغيل: ملفاتك الصوتية المرفوعة (موسيقاك المرخّصة) ${CFG?"وتُحفظ على الخادم":"— في وضع التجربة تبقى في هذا المتصفح"}.`:`▶ مصدر التشغيل: <b>YouTube</b> عبر مشغّل YouTube الرسمي داخل مصدر المتصفح في OBS / LIVE Studio (بحث YouTube Data API الرسمي${(C.source||"")==="both"?"، وتُجرَّب مكتبتك أولاً":""}). الصوت يُشغَّل من المشغّل نفسه دون تنزيل أو استخراج.`} تأكد أن لديك حق بث الأغاني في TikTok LIVE.</div>
  <div class="grid g2" style="align-items:start"><div>
  <div class="card"><h3>🔗 الروابط</h3>${CFG?(links?`<div class="fld"><label>مشغل الأغاني — Browser Source في OBS / TikTok LIVE Studio (خاص بك، لا تشاركه)</label><div class="row" style="gap:6px"><input class="inp" readonly value="${esc(location.origin+links.player)}"><button class="btn sm pri" data-mucopy="${esc(location.origin+links.player)}">نسخ</button></div></div>
   <p class="small mut">في OBS: مصدر جديد ← Browser ← الصق الرابط، العرض 900 والارتفاع 260، وفعّل «Control audio via OBS» ليظهر الصوت في الميكسر ويصل للبث. أغاني YouTube تُشغَّل في مشغل YouTube الرسمي ويجب أن يبقى ظاهراً في البث (شروط YouTube) — حجمه 356×200. الخلفية شفافة. لإخفاء بطاقة الأغنية والإبقاء على الصوت فقط أضف <code>?ui=0</code>.</p>

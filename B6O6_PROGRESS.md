@@ -78,6 +78,8 @@
 - ✅ التجربة تبدأ مع أول بث: حقل `trialPending` (db push غير مدمّر). الحسابات الجديدة «معلّقة» بكل الميزات حتى أول بث TikTok حقيقي (onLiveStatus) أو 60 يوماً كحد أقصى؛ الحسابات القديمة لم تتغير.
 - اختبارات: `npx tsx ../tests/pro-trial.test.mts` (15)، `node tests/pro-ui.test.js` (10).
 - ✅ الدفعة 2: `src/engine/lb_ref.js` — 14 قائمة توب PRO (فئة «المرجع: قوائم التوب»): Diamond Rose، Pearl Bow، Soft Bow، Highest Gift، Imperial Gates، Royal Bloom، Luxe Gem Halo، Obsidian Race، Top 5 Podium، Top Gifter Ranking، Crystal Butterfly Top، Neon Shards، Neon Diamond، Top 20 Shimmer. أجزاء جديدة في المحرك: ترتيب «سباق» (race) + زخرفة «فيونكة» و«بوابة». اختبار `node tests/lb-ref.test.js` (11)؛ lb.test.js حُدّث إلى 259 تصميماً.
+- ✅ التحديات: «تحدي الفريقين» (نوع عنصر جديد `battle` — `battle.js` منطق الغرفة على الخادم + `battleview.js`؛ طريقتان: هدايا لكل فريق / الانضمام بكلمة في الشات، تكبيس اختياري مجمّع كل ثانية، مؤقت، أقوى داعم لكل فريق، فائز/تعادل، 3 تصاميم PRO) + «السبثون الملكي» (تصميم ساعة PRO `rRoyalSub`: أرقام قلّابة + أقوى داعم للوقت من سجل الغرفة الحقيقي). اختبارات: battle.test.mts (25)، battle-ui.test.js (15)، royal-sub.test.js (8).
+- ✅ بوت الأغاني (17 نوفمبر): التشخيص على حساب المستخدم — كل الأوامر بما فيها `!شغل` صلاحيتها «المشرفون فقط» (اختيار المستخدم، لم تُغيّر) ولم يصل أي طلب منذ اختبار 13 نوفمبر. الرفض بسبب الصلاحية صار يُسجَّل في سجل التشخيص (`denied` + السبب) + تنبيه واضح أعلى صفحة البوت؛ وتصحيح نص «مصدر التشغيل» ليعكس YouTube.
 - التالي (بعد القوائم): تكوينات التوب (Crystal Butterfly، Imperial Gates، Obsidian Race…)، التحديات الأربعة، 30 تصميماً حصرياً، شريط الفئات + المودال + PRO/التجربة 30 يوماً.
 
 ## الأخطاء غير المحلولة

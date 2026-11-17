@@ -515,3 +515,19 @@ body.ov .stage{background:transparent!important}
 .tk-div{flex:0 0 auto;color:var(--tkd,#f6c94a);font-size:calc(var(--sh,24px) * .45);opacity:.9;text-shadow:0 0 6px currentColor}
 .tk-text .tk-c{color:var(--tkc,var(--tka,#22e07a))}
 .wd .emo.emo-tx{font-style:normal;font-weight:900;color:var(--dnic,#22e07a)!important;text-shadow:0 0 .35em color-mix(in srgb,var(--dnic,#22e07a) 70%,transparent);font-family:inherit;line-height:1}
+/* ===== السبثون الملكي (PRO): أرقام قلّابة + شريط أقوى داعم للوقت ===== */
+.ck-rRoyalSub .in{border:calc(var(--pad)*.35) solid transparent;border-radius:calc(var(--cfs)*.38);background:linear-gradient(180deg,#160c26f4,#07040ef6) padding-box,linear-gradient(135deg,#fff1c1,#b8862b 28%,#c084fc 52%,#7a5512 76%,#ffe9a8) border-box;box-shadow:0 0 calc(var(--cfs)*.6) #c084fc55,inset 0 0 calc(var(--cfs)*.5) #a855f733}
+.ck-rRoyalSub .ck-t{color:#f5d27a;letter-spacing:.02em}
+.ck-time.flipd{direction:ltr;font-size:calc(var(--cfs)*.74)!important;display:flex;gap:calc(var(--cfs)*.06);justify-content:center;align-items:center;perspective:400px}
+.ck-time.flipd b{position:relative;display:inline-grid;place-items:center;min-width:.82em;padding:.04em .06em;border-radius:.12em;color:#fff7dc;background:linear-gradient(180deg,#3b2366 0 49%,#24123f 51% 100%);box-shadow:0 .06em 0 #000a,inset 0 0 0 .02em #f5d27a66;font-weight:800;line-height:1.1}
+.ck-time.flipd b::after{content:"";position:absolute;inset:49% 0 auto;height:.02em;background:#0008}
+.ck-time.flipd b.fl{animation:rs-flip .45s cubic-bezier(.3,.7,.3,1)}
+.ck-time.flipd .sep{font-style:normal;color:#f5d27a;animation:vgr-pulse 1s steps(2) infinite}
+@keyframes rs-flip{0%{transform:rotateX(-90deg);filter:brightness(1.6)}100%{transform:none}}
+.rs-top{position:absolute;top:calc(100% + var(--cfs)*.14);left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:calc(var(--cfs)*.12);justify-content:center;white-space:nowrap;padding:calc(var(--cfs)*.06) calc(var(--cfs)*.22);width:max-content;max-width:94%;border-radius:999px;font-size:calc(var(--cfs)*.24);color:#fff;background:linear-gradient(90deg,#7c3aedcc,#b8862bcc);box-shadow:0 0 calc(var(--cfs)*.3) #f5d27a55;animation:rs-in .6s ease both}
+.rs-top[hidden]{display:none}
+.rs-top .rs-av{width:1.6em;height:1.6em;border-radius:50%;background:#f5d27a center/cover;display:grid;place-items:center;font-weight:800;color:#3b2366;box-shadow:0 0 0 .12em #fff1c1}
+.rs-top .rs-lb{opacity:.85}.rs-top .rs-nm{max-width:8em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-top .rs-v{font-family:"Changa","Readex Pro",sans-serif;letter-spacing:0;color:#fde68a;font-weight:800}
+@keyframes rs-in{from{opacity:0;scale:.9}}
+@keyframes vgr-pulse{50%{opacity:.45}}

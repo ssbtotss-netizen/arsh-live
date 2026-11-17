@@ -53,7 +53,7 @@ const url='file:///home/claude/najd/demo/index.html';
  await p.screenshot({path:'p2-timers.png'});
  // library clocks
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="clocks"]'); await p.waitForTimeout(300);
- ok(await p.locator('.libc').count()===21,'21 clock designs');
+ ok(await p.locator('.libc').count()===22,'22 clock designs (incl. Royal Subathon)');
  await p.screenshot({path:'p2-clocks.png',fullPage:true});
  // smart guides
  await p.click('.nav [data-go="studio"]'); await p.waitForTimeout(200);

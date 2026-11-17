@@ -1,6 +1,7 @@
 // ====== غرفة البث: تربط المحركات الثلاثة دون خلطها ======
 // استقبال الأحداث → (منع التكرار) → محرك القوائم + محرك السبثون/المؤقتات → رسائل للعرض
 // نفس الكود يعمل على الخادم (الوضع الحقيقي) وفي المتصفح (وضع التجربة بدون خادم).
+import { newBattle, battleOp, battleOnEvent, battleTick } from "./battle.js";
 import { emptyData, applyEvent } from "./leaderboard.js";
 import { emptyDonations, applyDonation } from "./donations.js";
 import { followersOp, followersOnEvent } from "./followers.js";
@@ -44,6 +45,7 @@ export function roomEvent(R,ev,now){
  faRoomTTS(R,ev,now,out);
  R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,ev,now,(R.botCfg&&R.botCfg.tzMin)??180);
  roomActions(R,ev,now,out);
+ if(R.C.battle&&battleOnEvent(R.C.battle,ev,now)){ if(ev.type==="like") R.btDirty=true; else if(!logs.length) out.push({t:"clock",C:R.C,now,logs:[],bt:1}) } // تحدي الفريقين: الهدايا فوراً، التكبيس مجمّع كل ثانية
  if(ev.type==="follow"){ R.C.followers=R.C.followers||{}; if(followersOnEvent(R.C.followers,ev,now)&&!logs.length) out.push({t:"clock",C:R.C,now,logs:[],fc:"tiktok"}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomAlerts(R,ev,logs,now,out);
@@ -112,6 +114,7 @@ export function roomBots(R,cfg,ctx){ R.botCfg=cfg||null; R.botCtx=ctx||{}; R.B=R
 export function roomClockOp(R,m,now){
  let logs=[];
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
+ if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
  if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
   if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
@@ -137,6 +140,7 @@ export function roomTick(R,now){
  const rep=sessionTick(R,now); if(rep) changed=true;
  const bo=[]; if(R.botCfg){ R.B=R.B||newBotState(); try{ const items=botsTick(R.botCfg,R.B,botCtx(R,now)); if(items.length) bo.push({t:"bot",items}) }catch(e){ R.B.stats.errors++ } }
  for(const t of R.C.timers) if(timerTick(t,now)) changed=true;
+ if(R.C.battle&&battleTick(R.C.battle,now)) changed=true; if(R.btDirty){ R.btDirty=false; changed=true }
  if(rep) bo.push({t:"report",report:rep});
  return changed?{out:[{t:"clock",C:R.C,now,logs},...bo],logs}:{out:bo,logs:[]};
 }

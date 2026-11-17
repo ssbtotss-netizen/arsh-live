@@ -21,7 +21,7 @@ const url='file:///home/claude/najd/demo/index.html';
  const S=`#stage .wd[data-id="${id}"]`;
  let s=await snap(p,S);
  ok(['أحمد','محمد','خالد','فيصل'].every(n=>s.txt.includes(n)),'1. كل أسماء الداعمين ظاهرة: '+s.txt);
- ok(/50 \$|\$50/.test(s.txt)&&/100/.test(s.txt)&&/200 ر\.س/.test(s.txt)&&/500/.test(s.txt),'2. المبالغ ورموز العملات صحيحة (دولار + ريال معاً)');
+ ok(/50 \$|\$50/.test(s.txt)&&/100/.test(s.txt)&&/200 ?ر\.س/.test(s.txt)&&/500/.test(s.txt),'2. المبالغ ورموز العملات صحيحة (دولار + ريال معاً)');
  ok(!s.txt.includes('تجربة')&&!s.txt.includes('كن أول داعم'),'لا تجربة ولا نص ثابت بدل البيانات');
  ok(s.anim==='none','بدون CSS animation القديمة (الحركة بالـ JS)');
  ok((await p.evaluate(S=>document.querySelector(S+' .tk-u').querySelectorAll('.tk-div').length,`#stage .wd[data-id="${id}"]`))===4,'فاصل ✦ بين كل داعم والآخر (وعند نقطة التكرار)');

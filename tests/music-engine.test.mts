@@ -11,7 +11,7 @@ r=c("!song blinding",{id:"u2",name:"Sara"}); ok(M.queue.length===1&&M.queue[0].b
 r=c("!song الاماكن",{id:"u2",name:"Sara"}); ok(r.changed===false&&/انتظر/.test(r.reply),"cooldown between requests per user");
 r=c("!اغنية أغنية طويلة",{id:"u3",name:"x"}); ok(!r.changed&&/أطول/.test(r.reply),"max duration enforced");
 r=c("!اغنية blinding",{id:"u4",name:"y"}); ok(!r.changed&&/موجودة/.test(r.reply),"no duplicates in queue");
-r=c("!skip",{id:"u5",name:"viewer"}); ok(!r.changed&&/صلاحية/.test(r.reply),"viewers cannot skip (skip perm separate from request)");
+{ const cur=M.current&&M.current.qid, ql=M.queue.length; r=c("!skip",{id:"u5",name:"viewer"}); ok(/صلاحية/.test(r.reply)&&(M.current&&M.current.qid)===cur&&M.queue.length===ql,"viewers cannot skip (skip perm separate from request)"); ok(M.log[0].step==="denied"&&M.log[0].by==="viewer"&&/الصلاحية/.test(M.log[0].why),"denial recorded in diagnostics log with reason"); }
 r=c("!skip",{id:"m",name:"mod",mod:true}); ok(r.changed&&M.current?.track.id==="2","moderator can skip");
 r=c("!voteskip",{id:"a",name:"a"}); c("!voteskip",{id:"a",name:"a"}); ok(M.votes.length===1,"vote skip: same account counted once");
 c("!voteskip",{id:"b",name:"b"}); r=c("!voteskip",{id:"cc",name:"c"}); ok(r.changed&&/اكتمل/.test(r.reply)&&M.current===null,"vote skip reaches threshold → skipped");

@@ -39,7 +39,7 @@ export function parseMusicCmd(text,cmds){ const t=String(text||"").trim(); if(!/
 export function defaultMusicCfg(){ return {source:"youtube",ytRegion:"SA",cmds:null,platforms:{tiktok:true,youtube:true,twitch:true,kick:true},dupSec:8,skipCooldownSec:5,chatReplies:true,page:false,approve:"auto",maxQueue:50,bannedUsers:"",playOn:"player",enabled:true,perms:{request:"all",info:"all",skip:"owner_mods",control:"owner_mods",vote:"all"},users:"",voteSkip:{on:true,needed:3},maxDurSec:420,perUser:2,cooldownSec:60,noRepeatMin:30,banned:"",autoplay:true,shuffle:false,duckTTS:true,volume:70,replies:true} }
 export function newMusicState(){ return {queue:[],current:null,paused:false,volume:70,lib:[],votes:[],history:[],last:{},followers:[],seq:0,pending:[],prev:[],player:null,status:"idle",err:"",log:[]} }
 /** سجل التشخيص: هل وصل الطلب، حُفظ، دخل القائمة، وُجد مصدر تشغيل، بدأ التشغيل، وسبب الفشل */
-export const MUSIC_STEPS={received:"📨 وصل الطلب للخادم",queued:"✅ حُفظ ودخل قائمة الانتظار",pending:"⏳ بانتظار موافقة صانع المحتوى",approved:"👍 وافق صانع المحتوى",rejected:"🚫 رفض صانع المحتوى",refused:"⛔ رُفض الطلب",source:"🎧 وُجد ملف التشغيل",loading:"⏳ جارٍ تحميل الأغنية في المشغل",playing:"▶ بدأ التشغيل فعلياً",paused:"⏸ إيقاف مؤقت",ended:"⏭ انتهت الأغنية",error:"❌ فشل التشغيل",skip:"⏭ تخطي",claim:"📺 مشغل جديد يتولى التشغيل",searching:"🔎 جارٍ البحث في YouTube",found:"🎯 وُجدت في YouTube",alt:"🔁 النسخة ممنوعة من التضمين — تجربة نسخة أخرى",blocked:"🔇 المتصفح منع التشغيل التلقائي"};
+export const MUSIC_STEPS={denied:"🔒 رُفض بسبب الصلاحية",received:"📨 وصل الطلب للخادم",queued:"✅ حُفظ ودخل قائمة الانتظار",pending:"⏳ بانتظار موافقة صانع المحتوى",approved:"👍 وافق صانع المحتوى",rejected:"🚫 رفض صانع المحتوى",refused:"⛔ رُفض الطلب",source:"🎧 وُجد ملف التشغيل",loading:"⏳ جارٍ تحميل الأغنية في المشغل",playing:"▶ بدأ التشغيل فعلياً",paused:"⏸ إيقاف مؤقت",ended:"⏭ انتهت الأغنية",error:"❌ فشل التشغيل",skip:"⏭ تخطي",claim:"📺 مشغل جديد يتولى التشغيل",searching:"🔎 جارٍ البحث في YouTube",found:"🎯 وُجدت في YouTube",alt:"🔁 النسخة ممنوعة من التضمين — تجربة نسخة أخرى",blocked:"🔇 المتصفح منع التشغيل التلقائي"};
 export function musicLog(M,now,step,x={}){ M.log=M.log||[]; M.log.unshift({at:now,step,...x}); if(M.log.length>40) M.log.length=40 }
 function musFix(M){ for(const k of ["pending","prev","log"]) if(!Array.isArray(M[k])) M[k]=[]; if(M.status==null) M.status="idle"; return M }
 
@@ -115,7 +115,10 @@ export function musicOnEvent(M,cfg,ev,now,lib){ if(!cfg||cfg.enabled===false) re
  // منع الرسائل المكررة: نفس الشخص ونفس الأمر خلال ثوانٍ ← تجاهل بصمت (بدون رد يزيد الإزعاج)
  const mk=uk+"|"+normAr(c.word+" "+c.arg).toLowerCase(), dupMs=Math.max(0,+cfg.dupSec||8)*1000; if(dupMs&&SP.msg[mk]&&now-SP.msg[mk]<dupMs) return null; SP.msg[mk]=now; muPrune(SP.msg,now,60000);
  const deny=txt=>{ /* رد الرفض مرة كل 30 ث لكل شخص — لا نغرق الشات */ if(SP.deny[uk]&&now-SP.deny[uk]<30000) return R(false,""); SP.deny[uk]=now; muPrune(SP.deny,now,60000); return R(false,txt) };
- const C=cmds[c.cmd]; if(!musicPermOk(C.perm,u,M,{...cfg,users:C.users})) return deny(`${at} ما عندك صلاحية لأمر ${c.word}`);
+ const C=cmds[c.cmd]; if(!musicPermOk(C.perm,u,M,{...cfg,users:C.users})){ /* يظهر في سجل التشخيص حتى يعرف صانع المحتوى لماذا لم يُنفّذ الطلب */
+  const PN={all:"الجميع",followers:"المتابعون",subs:"المشتركون",mods:"المشرفون فقط",owner:"صانع المحتوى فقط",custom:"أسماء مخصصة"};
+  musicLog(M,now,"denied",{by:u.name||u.id,via:plat,cmd:c.cmd,word:c.word,q:String(c.arg||"").slice(0,60),why:"الصلاحية: "+(PN[C.perm]||C.perm)});
+  M.denied=(M.denied||0)+1; return Object.assign(deny(`${at} ما عندك صلاحية لأمر ${c.word}`),{changed:true}) }
  const word=C.words[0]||c.word;
  switch(c.cmd){
   case "request": { if(!c.arg||c.arg.replace(/[\s!.؟?]/g,"").length<2) return deny(`${at} اكتب اسم الأغنية بعد الأمر: ${word} اسم الأغنية`);

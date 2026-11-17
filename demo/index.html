@@ -802,6 +802,22 @@ body.ov .stage{background:transparent!important}
 .tk-div{flex:0 0 auto;color:var(--tkd,#f6c94a);font-size:calc(var(--sh,24px) * .45);opacity:.9;text-shadow:0 0 6px currentColor}
 .tk-text .tk-c{color:var(--tkc,var(--tka,#22e07a))}
 .wd .emo.emo-tx{font-style:normal;font-weight:900;color:var(--dnic,#22e07a)!important;text-shadow:0 0 .35em color-mix(in srgb,var(--dnic,#22e07a) 70%,transparent);font-family:inherit;line-height:1}
+/* ===== السبثون الملكي (PRO): أرقام قلّابة + شريط أقوى داعم للوقت ===== */
+.ck-rRoyalSub .in{border:calc(var(--pad)*.35) solid transparent;border-radius:calc(var(--cfs)*.38);background:linear-gradient(180deg,#160c26f4,#07040ef6) padding-box,linear-gradient(135deg,#fff1c1,#b8862b 28%,#c084fc 52%,#7a5512 76%,#ffe9a8) border-box;box-shadow:0 0 calc(var(--cfs)*.6) #c084fc55,inset 0 0 calc(var(--cfs)*.5) #a855f733}
+.ck-rRoyalSub .ck-t{color:#f5d27a;letter-spacing:.02em}
+.ck-time.flipd{direction:ltr;font-size:calc(var(--cfs)*.74)!important;display:flex;gap:calc(var(--cfs)*.06);justify-content:center;align-items:center;perspective:400px}
+.ck-time.flipd b{position:relative;display:inline-grid;place-items:center;min-width:.82em;padding:.04em .06em;border-radius:.12em;color:#fff7dc;background:linear-gradient(180deg,#3b2366 0 49%,#24123f 51% 100%);box-shadow:0 .06em 0 #000a,inset 0 0 0 .02em #f5d27a66;font-weight:800;line-height:1.1}
+.ck-time.flipd b::after{content:"";position:absolute;inset:49% 0 auto;height:.02em;background:#0008}
+.ck-time.flipd b.fl{animation:rs-flip .45s cubic-bezier(.3,.7,.3,1)}
+.ck-time.flipd .sep{font-style:normal;color:#f5d27a;animation:vgr-pulse 1s steps(2) infinite}
+@keyframes rs-flip{0%{transform:rotateX(-90deg);filter:brightness(1.6)}100%{transform:none}}
+.rs-top{position:absolute;top:calc(100% + var(--cfs)*.14);left:50%;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:calc(var(--cfs)*.12);justify-content:center;white-space:nowrap;padding:calc(var(--cfs)*.06) calc(var(--cfs)*.22);width:max-content;max-width:94%;border-radius:999px;font-size:calc(var(--cfs)*.24);color:#fff;background:linear-gradient(90deg,#7c3aedcc,#b8862bcc);box-shadow:0 0 calc(var(--cfs)*.3) #f5d27a55;animation:rs-in .6s ease both}
+.rs-top[hidden]{display:none}
+.rs-top .rs-av{width:1.6em;height:1.6em;border-radius:50%;background:#f5d27a center/cover;display:grid;place-items:center;font-weight:800;color:#3b2366;box-shadow:0 0 0 .12em #fff1c1}
+.rs-top .rs-lb{opacity:.85}.rs-top .rs-nm{max-width:8em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.rs-top .rs-v{font-family:"Changa","Readex Pro",sans-serif;letter-spacing:0;color:#fde68a;font-weight:800}
+@keyframes rs-in{from{opacity:0;scale:.9}}
+@keyframes vgr-pulse{50%{opacity:.45}}
 
 </style>
 </head>
@@ -854,6 +870,7 @@ const TYPES={
  falert:{label:"تنبيهات المتابعين",icon:"🦆",title:"",listens:[],board:false,fa:true},
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
+ battle:{label:"تحدي الفريقين",icon:"⚔️",title:"تحدي الفريقين",listens:[],board:false,bt:true},
 };
 /** «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» */
 const DC_DEFAULTS={lcBadge:"آخر دعم",lcThx:"شكراً على دعمك",lcShowBadge:true,lcShowName:true,lcShowSym:true,lcShowThx:true,
@@ -893,6 +910,7 @@ const CLOCK_DESIGNS=[
  {id:"rgb",name:"RGB",shape:"digital"},{id:"wings",name:"أجنحة ذهبية",shape:"digital"},{id:"crown",name:"تاج",shape:"digital"},
  {id:"holo",name:"هولوغرام",shape:"digital"},{id:"future",name:"مستقبلي",shape:"digital"},{id:"mini",name:"صغير أسفل الكاميرا",shape:"mini"},
  {id:"side",name:"عمودي جانبي",shape:"vertical"},{id:"vip",name:"فاخر VIP",shape:"ring"},
+ {id:"rRoyalSub",name:"السبثون الملكي — أرقام قلّابة + أقوى داعم للوقت",shape:"digital",pro:true},
 ];
 const NEXT_DESIGNS=["ثلاثية الأبعاد","أسد وتاج","أجنحة ذهبية","برق","رأسية","بطاقات منفصلة","دروع","هولوغرام","فضية","ألماس","بنفسجية فاخرة","RGB","كأس","معدنية","مستقبلية","بسيطة وشفافة","أطراف مضيئة","متحركة بالكامل","VIP أسطورية","أفقية شريطية"];
 const POS=[["tr","أعلى اليمين"],["tc","أعلى المنتصف"],["tl","أعلى اليسار"],["mr","وسط اليمين"],["custom","مخصص (سحب)"],["ml","وسط اليسار"],["br","أسفل اليمين"],["bc","أسفل المنتصف"],["bl","أسفل اليسار"]];
@@ -942,6 +960,7 @@ function newWidget(type,o={}){
  if(type==="falert"){Object.assign(base,faDefaultsLite())}
  if(type==="abox"){Object.assign(base,{x:.1,y:.25,w:.8,h:.35,abEvents:[],abGap:600,abMax:30,abMerge:true,abHideTest:false})}
  if(type==="levent"){Object.assign(base,{design:"butterfly",kind:"follow",mode:"sticky",dur:5,layout:"",frame:"auto",card:"clear",palette:"",title:"",msg:"",showTitle:true,showMsg:true,showEmblem:true,showAv:true,w:.42,h:.3,glow:1,textScale:1,animOn:true,animSpeed:1,frameImg:"",defaultAv:""})}
+ if(type==="battle"){Object.assign(base,{design:"rClash",x:.08,y:.06,w:.84,h:.2,showTop:true,showTimer:true,showTitle:true,title:"تحدي الفريقين"})}
  if(type==="fcount"){Object.assign(base,{design:"minimalGold",platform:"tiktok",accountId:"",handle:"",avatar:"",w:.46,h:.16,showHead:true,showAvatar:true,showName:true,showLogo:true,showNew:true,showUnit:true,showLast:false,goalOn:false,goal:10000,goalAuto:true,goalStep:0,goalStyle:"bar",numFmt:"full",numScale:1,color:"",animOn:true,animSpeed:1})}
  if(TYPES[type].don){Object.assign(base,{period:type==="donTop"?"week":"month",currency:"",goalId:"",order:"recent",hideAnon:false,speed:110,dir:"rtl",enter:"zoomIn",exit:"fade",enterMs:700,exitMs:500,showMessage:true,showSub:true,
    design:type==="donGoal"?"b6o6":type==="donTicker"||type==="donLatest"||type==="donAlert"?"b6o6Signature":"b6o6",exit:"fadeOut",topN:type==="donTop"?1:5,
@@ -1809,10 +1828,60 @@ function planCheck(u,key,count,cfg,now){ const L=planLimit(u,key,cfg,now), st=su
 function extendPlan(u,months=1,now=Date.now(),plan="pro"){ const cur=ms(u&&u.planUntil), base=cur>now?cur:now; const d=new Date(base); d.setUTCMonth(d.getUTCMonth()+months); return {plan,planUntil:d.toISOString()} }
 const priceCents=(cfg,months)=>Math.round(billingCfg(cfg).priceUsd*months*100);
 
+/* ---- engine/battle.js ---- */
+// ====== تحدي الفريقين (Team Battle Clash) — منطق نقي يعمل على الخادم داخل الغرفة ======
+// النقاط من أحداث البث الحقيقية فقط: الهدايا (قيمتها بالعملات) + اختيارياً التكبيس.
+// طريقتان للانضمام: «gift» = كل هدية تابعة لفريق (مثلاً الوردة للأزرق) | «join» = المشاهد يكتب كلمة الفريق في الشات فتُحسب هداياه لفريقه.
+// الأحداث التجريبية (test) لا تُحسب إلا إذا بدأ التحدي في وضع التجربة.
+const BT_MODES={gift:"كل هدية لفريق",join:"الانضمام بكلمة في الشات"};
+const BT_DESIGNS=[
+ {id:"rClash",name:"صدام الفريقين",desc:"شريط شد الحبل بين الأزرق والأحمر مع شرارة في نقطة الالتقاء",pro:true},
+ {id:"rVersus",name:"VS ملكي",desc:"بطاقتان متقابلتان وشعار VS نابض وتاج للمتقدم",pro:true},
+ {id:"rNeonDuel",name:"مبارزة النيون",desc:"شريطان نيون متقابلان ونسبة كل فريق",pro:true},
+];
+const btNorm=s=>String(s||"").trim().toLowerCase().replace(/[أإآ]/g,"ا").replace(/ى/g,"ي").replace(/ة/g,"ه").replace(/^[!#/]+/,"");
+function newBattle(){ return {id:"bt"+Date.now().toString(36),status:"idle",mode:"gift",durMs:5*60000,endsAt:null,startedAt:null,endedAt:null,testMode:false,likePts:0,
+ teams:[{id:"a",name:"الفريق الأزرق",color:"#2f7bff",gifts:["Rose","وردة"],kw:"ازرق",score:0,top:null},{id:"b",name:"الفريق الأحمر",color:"#ff2d55",gifts:["TikTok","تيك توك"],kw:"احمر",score:0,top:null}],
+ members:{},contrib:{},winner:null,seq:0} }
+const clampMs=v=>Math.max(30000,Math.min(6*3600000,Math.round(+v||0)));
+/** إعداد/تشغيل من اللوحة: config | start | stop | reset | addTime */
+function battleOp(B,m,now){ if(!B) return false; const op=m.op;
+ if(op==="config"){ const c=m.config||{}; if(B.status==="running") { if(c.teams) for(const t of B.teams){ const n=c.teams.find(x=>x.id===t.id); if(n){ if(n.name!=null) t.name=String(n.name).slice(0,30); if(n.color&&/^#[0-9a-f]{3,8}$/i.test(n.color)) t.color=n.color } } return true }
+  if(c.mode&&BT_MODES[c.mode]) B.mode=c.mode; if(c.durMs!=null) B.durMs=clampMs(c.durMs); if(c.likePts!=null) B.likePts=Math.max(0,Math.min(100,+c.likePts||0));
+  if(Array.isArray(c.teams)) for(const t of B.teams){ const n=c.teams.find(x=>x.id===t.id); if(!n) continue; if(n.name!=null) t.name=String(n.name).slice(0,30)||t.name; if(n.color&&/^#[0-9a-f]{3,8}$/i.test(n.color)) t.color=n.color; if(Array.isArray(n.gifts)) t.gifts=n.gifts.map(g=>String(g).trim().slice(0,40)).filter(Boolean).slice(0,12); if(n.kw!=null) t.kw=btNorm(n.kw).slice(0,20) }
+  return true }
+ if(op==="start"){ for(const t of B.teams){ t.score=0; t.top=null } B.members={}; B.contrib={}; B.winner=null; B.status="running"; B.startedAt=now; B.endsAt=now+B.durMs; B.endedAt=null; B.testMode=!!m.test; B.id="bt"+now.toString(36); return true }
+ if(op==="addTime"){ if(B.status!=="running") return false; B.endsAt+=Math.max(-B.durMs,Math.min(3600000,Math.round(+m.ms||0))); return true }
+ if(op==="stop"){ if(B.status!=="running") return false; finish(B,now); return true }
+ if(op==="reset"){ const keep={mode:B.mode,durMs:B.durMs,likePts:B.likePts,teams:B.teams.map(t=>({...t,score:0,top:null}))}; Object.assign(B,newBattle(),keep); return true }
+ return false }
+function finish(B,now){ B.status="ended"; B.endedAt=now; B.endsAt=now; const [a,b]=B.teams; B.winner=a.score===b.score?"draw":a.score>b.score?a.id:b.id }
+/** فريق الحدث حسب الطريقة */
+function teamOf(B,ev){ const uid=String(ev.user?.id||ev.user?.name||"");
+ if(B.mode==="join") return B.members[uid]||null;
+ if(ev.type!=="gift") return B.members[uid]||null; // التكبيس في وضع الهدايا يُحسب لآخر فريق دعمه المشاهد
+ const g=btNorm(ev.gift), gid=String(ev.giftId||""); for(const t of B.teams) if(t.gifts.some(x=>btNorm(x)===g||(gid&&String(x)===gid))) return t.id; return null }
+/** حدث بث → هل تغيّر التحدي؟ */
+function battleOnEvent(B,ev,now){ if(!B||B.status!=="running"||!ev) return false; if(now>=B.endsAt){ finish(B,now); return true }
+ if(ev.test&&!B.testMode) return false; const uid=String(ev.user?.id||ev.user?.name||""); if(!uid) return false;
+ if(ev.type==="comment"&&B.mode==="join"){ const k=btNorm(String(ev.text||"").split(/\s+/)[0]); const t=B.teams.find(t=>t.kw&&t.kw===k); if(t&&!B.members[uid]){ B.members[uid]=t.id; return true } return false }
+ let pts=0; if(ev.type==="gift") pts=Math.max(0,+ev.value||0); else if(ev.type==="like"&&B.likePts>0) pts=Math.max(0,(+ev.count||1))*B.likePts/100; else return false;
+ if(!pts) return false; const tid=teamOf(B,ev); if(!tid) return false; const t=B.teams.find(x=>x.id===tid); if(!t) return false;
+ if(ev.type==="gift"&&B.mode==="gift") B.members[uid]=tid;
+ t.score=Math.round((t.score+pts)*100)/100; const key=tid+"|"+uid, c=B.contrib[key]=(B.contrib[key]||0)+pts;
+ if(!t.top||c>=t.top.v) t.top={n:ev.user?.name||uid,av:ev.user?.avatar||"",v:Math.round(c)};
+ const keys=Object.keys(B.contrib); if(keys.length>3000){ for(const k of keys.slice(0,1000)) delete B.contrib[k] }
+ return true }
+/** نبضة كل ثانية: إنهاء عند انتهاء الوقت */
+function battleTick(B,now){ if(B&&B.status==="running"&&now>=B.endsAt){ finish(B,now); return true } return false }
+/** نسبة الفريق الأول (0..1) للعرض */
+const battleShare=B=>{ const [a,b]=B.teams, s=a.score+b.score; return s>0?a.score/s:.5 };
+
 /* ---- engine/room.js ---- */
 // ====== غرفة البث: تربط المحركات الثلاثة دون خلطها ======
 // استقبال الأحداث → (منع التكرار) → محرك القوائم + محرك السبثون/المؤقتات → رسائل للعرض
 // نفس الكود يعمل على الخادم (الوضع الحقيقي) وفي المتصفح (وضع التجربة بدون خادم).
+
 
 
 
@@ -1855,6 +1924,7 @@ function roomEvent(R,ev,now){
  faRoomTTS(R,ev,now,out);
  R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,ev,now,(R.botCfg&&R.botCfg.tzMin)??180);
  roomActions(R,ev,now,out);
+ if(R.C.battle&&battleOnEvent(R.C.battle,ev,now)){ if(ev.type==="like") R.btDirty=true; else if(!logs.length) out.push({t:"clock",C:R.C,now,logs:[],bt:1}) } // تحدي الفريقين: الهدايا فوراً، التكبيس مجمّع كل ثانية
  if(ev.type==="follow"){ R.C.followers=R.C.followers||{}; if(followersOnEvent(R.C.followers,ev,now)&&!logs.length) out.push({t:"clock",C:R.C,now,logs:[],fc:"tiktok"}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomAlerts(R,ev,logs,now,out);
@@ -1923,6 +1993,7 @@ function roomBots(R,cfg,ctx){ R.botCfg=cfg||null; R.botCtx=ctx||{}; R.B=R.B||new
 function roomClockOp(R,m,now){
  let logs=[];
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
+ if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
  if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
   if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
@@ -1948,6 +2019,7 @@ function roomTick(R,now){
  const rep=sessionTick(R,now); if(rep) changed=true;
  const bo=[]; if(R.botCfg){ R.B=R.B||newBotState(); try{ const items=botsTick(R.botCfg,R.B,botCtx(R,now)); if(items.length) bo.push({t:"bot",items}) }catch(e){ R.B.stats.errors++ } }
  for(const t of R.C.timers) if(timerTick(t,now)) changed=true;
+ if(R.C.battle&&battleTick(R.C.battle,now)) changed=true; if(R.btDirty){ R.btDirty=false; changed=true }
  if(rep) bo.push({t:"report",report:rep});
  return changed?{out:[{t:"clock",C:R.C,now,logs},...bo],logs}:{out:bo,logs:[]};
 }
@@ -4065,7 +4137,7 @@ function parseMusicCmd(text,cmds){ const t=String(text||"").trim(); if(!/^[!#/.$
 function defaultMusicCfg(){ return {source:"youtube",ytRegion:"SA",cmds:null,platforms:{tiktok:true,youtube:true,twitch:true,kick:true},dupSec:8,skipCooldownSec:5,chatReplies:true,page:false,approve:"auto",maxQueue:50,bannedUsers:"",playOn:"player",enabled:true,perms:{request:"all",info:"all",skip:"owner_mods",control:"owner_mods",vote:"all"},users:"",voteSkip:{on:true,needed:3},maxDurSec:420,perUser:2,cooldownSec:60,noRepeatMin:30,banned:"",autoplay:true,shuffle:false,duckTTS:true,volume:70,replies:true} }
 function newMusicState(){ return {queue:[],current:null,paused:false,volume:70,lib:[],votes:[],history:[],last:{},followers:[],seq:0,pending:[],prev:[],player:null,status:"idle",err:"",log:[]} }
 /** سجل التشخيص: هل وصل الطلب، حُفظ، دخل القائمة، وُجد مصدر تشغيل، بدأ التشغيل، وسبب الفشل */
-const MUSIC_STEPS={received:"📨 وصل الطلب للخادم",queued:"✅ حُفظ ودخل قائمة الانتظار",pending:"⏳ بانتظار موافقة صانع المحتوى",approved:"👍 وافق صانع المحتوى",rejected:"🚫 رفض صانع المحتوى",refused:"⛔ رُفض الطلب",source:"🎧 وُجد ملف التشغيل",loading:"⏳ جارٍ تحميل الأغنية في المشغل",playing:"▶ بدأ التشغيل فعلياً",paused:"⏸ إيقاف مؤقت",ended:"⏭ انتهت الأغنية",error:"❌ فشل التشغيل",skip:"⏭ تخطي",claim:"📺 مشغل جديد يتولى التشغيل",searching:"🔎 جارٍ البحث في YouTube",found:"🎯 وُجدت في YouTube",alt:"🔁 النسخة ممنوعة من التضمين — تجربة نسخة أخرى",blocked:"🔇 المتصفح منع التشغيل التلقائي"};
+const MUSIC_STEPS={denied:"🔒 رُفض بسبب الصلاحية",received:"📨 وصل الطلب للخادم",queued:"✅ حُفظ ودخل قائمة الانتظار",pending:"⏳ بانتظار موافقة صانع المحتوى",approved:"👍 وافق صانع المحتوى",rejected:"🚫 رفض صانع المحتوى",refused:"⛔ رُفض الطلب",source:"🎧 وُجد ملف التشغيل",loading:"⏳ جارٍ تحميل الأغنية في المشغل",playing:"▶ بدأ التشغيل فعلياً",paused:"⏸ إيقاف مؤقت",ended:"⏭ انتهت الأغنية",error:"❌ فشل التشغيل",skip:"⏭ تخطي",claim:"📺 مشغل جديد يتولى التشغيل",searching:"🔎 جارٍ البحث في YouTube",found:"🎯 وُجدت في YouTube",alt:"🔁 النسخة ممنوعة من التضمين — تجربة نسخة أخرى",blocked:"🔇 المتصفح منع التشغيل التلقائي"};
 function musicLog(M,now,step,x={}){ M.log=M.log||[]; M.log.unshift({at:now,step,...x}); if(M.log.length>40) M.log.length=40 }
 function musFix(M){ for(const k of ["pending","prev","log"]) if(!Array.isArray(M[k])) M[k]=[]; if(M.status==null) M.status="idle"; return M }
 
@@ -4141,7 +4213,10 @@ function musicOnEvent(M,cfg,ev,now,lib){ if(!cfg||cfg.enabled===false) return nu
  // منع الرسائل المكررة: نفس الشخص ونفس الأمر خلال ثوانٍ ← تجاهل بصمت (بدون رد يزيد الإزعاج)
  const mk=uk+"|"+normAr(c.word+" "+c.arg).toLowerCase(), dupMs=Math.max(0,+cfg.dupSec||8)*1000; if(dupMs&&SP.msg[mk]&&now-SP.msg[mk]<dupMs) return null; SP.msg[mk]=now; muPrune(SP.msg,now,60000);
  const deny=txt=>{ /* رد الرفض مرة كل 30 ث لكل شخص — لا نغرق الشات */ if(SP.deny[uk]&&now-SP.deny[uk]<30000) return R(false,""); SP.deny[uk]=now; muPrune(SP.deny,now,60000); return R(false,txt) };
- const C=cmds[c.cmd]; if(!musicPermOk(C.perm,u,M,{...cfg,users:C.users})) return deny(`${at} ما عندك صلاحية لأمر ${c.word}`);
+ const C=cmds[c.cmd]; if(!musicPermOk(C.perm,u,M,{...cfg,users:C.users})){ /* يظهر في سجل التشخيص حتى يعرف صانع المحتوى لماذا لم يُنفّذ الطلب */
+  const PN={all:"الجميع",followers:"المتابعون",subs:"المشتركون",mods:"المشرفون فقط",owner:"صانع المحتوى فقط",custom:"أسماء مخصصة"};
+  musicLog(M,now,"denied",{by:u.name||u.id,via:plat,cmd:c.cmd,word:c.word,q:String(c.arg||"").slice(0,60),why:"الصلاحية: "+(PN[C.perm]||C.perm)});
+  M.denied=(M.denied||0)+1; return Object.assign(deny(`${at} ما عندك صلاحية لأمر ${c.word}`),{changed:true}) }
  const word=C.words[0]||c.word;
  switch(c.cmd){
   case "request": { if(!c.arg||c.arg.replace(/[\s!.؟?]/g,"").length<2) return deny(`${at} اكتب اسم الأغنية بعد الأمر: ${word} اسم الأغنية`);
@@ -4379,6 +4454,7 @@ class View{
   if(T.abox){ this.applyAbox(w,W,Hh); return }
   if(T.le){ this.applyLe(w,W,Hh); return }
   if(T.chat){ this.applyChat(w,W,Hh); return }
+  if(T.bt){ this.applyBt(w,W,Hh); return }
   if(T.np){ this.applyNp(w,W,Hh); return }
   if(T.act){ this.applyAct(w,W,Hh); return }
   if(T.dt){ this.applyDt(w,W,Hh); return }
@@ -4420,10 +4496,11 @@ class View{
   if(CHIP_TYPES.has(w.type)){ this.el.innerHTML=`<div class="in soc"><div class="scs"></div></div><div class="fxl"></div>`+ed; this.scs=this.el.querySelector(".scs"); this.cur=null; this.curKey=undefined; this.socSig=""; this.queue=[]; this.busy=false; return }
   if(t.soc){ this.el.innerHTML=`<div class="in soc"><div class="scs"></div></div>`+ed; this.scs=this.el.querySelector(".scs"); this.cur=null; this.curKey=undefined; this.socSig=""; return }
   if(t.clock||w.type==="donGoal"){
-   const deco=d.id==="wings"?`<span class="wg l">${WING}</span><span class="wg r">${WING}</span>`:d.id==="crown"||d.id==="vip"||d.id==="royal"||d.id==="b6o6"?`<span class="ckc">${SVG.crown.replace('class="crown"','')}</span>`:d.id==="bolt"?'<span class="blt l">⚡</span><span class="blt r">⚡</span>':"";
+   const deco=d.id==="wings"?`<span class="wg l">${WING}</span><span class="wg r">${WING}</span>`:d.id==="crown"||d.id==="vip"||d.id==="royal"||d.id==="b6o6"?`<span class="ckc">${SVG.crown.replace('class="crown"','')}</span>`:d.id==="bolt"?'<span class="blt l">⚡</span><span class="blt r">⚡</span>':d.id==="rRoyalSub"?`<span class="ckc">${SVG.crown.replace('class="crown"','')}</span><div class="rs-top tx" hidden><span class="rs-av"></span><span class="rs-lb">👑 أقوى داعم للوقت</span><b class="rs-nm"></b><span class="rs-v"></span></div>`:"";
    this.el.innerHTML=`<div class="in ck">${deco}<div class="ck-t tx"></div><div class="ck-face"><svg class="ck-ring" viewBox="0 0 100 100"><circle class="trk" cx="50" cy="50" r="45"/><circle class="prg" cx="50" cy="50" r="45" pathLength="100"/></svg><div class="ck-time tx">00:00:00</div><div class="ck-vert tx"><b>00</b><b>00</b><b>00</b></div></div><div class="ck-bar"><i></i></div><div class="ck-sub tx"></div></div><div class="fxl"></div>`+ed;
    this.q={t:this.el.querySelector(".ck-t"),time:this.el.querySelector(".ck-time"),vert:this.el.querySelectorAll(".ck-vert b"),bar:this.el.querySelector(".ck-bar i"),prg:this.el.querySelector(".prg"),sub:this.el.querySelector(".ck-sub"),fx:this.el.querySelector(".fxl")};
-   this.lastTxt=""; return;
+   this.flip=d.id==="rRoyalSub"; if(this.flip){ this.q.rs=this.el.querySelector(".rs-top"); this.q.time.classList.add("flipd") }
+   this.lastTxt=""; this.rsSig=""; return;
   }
   const ic=ICON[w.type]||SVG.chat;
   this.el.innerHTML=`<div class="in">${t.board&&w.showTitle?`<div class="wt"><span class="tx">${esc(w.title)}</span>${w.design==="royal"||w.design==="podium"||w.design==="b6o6"?SVG.crown.replace('class="crown"',''):ic}</div>`:""}${t.board?'<div class="rows"></div>':`<div class="goal"><div class="gtx tx"><span class="gt">${esc(w.title)}</span><span class="gv">0 / 0</span></div><div class="gbar"><i style="width:0%"></i></div></div>`}</div>`+ed;
@@ -4438,6 +4515,7 @@ class View{
   if(t.fc) return this.refreshFc(src,silent);
   if(t.le) return this.refreshLe(src,silent);
   if(t.chat) return;
+  if(t.bt) return this.refreshBt(src);
   if(t.np) return this.refreshNp(src);
   if(t.act||t.fa) return;
   if(t.dt) return this.refreshDt(src,silent);
@@ -4486,7 +4564,9 @@ class View{
    prog=tm.dir==="up"?(ms%HOUR)/HOUR:ms/Math.max(1,tm.durationMs); hours=tm.dir==="up"||tm.durationMs>=HOUR||ms>=HOUR;
    sub=tm.status==="ended"?tm.endText:tm.status==="paused"?"متوقف":tm.status==="idle"?"جاهز":""; ended=tm.status==="ended" }
   const txt=fmtClock(ms,hours);
-  if(txt!==this.lastTxt){ this.lastTxt=txt; q.time.textContent=txt; const p=txt.split(":"); if(p.length===2) p.unshift("00"); q.vert.forEach((b,i)=>b.textContent=p[i]) }
+  if(txt!==this.lastTxt&&this.flip){ const old=this.lastTxt; q.time.innerHTML=[...txt].map((c,i)=>c===":"?'<i class="sep">:</i>':`<b class="${old&&old[i]!==c?"fl":""}">${c}</b>`).join("") }
+  if(this.flip&&w.type==="subathon") this.royalTop(src);
+  if(txt!==this.lastTxt){ this.lastTxt=txt; if(!this.flip) q.time.textContent=txt; const p=txt.split(":"); if(p.length===2) p.unshift("00"); q.vert.forEach((b,i)=>b.textContent=p[i]) }
   if(q.t.textContent!==title) q.t.textContent=title;
   if(q.sub.textContent!==sub) q.sub.textContent=sub;
   const pc=clamp(prog*100,0,100); q.bar.style.width=pc+"%"; q.prg.style.strokeDasharray=`${pc} 100`;
@@ -4667,6 +4747,13 @@ class View{
  /** عرض حساب عند الطلب أو من إجراء: يخرج الحساب الحالي ثم يظهر المطلوب، وبعدها يكمل التناوب */
  socFx(fx){ if(this.w.type!=="social"||this.w.mode==="single") return; this.fx=fx }
  /** تأثير إضافة/خصم وقت: +5 دقائق مع صوت اختياري */
+ /** السبثون الملكي: أقوى داعم للوقت من سجل الوقت الحقيقي للغرفة (للسبثون الحالي فقط، بدون الأحداث التجريبية) */
+ royalTop(src){ const q=this.q, s=src.C&&src.C.subathon; if(!q.rs||!s) return; const by=new Map();
+  for(const l of src.LG||[]){ if(l.subathonId!==s.id||!(l.deltaMs>0)||!l.user||l.test) continue; const k=l.user; const o=by.get(k)||{n:k,av:l.avatar||"",ms:0}; o.ms+=l.deltaMs; if(!o.av&&l.avatar) o.av=l.avatar; by.set(k,o) }
+  let top=null; for(const o of by.values()) if(!top||o.ms>top.ms) top=o;
+  const sig=top?top.n+"|"+top.ms:""; if(sig===this.rsSig) return; this.rsSig=sig; q.rs.hidden=!top; if(!top) return;
+  q.rs.querySelector(".rs-nm").textContent=top.n; q.rs.querySelector(".rs-v").textContent=fmtDelta(top.ms);
+  const av=q.rs.querySelector(".rs-av"); av.style.backgroundImage=top.av?`url("${String(top.av).replace(/"/g,"")}")`:""; av.textContent=top.av?"":(top.n||"?").slice(0,1) }
  timeFx(log){
   if(!this.q||!log.deltaMs) return;
   const fx=!this.el.classList.contains("no-fx");
@@ -4695,7 +4782,7 @@ function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden)
 function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
- else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
+ else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||TYPES[v.w.type]?.bt||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
  else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ v.chatLoad(msg.CH||[]); continue } v.refresh(src,true) } }
  else if(msg.t==="alert"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxPush(msg.items) }
  else if(msg.t==="alertctl"){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxCtl(msg.op) }
@@ -8950,6 +9037,73 @@ ${[...Array(9)].map((_,i)=>`.npw .np-eq i:nth-child(${i+1}){animation-duration:$
 .npd-frame .np-in{background:#0d0d0dd9;border:calc(var(--nfs)*.1) double #e5e7eb;outline:calc(var(--nfs)*.05) solid #9ca3af;outline-offset:calc(var(--nfs)*.15)}
 `;
 
+/* ---- engine/battleview.js ---- */
+// ====== عرض «تحدي الفريقين» — شفاف للبث، يقرأ حالة الغرفة الحقيقية src.C.battle ======
+
+
+
+const BT_CSS=`
+.t-battle .bt{position:absolute;inset:0;display:flex;flex-direction:column;justify-content:center;gap:calc(var(--bfs)*.3);font-family:"Changa","Readex Pro",sans-serif;color:#fff;direction:rtl}
+.bt-head{display:flex;align-items:center;justify-content:center;gap:calc(var(--bfs)*.5);font-size:calc(var(--bfs)*.62);font-weight:800;text-shadow:0 2px 6px #000c}
+.bt-tm{font-family:"Orbitron","Changa",monospace;direction:ltr;padding:.1em .6em;border-radius:999px;background:#000a;border:1px solid #ffffff33;font-size:.9em}
+.bt-tm.low{color:#ff5d7a;animation:bt-blink 1s steps(2) infinite}@keyframes bt-blink{50%{opacity:.4}}
+.bt-row{display:flex;align-items:center;gap:calc(var(--bfs)*.35);direction:ltr}.bt-row>[data-k]{display:contents}
+.bt-side{display:flex;align-items:center;gap:calc(var(--bfs)*.25);min-width:0;flex:0 1 auto;max-width:34%}.bt-nm{direction:rtl}
+.bt-side.b{flex-direction:row-reverse}
+.bt-av{width:calc(var(--bfs)*1.5);height:calc(var(--bfs)*1.5);border-radius:50%;background:#222 center/cover;border:3px solid var(--tc);box-shadow:0 0 calc(var(--bfs)*.5) var(--tc);flex:0 0 auto;display:grid;place-items:center;font-weight:800}
+.bt-nm{display:flex;flex-direction:column;line-height:1.15;min-width:0}.bt-nm b{font-size:calc(var(--bfs)*.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-nm small{font-size:calc(var(--bfs)*.38);opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bt-sc{font-family:"Orbitron","Changa",monospace;font-weight:800;font-size:calc(var(--bfs)*.62);color:var(--tc);text-shadow:0 0 8px #000,0 0 12px var(--tc)}
+.bt-bar{position:relative;flex:1;height:calc(var(--bfs)*.9);border-radius:999px;overflow:hidden;background:var(--cb);box-shadow:0 0 0 2px #ffffff40,0 4px 14px #0008;direction:ltr}
+.bt-bar .fa{position:absolute;inset:0 auto 0 0;width:50%;background:linear-gradient(90deg,var(--ca),color-mix(in srgb,var(--ca) 70%,#fff));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.bt-bar .sp{position:absolute;top:50%;left:50%;width:calc(var(--bfs)*1.3);height:calc(var(--bfs)*1.3);translate:-50% -50%;transition:left .8s cubic-bezier(.2,.8,.2,1);background:radial-gradient(circle,#fff 0 18%,#fde68a 30%,transparent 62%);animation:bt-spark .5s ease-in-out infinite alternate;filter:drop-shadow(0 0 8px #fde68a)}
+@keyframes bt-spark{to{scale:1.25;rotate:30deg}}
+.bt-bar .sh{position:absolute;inset:0;background:linear-gradient(100deg,transparent 30%,#ffffff55 50%,transparent 70%);background-size:250% 100%;animation:bt-sh 2.6s linear infinite}@keyframes bt-sh{from{background-position:150% 0}to{background-position:-100% 0}}
+.bt-win{position:absolute;inset:0;display:grid;place-items:center;pointer-events:none}
+.bt-win span{padding:.2em .9em;border-radius:999px;font-size:calc(var(--bfs)*.7);font-weight:900;background:linear-gradient(90deg,#b8862b,#fde68a,#b8862b);color:#2a1a00;box-shadow:0 0 24px #fde68a;animation:bt-pop .7s cubic-bezier(.2,1.6,.4,1) both}
+@keyframes bt-pop{from{scale:.3;opacity:0}}
+.bt-idle{text-align:center;font-size:calc(var(--bfs)*.42);opacity:.75}
+/* VS ملكي */
+.btd-rVersus .bt-bar{height:calc(var(--bfs)*.55)}.btd-rVersus .bt-vs{position:absolute;left:50%;top:50%;translate:-50% -50%;font:900 calc(var(--bfs)*.9) "Orbitron",sans-serif;color:#fde68a;text-shadow:0 0 10px #f59e0b,0 3px 0 #000;animation:bt-vs 1.2s ease-in-out infinite;z-index:2}
+@keyframes bt-vs{50%{scale:1.15}}.btd-rVersus .bt-side{padding:calc(var(--bfs)*.15) calc(var(--bfs)*.35);border-radius:calc(var(--bfs)*.5);background:linear-gradient(135deg,color-mix(in srgb,var(--tc) 55%,#000),#000c);border:2px solid var(--tc)}
+.btd-rVersus .bt-side.lead::before{content:"👑";position:absolute;translate:0 -110%;font-size:calc(var(--bfs)*.6)}.btd-rVersus .bt-side{position:relative}
+/* مبارزة النيون */
+.btd-rNeonDuel .bt-bar{background:#05060c;box-shadow:0 0 0 2px var(--ca),0 0 16px var(--ca),0 0 0 4px #05060c,0 0 0 6px var(--cb),0 0 22px var(--cb)}
+.btd-rNeonDuel .bt-bar .fa{box-shadow:0 0 18px var(--ca)}.btd-rNeonDuel .bt-bar::after{content:"";position:absolute;inset:0 0 0 auto;width:var(--rb,50%);background:var(--cb);opacity:.85;transition:width .8s}
+.btd-rNeonDuel .bt-pc{font-family:"Orbitron",monospace;font-size:calc(var(--bfs)*.42);opacity:.9}
+`;
+let cssOn=false; const ensureCss=()=>{ if(cssOn||typeof document==="undefined") return; cssOn=true; const s=document.createElement("style"); s.textContent=BT_CSS; document.head.appendChild(s) };
+const mmss=ms=>{ const s=Math.max(0,Math.ceil(ms/1000)); return String(Math.floor(s/60)).padStart(2,"0")+":"+String(s%60).padStart(2,"0") };
+const side=(t,k)=>`<div class="bt-side ${k}" style="--tc:${t.color}"><div class="bt-av" data-k="av"></div><div class="bt-nm"><b data-k="nm"></b><small data-k="top"></small></div><div class="bt-sc" data-k="sc">0</div></div>`;
+
+Object.assign(View.prototype,{
+ applyBt(w,W,Hh){ ensureCss(); const e=this.el; [...e.classList].filter(c=>c.startsWith("btd-")).forEach(c=>e.classList.remove(c)); e.classList.add("btd-"+(w.design||"rClash"));
+  if(this.btEl&&(!this.btEl.isConnected||this.btD!==w.design)){ this.btEl.remove(); this.el.querySelector(".bt-win")?.remove(); this.btEl=null } this.btD=w.design;
+  e.style.setProperty("--bfs",Math.max(10,Math.min(Hh*.26,W/18))+"px");
+  if(!this.btEl){ this.el.insertAdjacentHTML("afterbegin",`<div class="bt"><div class="bt-head"><span data-k="ttl"></span><span class="bt-tm" data-k="tm"></span></div><div class="bt-row"><span data-k="A"></span><div class="bt-bar"><i class="fa"></i><i class="sh"></i><i class="sp"></i>${w.design==="rVersus"?'<b class="bt-vs">VS</b>':""}</div><span data-k="B"></span></div><div class="bt-idle" data-k="idle"></div></div><div class="bt-win" data-k="win"></div>`); this.btEl=this.el.querySelector(".bt"); this.btSig="" }
+  this.refreshBt(this.opts.data?this.opts.data():null) },
+ refreshBt(src){ if(!this.btEl) return; const w=this.w, B=src&&src.C&&src.C.battle, q=k=>this.el.querySelector(`[data-k="${k}"]`);
+  const ed=this.opts.editor||String(w.id).startsWith("pv_");
+  const st=B||(ed?{status:"preview",teams:[{id:"a",name:"الفريق الأزرق",color:"#2f7bff",score:620,top:{n:"نورة",v:400}},{id:"b",name:"الفريق الأحمر",color:"#ff2d55",score:380,top:{n:"فهد",v:300}}],endsAt:Date.now()+154000}:null);
+  q("ttl").textContent=w.showTitle===false?"":(w.title||"تحدي الفريقين"); q("ttl").hidden=w.showTitle===false;
+  if(!st){ q("idle").textContent="ابدأ التحدي من لوحة التحكم ← تحدي الفريقين"; this.el.querySelector(".bt-row").style.visibility="hidden"; q("tm").hidden=true; return }
+  this.el.querySelector(".bt-row").style.visibility=""; q("idle").textContent=st.status==="idle"?"بانتظار بدء التحدي":"";
+  const [a,b]=st.teams, share=battleShare(st);
+  this.el.style.setProperty("--ca",a.color); this.el.style.setProperty("--cb",b.color);
+  const sig=JSON.stringify([st.status,a.name,a.color,a.score,a.top&&a.top.n,b.name,b.color,b.score,b.top&&b.top.n,st.winner]);
+  if(sig!==this.btSig){ this.btSig=sig;
+   q("A").innerHTML=side(a,"a"); q("B").innerHTML=side(b,"b");
+   for(const [k,t] of [["A",a],["B",b]]){ const box=q(k); box.querySelector('[data-k="nm"]').textContent=t.name; box.querySelector('[data-k="sc"]').textContent=fmt(t.score);
+    const tp=box.querySelector('[data-k="top"]'); tp.textContent=w.showTop!==false&&t.top?"👑 "+t.top.n:(w.design==="rNeonDuel"?Math.round((t===a?share:1-share)*100)+"%":"");
+    const av=box.querySelector('[data-k="av"]'); if(t.top&&t.top.av){ av.style.backgroundImage=`url("${String(t.top.av).replace(/"/g,"")}")` } else { av.textContent=t.top&&t.top.n?String(t.top.n).slice(0,1):(t.name||"?").replace(/^الفريق\s+/,"").replace(/^ال/,"").slice(0,1) } }
+   const lead=a.score===b.score?null:a.score>b.score?"a":"b"; this.el.querySelectorAll(".bt-side").forEach(s=>s.classList.toggle("lead",!!lead&&s.classList.contains(lead)));
+   const fa=this.el.querySelector(".bt-bar .fa"), sp=this.el.querySelector(".bt-bar .sp"); fa.style.width=(share*100)+"%"; sp.style.left=(share*100)+"%"; this.el.style.setProperty("--rb",((1-share)*100)+"%");
+   const win=q("win"); if(st.status==="ended"&&st.winner){ const t=st.teams.find(x=>x.id===st.winner); win.innerHTML=`<span>${st.winner==="draw"?"🤝 تعادل!":"🏆 فاز "+esc(t?t.name:"")}</span>` } else win.innerHTML="" }
+  // المؤقت يتحدث محلياً كل ثانية أثناء التحدي
+  const tm=q("tm"), tick=()=>{ if(!this.el.isConnected){ clearInterval(this.btT); this.btT=0; return } const left=(st.endsAt||0)-(Date.now()+((src&&src.skew)||0)); tm.textContent=st.status==="ended"?"انتهى":mmss(left); tm.classList.toggle("low",st.status!=="ended"&&left<30000) };
+  tm.hidden=w.showTimer===false||st.status==="idle"; clearInterval(this.btT); this.btT=0; tick(); if(st.status==="running"||st.status==="preview") this.btT=setInterval(tick,1000) },
+});
+
 /* ---- engine/actview.js ---- */
 // ====== ودجت عرض الإجراءات (صوت/فيديو/GIF/صورة/نص/احتفال) — شفاف 100% ======
 
@@ -9020,7 +9174,7 @@ function bootOverlay(q){
  const only=q.get("only"), room=q.get("room")||"", wsUrl=q.get("ws")||"", bigT=+q.get("big")||1000;
  const PM=q.get("pm")||(q.get("lp")==="1"?"perf":"hq"); document.body.classList.add("pm-"+PM);
  const R=loadRoom(); let skew=0;
- const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT});
+ const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
  const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
  const views=new Map(); let cv;
@@ -9034,9 +9188,9 @@ function bootOverlay(q){
   for(const [id,v] of views) if(!seen.has(id)){v.el.remove();views.delete(id)}
  }
  function onMsg(m){
-  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now() }
+  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now() }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
-  else if(m.t==="clock"){ R.C=m.C; if(m.now) skew=m.now-Date.now() }
+  else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
   if(m.t==="bot"&&q.get("voice")==="1") for(const it of m.items||[]) if(it.say) vpPush(it);
   deliver(views.values(),m,src());
@@ -9063,7 +9217,7 @@ if(!S.layouts.find(l=>l.id===S.active)) S.active=S.layouts[0].id;
 if(!S.settings.room) S.settings.room="room_"+uid();
 if(CFG){ Object.assign(S.settings,{wsUrl:CFG.wsUrl,room:CFG.room,key:CFG.key}) }
 let R=loadRoom(), skew=0, liveStatus={live:false,text:"وضع التجربة المحلي — غير متصل بـ TikTok"};
-const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.CHAT});
+const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
 const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
 let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),e=>toast(e&&e.message&&e.message!=="save"?e.message:"تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
@@ -9107,6 +9261,7 @@ function receive(m,applied){
  else return;
  if(m.t==="actlog"){ S.actLog=m.log||[]; if(S.page==="actions"&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||"")) renderPage(true) }
  if(m.t==="act"){ for(const it of m.items||[]) if(it.kind==="goal"&&it.widgetId){ const gw=L().widgets.find(w=>w.id===it.widgetId); if(gw){ gw.base=(+gw.base||0)+(+it.n||1); save(); pushLayout() } } }
+ if(m.t==="clock"&&m.bt){ const el=document.querySelector("[data-btstatus]"); if(el&&R.C.battle){ const was=el.dataset.st; el.innerHTML=btStatus(R.C.battle); if(was&&was!==R.C.battle.status) renderProps(); el.dataset.st=R.C.battle.status } }
  if(m.t==="clock"&&MP.on) mpSync();
  if(m.t==="clock"&&m.mu&&S.page==="music") softRefresh();
  deliver(allViews(),m,SRC());
@@ -9188,9 +9343,9 @@ const wdname=w=>w.type==="donCard"?"Basic — آخر دعم":w.type==="donLast5"
 const isClock=w=>!!TYPES[w.type].clock;
 const isSoc=w=>!!TYPES[w.type].soc;
 const isChip=w=>["donTicker","donLatest","donAlert"].includes(w.type);
-const dKind=w=>w.type==="donText"?"dt":w.type==="levent"?"le":w.type==="fcount"?"fc":w.type==="srules"?"rb":w.type==="lb"?"lb":w.type==="sgoal"?"sg":isClock(w)||w.type==="donGoal"?"clock":isSoc(w)||isChip(w)?"soc":"board";
+const dKind=w=>w.type==="battle"?"bt":w.type==="donText"?"dt":w.type==="levent"?"le":w.type==="fcount"?"fc":w.type==="srules"?"rb":w.type==="lb"?"lb":w.type==="sgoal"?"sg":isClock(w)||w.type==="donGoal"?"clock":isSoc(w)||isChip(w)?"soc":"board";
 const libPool=(w,tab)=>tab==="nowplay"?w.type==="nowplay":tab==="uchat"?w.type==="uchat":tab==="levent"?w.type==="levent":tab==="fcount"?w.type==="fcount":tab==="rules"?w.type==="srules":tab==="pro"?w.type==="lb":tab==="goals"?w.type==="sgoal":tab==="clocks"?dKind(w)==="clock":tab==="socials"?dKind(w)==="soc":dKind(w)==="board"&&TYPES[w.type].board;
-const designsOf=w=>({clock:CLOCK_DESIGNS,soc:SOCIAL_DESIGNS,board:DESIGNS,lb:LB_DESIGNS,sg:SG_DESIGNS,rb:RB_DESIGNS,fc:FC_DESIGNS,le:LE_DESIGNS,dt:[{id:w.design,name:"Minimal Last Donation — نص فقط"}]})[dKind(w)];
+const designsOf=w=>({bt:BT_DESIGNS.map(d=>({...d,name:d.name+" (PRO)"})),clock:CLOCK_DESIGNS,soc:SOCIAL_DESIGNS,board:DESIGNS,lb:LB_DESIGNS,sg:SG_DESIGNS,rb:RB_DESIGNS,fc:FC_DESIGNS,le:LE_DESIGNS,dt:[{id:w.design,name:"Minimal Last Donation — نص فقط"}]})[dKind(w)];
 const LB_N=[[1,"الأول فقط (بطل)"],[3,"أفضل 3 (منصة تتويج)"],[5,"أفضل 5 (منصة + صفوف)"],[10,"أفضل 10 (مضغوط)"],[20,"أفضل 20 (عمودين)"]];
 const LB_SIZE={1:[.4,.22],3:[.5,.28],5:[.46,.38],10:[.46,.5],20:[.7,.55]};
 const giftOpts=()=>(S.catalog&&S.catalog.length?S.catalog.map(g=>[g.id,`${g.name} (${g.diamonds}💎)`]):GIFTS.map(g=>[g[2],`${g[0]} (${g[1]}💎)`]));
@@ -9820,7 +9975,7 @@ function renderProps(){
  ${ck?`<div class="grid g2" style="gap:8px">${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}${sel("showSub","سطر الحالة",[["1","ظاهر"],["0","مخفي"]],w.showSub?"1":"0")}</div>${sel("font","شكل الأرقام والخط",FONTS,w.font)}`:""}
  ${w.type==="subathon"?sel("sound","صوت عند إضافة الوقت",[["1","مفعّل"],["0","متوقف"]],w.sound?"1":"0"):""}
  ${w.type==="gifts"?sel("sortBy","ترتيب الداعمين حسب",SORTS,w.sortBy):""}
- ${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
+ ${t.bt?btPropsHTML(w,sel,rng):""}${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
  ${t.rules?rbPropsHTML(w,sel,rng):""}
  ${t.fc?fcPropsHTML(w,sel,rng):""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
@@ -9936,6 +10091,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const bb=e.target.closest&&e.target.closest("[data-btop]"); if(bb){ const op=bb.dataset.btop; if(op==="test"){ btSend("start",{test:true}); setTimeout(btSim,400); return } if(op==="stop"&&!confirm("إنهاء التحدي الآن وإعلان الفائز؟")) return; btSend(op,op==="addTime"?{ms:+bb.dataset.ms||60000}:{}); return } }
  const t=e.target.closest("button,[data-pick],[data-selw],[data-anim-try],[data-sdesign],[data-idle-set],a"); if(!t) return;
  const d=t.dataset;
  if(socClick(t,d)) return;
@@ -10049,6 +10205,10 @@ function previewOverlay(only){
 }
 function onInput(e){
  const t=e.target, d=t.dataset;
+ if(d.btl){ if(e.type!=="change") return; const B=(R.C&&R.C.battle)||newBattle(), cfg={};
+  if(d.btl==="mode") cfg.mode=t.value; else if(d.btl==="dur") cfg.durMs=Math.round((+t.value||5)*60000); else if(d.btl==="like") cfg.likePts=+t.value||0;
+  else { const tm={id:d.bteam}; if(d.btl==="gifts") tm.gifts=t.value.split(/[,،]/).map(x=>x.trim()).filter(Boolean); else tm[d.btl]=t.value; cfg.teams=[tm] }
+  btSend("config",{config:cfg}); return }
  if(d.wgroup!==undefined){ if(e.type!=="change") return; const w=findW(d.wgroup); if(!w) return; if(t.value==="@new") return ask("اسم المجموعة","مجموعة "+(new Set(L().widgets.map(x=>x.group).filter(Boolean)).size+1)).then(n=>{ if(n){ w.group=n.slice(0,30) } save(); renderProps() }); w.group=t.value||""; save(); pushLayout(); return renderProps() }
  if(d.leimg){ if(e.type==="change") leImgInput(t); return }
  if(musicInput(t,d,e)) return;
@@ -10296,6 +10456,27 @@ function dcCtl(w,sel,rng){ const D=w.type==="donCard"?DC_DEFAULTS:D5_DEFAULTS, g
   num:(f,l,a,b,st,u="")=>rng(f,l,a,b,st,+g(f),v=>v+u), sl:(f,l,o)=>sel(f,l,o,typeof g(f)==="boolean"?(g(f)?"1":"0"):g(f)) } }
 function dcTabsBar(w){ const cur=S.lcTab||"content"; return `<div class="row" style="gap:4px;flex-wrap:wrap;margin:6px 0">${DC_TABS.map(([k,l])=>`<button class="btn sm ${cur===k?"pri":""}" data-lctab="${k}">${l}</button>`).join("")}</div>` }
 function dcScenesHTML(w){ const others=S.layouts.filter(l=>l.id!==S.active); return `<div class="row" style="gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn sm" data-lcsim="${w.id}">🧪 تجربة وصول دعم (المعاينة فقط)</button><button class="btn sm" data-lcreset="${w.id}">↺ الإعدادات الافتراضية</button><button class="btn sm" data-copylink="${w.id}">🔗 رابط OBS / LIVE Studio</button>${others.length?`<select class="inp" data-lccopy="${w.id}" style="width:auto"><option value="">📋 نسخ إلى مشهد…</option>${others.map(l=>`<option value="${l.id}">${esc(l.name)}</option>`).join("")}</select>`:""}</div>` }
+/** تحدي الفريقين: إعدادات الغرفة (الفرق، الهدايا، الكلمات، المدة) + تشغيل/إيقاف — النقاط من أحداث البث الحقيقية */
+function btPropsHTML(w,sel,rng){ const B=(R.C&&R.C.battle)||newBattle(), run=B.status==="running", [a,b]=B.teams, mins=Math.round(B.durMs/60000*10)/10;
+ const st=btStatus(B);
+
+ const team=t=>`<div class="card" style="padding:10px;border-inline-start:4px solid ${t.color}"><div class="grid g2" style="gap:6px">
+   <label class="fld"><span>اسم الفريق</span><input class="inp" data-btl="name" data-bteam="${t.id}" value="${esc(t.name)}" maxlength="30"></label>
+   <label class="fld"><span>اللون</span><input type="color" class="inp" data-btl="color" data-bteam="${t.id}" value="${esc(t.color.slice(0,7))}"></label>
+   ${B.mode==="gift"?`<label class="fld" style="grid-column:1/-1"><span>هدايا الفريق (افصل بفاصلة)</span><input class="inp" data-btl="gifts" data-bteam="${t.id}" value="${esc(t.gifts.join("، "))}" ${run?"disabled":""}></label>`
+   :`<label class="fld" style="grid-column:1/-1"><span>كلمة الانضمام في الشات</span><input class="inp" data-btl="kw" data-bteam="${t.id}" value="${esc(t.kw)}" ${run?"disabled":""} placeholder="ازرق"></label>`}</div></div>`;
+ return `<div class="sec"><div class="ttl">⚔️ تحدي الفريقين</div><div class="note small" data-btstatus data-st="${B.status}">${st}</div>
+  <div class="grid g2" style="gap:8px;margin-top:8px"><label class="fld"><span>طريقة الانضمام</span><select class="inp" data-btl="mode" ${run?"disabled":""}>${Object.entries(BT_MODES).map(([k,n])=>`<option value="${k}" ${B.mode===k?"selected":""}>${n}</option>`).join("")}</select></label>
+  <label class="fld"><span>المدة (دقائق)</span><input type="number" class="inp" data-btl="dur" min="0.5" max="360" step="0.5" value="${mins}" ${run?"disabled":""}></label>
+  <label class="fld"><span>نقاط كل 100 لايك (0 = بدون)</span><input type="number" class="inp" data-btl="like" min="0" max="100" value="${B.likePts}" ${run?"disabled":""}></label></div>
+  <div style="display:grid;gap:8px;margin-top:8px">${team(a)}${team(b)}</div>
+  <div class="row" style="gap:6px;margin-top:10px">${run?`<button class="btn sm" data-btop="addTime" data-ms="60000">➕ دقيقة</button><button class="btn sm" data-btop="stop">⏹ إنهاء الآن</button>`:`<button class="btn sm pri" data-btop="start">▶ ابدأ التحدي</button><button class="btn sm" data-btop="test">🧪 تجربة (هدايا تجريبية)</button>`}<button class="btn sm" data-btop="reset">↺ تصفير</button></div>
+  <div class="small mut" style="margin-top:6px">${B.mode==="gift"?"كل هدية من قائمة الفريق تُضيف قيمتها بالعملات لفريقها.":"المشاهد يكتب كلمة فريقه في الشات مرة واحدة، وبعدها كل هداياه تُحسب لفريقه."} الأحداث التجريبية لا تُحسب إلا في وضع التجربة.</div></div>` }
+function btStatus(B){ const [a,b]=B.teams; return B.status==="running"?`🟢 التحدي يعمل${B.testMode?" (وضع تجربة)":""} — ${esc(a.name)} ${fmt(a.score)} : ${fmt(b.score)} ${esc(b.name)}`:B.status==="ended"?`🏁 انتهى — ${B.winner==="draw"?"تعادل":"الفائز: "+esc((B.teams.find(x=>x.id===B.winner)||{}).name||"")} (${fmt(a.score)} : ${fmt(b.score)})`:"⏸ لم يبدأ — النقاط تُحسب من الهدايا الحقيقية بعد البدء فقط" }
+function btSend(op,extra={}){ clockOp("battle",op,extra); setTimeout(renderProps,250) }
+function btSim(){ const B=R.C&&R.C.battle; if(!B) return; const [a,b]=B.teams; let i=0; const pick=t=>B.mode==="gift"?(t.gifts[0]||"Rose"):"Rose";
+ if(B.mode==="join") for(const [u,t] of [["تجربة1",a],["تجربة2",b]]) send({t:"sim",ev:{type:"comment",id:"btc"+Date.now()+u,test:true,user:{id:u,name:u},text:t.kw}});
+ const tick=()=>{ if(i++>=8) return; const t=Math.random()<.55?a:b, u=t===a?"تجربة1":"تجربة2"; send({t:"sim",ev:{type:"gift",id:"btg"+Date.now()+i,test:true,user:{id:u,name:u},gift:pick(t),value:[1,5,10,30,99][i%5],count:1}}); setTimeout(tick,600) }; setTimeout(tick,300) }
 function dcPropsHTML(w,sel,rng){ const c=dcCtl(w,sel,rng), tab=S.lcTab||"content", ON=[["1","مفعّل"],["0","متوقف"]];
  const body={content:`<div class="row" style="gap:4px;flex-wrap:wrap">${c.tg("lcShowBadge","شارة «"+esc(c.g("lcBadge"))+"»")}${c.tg("lcShowName","اسم الداعم")}${c.tg("lcShowSym","رمز العملة")}${c.tg("lcShowThx","عبارة الشكر")}</div>
    <div class="grid g2" style="gap:8px">${c.txt("lcBadge","نص الشارة")}${c.txt("lcThx","عبارة الشكر")}${c.sl("lcOrder","الترتيب",[["amt","المبلغ ثم الاسم"],["name","الاسم ثم المبلغ"]])}${c.sl("lcAlign","المحاذاة",[["right","يمين"],["center","وسط"],["left","يسار"]])}</div>`,
@@ -10567,7 +10748,10 @@ function musicHTML(){ const M=R.C.music||{queue:[],lib:[],pending:[],log:[]}, C=
  const links=CFG&&MU.data?MU.data.links:null, lib=muLib(), q=MU.q.trim(), libShown=q?musicSearchAll(lib,q,200):lib;
  const plTxt=plAlive?(pl.kind==="dashboard"?"🎧 يعمل في متصفح لوحة التحكم":"📺 يعمل في مشغل OBS / LIVE Studio"):"⚠️ لا يوجد مشغل متصل — أضف رابط المشغل في OBS أو اضغط «تشغيل في هذا المتصفح»";
  return head("🎵 بوت الأغاني","المشاهد يكتب في شات البث: !شغل اسم الأغنية ← تُضاف لقائمة الانتظار ← تُشغَّل فعلياً في مشغل OBS — بدون روابط ولا تسجيل")+
- `<div class="note small" style="margin-bottom:12px">🎧 مصدر التشغيل: ملفات صوتية ترفعها أنت (موسيقاك المرخّصة) ${CFG?"وتُحفظ على الخادم":"— في وضع التجربة تبقى في هذا المتصفح"}. لا نشغّل روابط YouTube أو Spotify ولا نستخرج صوتها (شروطها تمنع ذلك في البث). تأكد أن لديك حق بث الأغاني في TikTok LIVE.</div>
+ `${(()=>{ const rq=mcCmds().request||{}, PN={all:"الجميع",followers:"المتابعون",subs:"المشتركون",mods:"المشرفون فقط",owner:"صانع المحتوى فقط",custom:"أسماء مخصصة"}, dn=(M.log||[]).filter(l=>l.step==="denied"&&l.cmd==="request").length;
+   return rq.on===false?`<div class="note warn small" style="margin-bottom:12px">⚠️ أمر طلب الأغاني (${esc((rq.words||[])[0]||"!شغل")}) <b>معطّل</b> — لن يُقبل أي طلب من الشات.</div>`
+   :["mods","owner","custom"].includes(rq.perm)?`<div class="note warn small" style="margin-bottom:12px" data-mu-permwarn>🔒 أمر الطلب ${esc((rq.words||[])[0]||"!شغل")} مسموح حالياً لـ <b>${PN[rq.perm]}</b> — أي متابع عادي يكتبه يُرفض طلبه ولا يُبحث عن الأغنية${dn?` (رُفض ${dn} طلب مؤخراً — انظر سجل التشخيص)`:""}. تغيّرها من «أوامر الشات» أسفل الصفحة إذا أردت.</div>`:"" })()}
+ <div class="note small" style="margin-bottom:12px">${(C.source||"youtube")==="library"?`🎧 مصدر التشغيل: ملفاتك الصوتية المرفوعة (موسيقاك المرخّصة) ${CFG?"وتُحفظ على الخادم":"— في وضع التجربة تبقى في هذا المتصفح"}.`:`▶ مصدر التشغيل: <b>YouTube</b> عبر مشغّل YouTube الرسمي داخل مصدر المتصفح في OBS / LIVE Studio (بحث YouTube Data API الرسمي${(C.source||"")==="both"?"، وتُجرَّب مكتبتك أولاً":""}). الصوت يُشغَّل من المشغّل نفسه دون تنزيل أو استخراج.`} تأكد أن لديك حق بث الأغاني في TikTok LIVE.</div>
  <div class="grid g2" style="align-items:start"><div>
  <div class="card"><h3>🔗 الروابط</h3>${CFG?(links?`<div class="fld"><label>مشغل الأغاني — Browser Source في OBS / TikTok LIVE Studio (خاص بك، لا تشاركه)</label><div class="row" style="gap:6px"><input class="inp" readonly value="${esc(location.origin+links.player)}"><button class="btn sm pri" data-mucopy="${esc(location.origin+links.player)}">نسخ</button></div></div>
   <p class="small mut">في OBS: مصدر جديد ← Browser ← الصق الرابط، العرض 900 والارتفاع 260، وفعّل «Control audio via OBS» ليظهر الصوت في الميكسر ويصل للبث. أغاني YouTube تُشغَّل في مشغل YouTube الرسمي ويجب أن يبقى ظاهراً في البث (شروط YouTube) — حجمه 356×200. الخلفية شفافة. لإخفاء بطاقة الأغنية والإبقاء على الصوت فقط أضف <code>?ui=0</code>.</p>
