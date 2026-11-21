@@ -7,8 +7,8 @@ const url='file:///home/claude/najd/demo/index.html';
  await p.goto(url); await p.evaluate(()=>localStorage.clear()); await p.goto(url);
  const A=()=>p.evaluate(()=>{const s=window.__arsh.R().C.subathon; return {st:s.status,rem:s.status==="running"?s.endsAt-Date.now():s.remainingMs,list:s.rules.list}});
  await p.click('.nav [data-go="subathon"]'); await p.waitForTimeout(300);
- const a0=await A(); ok(a0.list.length===10,'default rules list (10)');
- ok(await p.locator('[data-rule]').count()===10,'editor shows each rule as its own card');
+ const a0=await A(); ok(a0.list.length===11,'default rules list (11 incl. TikTok coins rate)');
+ ok(await p.locator('[data-rule]').count()===11,'editor shows each rule once (coins + gift catalog + other rules)');
  await p.click('[data-sa-op="start"]'); await p.waitForTimeout(200);
  // تعديل المتابعة: 2 دقيقة
  const fid=a0.list.find(r=>r.kind==='follow').id;

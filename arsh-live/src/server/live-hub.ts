@@ -30,6 +30,8 @@ export type HubOptions = {
   ytFind?(q: string, opts: { maxDurSec: number; region: string }): Promise<any>;
 };
 
+/** الحفظ فقط: حالة الغرفة + قائمة هدايا TikTok (لا تُرسل مع كل تحديث للروابط) */
+const withCatalog = (r: any) => (r.gifts?.length ? { ...r.C, giftCatalog: { at: Date.now(), list: r.gifts } } : r.C);
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
   const rooms = new Map<string, Room>();
   const loading = new Map<string, Promise<Room>>();
@@ -40,6 +42,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       const room = Object.assign(newRoom(), { clients: new Set<Client>(), layouts: new Map<string, Layout>() }) as Room;
       const saved = await opt.loadRoom?.(id).catch(() => null);
       if (saved?.C) room.C = saved.C;
+      if ((room.C as any)?.giftCatalog) { const gc = (room.C as any).giftCatalog; if (gc.list?.length) room.gifts = gc.list; delete (room.C as any).giftCatalog; } // آخر قائمة هدايا من TikTok حتى خارج البث
       if (saved?.H) room.H = saved.H;
       if (saved?.logs) room.logs = saved.logs;
       if (saved?.DN) room.DN = saved.DN;
@@ -138,7 +141,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         let h: TikTokHandle | undefined;
         h = r.tiktok = startTikTok(username, {
           onEvent: ev => dispatch(id, r, ev),
-          onGifts: gifts => { r.gifts = gifts; broadcast(r, { t: "gifts", gifts }); },
+          onGifts: gifts => { r.gifts = gifts; r.dirty = true; broadcast(r, { t: "gifts", gifts }); }, // قائمة هدايا TikTok الحقيقية: تُحفظ مع حالة الغرفة (خارج البث المرسل للروابط)
           onFollowers: n => commit(id, r, roomClockOp(r, { target: "followers", op: "official", platform: "tiktok", value: n, source: "tiktok_live" }, Date.now())),
           onStatus: (live, text, info) => {
             if (h && r.tiktok !== h) return; // اتصال قديم بعد الإيقاف أو الاستبدال
@@ -163,7 +166,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (r.clients.size === 0) r.closeTimer = setTimeout(() => {
         if (r.clients.size) return;
         r.tiktok?.stop();
-        if (r.dirty) opt.saveClock?.(id, r.C).catch(() => {});
+        if (r.dirty) opt.saveClock?.(id, withCatalog(r)).catch(() => {});
         rooms.delete(id);
       }, 10 * 60 * 1000);
     });
@@ -174,7 +177,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     const now = Date.now();
     rooms.forEach((r, id) => {
       commit(id, r, roomTick(r, now));
-      if (r.dirty) { r.dirty = false; opt.saveClock?.(id, r.C).catch(() => {}); }
+      if (r.dirty) { r.dirty = false; opt.saveClock?.(id, withCatalog(r)).catch(() => {}); }
     });
   }, 1000);
   const ping = setInterval(() => wss.clients.forEach((c: Client) => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);

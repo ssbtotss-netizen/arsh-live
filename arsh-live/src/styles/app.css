@@ -318,3 +318,10 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 /* حالة ربط TikTok */
 .tk-st{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#ffffff06}.tk-st .tk-cd{font-family:"Orbitron",monospace;direction:ltr;display:inline-block;margin-inline-start:6px;color:#ffd166}
 .tk-connected{border-color:#22e07a66;background:#22e07a10}.tk-waiting{border-color:#ffd16666;background:#ffd16610}.tk-failed{border-color:#ff5d7a66;background:#ff5d7a10}.tk-connecting{border-color:#3d8bff66}
+/* السبثون: عملات وهدايا TikTok */
+.sa-coin{display:grid;grid-template-columns:auto 1.2fr .9fr .9fr 1.6fr auto;gap:8px;align-items:end;padding:8px;border:1px solid var(--line);border-radius:12px;margin-bottom:6px}.sa-coin.off{opacity:.55}
+.sa-gifts{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px;margin-top:10px}
+.sa-g{display:flex;flex-direction:column;gap:6px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#ffffff05}.sa-g.on{border-color:#22e07a77;background:#22e07a0d}.sa-g.off{opacity:.6}
+.sa-gi{height:64px;display:grid;place-items:center;font-size:40px}.sa-gi img{max-height:64px;max-width:64px;object-fit:contain}
+.sa-gn{display:flex;flex-direction:column;align-items:center;text-align:center}.inp.sm{padding:4px 6px;font-size:12px}
+@media (max-width:900px){.sa-coin{grid-template-columns:auto 1fr 1fr}}

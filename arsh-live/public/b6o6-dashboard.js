@@ -326,11 +326,11 @@ function giftSeconds(rules,ev){
 }
 
 // ================= محرك قواعد التفاعل (لكل قاعدة معرّف مستقل) =================
-const RULE_KINDS={gift:{label:"هدية TikTok",icon:"🎁"},follow:{label:"متابعة جديدة",icon:"💚"},subscribe:{label:"اشتراك مدفوع",icon:"⭐"},likes:{label:"تكبيس (إعجابات)",icon:"❤️"},share:{label:"مشاركة البث",icon:"🔁"},comment:{label:"أمر في التعليقات",icon:"💬"},donation:{label:"دونيشن مالي",icon:"💰"}};
+const RULE_KINDS={coins:{label:"عملات تيك توك (كوين)",icon:"🪙"},gift:{label:"هدية TikTok",icon:"🎁"},follow:{label:"متابعة جديدة",icon:"💚"},subscribe:{label:"اشتراك مدفوع",icon:"⭐"},likes:{label:"تكبيس (إعجابات)",icon:"❤️"},share:{label:"مشاركة البث",icon:"🔁"},comment:{label:"أمر في التعليقات",icon:"💬"},donation:{label:"دونيشن مالي",icon:"💰"}};
 const rid=()=>"r_"+Math.random().toString(36).slice(2,9);
 function newRule(kind="gift",o={}){
  return Object.assign({id:rid(),kind,enabled:true,dir:1,ms:60000,every:1,giftId:null,giftName:"",emoji:"",img:"",minDiamonds:0,perDiamondMs:0,
-  keyword:"",cooldownMs:0,userCooldownMs:0,perMin:0,maxMs:0,sound:true,show:true,label:"",
+  keyword:"",cooldownMs:0,userCooldownMs:0,perMin:0,maxMs:0,sound:true,show:true,label:"",coins:100,mode:"rate",
   currency:"SAR",unit:1,addMs:120000,subMs:60000,addWords:"زيد,زود,+",subWords:"نقص,انقص,-",defaultAction:"add",minAmount:0},o);
 }
 /** القيم الافتراضية من المواصفات — قابلة للتعديل بالكامل */
@@ -339,6 +339,7 @@ function defaultRuleList(){ return [
  newRule("subscribe",{ms:10*60000,emoji:"⭐"}),
  newRule("likes",{every:1000,ms:60000,emoji:"❤️"}),
  newRule("share",{every:10,ms:2*60000,emoji:"🔁",enabled:false}),
+ newRule("coins",{mode:"rate",coins:100,ms:60000,emoji:"🪙"}),
  newRule("gift",{giftId:5655,giftName:"وردة",emoji:"🌹",ms:5000}),
  newRule("gift",{giftId:6369,giftName:"أسد",emoji:"🦁",ms:30*60000}),
  newRule("gift",{giftId:7312,giftName:"يونيفرس",emoji:"🌌",ms:60*60000,dir:-1}),
@@ -421,15 +422,40 @@ function giftRule(L,ev){
   ||gifts.filter(r=>(r.giftId==null||r.giftId==="")&&r.minDiamonds>0&&per>=r.minDiamonds).sort((a,b)=>b.minDiamonds-a.minDiamonds)[0]
   ||gifts.find(r=>r.giftId==="*")||null;
 }
+/** قيمة الهدية الواحدة بالكوين: من حدث TikTok (diamondCount) أو قيمة يدوية حددها صانع المحتوى — لا نخترع قيمة */
+function giftCoins(R,ev){ const cnt=Math.max(1,+ev.count||1); let per=ev.diamonds!=null&&+ev.diamonds>0?+ev.diamonds:(+ev.value>0?(+ev.value)/cnt:0);
+ if(!per){ const M=(R&&R.giftCoins)||{}, id=ev.giftId!=null?String(ev.giftId):"", nm=norm(ev.gift); const v=(id&&M[id])||M["n:"+nm]; per=+v>0?+v:0 }
+ return per>0?per:null }
+/** قواعد العملات: الشريحة (قيمة الحدث ≥ حد) لها الأولوية، وإلا المعدّل (كل N كوين = مدة) مع ترحيل الباقي بين الهدايا */
+function coinsApply(s,L,ev,now,uk,who,cnt){ const per=giftCoins(s.rules,ev);
+ if(per==null){ const u=s.rstate.unknown||(s.rstate.unknown={}), k=String(ev.gift||ev.giftId||"هدية"); u[k]=(u[k]||0)+cnt; return [] } // قيمة غير معروفة: لا وقت، وتظهر لصانع المحتوى ليحددها يدوياً
+ const total=Math.round(per*cnt), C=L.filter(r=>r.kind==="coins"&&r.enabled&&+r.coins>0);
+ const tier=C.filter(r=>r.mode==="tier"&&total>=+r.coins).sort((a,b)=>b.coins-a.coins)[0];
+ const why=`${ev.gift||"هدية"}${cnt>1?" ×"+cnt:""} (${total} كوين) من ${who}`;
+ if(tier){ if(!gate(s,tier,now,uk)) return []; mark(s,tier,now,uk); return apply(s,tier,tier.ms*(tier.dir<0?-1:1),now,ev,why,{coins:total}) }
+ const rate=C.find(r=>r.mode!=="tier"); if(!rate||!gate(s,rate,now,uk)) return [];
+ const st=s.rstate.acc; st[rate.id]=(st[rate.id]||0)+total; const n=Math.floor(st[rate.id]/(+rate.coins)); st[rate.id]-=n*(+rate.coins);
+ if(!n) return []; mark(s,rate,now,uk); return apply(s,rate,n*rate.ms*(rate.dir<0?-1:1),now,ev,why,{coins:total}) }
+/** تجربة هدية بدون لمس العداد الحقيقي: نسخة من السبثون تعمل كأنها مشغّلة وترجع النتيجة فقط */
+function subathonPreview(s,ev,now){ const c=JSON.parse(JSON.stringify(s)); if(c.status!=="running"){ c.status="running"; c.endsAt=now+remaining(s,now) } const before=remaining(c,now);
+ const logs=subathonOnEvent(c,{...ev,id:"preview_"+Math.random().toString(36).slice(2)},now); const delta=remaining(c,now)-before;
+ const l=logs.find(x=>x.ruleId); const r=l&&c.rules.list.find(x=>x.id===l.ruleId);
+ return {deltaMs:delta,requestedMs:logs.reduce((a,x)=>a+(x.requestedMs||0),0),rule:r?{id:r.id,kind:r.kind,mode:r.mode,label:r.kind==="coins"?(r.mode==="tier"?`شريحة ≥ ${r.coins} كوين`:`كل ${r.coins} كوين`):(r.giftName||"هدية")}:null,coins:l&&l.coins!=null?l.coins:giftCoins(c.rules,ev)!=null?Math.round(giftCoins(c.rules,ev)*Math.max(1,+ev.count||1)):null,unknown:giftCoins(c.rules,ev)==null,capped:logs.some(x=>x.requestedMs!==x.deltaMs)} }
 /** تطبيق حدث بث على السبثون — ترجع سجلات التغيير (كل سجل يحمل معرّف القاعدة والحدث) */
 function subathonOnEvent(s,ev,now,tot){
  migrateRules(s);
  if(!(s.status==="running"||(s.status==="paused"&&s.countWhilePaused))) return [];
  const R=s.rules, out=[];
  if(R.auto!==false){ const L=R.list, who=ev.user?.name||ev.name||"", uk=ev.user?.id||who;
-  if(ev.type==="gift"){ const r=giftRule(L,ev); if(r&&gate(s,r,now,uk)){ const cnt=Math.max(1,+ev.count||1);
-    let ms; if(r.giftId==="*"&&r.perDiamondMs&&!r.ms){ const per=(ev.diamonds!=null?+ev.diamonds:(+ev.value||0)/cnt); ms=r.perDiamondMs*per*cnt } else { const n=+r.every>1?accum(s,r,cnt):cnt; ms=n*r.ms }
+  if(ev.type==="gift"){ /* طريقة الحساب (حدث واحد = قاعدة واحدة فقط، لا احتساب مزدوج):
+     gifts_first: قاعدة الهدية إن وُجدت ← وإلا قواعد العملات | coins: العملات فقط | gifts: الهدايا فقط */
+   const mode=R.giftMode||"gifts_first", cnt=Math.max(1,+ev.count||1);
+   const r=mode!=="coins"&&R.giftsOn!==false?giftRule(L,ev):null;
+   if(r){ if(gate(s,r,now,uk)){
+    let ms; if(r.giftId==="*"&&r.perDiamondMs&&!r.ms){ const per=giftCoins(R,ev); ms=per==null?0:r.perDiamondMs*per*cnt } else { const n=+r.every>1?accum(s,r,cnt):cnt; ms=n*r.ms }
     if(ms){ mark(s,r,now,uk); out.push(...apply(s,r,ms*(r.dir<0?-1:1),now,ev,`${ev.gift||r.giftName||"هدية"}${cnt>1?" ×"+cnt:""} من ${who}`)) } } }
+   else if(mode!=="gifts"&&R.coinsOn!==false) out.push(...coinsApply(s,L,ev,now,uk,who,cnt));
+  }
   else if(ev.type==="like"){ for(const r of L.filter(x=>x.kind==="likes"&&x.enabled)){ const n=accum(s,r,+ev.count||0); s.likeAcc=s.rstate.acc[r.id]; if(n>0&&gate(s,r,now)){ mark(s,r,now); out.push(...apply(s,r,n*r.ms*(r.dir<0?-1:1),now,ev,`${n*(+r.every||1)} لايك`)) } } }
   else if(ev.type==="follow"||ev.type==="subscribe"||ev.type==="share"){ const kind=ev.type; for(const r of L.filter(x=>x.kind===kind&&x.enabled)){ const n=+r.every>1?accum(s,r,1):1; if(n>0&&gate(s,r,now,uk)){ mark(s,r,now,uk); out.push(...apply(s,r,n*r.ms*(r.dir<0?-1:1),now,ev,`${kind==="follow"?"متابعة":kind==="subscribe"?"اشتراك":"مشاركة"} ${who}`.trim())) } } }
   else if(ev.type==="comment"){ const t=norm(ev.text); for(const r of L.filter(x=>x.kind==="comment"&&x.enabled&&x.keyword)){ const kw=norm(r.keyword); if(!(t===kw||t.startsWith(kw+" "))) continue; if(!gate(s,r,now,uk)) continue; mark(s,r,now,uk); out.push(...apply(s,r,r.ms*(r.dir<0?-1:1),now,ev,`أمر «${r.keyword}» من ${who}`)) } }
@@ -9189,7 +9215,8 @@ function subathonHTML(){
   <div class="fld" style="margin:0"><label>عند انقطاع البث</label><select class="inp" data-sa="pauseOnDisconnect"><option value="1" ${s.pauseOnDisconnect?"selected":""}>يتوقف العد تلقائياً</option><option value="0" ${!s.pauseOnDisconnect?"selected":""}>يستمر العد</option></select></div></div>
   <div class="fld" style="margin-top:8px"><label>احتساب الأحداث أثناء الإيقاف المؤقت</label><select class="inp" data-sa="countWhilePaused"><option value="1" ${s.countWhilePaused?"selected":""}>نعم، يُضاف الوقت ويُحفظ</option><option value="0" ${!s.countWhilePaused?"selected":""}>لا</option></select></div>
  </div></div>
- <div class="ttl">⚙️ قواعد التفاعل — كل قاعدة مستقلة بمعرّفها وتُقرأ تلقائياً في لوحة القوانين</div>
+ ${saTikTokHTML(s)}
+ <div class="ttl" style="margin-top:14px">⚙️ قواعد التفاعل الأخرى (متابعة، لايك، اشتراك، تعليقات، دونيشن، شرائح الهدايا) — كل قاعدة مستقلة وتُقرأ تلقائياً في لوحة القوانين</div>
  ${rulesEditorHTML(s)}
  <div class="grid g2" style="margin-top:14px"><div class="card"><h3><span>🎯 تحقيق هدف</span>${chk("rules.goal.enabled",r.goal.enabled)}</h3><div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>المقياس</label><select class="inp" data-sa="rules.goal.metric">${[["likes","الإعجابات"],["gifts","نقاط الدعم"],["follows","المتابعون"]].map(o=>`<option value="${o[0]}" ${r.goal.metric===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>${num("rules.goal.target",r.goal.target,"الهدف")}${num("rules.goal.sec",r.goal.sec,"يضيف (ثانية)")}</div>${r.goal.reached?'<p class="small" style="color:var(--ok)">✓ تم تحقيق الهدف</p>':""}
   <h3 style="margin-top:14px"><span>✋ الإضافة والخصم اليدوي</span>${chk("rules.manual.enabled",r.manual.enabled)}</h3></div>
@@ -9200,6 +9227,56 @@ function subathonHTML(){
   <button class="btn sm" data-libtab="clocks" data-go="library" style="margin-top:8px">🎨 مكتبة أشكال العداد (${CLOCK_DESIGNS.length})</button></div>
  <div class="card"><h3>سجل العمليات <span class="tag">${R.logs.length}</span></h3><div class="feed">${R.logs.slice(0,60).map(x=>`<div><b style="color:${x.deltaMs>0?"var(--ok)":x.deltaMs<0?"var(--bad)":"var(--mut)"}">${x.deltaMs?fmtDelta(x.deltaMs):"•"}</b> ${x.test?'🧪 ':''}${esc(x.reason)}${x.ruleId?` <span class="tag" dir="ltr">${x.ruleId}</span>`:''} <span class="mut small">— ${dt(x.at)} · متبقٍ ${fmtClock(x.remainingMs)}</span></div>`).join("")||'<div class="mut">لا عمليات بعد</div>'}</div></div></div>`+testBar();
 }
+/* ---- السبثون: عملات وهدايا TikTok (طريقة الحساب، قواعد العملات، كتالوج الهدايا الحقيقي، قيم يدوية، تجربة هدية منفصلة) ---- */
+const SA_MODES={gifts_first:"قاعدة الهدية أولاً، وإلا العملات",coins:"حسب العملات فقط (كوين)",gifts:"حسب نوع الهدية فقط"};
+const saCatalog=()=>S.catalog&&S.catalog.length?S.catalog.map(g=>({id:g.id,name:g.name,coins:+g.diamonds||0,img:g.image||"",real:true})):GIFTS.map(g=>({id:g[2],name:g[0],coins:+g[1]||0,img:"",emoji:g[3]||"🎁",real:false}));
+function saTikTokHTML(s){ const r=s.rules, L=r.list, mode=r.giftMode||"gifts_first", cat=saCatalog(), real=cat.some(g=>g.real), q=(S.saGiftQ||"").trim().toLowerCase();
+ const rowDur=(x,f,lab)=>durInput(x,f,lab);
+ const coinRows=L.filter(x=>x.kind==="coins").map(x=>`<div class="sa-coin ${x.enabled?"":"off"}" data-rule="${x.id}"><label class="row small" style="gap:4px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}></label>
+   <div class="fld" style="margin:0"><label>النوع</label><select class="inp" data-rl="${x.id}" data-rk="mode"><option value="rate" ${x.mode!=="tier"?"selected":""}>معدّل: كل</option><option value="tier" ${x.mode==="tier"?"selected":""}>شريحة: هدية قيمتها ≥</option></select></div>
+   <div class="fld" style="margin:0"><label>عدد العملات</label><input class="inp" type="number" min="1" data-rl="${x.id}" data-rk="coins" value="${x.coins}"></div>
+   <div class="fld" style="margin:0"><label>التأثير</label><select class="inp" data-rl="${x.id}" data-rk="dir"><option value="1" ${x.dir>=0?"selected":""}>➕ يزيد</option><option value="-1" ${x.dir<0?"selected":""}>➖ ينقص</option></select></div>
+   ${rowDur(x,"ms","الوقت")}<button class="btn sm" data-rdel="${x.id}" title="حذف">🗑</button></div>`).join("")||'<div class="empty small">لا توجد قواعد عملات — أضف معدّلاً أو شريحة</div>';
+ const ruleOf=g=>L.find(x=>x.kind==="gift"&&x.giftId!=null&&x.giftId!=="*"&&String(x.giftId)===String(g.id));
+ const shown=cat.filter(g=>!q||g.name.toLowerCase().includes(q)||String(g.id)===q).sort((a,b)=>(ruleOf(b)?1:0)-(ruleOf(a)?1:0)||a.coins-b.coins).slice(0,S.saGiftN||48);
+ const unk=Object.entries((s.rstate&&s.rstate.unknown)||{}), GC=r.giftCoins||{};
+ const pv=S.saPv;
+ return `<div class="ttl">🪙 عملات وهدايا تيك توك</div>
+ <div class="card" style="margin-bottom:12px"><h3>⚙️ طريقة الحساب <span class="tag">هدية واحدة = قاعدة واحدة (لا احتساب مزدوج)</span></h3>
+  <div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>طريقة حساب الهدايا</label><select class="inp" data-sa="rules.giftMode">${Object.entries(SA_MODES).map(([k,v])=>`<option value="${k}" ${mode===k?"selected":""}>${v}</option>`).join("")}</select></div>
+  <label class="row small" style="gap:6px"><input type="checkbox" data-sa="rules.giftsOn" ${r.giftsOn!==false?"checked":""}> احتساب قواعد الهدايا</label><label class="row small" style="gap:6px"><input type="checkbox" data-sa="rules.coinsOn" ${r.coinsOn!==false?"checked":""}> احتساب العملات</label></div>
+  <p class="mut small" style="margin:8px 0 0">الأولوية: ${mode==="coins"?"شريحة العملات ← معدّل العملات (قواعد الهدايا لا تُستخدم)":mode==="gifts"?"قاعدة الهدية فقط (الهدايا بلا قاعدة لا تضيف وقتاً)":"قاعدة الهدية ← شريحة العملات ← معدّل العملات"}. الحد الأقصى للوقت من «إعداد السبثون».</p></div>
+ <div class="grid g2" style="align-items:start">
+ <div class="card"><h3><span>🪙 قواعد عملات تيك توك</span><span class="row" style="gap:4px"><button class="btn sm" data-coinadd="rate">+ معدّل</button><button class="btn sm" data-coinadd="tier">+ شريحة</button><button class="btn sm" data-coinadd="examples">أمثلة جاهزة</button></span></h3>
+  <p class="mut small">«معدّل»: كل N كوين = وقت (الباقي يُرحَّل للهدية التالية). «شريحة»: هدية قيمتها ≥ N كوين = وقت ثابت (أعلى شريحة تنطبق).</p>${coinRows}</div>
+ <div class="card"><h3>🧪 تجربة هدية <span class="tag">لا تلمس العداد الحقيقي</span></h3>
+  <div class="grid g3" style="gap:8px"><div class="fld" style="margin:0;grid-column:span 2"><label>الهدية</label><select class="inp" id="saPvGift">${cat.map(g=>`<option value="${esc(String(g.id))}" ${pv&&String(pv.id)===String(g.id)?"selected":""}>${esc(g.name)} (${g.coins||"؟"} كوين)</option>`).join("")}</select></div>
+  <div class="fld" style="margin:0"><label>العدد</label><input class="inp" id="saPvCount" type="number" min="1" max="999" value="${pv?pv.count:1}"></div></div>
+  <div class="row" style="margin-top:8px"><button class="btn sm pri" data-sapv>احسب التأثير</button>${pv&&pv.res?`<button class="btn sm" data-sapvapply>⚡ تطبيق على العداد الحقيقي (تجريبي)</button>`:""}</div>
+  ${pv&&pv.res?`<div class="note small" style="margin-top:8px">${pv.res.unknown?"⚠️ قيمة هذه الهدية بالكوين غير معروفة — حدّدها يدوياً أدناه أو أضف لها قاعدة هدية.":pv.res.rule?`النتيجة: <b>${pv.res.deltaMs>=0?"+":""}${fmtDelta(pv.res.deltaMs)}</b> عبر «${esc(pv.res.rule.label)}»${pv.res.coins!=null?` — ${pv.res.coins} كوين`:""}${pv.res.capped?" (مقيّدة بالحد الأقصى)":""}`:pv.res.coins!=null?`لا تُضيف وقتاً الآن (${pv.res.coins} كوين ${mode==="gifts"?"— الطريقة «الهدايا فقط» ولا قاعدة لها":"— أقل من معدّل العملات وتُرحَّل للهدية التالية"}).`:"لا تنطبق أي قاعدة."}</div>`:""}</div></div>
+ <div class="card" style="margin-top:12px"><h3><span>🎁 قواعد الهدايا</span><span class="tag">${real?`✅ قائمة TikTok الحقيقية (${cat.length})`:"⚠️ قائمة تقريبية — تتحدث من TikTok عند أول اتصال ببث"}</span></h3>
+  <div class="row" style="gap:6px"><input class="inp" data-sagiftq placeholder="🔍 ابحث باسم الهدية…" value="${esc(S.saGiftQ||"")}" style="max-width:260px"><span class="mut small">«أحبني» هدية مستقلة — ليست دونيشن ولا تكبيس.</span></div>
+  <div class="sa-gifts">${shown.map(g=>{ const x=ruleOf(g); return `<div class="sa-g ${x?(x.enabled?"on":"off"):""}" ${x?`data-rule="${x.id}"`:""}><div class="sa-gi">${g.img?`<img src="${esc(g.img)}" alt="" loading="lazy">`:`<span>${g.emoji||"🎁"}</span>`}</div>
+   <div class="sa-gn"><b>${esc(g.name)}</b><span class="mut small">${g.coins?g.coins+" كوين":"القيمة غير متاحة"}</span></div>
+   ${x?`<label class="row small" style="gap:4px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}> مفعّلة</label><select class="inp sm" data-rl="${x.id}" data-rk="dir"><option value="1" ${x.dir>=0?"selected":""}>➕ يزيد</option><option value="-1" ${x.dir<0?"selected":""}>➖ ينقص</option></select>${durInput(x,"ms","الوقت لكل هدية")}<button class="btn sm" data-rdel="${x.id}">إزالة</button>`
+   :`<button class="btn sm" data-giftadd="${esc(String(g.id))}">+ قاعدة لهذه الهدية</button>`}</div>` }).join("")}</div>
+  ${cat.length>shown.length&&!q?`<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm" data-sagiftmore>عرض المزيد</button></div>`:""}
+  <details style="margin-top:10px" ${unk.length?"open":""}><summary class="small" style="cursor:pointer">✍️ قيم يدوية بالكوين (للهدايا التي لا تصل قيمتها من الاتصال)${unk.length?` — <b>${unk.length} هدية وصلت بلا قيمة</b>`:""}</summary>
+   ${unk.map(([n,c])=>`<div class="row small" style="gap:6px;margin-top:6px"><b>${esc(n)}</b> <span class="mut">وصلت ${c} مرة بدون قيمة</span><input class="inp" type="number" min="0" placeholder="القيمة بالكوين" data-gcoin="n:${esc(n.toLowerCase())}" value="${GC["n:"+n.toLowerCase()]||""}" style="width:130px"></div>`).join("")}
+   ${Object.entries(GC).filter(([k])=>!unk.some(([n])=>"n:"+n.toLowerCase()===k)).map(([k,v])=>`<div class="row small" style="gap:6px;margin-top:6px"><b>${esc(k.replace(/^n:/,""))}</b><input class="inp" type="number" min="0" data-gcoin="${esc(k)}" value="${v}" style="width:130px"> كوين</div>`).join("")}
+   <div class="row small" style="gap:6px;margin-top:6px"><input class="inp" id="gcName" placeholder="اسم الهدية أو رقمها" style="width:180px"><input class="inp" id="gcVal" type="number" min="1" placeholder="كوين" style="width:110px"><button class="btn sm" data-gcoinadd>إضافة قيمة</button></div></details></div>` }
+function saClick(t){ const d=t.dataset;
+ if(d.coinadd){ setRules(L=>{ if(d.coinadd==="examples"){ for(const x of L.filter(x=>x.kind==="coins")) L.splice(L.indexOf(x),1); L.unshift(newRule("coins",{mode:"rate",coins:1,ms:1000,emoji:"🪙"}),...[[100,60000],[500,300000],[1000,600000],[5000,1800000],[10000,3600000]].map(([c,m])=>newRule("coins",{mode:"tier",coins:c,ms:m,emoji:"🪙"}))) } else L.unshift(newRule("coins",{mode:d.coinadd,coins:d.coinadd==="tier"?1000:100,ms:d.coinadd==="tier"?600000:60000,emoji:"🪙"})) }); return true }
+ if(d.giftadd){ const g=saCatalog().find(x=>String(x.id)===d.giftadd); if(g) setRules(L=>L.push(newRule("gift",{giftId:isNaN(+g.id)?g.id:+g.id,giftName:g.name,img:g.img||"",emoji:g.emoji||"🎁",ms:g.coins>=1000?600000:g.coins>=100?60000:5000}))); return true }
+ if(d.rdel){ setRules(L=>{ const i=L.findIndex(x=>x.id===d.rdel); if(i>=0) L.splice(i,1) }); return true }
+ if(t.hasAttribute("data-sagiftmore")){ S.saGiftN=(S.saGiftN||48)+48; renderPage(true); return true }
+ if(t.hasAttribute("data-sapv")||t.hasAttribute("data-sapvapply")){ const id=(document.getElementById("saPvGift")||{}).value, count=Math.max(1,Math.min(999,+(document.getElementById("saPvCount")||{}).value||1)), g=saCatalog().find(x=>String(x.id)===String(id)); if(!g) return true;
+  const ev={type:"gift",gift:g.name,giftId:isNaN(+g.id)?g.id:+g.id,diamonds:g.coins||undefined,value:(g.coins||0)*count,count,user:{id:"saTest",name:"تجربة"}};
+  if(t.hasAttribute("data-sapvapply")){ send({t:"sim",ev:{...ev,id:"satest_"+Date.now(),test:true}}); toast("🧪 أُرسلت هدية تجريبية للعداد الحقيقي (مُعلّمة تجريبية في السجل)"); return true }
+  S.saPv={id:g.id,count,res:subathonPreview(R.C.subathon,ev,Date.now()+skew)}; renderPage(true); return true }
+ if(t.hasAttribute("data-gcoinadd")){ const n=(document.getElementById("gcName")||{}).value.trim(), v=+(document.getElementById("gcVal")||{}).value||0; if(!n||!v) return toast("اكتب الهدية والقيمة"), true; const k=/^\d+$/.test(n)?n:"n:"+n.toLowerCase(); saConfig({rules:{giftCoins:{[k]:v}}}); setTimeout(()=>renderPage(true),60); return true }
+ return false }
+
 const UNITS=[[1000,"ثانية"],[60000,"دقيقة"],[3600000,"ساعة"]];
 const bestUnit=ms=>{ const a=Math.abs(ms); return a&&a%3600000===0?3600000:a&&a%60000===0?60000:1000 };
 function durInput(r,f,label){ const u=bestUnit(r[f]); return `<div class="fld" style="margin:0"><label>${label}</label><div class="row" style="flex-wrap:nowrap;gap:4px"><input class="inp" type="number" min="0" step="any" data-rl="${r.id}" data-rk="amt:${f}" value="${Math.abs(r[f])/u}" style="min-width:0"><select class="inp" data-rl="${r.id}" data-rk="unit:${f}" style="width:auto">${UNITS.map(x=>`<option value="${x[0]}" ${x[0]===u?"selected":""}>${x[1]}</option>`).join("")}</select></div></div>` }
@@ -9223,7 +9300,7 @@ function rulesEditorHTML(s){ const L=s.rules.list, shares=(R.D.tot&&R.D.tot.shar
   <div class="row"><select class="inp" data-act="rAdd" style="width:auto"><option value="">+ إضافة قاعدة…</option>${Object.entries(RULE_KINDS).map(([k,x])=>`<option value="${k}">${x.icon} ${x.label}</option>`).join("")}</select>
   <select class="inp" data-act="rPreset" style="width:auto"><option value="">📋 قالب جاهز…</option>${Object.entries(RULE_PRESETS).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div></div>
   <p class="mut small" style="margin:8px 0 0">الأحداث المدعومة فعلياً من TikTok: الهدايا، الإعجابات، المتابعات، الاشتراكات، التعليقات. المشاركات: ${shares?"✅ وصلت فعلاً":"⚠️ غير مؤكدة بعد"}. الدونيشن: بعد تأكيد الدفع.</p></div>
-  <div class="grid g2">${L.map(card).join("")}</div>` }
+  <div class="grid g2">${L.filter(r=>r.kind!=="coins"&&!(r.kind==="gift"&&r.giftId!=null&&r.giftId!=="*"&&saCatalog().some(g=>String(g.id)===String(r.giftId)))).map(card).join("")}</div>` }
 function setRules(fn){ const L=R.C.subathon.rules.list.map(r=>({...r})); fn(L); saConfig({rules:{list:L}}); setTimeout(()=>renderPage(true),60) }
 function mountClockPreview(id,w){ const box=document.getElementById(id); if(!box) return; const cv={w:1000,h:Math.round(1000*box.clientHeight/Math.max(1,box.clientWidth))};
  const pw={...w,id:"pv_sa",x:.04,y:.06,w:.92,h:.88,locked:true}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${box.clientWidth/cv.w})`; box.appendChild(stg);
@@ -9705,6 +9782,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
  { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
  { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
  { const lb=e.target.closest&&e.target.closest("[data-leladd],[data-leldel]"); if(lb){ const w=findW(lb.dataset.wid); if(w){ w.lvls=Array.isArray(w.lvls)?w.lvls:[]; if(lb.dataset.leladd!==undefined){ const v=lb.dataset.leladd, base=w.design; if(v==="custom") w.lvls.push(w.kind==="gift"?{gift:"",design:base}:{at:100,design:base}); else if(v.startsWith("gift:")) w.lvls.push({gift:v.slice(5),design:base}); else w.lvls.push({at:+v,design:base}) } else w.lvls.splice(+lb.dataset.leldel,1); save(); pushLayout(); refreshView(w); renderProps() } return } }
@@ -9824,6 +9902,8 @@ function previewOverlay(only){
 function onInput(e){
  const t=e.target, d=t.dataset;
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
+ if(d.sagiftq!==undefined){ if(e.type!=="input") return; S.saGiftQ=t.value; clearTimeout(onInput.sq); onInput.sq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-sagiftq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
+ if(d.gcoin!==undefined){ if(e.type!=="change") return; saConfig({rules:{giftCoins:{[d.gcoin]:Math.max(0,+t.value||0)}}}); return }
  if(d.galq!==undefined){ if(e.type!=="input") return; S.galQ=t.value; S.galN=0; clearTimeout(onInput.gq); onInput.gq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-galq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
  if(t.hasAttribute&&t.hasAttribute("data-galfam")){ if(e.type!=="change") return; S.galFam=t.value; S.galN=0; renderPage(true); return }
  if(d.lelv!==undefined){ if(e.type!=="change"&&t.tagName!=="INPUT") return; if(t.type==="number"&&e.type!=="change") return; const w=findW(d.wid), x=w&&w.lvls&&w.lvls[+d.lelv]; if(!x) return; const f=d.lelf; x[f]=f==="on"?t.checked:f==="at"?(+t.value||0):String(t.value).slice(0,120); save(); pushLayout(); refreshView(w); if(S.lsOpen===w.id) lsLive(w); return }
@@ -9860,7 +9940,7 @@ function onInput(e){
  if(d.rl&&e.type==="change"){ const id=d.rl, k=d.rk; setRules(L=>{ const r=L.find(x=>x.id===id); if(!r) return;
    if(k.startsWith("amt:")||k.startsWith("unit:")){ const f=k.split(":")[1], card=t.closest("[data-rule]"); const amt=+card.querySelector(`[data-rk="amt:${f}"]`).value||0, unit=+card.querySelector(`[data-rk="unit:${f}"]`).value||1000; r[f]=Math.round(amt*unit); return }
    let v=t.type==="checkbox"?t.checked:t.value;
-   if(["dir","every","minDiamonds","perMin","unit","minAmount"].includes(k)) v=+v||0; if(k==="every"||k==="unit") v=Math.max(k==="unit"?0.01:1,v);
+   if(["dir","every","minDiamonds","perMin","unit","minAmount","coins"].includes(k)) v=+v||0; if(k==="coins") v=Math.max(1,v); if(k==="every"||k==="unit") v=Math.max(k==="unit"?0.01:1,v);
    if(k==="show"||k==="sound") v=v==="true";
    if(k==="giftId"){ v=v===""?null:v==="*"?"*":(isNaN(+v)?v:+v); const g=(S.catalog||[]).find(x=>String(x.id)===String(v)), G=GIFTS.find(x=>String(x[2])===String(v)); if(g){ r.giftName=g.name; if(g.image) r.img=g.image } else if(G) r.giftName=G[0]; if(v==="*"){ r.giftName="أي هدية أخرى"; if(!r.perDiamondMs) r.perDiamondMs=1000; r.ms=0 } }
    r[k]=v }); return }

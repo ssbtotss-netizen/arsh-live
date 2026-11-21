@@ -96,11 +96,11 @@ export function giftSeconds(rules,ev){
 }
 
 // ================= محرك قواعد التفاعل (لكل قاعدة معرّف مستقل) =================
-export const RULE_KINDS={gift:{label:"هدية TikTok",icon:"🎁"},follow:{label:"متابعة جديدة",icon:"💚"},subscribe:{label:"اشتراك مدفوع",icon:"⭐"},likes:{label:"تكبيس (إعجابات)",icon:"❤️"},share:{label:"مشاركة البث",icon:"🔁"},comment:{label:"أمر في التعليقات",icon:"💬"},donation:{label:"دونيشن مالي",icon:"💰"}};
+export const RULE_KINDS={coins:{label:"عملات تيك توك (كوين)",icon:"🪙"},gift:{label:"هدية TikTok",icon:"🎁"},follow:{label:"متابعة جديدة",icon:"💚"},subscribe:{label:"اشتراك مدفوع",icon:"⭐"},likes:{label:"تكبيس (إعجابات)",icon:"❤️"},share:{label:"مشاركة البث",icon:"🔁"},comment:{label:"أمر في التعليقات",icon:"💬"},donation:{label:"دونيشن مالي",icon:"💰"}};
 const rid=()=>"r_"+Math.random().toString(36).slice(2,9);
 export function newRule(kind="gift",o={}){
  return Object.assign({id:rid(),kind,enabled:true,dir:1,ms:60000,every:1,giftId:null,giftName:"",emoji:"",img:"",minDiamonds:0,perDiamondMs:0,
-  keyword:"",cooldownMs:0,userCooldownMs:0,perMin:0,maxMs:0,sound:true,show:true,label:"",
+  keyword:"",cooldownMs:0,userCooldownMs:0,perMin:0,maxMs:0,sound:true,show:true,label:"",coins:100,mode:"rate",
   currency:"SAR",unit:1,addMs:120000,subMs:60000,addWords:"زيد,زود,+",subWords:"نقص,انقص,-",defaultAction:"add",minAmount:0},o);
 }
 /** القيم الافتراضية من المواصفات — قابلة للتعديل بالكامل */
@@ -109,6 +109,7 @@ export function defaultRuleList(){ return [
  newRule("subscribe",{ms:10*60000,emoji:"⭐"}),
  newRule("likes",{every:1000,ms:60000,emoji:"❤️"}),
  newRule("share",{every:10,ms:2*60000,emoji:"🔁",enabled:false}),
+ newRule("coins",{mode:"rate",coins:100,ms:60000,emoji:"🪙"}),
  newRule("gift",{giftId:5655,giftName:"وردة",emoji:"🌹",ms:5000}),
  newRule("gift",{giftId:6369,giftName:"أسد",emoji:"🦁",ms:30*60000}),
  newRule("gift",{giftId:7312,giftName:"يونيفرس",emoji:"🌌",ms:60*60000,dir:-1}),
@@ -191,15 +192,40 @@ function giftRule(L,ev){
   ||gifts.filter(r=>(r.giftId==null||r.giftId==="")&&r.minDiamonds>0&&per>=r.minDiamonds).sort((a,b)=>b.minDiamonds-a.minDiamonds)[0]
   ||gifts.find(r=>r.giftId==="*")||null;
 }
+/** قيمة الهدية الواحدة بالكوين: من حدث TikTok (diamondCount) أو قيمة يدوية حددها صانع المحتوى — لا نخترع قيمة */
+export function giftCoins(R,ev){ const cnt=Math.max(1,+ev.count||1); let per=ev.diamonds!=null&&+ev.diamonds>0?+ev.diamonds:(+ev.value>0?(+ev.value)/cnt:0);
+ if(!per){ const M=(R&&R.giftCoins)||{}, id=ev.giftId!=null?String(ev.giftId):"", nm=norm(ev.gift); const v=(id&&M[id])||M["n:"+nm]; per=+v>0?+v:0 }
+ return per>0?per:null }
+/** قواعد العملات: الشريحة (قيمة الحدث ≥ حد) لها الأولوية، وإلا المعدّل (كل N كوين = مدة) مع ترحيل الباقي بين الهدايا */
+function coinsApply(s,L,ev,now,uk,who,cnt){ const per=giftCoins(s.rules,ev);
+ if(per==null){ const u=s.rstate.unknown||(s.rstate.unknown={}), k=String(ev.gift||ev.giftId||"هدية"); u[k]=(u[k]||0)+cnt; return [] } // قيمة غير معروفة: لا وقت، وتظهر لصانع المحتوى ليحددها يدوياً
+ const total=Math.round(per*cnt), C=L.filter(r=>r.kind==="coins"&&r.enabled&&+r.coins>0);
+ const tier=C.filter(r=>r.mode==="tier"&&total>=+r.coins).sort((a,b)=>b.coins-a.coins)[0];
+ const why=`${ev.gift||"هدية"}${cnt>1?" ×"+cnt:""} (${total} كوين) من ${who}`;
+ if(tier){ if(!gate(s,tier,now,uk)) return []; mark(s,tier,now,uk); return apply(s,tier,tier.ms*(tier.dir<0?-1:1),now,ev,why,{coins:total}) }
+ const rate=C.find(r=>r.mode!=="tier"); if(!rate||!gate(s,rate,now,uk)) return [];
+ const st=s.rstate.acc; st[rate.id]=(st[rate.id]||0)+total; const n=Math.floor(st[rate.id]/(+rate.coins)); st[rate.id]-=n*(+rate.coins);
+ if(!n) return []; mark(s,rate,now,uk); return apply(s,rate,n*rate.ms*(rate.dir<0?-1:1),now,ev,why,{coins:total}) }
+/** تجربة هدية بدون لمس العداد الحقيقي: نسخة من السبثون تعمل كأنها مشغّلة وترجع النتيجة فقط */
+export function subathonPreview(s,ev,now){ const c=JSON.parse(JSON.stringify(s)); if(c.status!=="running"){ c.status="running"; c.endsAt=now+remaining(s,now) } const before=remaining(c,now);
+ const logs=subathonOnEvent(c,{...ev,id:"preview_"+Math.random().toString(36).slice(2)},now); const delta=remaining(c,now)-before;
+ const l=logs.find(x=>x.ruleId); const r=l&&c.rules.list.find(x=>x.id===l.ruleId);
+ return {deltaMs:delta,requestedMs:logs.reduce((a,x)=>a+(x.requestedMs||0),0),rule:r?{id:r.id,kind:r.kind,mode:r.mode,label:r.kind==="coins"?(r.mode==="tier"?`شريحة ≥ ${r.coins} كوين`:`كل ${r.coins} كوين`):(r.giftName||"هدية")}:null,coins:l&&l.coins!=null?l.coins:giftCoins(c.rules,ev)!=null?Math.round(giftCoins(c.rules,ev)*Math.max(1,+ev.count||1)):null,unknown:giftCoins(c.rules,ev)==null,capped:logs.some(x=>x.requestedMs!==x.deltaMs)} }
 /** تطبيق حدث بث على السبثون — ترجع سجلات التغيير (كل سجل يحمل معرّف القاعدة والحدث) */
 export function subathonOnEvent(s,ev,now,tot){
  migrateRules(s);
  if(!(s.status==="running"||(s.status==="paused"&&s.countWhilePaused))) return [];
  const R=s.rules, out=[];
  if(R.auto!==false){ const L=R.list, who=ev.user?.name||ev.name||"", uk=ev.user?.id||who;
-  if(ev.type==="gift"){ const r=giftRule(L,ev); if(r&&gate(s,r,now,uk)){ const cnt=Math.max(1,+ev.count||1);
-    let ms; if(r.giftId==="*"&&r.perDiamondMs&&!r.ms){ const per=(ev.diamonds!=null?+ev.diamonds:(+ev.value||0)/cnt); ms=r.perDiamondMs*per*cnt } else { const n=+r.every>1?accum(s,r,cnt):cnt; ms=n*r.ms }
+  if(ev.type==="gift"){ /* طريقة الحساب (حدث واحد = قاعدة واحدة فقط، لا احتساب مزدوج):
+     gifts_first: قاعدة الهدية إن وُجدت ← وإلا قواعد العملات | coins: العملات فقط | gifts: الهدايا فقط */
+   const mode=R.giftMode||"gifts_first", cnt=Math.max(1,+ev.count||1);
+   const r=mode!=="coins"&&R.giftsOn!==false?giftRule(L,ev):null;
+   if(r){ if(gate(s,r,now,uk)){
+    let ms; if(r.giftId==="*"&&r.perDiamondMs&&!r.ms){ const per=giftCoins(R,ev); ms=per==null?0:r.perDiamondMs*per*cnt } else { const n=+r.every>1?accum(s,r,cnt):cnt; ms=n*r.ms }
     if(ms){ mark(s,r,now,uk); out.push(...apply(s,r,ms*(r.dir<0?-1:1),now,ev,`${ev.gift||r.giftName||"هدية"}${cnt>1?" ×"+cnt:""} من ${who}`)) } } }
+   else if(mode!=="gifts"&&R.coinsOn!==false) out.push(...coinsApply(s,L,ev,now,uk,who,cnt));
+  }
   else if(ev.type==="like"){ for(const r of L.filter(x=>x.kind==="likes"&&x.enabled)){ const n=accum(s,r,+ev.count||0); s.likeAcc=s.rstate.acc[r.id]; if(n>0&&gate(s,r,now)){ mark(s,r,now); out.push(...apply(s,r,n*r.ms*(r.dir<0?-1:1),now,ev,`${n*(+r.every||1)} لايك`)) } } }
   else if(ev.type==="follow"||ev.type==="subscribe"||ev.type==="share"){ const kind=ev.type; for(const r of L.filter(x=>x.kind===kind&&x.enabled)){ const n=+r.every>1?accum(s,r,1):1; if(n>0&&gate(s,r,now,uk)){ mark(s,r,now,uk); out.push(...apply(s,r,n*r.ms*(r.dir<0?-1:1),now,ev,`${kind==="follow"?"متابعة":kind==="subscribe"?"اشتراك":"مشاركة"} ${who}`.trim())) } } }
   else if(ev.type==="comment"){ const t=norm(ev.text); for(const r of L.filter(x=>x.kind==="comment"&&x.enabled&&x.keyword)){ const kw=norm(r.keyword); if(!(t===kw||t.startsWith(kw+" "))) continue; if(!gate(s,r,now,uk)) continue; mark(s,r,now,uk); out.push(...apply(s,r,r.ms*(r.dir<0?-1:1),now,ev,`أمر «${r.keyword}» من ${who}`)) } }
