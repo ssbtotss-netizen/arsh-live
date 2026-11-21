@@ -19,6 +19,12 @@ export default function Admin() {
     <div className="grid g4" style={{ margin: "12px 0" }}>
       {[["المستخدمون", S.total], ["في التجربة", S.byState.trial], ["مشتركون", S.byState.active + S.byState.comp], ["منتهي", S.byState.expired], ["بثوث مباشرة الآن", S.liveSessions], ["الإيرادات المؤكدة", "$" + S.revenueUsd.toFixed(2)], ["الموقوفون", S.disabled]].map(([k, v]) => <div className="card" key={k as string}><div className="mut small">{k}</div><b style={{ fontSize: 24 }}>{v}</b></div>)}
     </div>
+    {data.tiktok && <div className="card" style={{ marginBottom: 12 }}><h3>📡 ربط TikTok — خدمة التوقيع</h3>
+      <div className="small">المزود: {data.tiktok.provider} — مفتاح <b>TIKTOK_SIGN_API_KEY</b>: {data.tiktok.signKey ? "✅ مضبوط على الخادم" : "❌ غير مضبوط"}</div>
+      {data.tiktok.hint && <div className="note warn small" style={{ marginTop: 6 }}>{data.tiktok.hint}</div>}
+      {data.tiktok.cooldownUntil && <div className="small" style={{ marginTop: 6 }}>⏳ فترة انتظار مشتركة لكل الاتصالات حتى {new Date(data.tiktok.cooldownUntil).toLocaleTimeString("ar")} ({data.tiktok.code})</div>}
+      {data.tiktok.last && <div className="small mut" style={{ marginTop: 6 }}>آخر رفض: {data.tiktok.last.name || data.tiktok.last.kind} — حالة {data.tiktok.last.status ?? "-"} — كود {data.tiktok.last.code ?? "-"} — Retry-After {data.tiktok.last.retryAfterMs != null ? Math.round(data.tiktok.last.retryAfterMs / 1000) + "ث" : "غير مرسل"} — @{data.tiktok.last.user} — محاولة {data.tiktok.last.attemptId}{data.tiktok.last.requestId ? " — طلب " + data.tiktok.last.requestId : ""} — {new Date(data.tiktok.last.at).toLocaleString("ar")}</div>}
+    </div>}
     <div className="card" style={{ marginBottom: 12 }}><h3>💎 إعدادات الاشتراك</h3>
       <div className="grid g4" style={{ gap: 10 }}>
         <div className="fld"><label>التجربة المجانية</label><select className="inp" value={cfg.trialEnabled ? "1" : "0"} onChange={e => setCfg({ ...cfg, trialEnabled: e.target.value === "1" })}><option value="1">مفعّلة</option><option value="0">متوقفة</option></select></div>

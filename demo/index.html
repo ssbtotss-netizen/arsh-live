@@ -323,6 +323,9 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .gal-meta .tag.pro{background:linear-gradient(135deg,#ffe08a,#f5b301);color:#1a1204}.gal-meta .tag.ok{background:#22e07a22;color:#7cf3b0}
 .gal-fav{position:absolute;top:10px;left:10px;z-index:3;width:34px;height:34px;border-radius:50%;border:0;background:#000a;color:#fff8;font-size:16px;cursor:pointer}.gal-fav.on{color:#ffd54a}
 @media (max-width:760px){.gal-grid{grid-template-columns:1fr}.gal-meta .btn{min-height:40px;flex:1}}
+/* حالة ربط TikTok */
+.tk-st{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#ffffff06}.tk-st .tk-cd{font-family:"Orbitron",monospace;direction:ltr;display:inline-block;margin-inline-start:6px;color:#ffd166}
+.tk-connected{border-color:#22e07a66;background:#22e07a10}.tk-waiting{border-color:#ffd16666;background:#ffd16610}.tk-failed{border-color:#ff5d7a66;background:#ff5d7a10}.tk-connecting{border-color:#3d8bff66}
 
 /* ============ OVERLAY WIDGETS (shared by editor, previews and OBS) ============ */
 body.ov{background:transparent!important;overflow:hidden}
@@ -9475,6 +9478,17 @@ if(!S.layouts.find(l=>l.id===S.active)) S.active=S.layouts[0].id;
 if(!S.settings.room) S.settings.room="room_"+uid();
 if(CFG){ Object.assign(S.settings,{wsUrl:CFG.wsUrl,room:CFG.room,key:CFG.key}) }
 let R=loadRoom(), skew=0, liveStatus={live:false,text:"وضع التجربة المحلي — غير متصل بـ TikTok"};
+/* حالة ربط TikTok كما يرسلها الخادم: connecting | waiting | connected | failed | stopped — «متصل» فقط بعد نجاح الاتصال فعلياً */
+let TK=null;
+const TK_LBL={connecting:"⏳ جاري الاتصال",waiting:"⏸ بانتظار إعادة المحاولة",connected:"🟢 متصل",failed:"🔴 تعذر الاتصال",stopped:"⚪ غير مربوط"};
+const tkBusy=()=>!!TK&&["connecting","waiting","connected"].includes(TK.state);
+function tkLeft(){ return TK&&TK.retryAt?Math.max(0,TK.retryAt-(Date.now()+skew)):0 }
+function tkFmt(ms){ const s=Math.ceil(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60), x=s%60; return (h?h+":"+String(m).padStart(2,"0"):m)+":"+String(x).padStart(2,"0") }
+function tkBox(){ const st=TK?TK.state:"stopped", cd=st==="waiting"&&TK.retryAt?` <b class="tk-cd" data-tkcd>${tkFmt(tkLeft())}</b>`:"";
+ return `<div class="tk-st tk-${st}" data-tkstate="${st}"><b>${TK_LBL[st]}</b>${cd}${TK&&TK.text&&st!=="connected"?`<div class="small">${esc(TK.text)}</div>`:TK&&st==="connected"?`<div class="small">${esc(TK.text)}</div>`:""}${TK&&TK.state==="waiting"&&TK.attempt?`<div class="small mut">محاولة ${TK.attempt} من ${TK.maxAttempts} — يمكنك الإيقاف في أي وقت</div>`:""}${TK&&TK.server?`<div class="small mut">ℹ️ السبب في إعدادات الخادم — أُبلغ المشرف (لوحة الإدارة)</div>`:""}</div>
+ <div class="row" style="margin-top:6px"><button class="btn sm pri" data-tiktok ${tkBusy()?"disabled":""}>${st==="connecting"?"جاري الاتصال…":st==="waiting"?"بانتظار إعادة المحاولة…":st==="connected"?"متصل":"اتصال"}</button><button class="btn sm" data-tiktok-stop ${TK&&st!=="stopped"?"":"disabled"}>${st==="waiting"||st==="connecting"?"إلغاء":"فصل"}</button></div>` }
+function tkRefresh(){ document.querySelectorAll("[data-tkbox]").forEach(b=>b.innerHTML=tkBox()); setConn() }
+setInterval(()=>{ const el=document.querySelectorAll("[data-tkcd]"); if(!el.length) return; const l=tkLeft(); el.forEach(e=>e.textContent=tkFmt(l)) },1000);
 const SRC=()=>({D:R.D,H:R.H,C:R.C,skew,SO:S.socials,DN:R.DN,DC:S.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
 const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
@@ -9510,7 +9524,7 @@ function receive(m,applied){
  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; chatPush(R.CHAT,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
  else if(m.t==="clock"){ if(!applied){ R.C=m.C; if(m.now) skew=m.now-Date.now(); for(const l of [...(m.logs||[])].reverse()) R.logs.unshift(l); R.logs.length=Math.min(R.logs.length,300); saveRoom() } }
  else if(m.t==="fx"){ /* عرض فوري */ }
- else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; setConn(); if(m.text) toast(m.text); return }
+ else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
@@ -9681,7 +9695,7 @@ function renderPage(soft){
   <div class="fld"><label>اسم المستخدم في TikTok (بدون @)</label><input class="inp" data-set="tiktok" value="${esc(s.tiktok)}" placeholder="username"></div>
   ${CFG?"":`<div class="fld"><label>عنوان خادم المنصة (WebSocket)</label><input class="inp" dir="ltr" data-set="wsUrl" value="${esc(s.wsUrl)}" placeholder="wss://your-domain/ws"></div>
   <div class="grid g2" style="gap:8px"><div class="fld"><label>معرّف الغرفة</label><input class="inp" dir="ltr" data-set="room" value="${esc(s.room)}"></div><div class="fld"><label>مفتاح التعديل</label><input class="inp" dir="ltr" type="password" data-set="key" value="${esc(s.key)}"></div></div>`}
-  <div class="row">${CFG?(wsReady?"":`<button class="btn sm" data-connect>إعادة الاتصال بالخادم</button>`):`<button class="btn pri sm" data-connect>اتصال بالخادم</button>`}<button class="btn ${CFG?"pri ":""}sm" data-tiktok>بدء ربط TikTok</button><button class="btn sm" data-tiktok-stop>إيقاف الربط</button>${CFG?"":`<button class="btn sm" data-disconnect>قطع</button>`}</div></div>
+  <div class="row">${CFG?(wsReady?"":`<button class="btn sm" data-connect>إعادة الاتصال بالخادم</button>`):`<button class="btn pri sm" data-connect>اتصال بالخادم</button>`}${CFG?"":`<button class="btn sm" data-disconnect>قطع</button>`}</div><div data-tkbox style="margin-top:8px">${tkBox()}</div></div>
   <div class="card"><h3>ماذا يعمل فعلياً؟</h3><div class="note" style="line-height:2">• بدون خادم: هذه الصفحة تعمل في <b>وضع التجربة المحلي</b> فقط، ولا يوجد اتصال حقيقي بـ TikTok.<br>• مع الخادم: يقرأ أحداث البث العامة (هدايا، إعجابات، تعليقات، متابعات، اشتراكات) عبر مكتبة tiktok-live-connector، وهي <b>غير رسمية</b> وقد تتوقف إذا غيّر TikTok نظامه.<br>• لا نطلب كلمة مرور حسابك. يجب أن تكون في بث مباشر.<br>• الاشتراكات تصل فقط للحسابات المفعّل لها الاشتراك في TikTok.</div></div></div>`;
  }
  else if(p==="boards"){
@@ -10656,8 +10670,8 @@ function onClick(e){
   if(d.lay==="ren") return ask("الاسم الجديد",l.name).then(n=>{ if(!n) return; l.name=n; done() });
   if(d.lay==="del"){ if(S.layouts.length<2) return toast("لا بد من مشهد واحد على الأقل"); return ask("حذف «"+l.name+"»؟").then(ok=>{ if(!ok) return; S.layouts=S.layouts.filter(x=>x.id!==l.id); S.active=S.layouts[0].id; done() }) } }
  if(t.hasAttribute("data-connect")){ S.settings.wsUrl=S.settings.wsUrl.trim(); save(); startWS(); return }
- if(t.hasAttribute("data-tiktok")){ if(!wsReady) return toast("اتصل بخادم المنصة أولاً — ربط TikTok يتم من الخادم"); if(!S.settings.tiktok) return toast("اكتب اسم المستخدم"); ws.send(JSON.stringify({t:"tiktok",room:S.settings.room,username:S.settings.tiktok.replace(/^@/,"")})); return }
- if(t.hasAttribute("data-tiktok-stop")){ if(wsReady) ws.send(JSON.stringify({t:"tiktok-stop",room:S.settings.room})); return }
+ if(t.hasAttribute("data-tiktok")){ if(!wsReady) return toast("اتصل بخادم المنصة أولاً — ربط TikTok يتم من الخادم"); if(!S.settings.tiktok) return toast("اكتب اسم المستخدم"); if(tkBusy()||t.disabled) return; /* منع الطلبات المكررة */ TK={state:"connecting",text:"جارٍ إرسال طلب الاتصال…",at:Date.now()}; tkRefresh(); ws.send(JSON.stringify({t:"tiktok",room:S.settings.room,username:S.settings.tiktok.replace(/^@/,"")})); return }
+ if(t.hasAttribute("data-tiktok-stop")){ if(wsReady) ws.send(JSON.stringify({t:"tiktok-stop",room:S.settings.room})); TK={state:"stopped",text:"تم إيقاف الربط",at:Date.now()}; tkRefresh(); return }
  if(t.hasAttribute("data-logout")&&CFG) return CFG.logout();
  if(t.hasAttribute("data-disconnect")){ S.wantWS=false; if(wsReady) ws.send(JSON.stringify({t:"tiktok-stop",room:S.settings.room})); try{ if(ws){ ws.onclose=null; ws.close() } }catch(_){} ws=null; wsReady=false; liveStatus={live:false,text:"وضع التجربة المحلي — غير متصل بـ TikTok"}; setConn(); return renderPage(true) }
  if(t.hasAttribute("data-export")){ copy(JSON.stringify({layouts:S.layouts,settings:{...S.settings,key:""},profile:S.profile})); return }
@@ -10761,7 +10775,7 @@ function onInput(e){
  if(d.set&&e.type==="change"){ let v=t.value; if(d.set==="fx") v=v==="1"; if(d.set==="bigGift") v=+v; S.settings[d.set]=v; if(d.set==="perfMode") window.__arshPM=v; save(); return }
  if(d.prof&&e.type==="change"){ S.profile[d.prof]=t.value; save(); return renderPage() }
 }
-function setConn(){ [["cdot","ctext"]].forEach(([a,b])=>{const dd=document.getElementById(a),tt=document.getElementById(b); if(dd) dd.classList.toggle("ok",wsReady&&liveStatus.live); if(tt) tt.textContent=!wsReady?"وضع التجربة (بدون خادم)":liveStatus.live?"متصل ببث TikTok":"متصل بالخادم"}) }
+function setConn(){ [["cdot","ctext"]].forEach(([a,b])=>{const dd=document.getElementById(a),tt=document.getElementById(b); if(dd) dd.classList.toggle("ok",wsReady&&liveStatus.live); if(tt) tt.textContent=!wsReady?"وضع التجربة (بدون خادم)":liveStatus.live&&(!TK||TK.state==="connected")?"متصل ببث TikTok":TK&&TK.state==="connecting"?"جاري الاتصال ببث TikTok…":TK&&TK.state==="waiting"?"بانتظار إعادة المحاولة":TK&&TK.state==="failed"?"تعذر الاتصال ببث TikTok":"متصل بالخادم"}) }
 function startWS(){ if(!S.settings.wsUrl) return toast("اكتب عنوان الخادم أولاً");
  S.wantWS=true; let n=0;
  const go=()=>connectWS(S.settings.wsUrl,S.settings.room,S.settings.key,m=>receive(m,false),(ok,err)=>{ setConn(); if(ok){ n=0; toast("تم الاتصال بالخادم"); pushLayout(); if(S.page==="live") renderPage(true) } else { if(err) toast(err); if(S.wantWS) setTimeout(()=>{ if(S.wantWS&&!wsReady) go() },Math.min(15000,1000*++n)) } });
@@ -11371,7 +11385,7 @@ function connHTML(){ if(CFG&&!S.connsAt){ S.connsAt=Date.now(); connLoad() }
    ${p==="tiktok"?`<div class="fld" style="margin-top:8px"><label>اسم المستخدم (بدون @)</label><input class="inp" data-set="tiktok" value="${esc(S.settings.tiktok||"")}" placeholder="username"></div>`:""}
    ${st==="unconfigured"?`<p class="mut small">${CFG?"لم يضف مالك المنصة مفاتيح تطبيق "+P.name+" بعد: "+esc(((OAUTH[p]||{}).env||[]).join(" + ")):"الربط الرسمي يعمل من خادم المنصة (لوحة التحكم المنشورة)، وليس من نسخة التجربة هذه."}</p>`:""}
    ${c.lastError&&st!=="connected"?`<p class="small" style="color:#f87171">${esc(c.lastError)}</p>`:""}
-   <div class="row" style="margin-top:8px">${p==="tiktok"?`<button class="btn sm pri" data-tiktok>اتصال</button><button class="btn sm" data-disconnect>فصل</button>`:`<button class="btn sm pri" data-connect="${p}" ${st==="unconfigured"?"disabled":""}>${st==="connected"?"إعادة الربط":"ربط "+P.name}</button>${st==="connected"?`<button class="btn sm" data-conndel="${p}">فصل</button>`:""}`}
+   <div class="row" style="margin-top:8px">${p==="tiktok"?`<div data-tkbox style="width:100%">${tkBox()}</div>`:`<button class="btn sm pri" data-connect="${p}" ${st==="unconfigured"?"disabled":""}>${st==="connected"?"إعادة الربط":"ربط "+P.name}</button>${st==="connected"?`<button class="btn sm" data-conndel="${p}">فصل</button>`:""}`}
     <button class="btn sm" data-connguide="${p}">❓ كيف أربط حسابي؟</button><button class="btn sm" data-conntest="${p}">🧪 رسالة تجربة</button><button class="btn sm" data-go="settings">⚙️ الإعدادات</button></div>${p!=="tiktok"&&CFG?pubChatHTML(p):p!=="tiktok"?`<p class="mut small" style="margin-top:8px">💬 قراءة الشات باسم القناة متاحة في لوحة التحكم على الخادم.</p>`:""}</div>` }).join("")}</div>
  <div class="card" style="margin-top:14px"><h3>حالة دعم الميزات لكل منصة</h3><div style="overflow:auto"><table class="tbl"><tr><th>الميزة</th>${caps.map(c=>`<th>${c.name}</th>`).join("")}</tr>
   ${[["comment","التعليقات"],["like","اللايكات"],["gift","الهدايا"],["follow","المتابعات"],["subscribe","الاشتراكات"],["share","المشاركات"],["join","دخول المشاهدين"],["viewers","عدد المشاهدين"],["sendChat","إرسال رد في الشات"],["moderate","أوامر الإشراف"]].map(([f,l])=>`<tr><td>${l}</td>${caps.map(c=>{ const x=c.caps.find(y=>y.feature===f); return `<td><span class="tag ${x?x.tone:"bad"}">${x?x.label:CAP.no[0]}</span></td>` }).join("")}</tr>`).join("")}</table></div>

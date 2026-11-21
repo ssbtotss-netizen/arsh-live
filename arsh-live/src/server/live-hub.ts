@@ -3,7 +3,9 @@
 import type { WebSocketServer, WebSocket } from "ws";
 import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound } from "../lib/core";
 import type { Layout, LiveEvent } from "../lib/core";
-import { startTikTok, type TikTokHandle } from "./tiktok";
+import { startTikTok, type TikTokHandle, type TkInfo } from "./tiktok";
+/** حالة الربط للواجهة وروابط البث — ملاحظة المشرف (اسم المتغير ومكانه) لا تُرسل هنا بل تظهر في لوحة الإدارة */
+const tkPublic = (i: TkInfo) => { const { admin, ...rest } = i; return { ...rest, server: !!admin }; };
 
 type Client = WebSocket & { room?: string; canEdit?: boolean; alive?: boolean };
 type Room = ReturnType<typeof newRoom> & { clients: Set<Client>; layouts: Map<string, Layout>; tiktok?: TikTokHandle; gifts?: any[]; dirty?: boolean; closeTimer?: any };
@@ -90,7 +92,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         send(ws, roomSnapshot(r, Date.now())); // لقطة كاملة: لا تكرار احتساب بعد إعادة الاتصال
         r.layouts.forEach(layout => send(ws, { t: "layout", layout }));
         if (r.gifts) send(ws, { t: "gifts", gifts: r.gifts });
-        send(ws, { t: "status", live: !!r.tiktok?.connected, canEdit: ws.canEdit });
+        send(ws, { t: "status", live: !!r.tiktok?.connected, canEdit: ws.canEdit, ...(r.tiktok ? { tk: tkPublic(r.tiktok.info), text: r.tiktok.info.text } : {}) }); // حالة الربط الحالية بعد إعادة تحميل الواجهة
         return;
       }
       if (m.t === "hb") return send(ws, { t: "hb", now: Date.now() }); // نبضة من رابط OBS/LIVE Studio لاكتشاف الانقطاع
@@ -125,16 +127,23 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "tiktok" && typeof m.username === "string") {
         const username = m.username.replace(/^@/, "").trim();
         if (!/^[\w.]{2,40}$/.test(username)) return send(ws, { t: "status", text: "اسم مستخدم غير صالح" });
+        // منع التكرار: نفس الحساب قيد الاتصال/الانتظار/متصل ← لا طلب توقيع جديد (ضغط متكرر أو إعادة تحميل الواجهة)
+        const cur = r.tiktok;
+        if (cur && cur.username.toLowerCase() === username.toLowerCase() && ["connecting", "waiting", "connected"].includes(cur.info.state)) {
+          console.log(`[tiktok] duplicate start ignored @${username} room=${id.slice(0, 6)}… state=${cur.info.state}`);
+          return send(ws, { t: "status", live: cur.connected, text: cur.info.text, tk: tkPublic(cur.info), dup: true });
+        }
         console.log(`[tiktok] start @${username} room=${id.slice(0, 6)}… canEdit=${ws.canEdit}`);
         r.tiktok?.stop();
-        broadcast(r, { t: "status", text: "جارٍ الاتصال ببث @" + username + " …", live: false });
-        r.tiktok = startTikTok(username, {
+        let h: TikTokHandle | undefined;
+        h = r.tiktok = startTikTok(username, {
           onEvent: ev => dispatch(id, r, ev),
           onGifts: gifts => { r.gifts = gifts; broadcast(r, { t: "gifts", gifts }); },
           onFollowers: n => commit(id, r, roomClockOp(r, { target: "followers", op: "official", platform: "tiktok", value: n, source: "tiktok_live" }, Date.now())),
-          onStatus: (live, text) => {
+          onStatus: (live, text, info) => {
+            if (h && r.tiktok !== h) return; // اتصال قديم بعد الإيقاف أو الاستبدال
             const was = r.live;
-            broadcast(r, { t: "status", live, text });
+            broadcast(r, { t: "status", live, text, ...(info ? { tk: tkPublic(info) } : {}) });
             if (was !== live) commit(id, r, roomLive(r, live, Date.now())); // إيقاف/استكمال السبثون تلقائياً حسب الإعداد
             opt.onLiveStatus?.(id, live, text);
           },
@@ -142,8 +151,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         return;
       }
       if (m.t === "tiktok-stop") {
-        r.tiktok?.stop(); r.tiktok = undefined;
-        broadcast(r, { t: "status", live: false, text: "تم إيقاف الربط" });
+        r.tiktok?.stop(); r.tiktok = undefined; // يلغي أي إعادة محاولة أو انتظار
+        broadcast(r, { t: "status", live: false, text: "تم إيقاف الربط", tk: { state: "stopped", username: "", attempt: 0, maxAttempts: 0, text: "تم إيقاف الربط", at: Date.now() } });
         if (r.live) commit(id, r, roomLive(r, false, Date.now()));
       }
     });

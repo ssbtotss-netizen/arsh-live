@@ -20,7 +20,12 @@ export async function GET(req: Request) {
     prisma.user.findMany({ select: { plan: true, planUntil: true, trialEndsAt: true, createdAt: true } }),
   ]);
   const byState: Record<string, number> = { trial: 0, active: 0, comp: 0, expired: 0 }; for (const u of all) byState[subStatus(u, cfg).state]++;
-  return NextResponse.json({ cfg, stats: { total, disabled, liveSessions: live, revenueUsd: revenue._sum.amountUsd || 0, byState }, users: users.map(u => ({ ...u, status: subStatus(u, cfg) })), subscriptions: subs });
+  // حالة ربط TikTok على الخادم: هل المفتاح مضبوط (نعم/لا فقط — بدون قيمته) + آخر رفض من خدمة التوقيع وفترة الانتظار المشتركة
+  const q0: any = (globalThis as any).__b6o6Sign || {}; const keySet = !!process.env.TIKTOK_SIGN_API_KEY;
+  const tiktok = { signKey: keySet, provider: "Euler Stream (tiktok-live-connector)", cooldownUntil: q0.until > Date.now() ? q0.until : null, code: q0.code || null,
+    last: q0.last ? { kind: q0.last.kind, status: q0.last.status ?? null, code: q0.last.code ?? null, retryAfterMs: q0.last.retryAfterMs ?? null, requestId: q0.last.requestId ?? null, name: q0.last.name ?? null, at: q0.last.at, user: q0.last.user, attemptId: q0.last.attemptId } : null,
+    hint: keySet ? (q0.last?.kind === "rate_limit" ? "المفتاح مضبوط لكن حصته انتهت — راجع خطة Euler Stream" : null) : "المتغير TIKTOK_SIGN_API_KEY غير مضبوط: الخادم يستخدم الحصة المجانية المشتركة لعنوان IP. أنشئ مفتاحاً من eulerstream.com وأضفه في Render ← الخدمة ← Environment ثم أعد النشر." };
+  return NextResponse.json({ cfg, tiktok, stats: { total, disabled, liveSessions: live, revenueUsd: revenue._sum.amountUsd || 0, byState }, users: users.map(u => ({ ...u, status: subStatus(u, cfg) })), subscriptions: subs });
 }
 /** إعدادات الاشتراك العامة: مدة التجربة، تفعيلها، السعر الشهري، حدود ما بعد التجربة */
 export async function PATCH(req: Request) {

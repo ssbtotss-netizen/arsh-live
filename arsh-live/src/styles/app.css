@@ -315,3 +315,6 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .gal-meta .tag.pro{background:linear-gradient(135deg,#ffe08a,#f5b301);color:#1a1204}.gal-meta .tag.ok{background:#22e07a22;color:#7cf3b0}
 .gal-fav{position:absolute;top:10px;left:10px;z-index:3;width:34px;height:34px;border-radius:50%;border:0;background:#000a;color:#fff8;font-size:16px;cursor:pointer}.gal-fav.on{color:#ffd54a}
 @media (max-width:760px){.gal-grid{grid-template-columns:1fr}.gal-meta .btn{min-height:40px;flex:1}}
+/* حالة ربط TikTok */
+.tk-st{padding:8px 10px;border-radius:10px;border:1px solid var(--line);background:#ffffff06}.tk-st .tk-cd{font-family:"Orbitron",monospace;direction:ltr;display:inline-block;margin-inline-start:6px;color:#ffd166}
+.tk-connected{border-color:#22e07a66;background:#22e07a10}.tk-waiting{border-color:#ffd16666;background:#ffd16610}.tk-failed{border-color:#ff5d7a66;background:#ff5d7a10}.tk-connecting{border-color:#3d8bff66}
