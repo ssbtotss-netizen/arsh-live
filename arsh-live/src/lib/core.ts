@@ -4,6 +4,7 @@ export * from "../engine/defs.js";
 export * from "../engine/leaderboard.js";
 export * from "../engine/clock.js";
 export * from "../engine/donations.js";
+export * from "../engine/giftstreak.js";
 export * from "../engine/room.js";
 export * from "../engine/socials.js";
 export * from "../engine/lb.js";

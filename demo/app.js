@@ -118,6 +118,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80) } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
@@ -651,6 +652,7 @@ function subathonHTML(){
   <div class="fld" style="margin-top:8px"><label>احتساب الأحداث أثناء الإيقاف المؤقت</label><select class="inp" data-sa="countWhilePaused"><option value="1" ${s.countWhilePaused?"selected":""}>نعم، يُضاف الوقت ويُحفظ</option><option value="0" ${!s.countWhilePaused?"selected":""}>لا</option></select></div>
  </div></div>
  ${saTikTokHTML(s)}
+ <div data-saglog>${saGlogHTML()}</div>
  <div class="ttl" style="margin-top:14px">⚙️ قواعد التفاعل الأخرى (متابعة، لايك، اشتراك، تعليقات، دونيشن، شرائح الهدايا) — كل قاعدة مستقلة وتُقرأ تلقائياً في لوحة القوانين</div>
  ${rulesEditorHTML(s)}
  <div class="grid g2" style="margin-top:14px"><div class="card"><h3><span>🎯 تحقيق هدف</span>${chk("rules.goal.enabled",r.goal.enabled)}</h3><div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>المقياس</label><select class="inp" data-sa="rules.goal.metric">${[["likes","الإعجابات"],["gifts","نقاط الدعم"],["follows","المتابعون"]].map(o=>`<option value="${o[0]}" ${r.goal.metric===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>${num("rules.goal.target",r.goal.target,"الهدف")}${num("rules.goal.sec",r.goal.sec,"يضيف (ثانية)")}</div>${r.goal.reached?'<p class="small" style="color:var(--ok)">✓ تم تحقيق الهدف</p>':""}
@@ -665,6 +667,15 @@ function subathonHTML(){
 /* ---- السبثون: عملات وهدايا TikTok (طريقة الحساب، قواعد العملات، كتالوج الهدايا الحقيقي، قيم يدوية، تجربة هدية منفصلة) ---- */
 const SA_MODES={gifts_first:"قاعدة الهدية أولاً، وإلا العملات",coins:"حسب العملات فقط (كوين)",gifts:"حسب نوع الهدية فقط"};
 const saCatalog=()=>S.catalog&&S.catalog.length?S.catalog.map(g=>({id:g.id,name:g.name,coins:+g.diamonds||0,img:g.image||"",real:true})):GIFTS.map(g=>({id:g[2],name:g[0],coins:+g[1]||0,img:"",emoji:g[3]||"🎁",real:false}));
+/** «سجل الهدايا»: كل حدث هدية من TikTok — العدد المرسل، المحتسب فعلياً، الوقت المضاف، الحالة والسبب */
+function saGlogHTML(){ const G=(R.C&&R.C.glog)||[], ST={added:["✅ أُضيف","ok"],none:["⚪ بدون وقت","warn"],dup:["🔁 مكرر — محتسب مسبقاً","muted"],late:["⏪ متأخر","muted"]};
+ const fmt=ms=>{ const s=Math.round(Math.abs(ms)/1000), m=Math.floor(s/60); return (ms<0?"−":"+")+(m?`${m}د `:"")+`${s%60}ث` };
+ const rows=G.slice(0,40).map(g=>{ const st=ST[g.status]||ST.none; const nm=esc(g.gift||"هدية")+(g.giftId!=null?` <span class="muted small">#${esc(String(g.giftId))}</span>`:"");
+  return `<tr class="gl-${st[1]}"><td class="small muted">${new Date(g.at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</td><td>${g.img?`<img src="${esc(g.img)}" alt="" class="gl-img">`:"🎁"} ${nm}${g.test||g.sim?` <span class="tag">تجربة</span>`:""}</td><td>${esc(g.user||"")}</td><td>${g.raw?`${g.sent}${g.raw.end?" <span class='muted small'>(نهائي)</span>":""}`:g.sent}</td><td><b>${g.counted}</b></td><td>${g.ms?`<b>${fmt(g.ms)}</b>`:"—"}</td><td><span class="tag ${st[1]}">${st[0]}</span>${g.why?`<div class="small muted">${esc(g.why)}</div>`:""}</td></tr>` }).join("");
+ return `<div class="card" style="margin-top:14px"><h3><span>🧾 سجل الهدايا</span><span class="muted small">آخر ${Math.min(G.length,40)} حدث</span></h3>
+  <p class="small muted" style="margin:0 0 8px">سلاسل الهدايا (مثل الورود المتتالية) تصل من TikTok بعدد تراكمي 1 ← 5 ← 10 ← 30. يُحتسب الفرق الجديد فقط في كل تحديث، فالـ 30 وردة تُحتسب 30 مرة واحدة بالضبط حتى لو ما وصل الحدث النهائي أو انقطع الاتصال.</p>
+  ${G.length?`<div class="gl-wrap"><table class="tbl gl-tbl"><tr><th>الوقت</th><th>الهدية</th><th>المرسل</th><th>العدد في السلسلة</th><th>المحتسب الآن</th><th>الوقت المضاف</th><th>الحالة</th></tr>${rows}</table></div>`:`<div class="muted small">لا توجد هدايا بعد في هذا البث.</div>`}</div>` }
+function saGlogRefresh(){ const el=document.querySelector("[data-saglog]"); if(el) el.innerHTML=saGlogHTML() }
 function saTikTokHTML(s){ const r=s.rules, L=r.list, mode=r.giftMode||"gifts_first", cat=saCatalog(), real=cat.some(g=>g.real), q=(S.saGiftQ||"").trim().toLowerCase();
  const rowDur=(x,f,lab)=>durInput(x,f,lab);
  const coinRows=L.filter(x=>x.kind==="coins").map(x=>`<div class="sa-coin ${x.enabled?"":"off"}" data-rule="${x.id}"><label class="row small" style="gap:4px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}></label>

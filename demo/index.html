@@ -334,6 +334,9 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .sa-gn{display:flex;flex-direction:column;align-items:center;text-align:center}.inp.sm{padding:4px 6px;font-size:12px}
 @media (max-width:900px){.sa-coin{grid-template-columns:auto 1fr 1fr}}
 
+/* سجل الهدايا (السبثون) */
+.gl-wrap{max-height:420px;overflow:auto}.gl-tbl td,.gl-tbl th{padding:6px 8px;vertical-align:top}.gl-img{width:22px;height:22px;object-fit:contain;vertical-align:middle}.gl-tbl tr.gl-muted{opacity:.62}
+
 /* ============ OVERLAY WIDGETS (shared by editor, previews and OBS) ============ */
 body.ov{background:transparent!important;overflow:hidden}
 body.ov .stage{background:transparent!important}
@@ -1952,10 +1955,74 @@ function battleTick(B,now){ if(B&&B.status==="running"&&now>=B.endsAt){ finish(B
 /** نسبة الفريق الأول (0..1) للعرض */
 const battleShare=B=>{ const [a,b]=B.teams, s=a.score+b.score; return s>0?a.score/s:.5 };
 
+/* ---- engine/giftstreak.js ---- */
+// ====== سلاسل هدايا TikTok (Gift Streak) + سجل الهدايا التشخيصي ======
+// TikTok يرسل لنفس السلسلة تحديثات متتابعة بعدد تراكمي (1 → 3 → 5 → 8) ثم حدثاً نهائياً بنفس العدد.
+// نحتسب فقط «الزيادة الجديدة» (الفرق عن آخر عدد محتسب) لكل سلسلة — فوراً، بدون انتظار الحدث النهائي —
+// فلا تضيع الهدايا إذا لم يصل الحدث النهائي أو انقطع الاتصال، ولا تُحتسب الهدية نفسها مرتين.
+// الحالة تُحفظ داخل C.gs مع حالة السبثون (تتحمل إعادة تشغيل الخادم).
+
+/** نافذة تكرار الحدث النهائي لسلسلة بدون معرّف مجموعة: النهائي يصل عادةً بعد ~3 ثوانٍ من آخر تحديث */
+const GS_SAME_MS=10_000;
+/** عمر حالة السلسلة: بعدها تُحذف (السلاسل الحقيقية تنتهي خلال ثوانٍ) */
+const GS_TTL_MS=30*60_000;
+const GS_CAP=600, GLOG_CAP=80;
+
+function gsState(C){ C.gs=C.gs&&typeof C.gs==="object"?C.gs:{}; C.gs.s=C.gs.s||{}; C.glog=Array.isArray(C.glog)?C.glog:[]; return C.gs }
+function gsPrune(G,now){ const ks=Object.keys(G.s); for(const k of ks) if(now-(G.s[k].at||0)>GS_TTL_MS) delete G.s[k];
+ const left=Object.keys(G.s); if(left.length>GS_CAP){ left.sort((a,b)=>G.s[a].at-G.s[b].at); for(const k of left.slice(0,left.length-GS_CAP)) delete G.s[k] } }
+const gsStr=v=>v==null?"":String(v);
+
+/**
+ * يحوّل حدث هدية من TikTok يحمل معلومات السلسلة (ev.streak = {cum, gc, end, type, group}) إلى حدث بالزيادة الجديدة فقط.
+ * يرجع {ev: الحدث المعدّل أو null إن لم توجد زيادة, diag: بيانات سجل الهدايا}
+ * الأحداث بدون ev.streak (تجربة/منصات أخرى) تمر كما هي.
+ */
+function giftStreak(C,ev,now){
+ const st=ev&&ev.streak;
+ const base={at:now,user:(ev.user&&(ev.user.name||ev.user.id))||"",gift:ev.gift||"هدية",giftId:ev.giftId??null,img:ev.image||"",test:!!ev.test,sim:!!ev.sim};
+ if(!st||typeof st!=="object"){ const n=Math.max(1,+ev.count||1); return {ev,diag:{...base,sent:n,counted:n,raw:null}} }
+ const G=gsState(C); gsPrune(G,now);
+ const gc=Math.max(1,Math.floor(+st.gc||1)); // عدد الهدايا في الضغطة الواحدة (إرسال متعدد) إن أرسله TikTok
+ const cum=Math.max(1,Math.floor(+st.cum||1))*gc; // العدد التراكمي للسلسلة
+ const group=gsStr(st.group)==="0"?"":gsStr(st.group);
+ const key=`${(ev.user&&ev.user.id)||"?"}|${ev.giftId??ev.gift??"?"}|${group}`;
+ let s=G.s[key], prev=0, fresh=!s;
+ if(s){
+  if(!group){ // بدون معرّف مجموعة: نميّز السلسلة الجديدة من تكرار السابقة
+   if(cum<s.cum) fresh=true; // العدد رجع للبداية = سلسلة جديدة
+   else if(cum===s.cum&&now-s.at>GS_SAME_MS) fresh=true; // نفس العدد بعد مدة طويلة = إرسال جديد
+  }
+  if(!fresh) prev=s.cum;
+ }
+ if(fresh) s=G.s[key]={cum:0,at:now,end:false,n:s?(s.n||0)+1:0};
+ const raw={cum:+st.cum||1,gc,end:!!st.end,type:st.type??null,group:group?group.slice(-6):""};
+ const add=cum-prev;
+ s.at=now; if(st.end) s.end=true;
+ if(add<=0){ const late=cum<prev;
+  return {ev:null,diag:{...base,sent:cum,counted:0,status:late?"late":"dup",why:late?"تحديث متأخر لسلسلة محتسبة (أقل من آخر عدد)":(st.end?"الحدث النهائي للسلسلة — كل هداياها محتسبة مسبقاً":"تكرار لنفس العدد — محتسب مسبقاً"),raw}} }
+ s.cum=cum;
+ const diamonds=ev.diamonds!=null?+ev.diamonds:null;
+ const out={...ev,count:add,value:diamonds!=null?diamonds*add:(+ev.value>0?Math.round((+ev.value)/cum*add):0),streakTotal:cum,
+  id:`gs:${key}#${s.n||0}:${cum}`}; // معرّف ثابت لكل (سلسلة، عدد): إعادة إرسال نفس التحديث لا تضيف مرتين حتى بعد إعادة التشغيل
+ delete out.streak;
+ return {ev:out,diag:{...base,sent:cum,counted:add,raw}};
+}
+
+/** يكمل سجل الهدايا بنتيجة السبثون ويضيفه (الأحدث أولاً) */
+function glogPush(C,diag,res){
+ const it={...diag,id:"gl"+(diag.at||0).toString(36)+Math.random().toString(36).slice(2,6)};
+ if(res){ it.ms=res.ms||0; if(!it.status) it.status=res.ms?"added":"none"; if(!it.why&&!res.ms) it.why=res.why||"" }
+ gsState(C); C.glog.unshift(it); if(C.glog.length>GLOG_CAP) C.glog.length=GLOG_CAP;
+ return it;
+}
+const GLOG_STATUS={added:"✅ أُضيف",none:"⚪ بدون وقت",dup:"🔁 مكرر",late:"⏪ متأخر"};
+
 /* ---- engine/room.js ---- */
 // ====== غرفة البث: تربط المحركات الثلاثة دون خلطها ======
 // استقبال الأحداث → (منع التكرار) → محرك القوائم + محرك السبثون/المؤقتات → رسائل للعرض
 // نفس الكود يعمل على الخادم (الوضع الحقيقي) وفي المتصفح (وضع التجربة بدون خادم).
+
 
 
 
@@ -1987,6 +2054,9 @@ function roomEvent(R,ev,now){
   const out=[{t:"event",ev}], logs=ev.type==="donation"?subathonOnDonation(R.C.subathon,ev,now):[]; keep(R,logs); if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomActions(R,ev,now,out); if(ev.type==="donation"){ const nm=String(ev.name||""), cur=String(ev.currency||"").toUpperCase(); ev.donorTotal=nm&&!ev.anonymous?R.DN.list.filter(d=>d.name===nm&&d.currency===cur&&!d.test).reduce((a,d)=>a+Math.max(0,d.amount-(d.refunded||0)),0):""; }
  roomAlerts(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
+ // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
+ let gdiag=null;
+ if(ev.type==="gift"){ const g=giftStreak(R.C,ev,now); gdiag=g.diag; if(!g.ev){ const it=glogPush(R.C,gdiag); return {out:[{t:"glog",it}],logs:[],gsdup:true} } ev=g.ev }
  if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>8000){ const it=R.seen.keys(); for(let i=0;i<2000;i++) R.seen.delete(it.next().value) } }
  ev.t=ev.t||now;
  applyEvent(R.D,R.H,ev);
@@ -2001,11 +2071,23 @@ function roomEvent(R,ev,now){
  roomActions(R,ev,now,out);
  if(R.C.battle&&battleOnEvent(R.C.battle,ev,now)){ if(ev.type==="like") R.btDirty=true; else if(!logs.length) out.push({t:"clock",C:R.C,now,logs:[],bt:1}) } // تحدي الفريقين: الهدايا فوراً، التكبيس مجمّع كل ثانية
  if(ev.type==="follow"){ R.C.followers=R.C.followers||{}; if(followersOnEvent(R.C.followers,ev,now)&&!logs.length) out.push({t:"clock",C:R.C,now,logs:[],fc:"tiktok"}) }
+ if(gdiag){ const mine=logs.filter(l=>l.eventId===ev.id), ms=mine.reduce((a,l)=>a+(+l.deltaMs||0),0), capped=mine.some(l=>l.requestedMs!==l.deltaMs);
+  const it=glogPush(R.C,gdiag,{ms,why:ms?"":giftWhy(R.C.subathon,ev)}); if(capped) it.why="وصل السبثون للحد الأقصى — أُضيف جزء من الوقت"; out.push({t:"glog",it}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomAlerts(R,ev,logs,now,out);
  botOut(R,ev,now,out);
  return {out,logs};
 }
+/** سبب عدم إضافة وقت لهدية (لسجل الهدايا) — بدون تخمين قيم */
+function giftWhy(s,ev){ if(!s) return "السبثون غير مُعد";
+ if(!(s.status==="running"||(s.status==="paused"&&s.countWhilePaused))) return s.status==="paused"?"السبثون متوقف مؤقتاً":"السبثون غير مشغّل";
+ const R=s.rules||{}; if(R.auto===false) return "الإضافة التلقائية مطفأة";
+ const mode=R.giftMode||"gifts_first", L=R.list||[];
+ const hasGift=L.some(r=>r.kind==="gift"&&r.enabled), hasCoins=L.some(r=>r.kind==="coins"&&r.enabled);
+ if(mode==="gifts"&&!hasGift) return "لا توجد قاعدة هدايا مفعّلة";
+ if(mode!=="gifts"&&R.coinsOn!==false&&hasCoins&&giftCoins(R,ev)==null) return "قيمة الهدية بالكوين غير معروفة — حددها يدوياً في قواعد الهدايا";
+ if(mode!=="gifts"&&hasCoins) return "يتجمع مع الهدايا القادمة حتى يكتمل حد الكوين (أو فترة انتظار القاعدة)";
+ return "لا توجد قاعدة مطابقة لهذه الهدية (أو فترة انتظار القاعدة)" }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
 function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now,{totalLikes:R.D&&R.D.tot?R.D.tot.likes:0}):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
@@ -9559,6 +9641,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80) } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
@@ -10092,6 +10175,7 @@ function subathonHTML(){
   <div class="fld" style="margin-top:8px"><label>احتساب الأحداث أثناء الإيقاف المؤقت</label><select class="inp" data-sa="countWhilePaused"><option value="1" ${s.countWhilePaused?"selected":""}>نعم، يُضاف الوقت ويُحفظ</option><option value="0" ${!s.countWhilePaused?"selected":""}>لا</option></select></div>
  </div></div>
  ${saTikTokHTML(s)}
+ <div data-saglog>${saGlogHTML()}</div>
  <div class="ttl" style="margin-top:14px">⚙️ قواعد التفاعل الأخرى (متابعة، لايك، اشتراك، تعليقات، دونيشن، شرائح الهدايا) — كل قاعدة مستقلة وتُقرأ تلقائياً في لوحة القوانين</div>
  ${rulesEditorHTML(s)}
  <div class="grid g2" style="margin-top:14px"><div class="card"><h3><span>🎯 تحقيق هدف</span>${chk("rules.goal.enabled",r.goal.enabled)}</h3><div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>المقياس</label><select class="inp" data-sa="rules.goal.metric">${[["likes","الإعجابات"],["gifts","نقاط الدعم"],["follows","المتابعون"]].map(o=>`<option value="${o[0]}" ${r.goal.metric===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>${num("rules.goal.target",r.goal.target,"الهدف")}${num("rules.goal.sec",r.goal.sec,"يضيف (ثانية)")}</div>${r.goal.reached?'<p class="small" style="color:var(--ok)">✓ تم تحقيق الهدف</p>':""}
@@ -10106,6 +10190,15 @@ function subathonHTML(){
 /* ---- السبثون: عملات وهدايا TikTok (طريقة الحساب، قواعد العملات، كتالوج الهدايا الحقيقي، قيم يدوية، تجربة هدية منفصلة) ---- */
 const SA_MODES={gifts_first:"قاعدة الهدية أولاً، وإلا العملات",coins:"حسب العملات فقط (كوين)",gifts:"حسب نوع الهدية فقط"};
 const saCatalog=()=>S.catalog&&S.catalog.length?S.catalog.map(g=>({id:g.id,name:g.name,coins:+g.diamonds||0,img:g.image||"",real:true})):GIFTS.map(g=>({id:g[2],name:g[0],coins:+g[1]||0,img:"",emoji:g[3]||"🎁",real:false}));
+/** «سجل الهدايا»: كل حدث هدية من TikTok — العدد المرسل، المحتسب فعلياً، الوقت المضاف، الحالة والسبب */
+function saGlogHTML(){ const G=(R.C&&R.C.glog)||[], ST={added:["✅ أُضيف","ok"],none:["⚪ بدون وقت","warn"],dup:["🔁 مكرر — محتسب مسبقاً","muted"],late:["⏪ متأخر","muted"]};
+ const fmt=ms=>{ const s=Math.round(Math.abs(ms)/1000), m=Math.floor(s/60); return (ms<0?"−":"+")+(m?`${m}د `:"")+`${s%60}ث` };
+ const rows=G.slice(0,40).map(g=>{ const st=ST[g.status]||ST.none; const nm=esc(g.gift||"هدية")+(g.giftId!=null?` <span class="muted small">#${esc(String(g.giftId))}</span>`:"");
+  return `<tr class="gl-${st[1]}"><td class="small muted">${new Date(g.at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</td><td>${g.img?`<img src="${esc(g.img)}" alt="" class="gl-img">`:"🎁"} ${nm}${g.test||g.sim?` <span class="tag">تجربة</span>`:""}</td><td>${esc(g.user||"")}</td><td>${g.raw?`${g.sent}${g.raw.end?" <span class='muted small'>(نهائي)</span>":""}`:g.sent}</td><td><b>${g.counted}</b></td><td>${g.ms?`<b>${fmt(g.ms)}</b>`:"—"}</td><td><span class="tag ${st[1]}">${st[0]}</span>${g.why?`<div class="small muted">${esc(g.why)}</div>`:""}</td></tr>` }).join("");
+ return `<div class="card" style="margin-top:14px"><h3><span>🧾 سجل الهدايا</span><span class="muted small">آخر ${Math.min(G.length,40)} حدث</span></h3>
+  <p class="small muted" style="margin:0 0 8px">سلاسل الهدايا (مثل الورود المتتالية) تصل من TikTok بعدد تراكمي 1 ← 5 ← 10 ← 30. يُحتسب الفرق الجديد فقط في كل تحديث، فالـ 30 وردة تُحتسب 30 مرة واحدة بالضبط حتى لو ما وصل الحدث النهائي أو انقطع الاتصال.</p>
+  ${G.length?`<div class="gl-wrap"><table class="tbl gl-tbl"><tr><th>الوقت</th><th>الهدية</th><th>المرسل</th><th>العدد في السلسلة</th><th>المحتسب الآن</th><th>الوقت المضاف</th><th>الحالة</th></tr>${rows}</table></div>`:`<div class="muted small">لا توجد هدايا بعد في هذا البث.</div>`}</div>` }
+function saGlogRefresh(){ const el=document.querySelector("[data-saglog]"); if(el) el.innerHTML=saGlogHTML() }
 function saTikTokHTML(s){ const r=s.rules, L=r.list, mode=r.giftMode||"gifts_first", cat=saCatalog(), real=cat.some(g=>g.real), q=(S.saGiftQ||"").trim().toLowerCase();
  const rowDur=(x,f,lab)=>durInput(x,f,lab);
  const coinRows=L.filter(x=>x.kind==="coins").map(x=>`<div class="sa-coin ${x.enabled?"":"off"}" data-rule="${x.id}"><label class="row small" style="gap:4px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}></label>

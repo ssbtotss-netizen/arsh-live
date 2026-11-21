@@ -14,7 +14,8 @@ import { actionsOnEvent, newActState, actLog } from "./actions.js";
 import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, musicAdd, musicNext, musicLog, musicAddedText } from "./music.js";
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
-import { newClockState, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
+import { giftStreak, glogPush } from "./giftstreak.js";
+import { newClockState, giftCoins, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
 
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
 const DON_TYPES=new Set(["donation","donation_refund","donation_session","donation_clear_tests"]);
@@ -33,6 +34,9 @@ export function roomEvent(R,ev,now){
   const out=[{t:"event",ev}], logs=ev.type==="donation"?subathonOnDonation(R.C.subathon,ev,now):[]; keep(R,logs); if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomActions(R,ev,now,out); if(ev.type==="donation"){ const nm=String(ev.name||""), cur=String(ev.currency||"").toUpperCase(); ev.donorTotal=nm&&!ev.anonymous?R.DN.list.filter(d=>d.name===nm&&d.currency===cur&&!d.test).reduce((a,d)=>a+Math.max(0,d.amount-(d.refunded||0)),0):""; }
  roomAlerts(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
+ // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
+ let gdiag=null;
+ if(ev.type==="gift"){ const g=giftStreak(R.C,ev,now); gdiag=g.diag; if(!g.ev){ const it=glogPush(R.C,gdiag); return {out:[{t:"glog",it}],logs:[],gsdup:true} } ev=g.ev }
  if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>8000){ const it=R.seen.keys(); for(let i=0;i<2000;i++) R.seen.delete(it.next().value) } }
  ev.t=ev.t||now;
  applyEvent(R.D,R.H,ev);
@@ -47,11 +51,23 @@ export function roomEvent(R,ev,now){
  roomActions(R,ev,now,out);
  if(R.C.battle&&battleOnEvent(R.C.battle,ev,now)){ if(ev.type==="like") R.btDirty=true; else if(!logs.length) out.push({t:"clock",C:R.C,now,logs:[],bt:1}) } // تحدي الفريقين: الهدايا فوراً، التكبيس مجمّع كل ثانية
  if(ev.type==="follow"){ R.C.followers=R.C.followers||{}; if(followersOnEvent(R.C.followers,ev,now)&&!logs.length) out.push({t:"clock",C:R.C,now,logs:[],fc:"tiktok"}) }
+ if(gdiag){ const mine=logs.filter(l=>l.eventId===ev.id), ms=mine.reduce((a,l)=>a+(+l.deltaMs||0),0), capped=mine.some(l=>l.requestedMs!==l.deltaMs);
+  const it=glogPush(R.C,gdiag,{ms,why:ms?"":giftWhy(R.C.subathon,ev)}); if(capped) it.why="وصل السبثون للحد الأقصى — أُضيف جزء من الوقت"; out.push({t:"glog",it}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomAlerts(R,ev,logs,now,out);
  botOut(R,ev,now,out);
  return {out,logs};
 }
+/** سبب عدم إضافة وقت لهدية (لسجل الهدايا) — بدون تخمين قيم */
+function giftWhy(s,ev){ if(!s) return "السبثون غير مُعد";
+ if(!(s.status==="running"||(s.status==="paused"&&s.countWhilePaused))) return s.status==="paused"?"السبثون متوقف مؤقتاً":"السبثون غير مشغّل";
+ const R=s.rules||{}; if(R.auto===false) return "الإضافة التلقائية مطفأة";
+ const mode=R.giftMode||"gifts_first", L=R.list||[];
+ const hasGift=L.some(r=>r.kind==="gift"&&r.enabled), hasCoins=L.some(r=>r.kind==="coins"&&r.enabled);
+ if(mode==="gifts"&&!hasGift) return "لا توجد قاعدة هدايا مفعّلة";
+ if(mode!=="gifts"&&R.coinsOn!==false&&hasCoins&&giftCoins(R,ev)==null) return "قيمة الهدية بالكوين غير معروفة — حددها يدوياً في قواعد الهدايا";
+ if(mode!=="gifts"&&hasCoins) return "يتجمع مع الهدايا القادمة حتى يكتمل حد الكوين (أو فترة انتظار القاعدة)";
+ return "لا توجد قاعدة مطابقة لهذه الهدية (أو فترة انتظار القاعدة)" }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
 function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now,{totalLikes:R.D&&R.D.tot?R.D.tot.likes:0}):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});

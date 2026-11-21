@@ -65,11 +65,14 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "musicsearch") { const find = opt.ytFind ? opt.ytFind(m.q, m.cfg) : Promise.resolve({ ok: false, message: "البحث في YouTube غير متاح على هذا الخادم" });
         find.catch(() => ({ ok: false, message: "تعذر البحث في YouTube" })).then(yr => commit(id, r, { out: roomMusicFound(r as any, m, yr, Date.now()).out, logs: [] })); continue; }
       broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
-    if (res.out.some(m => m.t === "clock")) { r.dirty = true; }
+    if (res.out.some(m => m.t === "clock" || m.t === "glog")) { r.dirty = true; } // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }
   function dispatch(id: string, r: Room, ev: LiveEvent) {
     const before = r.H.length;
+    // اسم/صورة الهدية من قائمة هدايا TikTok الحقيقية إن لم يرسلها الحدث (بالمعرّف فقط — لا نخمّن)
+    if (ev.type === "gift" && r.gifts?.length && (ev as any).giftId != null) { const g = r.gifts.find((x: any) => String(x.id) === String((ev as any).giftId));
+      if (g) { const e: any = ev; if (!e.gift || e.gift === "هدية") e.gift = g.name; if (!e.image && g.image) e.image = g.image; if (!(+e.diamonds > 0) && +g.diamonds > 0) { e.diamonds = +g.diamonds; e.value = e.diamonds * Math.max(1, +e.count || 1); } } }
     const res = roomEvent(r, ev, Date.now());
     if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return; }
     if (ev.type === "donation") { const ov = [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length; (r as any).lastDon = { id: ev.id, at: Date.now(), test: !!(ev as any).test, overlays: ov, acks: new Set() }; opt.onDonationDispatch?.(id, ev, { dup: false, overlays: ov }); }

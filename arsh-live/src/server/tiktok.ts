@@ -131,18 +131,28 @@ export function startTikTok(
       const count = Number(d.likeCount ?? d.count ?? 0);
       if (count > 0) cb.onEvent({ type: "like", id: mid(d, "like"), user: userOf(d), count });
     });
+    let rawShown = 0;
     c.on(ev("GIFT", "gift"), (d: any) => { if (!live()) return;
-      const giftType = d.giftType ?? d.giftDetails?.giftType ?? d.gift?.gift_type;
-      const repeatEnd = d.repeatEnd ?? d.gift?.repeat_end;
-      // هدايا الـ streak: نحسبها مرة وحدة عند نهاية السلسلة بالعدد النهائي
-      if (giftType === 1 && !repeatEnd) return;
-      const repeat = Number(d.repeatCount ?? d.gift?.repeat_count ?? 1) || 1;
-      const diamonds = Number(d.diamondCount ?? d.giftDetails?.diamondCount ?? d.extendedGiftInfo?.diamond_count ?? 0);
-      const gift = String(d.giftName ?? d.giftDetails?.giftName ?? d.extendedGiftInfo?.name ?? "هدية");
-      const giftId = d.giftId ?? d.giftDetails?.id ?? d.gift?.gift_id;
+      // السلاسل (Streak): TikTok يرسل تحديثات بعدد تراكمي (1→3→5→8) ثم حدثاً نهائياً بنفس العدد.
+      // نرسل كل تحديث بمعلومات السلسلة، والغرفة (giftstreak.js) تحتسب الزيادة الجديدة فقط — بدون انتظار النهائي وبدون تكرار.
+      const gd = d.giftDetails ?? d.gift ?? {};
+      const giftType = d.giftType ?? gd.giftType ?? gd.gift_type ?? gd.type;
+      const repeatEnd = d.repeatEnd ?? d.gift?.repeat_end ?? gd.repeatEnd;
+      const repeat = Number(d.repeatCount ?? d.gift?.repeat_count ?? d.comboCount ?? 1) || 1;
+      const groupCount = Number(d.groupCount ?? d.gift?.group_count ?? 0) || 0;
+      const groupId = d.groupId ?? d.gift?.group_id ?? "";
+      const diamonds = Number(d.diamondCount ?? gd.diamondCount ?? gd.diamond_count ?? d.extendedGiftInfo?.diamond_count ?? 0);
+      const giftId = d.giftId ?? gd.id ?? gd.giftId ?? d.gift?.gift_id;
+      const name = d.giftName ?? gd.giftName ?? gd.name ?? d.extendedGiftInfo?.name;
+      const image = d.giftPictureUrl ?? gd.giftImage?.giftPictureUrl ?? gd.image?.urlList?.[0] ?? gd.icon?.urlList?.[0] ?? "";
       const u = userOf(d);
-      const id = mid(d, "gift") ?? `gift:${u.id}:${giftId}:${d.groupId ?? d.gift?.group_id ?? ""}:${repeat}:${d.createTime ?? ""}`;
-      cb.onEvent({ type: "gift", id, user: u, value: diamonds * repeat, count: repeat, gift, giftId, diamonds });
+      // تشخيص بنية الحدث (أسماء الحقول وقيم العدّ فقط — بدون بيانات حساسة) لأول 3 هدايا في كل اتصال
+      if (rawShown < 3) { rawShown++; log(`[tiktok] gift shape id=${attemptId} keys=${Object.keys(d).slice(0, 40).join(",")} details=${Object.keys(gd).slice(0, 25).join(",")} type=${giftType} repeat=${repeat} end=${repeatEnd} group=${groupId ? "yes" : "no"} gc=${groupCount} diamonds=${diamonds} giftId=${giftId ?? "?"}`); }
+      const end = repeatEnd === true || Number(repeatEnd) > 0;
+      const total = repeat * Math.max(1, groupCount);
+      const id = mid(d, "gift") ?? `gift:${u.id}:${giftId}:${groupId}:${repeat}:${end ? 1 : 0}:${d.createTime ?? ""}`;
+      cb.onEvent({ type: "gift", id, user: u, value: diamonds * total, count: total, gift: name != null && String(name).trim() ? String(name) : "هدية", giftId, diamonds, image: String(image || ""),
+        streak: { cum: repeat, gc: groupCount, end, type: giftType ?? null, group: groupId != null ? String(groupId) : "" } } as any);
     });
     c.on(ev("CHAT", "chat"), (d: any) => { if (!live()) return;
       const cu: any = userOf(d); if (String(cu.id).toLowerCase() === username.toLowerCase()) cu.owner = true;
@@ -173,9 +183,11 @@ export function startTikTok(
         if (Number.isFinite(n) && n > 0) cb.onFollowers?.(n); } catch (e: any) { console.error("[tiktok] follower sync failed:", String(e?.message || e).slice(0, 160)); } };
       clearInterval(fcTimer); syncFollowers(); fcTimer = setInterval(() => { if (handle.connected && live()) syncFollowers(); }, 60_000);
       try {
-        const list = state?.availableGifts ?? (await (c.fetchAvailableGifts?.() ?? c.getAvailableGifts?.()));
-        if (Array.isArray(list) && cb.onGifts) cb.onGifts(list.map((g: any) => ({ id: g.id, name: g.name, diamonds: Number(g.diamond_count ?? g.diamondCount ?? 0), image: g.image?.url_list?.[0] ?? g.image?.urlList?.[0] })).filter((g: any) => g.id != null).sort((a: any, b: any) => a.diamonds - b.diamonds));
-      } catch {}
+        const raw: any = state?.availableGifts ?? (await (c.fetchAvailableGifts?.() ?? c.getAvailableGifts?.()));
+        const list = Array.isArray(raw) ? raw : (raw?.gifts ?? raw?.data?.gifts ?? raw?.giftList ?? null);
+        if (Array.isArray(list) && list.length && cb.onGifts) { cb.onGifts(list.map((g: any) => ({ id: g.id ?? g.giftId, name: g.name ?? g.giftName, diamonds: Number(g.diamond_count ?? g.diamondCount ?? 0), image: g.image?.url_list?.[0] ?? g.image?.urlList?.[0] ?? g.icon?.url_list?.[0] })).filter((g: any) => g.id != null && g.name).sort((a: any, b: any) => a.diamonds - b.diamonds)); log(`[tiktok] gift catalog loaded n=${list.length} id=${attemptId}`); }
+        else log(`[tiktok] gift catalog unavailable id=${attemptId} type=${raw == null ? "none" : Array.isArray(raw) ? "array0" : Object.keys(raw).slice(0, 8).join(",")}`);
+      } catch (e: any) { log(`[tiktok] gift catalog failed id=${attemptId} msg=${String(e?.message || e).replace(/\s+/g, " ").slice(0, 140)}`); }
     } catch (e: any) {
       if (!live()) return;
       handle.connected = false;
