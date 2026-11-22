@@ -15,6 +15,7 @@ import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, mus
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { giftStreak, glogPush } from "./giftstreak.js";
+import { liveState, sessDecide, sessOpen, sessClose, sessPublic } from "./session.js";
 import { newClockState, giftCoins, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
 
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
@@ -25,6 +26,8 @@ function keep(R,logs){ if(!logs.length) return; R.logs=(R.logs||[]); for(const l
 /** حدث بث (حقيقي أو تجريبي). يرجع {out: رسائل للبث للعملاء, logs: سجلات وقت للحفظ} */
 export function roomEvent(R,ev,now){
  if(!ev||!LIVE_TYPES.has(ev.type)) return {out:[],logs:[]};
+ // أحداث متأخرة من بث سابق (roomId مختلف عن الجلسة الحالية، أو من جلسة أُغلقت) لا تغيّر أرقام البث الجديد
+ if(ev.lr!=null&&R.C&&R.C.live&&R.C.live.roomId&&(String(ev.lr)!==String(R.C.live.roomId)||(R.C.live.endedAt&&ev.type==="like"))) return {out:[],logs:[],stale:true};
  ev=normalizeEvent(ev,{now}); if(!ev) return {out:[],logs:[],bad:true};
  // التبرعات: محرك مستقل لا يلمس قوائم TikTok
  if(DON_TYPES.has(ev.type)){ R.DN=R.DN||emptyDonations(); ev.t=ev.t||now; if(!applyDonation(R.DN,ev)) return {out:[],logs:[],dup:true};
@@ -178,3 +181,40 @@ export function roomSnapshot(R,now){ if(R.C&&R.C.subathon) migrateRules(R.C.suba
 function faRoomTTS(R,ev,now,out){ const c=R.botCfg&&R.botCfg.falert; if(!c||!c.tts||ev.type!=="follow") return; const nm=String((ev.user&&(ev.user.name||ev.user.nick))||"").slice(0,40); if(!nm) return;
  const text=String(c.text||"يا هلا والله بـ {username}، نورتنا يا أسطورة!").replace(/\{(username|display_name)\}/g,nm).slice(0,200);
  out.push({t:"bot",items:[{id:"fa_tts_"+ev.id,kind:"reply",bot:"falert",text,speech:text,show:false,say:true,user:{name:nm},at:now,test:!!ev.test}]}) }
+
+/* ====== جلسات البث: تصفير بيانات الجلسة فقط ====== */
+/** يصفّر بيانات البث (التكبيس دائماً + النطاقات المختارة) ويرجع رسائل التحديث لكل الطبقات — الإعدادات والتصاميم والأهداف المحددة ووقت السبثون لا تُلمس */
+export function roomSessionReset(R,now,scopes){ const L=liveState(R.C), sc=scopes||L.scopes||{}, out=[];
+ const list=["likes","interact",...["gifts","comments","follows"].filter(k=>sc[k])];
+ for(const s of list){ const r=roomEvent(R,{type:"reset",scope:s,id:`sr:${L.sid||"m"}:${s}:${now}`,t:now},now); out.push(...r.out) }
+ if(R.C.latest){ delete R.C.latest.like; if(sc.gifts) delete R.C.latest.gift; if(sc.follows) delete R.C.latest.follow; if(sc.comments) delete R.C.latest.comment } // آخر شخص كبس
+ if(R.C.battle&&+R.C.battle.likePts>0) battleOp(R.C.battle,{op:"reset"},now); // تحدي التكبيس: الإعدادات تبقى والنقاط تُصفّر
+ const s=R.C.subathon; if(s&&s.rstate&&s.rstate.acc){ for(const r of (s.rules&&s.rules.list)||[]) if(r.kind==="likes") delete s.rstate.acc[r.id]; s.likeAcc=0 } // بقايا تكبيس البث السابق لا تُحتسب في السبثون — الوقت المتبقي لا يُلمس
+ if(R.ACT&&R.botCfg&&Array.isArray(R.botCfg.actions)) for(const a of R.botCfg.actions){ const tr=a.trigger||{}; if(tr.type==="likes"&&R.ACT.acc) delete R.ACT.acc[a.id]; if(tr.type==="goal"&&tr.metric==="likes"&&R.ACT.goalsHit) delete R.ACT.goalsHit[a.id] } // مراحل أهداف التكبيس تبدأ من جديد
+ if(R.AL&&typeof R.AL==="object"){ if("tl" in R.AL) R.AL.tl=0; if(R.AL.ul) R.AL.ul={} } // تنبيهات مراحل اللايك: عدّاد جديد (لا تعاد تنبيهات المراحل القديمة)
+ R.D.startedAt=now; R.btDirty=false;
+ out.push({t:"clock",C:R.C,now,logs:[]});
+ return out }
+/** بدء جلسة جديدة (تلقائي عند بث جديد أو يدوي): يغلق السابقة ويحفظ إحصائياتها، ثم يصفّر */
+export function roomSessionStart(R,now,o={}){ const L=liveState(R.C);
+ if(!L.sid&&L.keep!==false&&R.D&&R.D.tot&&(R.D.tot.likes||0)>0){ L.sid="pre"+now.toString(36); L.roomId=null; L.startedAt=R.D.startedAt||now; L.endedAt=null } // بيانات قبل نظام الجلسات: تُحفظ كجلسة سابقة بدل أن تضيع
+ sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual"});
+ const out=o.reset===false?[]:roomSessionReset(R,now);
+ out.push({t:"session",S:sessPublic(L),started:true,reset:o.reset!==false});
+ return {out,logs:[],session:true} }
+/** اتصال بـ TikTok نجح ومعه roomId: نفس البث = استمرار، بث جديد = جلسة جديدة (مع التصفير إن كان مفعّلاً) */
+export function roomSessionConnect(R,roomId,now){ const L=liveState(R.C), d=sessDecide(L,roomId,now);
+ if(d.act==="same"){ if(d.id&&!L.roomId){ L.roomId=d.id; return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"same"} } return {out:[],logs:[],act:"same"} }
+ if(d.act==="resume"){ L.endedAt=null; L.endWhy=""; L.history=L.history.filter(h=>h.sid!==L.sid); return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"resume"} }
+ if(d.act==="first"){ // أول جلسة: إن كانت لدينا بيانات من قبل نظام الجلسات فهي من بث سابق غير معروف — تُصفّر فقط إن كان التصفير التلقائي مفعّلاً
+  const had=(R.D&&R.D.tot&&(R.D.tot.likes||0))>0; const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"first",reset:L.auto!==false&&had}); return {...r,act:"first"} }
+ const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"new_stream",reset:L.auto!==false}); return {...r,act:"new"} }
+/** انتهاء البث (حدث STREAM_END من TikTok): يُغلق ويحفظ الإحصائيات بدون تصفير — الأرقام تبقى ظاهرة حتى يبدأ بث جديد */
+export function roomSessionEnd(R,now,why){ const L=liveState(R.C); if(!sessClose(L,R.D,now,why||"stream_end")) return {out:[],logs:[]}; return {out:[{t:"session",S:sessPublic(L),ended:true}],logs:[]} }
+/** أوامر من لوحة التحكم: إعدادات / تصفير يدوي / جلسة جديدة */
+export function roomSessionOp(R,m,now){ const L=liveState(R.C);
+ if(m.op==="config"){ const c=m.config||{}; if(c.auto!==undefined) L.auto=!!c.auto; if(c.keep!==undefined) L.keep=!!c.keep; if(c.scopes&&typeof c.scopes==="object") for(const k of ["gifts","comments","follows"]) if(k in c.scopes) L.scopes[k]=!!c.scopes[k]; return {out:[{t:"session",S:sessPublic(L)}],logs:[]} }
+ if(m.op==="resetNow"){ const out=roomSessionReset(R,now); out.push({t:"session",S:sessPublic(L),reset:true}); return {out,logs:[]} }
+ if(m.op==="newSession") return roomSessionStart(R,now,{roomId:null,source:"manual",why:"manual"});
+ if(m.op==="clearHistory"){ L.history=[]; return {out:[{t:"session",S:sessPublic(L)}],logs:[]} }
+ return {out:[],logs:[]} }

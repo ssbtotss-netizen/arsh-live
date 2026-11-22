@@ -27,6 +27,7 @@ export const DONATION_SOURCES=["streamlabs","streamelements","kofi","stripe","pa
 
 /** أنواع الأحداث ووحدة قياس كل نوع */
 export const EVENT_TYPES={
+ reset:{unit:"none",label:"تصفير قائمة"}, shuffle:{unit:"none",label:"خلط قائمة"},
  comment:{unit:"message",label:"تعليق"}, like:{unit:"likes",label:"لايك"}, gift:{unit:"platform_coins",label:"هدية منصة"},
  follow:{unit:"count",label:"متابعة"}, share:{unit:"count",label:"مشاركة"}, join:{unit:"count",label:"دخول"},
  subscribe:{unit:"platform_sub",label:"اشتراك منصة"}, superchat:{unit:"currency",label:"Super Chat"}, cheer:{unit:"bits",label:"Bits"}, raid:{unit:"viewers",label:"غارة"},

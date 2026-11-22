@@ -30,7 +30,8 @@ export function userOf(d: any): LiveUser {
 
 /** حالة الربط المعروضة للواجهة — «متصل» فقط بعد نجاح connect() فعلياً */
 export type TkState = "connecting" | "waiting" | "connected" | "failed" | "stopped";
-export type TkInfo = { state: TkState; username: string; attempt: number; maxAttempts: number; retryAt?: number; kind?: string; text: string; admin?: string; at: number };
+export type TkInfo = { state: TkState; username: string; attempt: number; maxAttempts: number; retryAt?: number; kind?: string; text: string; admin?: string; at: number;
+  /** معرّف البث الحقيقي من TikTok (roomId) — معرّف جلسة البث */ liveRoomId?: string; /** TikTok أعلن انتهاء البث (STREAM_END) — يختلف عن انقطاع الاتصال */ ended?: boolean };
 export type TikTokHandle = { stop(): void; connected: boolean; username: string; info: TkInfo };
 
 /** تصنيف خطأ الاتصال (بدون كشف أي مفتاح) — يقرأ صنف الخطأ وretryAfter/resetTime من المكتبة (≥2.5) وحالة HTTP إن وُجدت */
@@ -91,6 +92,9 @@ export function startTikTok(
   const info: TkInfo = { state: "connecting", username, attempt: 0, maxAttempts: 0, text: "", at: now() };
   const handle: TikTokHandle = { connected: false, username, info, stop() {} };
   let stopped = false, conn: any, retry: NodeJS.Timeout | undefined, fcTimer: NodeJS.Timeout | undefined, failKind = "", failCount = 0, seq = 0;
+  // كل حدث يحمل roomId البث الذي جاء منه — الغرفة تتجاهل أحداث بث سابق وصلت متأخرة
+  let lr: string | null = null;
+  const emit = (e: any) => cb.onEvent(lr ? { ...e, lr } : e);
   const set = (p: Partial<TkInfo>, live = false) => { if (stopped && p.state !== "stopped") return; Object.assign(info, p, { at: now() }); if (p.retryAt === undefined && p.state !== "waiting") delete info.retryAt; cb.onStatus(live, info.text, { ...info }); };
   const wait = (kind: string, err: TkErr | null, fallbackText?: string) => {
     if (stopped) return;
@@ -129,7 +133,7 @@ export function startTikTok(
     const mid = (d: any, kind: string) => { const x = d?.msgId ?? d?.common?.msgId ?? d?.event?.msgId; return x ? `${kind}:${x}` : undefined; };
     c.on(ev("LIKE", "like"), (d: any) => { if (!live()) return;
       const count = Number(d.likeCount ?? d.count ?? 0);
-      if (count > 0) cb.onEvent({ type: "like", id: mid(d, "like"), user: userOf(d), count });
+      if (count > 0) emit({ type: "like", id: mid(d, "like"), user: userOf(d), count });
     });
     let rawShown = 0;
     c.on(ev("GIFT", "gift"), (d: any) => { if (!live()) return;
@@ -151,25 +155,26 @@ export function startTikTok(
       const end = repeatEnd === true || Number(repeatEnd) > 0;
       const total = repeat * Math.max(1, groupCount);
       const id = mid(d, "gift") ?? `gift:${u.id}:${giftId}:${groupId}:${repeat}:${end ? 1 : 0}:${d.createTime ?? ""}`;
-      cb.onEvent({ type: "gift", id, user: u, value: diamonds * total, count: total, gift: name != null && String(name).trim() ? String(name) : "هدية", giftId, diamonds, image: String(image || ""),
+      emit({ type: "gift", id, user: u, value: diamonds * total, count: total, gift: name != null && String(name).trim() ? String(name) : "هدية", giftId, diamonds, image: String(image || ""),
         streak: { cum: repeat, gc: groupCount, end, type: giftType ?? null, group: groupId != null ? String(groupId) : "" } } as any);
     });
     c.on(ev("CHAT", "chat"), (d: any) => { if (!live()) return;
       const cu: any = userOf(d); if (String(cu.id).toLowerCase() === username.toLowerCase()) cu.owner = true;
-      cb.onEvent({ type: "comment", id: mid(d, "chat"), user: cu, text: String(d.comment ?? "").slice(0, 200) });
+      emit({ type: "comment", id: mid(d, "chat"), user: cu, text: String(d.comment ?? "").slice(0, 200) });
     });
-    const onFollow = (d: any) => { if (live()) cb.onEvent({ type: "follow", id: mid(d, "follow") ?? `follow:${userOf(d).id}`, user: userOf(d) }); };
+    const onFollow = (d: any) => { if (live()) emit({ type: "follow", id: mid(d, "follow") ?? `follow:${userOf(d).id}`, user: userOf(d) }); };
     if (E.FOLLOW) c.on(E.FOLLOW, onFollow);
     else c.on("social", (d: any) => { if (String(d.displayType ?? "").includes("follow")) onFollow(d); });
-    const onShare = (d: any) => { if (live()) cb.onEvent({ type: "share", id: mid(d, "share") ?? `share:${userOf(d).id}:${Date.now()}`, user: userOf(d) }); };
+    const onShare = (d: any) => { if (live()) emit({ type: "share", id: mid(d, "share") ?? `share:${userOf(d).id}:${Date.now()}`, user: userOf(d) }); };
     if (E.SHARE) c.on(E.SHARE, onShare);
     else c.on("social", (d: any) => { if (String(d.displayType ?? "").includes("share")) onShare(d); });
-    c.on(ev("MEMBER", "member"), (d: any) => { if (live()) cb.onEvent({ type: "join", id: mid(d, "join") ?? `join:${userOf(d).id}`, user: userOf(d) } as any); });
-    c.on(ev("SUBSCRIBE", "subscribe"), (d: any) => { if (live()) cb.onEvent({ type: "subscribe", id: mid(d, "sub"), user: userOf(d) }); });
+    c.on(ev("MEMBER", "member"), (d: any) => { if (live()) emit({ type: "join", id: mid(d, "join") ?? `join:${userOf(d).id}`, user: userOf(d) } as any); });
+    c.on(ev("SUBSCRIBE", "subscribe"), (d: any) => { if (live()) emit({ type: "subscribe", id: mid(d, "sub"), user: userOf(d) }); });
     let ended = false;
-    const onEnd = () => { if (!live() || ended || !handle.connected) return; ended = true; clearInterval(fcTimer); handle.connected = false; log(`[tiktok] @${username} stream ended/disconnected id=${attemptId}`); wait("dropped", null, "انتهى البث أو انقطع الاتصال"); };
-    c.on(ev("STREAM_END", "streamEnd"), onEnd);
-    c.on(ev("DISCONNECTED", "disconnected"), onEnd);
+    // STREAM_END = TikTok أعلن انتهاء البث (تُغلق الجلسة وتُحفظ إحصائياتها) · DISCONNECTED = انقطاع فقط (لا تغيير في الجلسة)
+    const onEnd = (real: boolean) => { if (!live() || ended || !handle.connected) return; ended = true; clearInterval(fcTimer); handle.connected = false; if (real) info.ended = true; log(`[tiktok] @${username} ${real ? "stream ended" : "disconnected"} id=${attemptId} room=${lr ?? "?"}`); wait("dropped", null, "انتهى البث أو انقطع الاتصال"); };
+    c.on(ev("STREAM_END", "streamEnd"), () => onEnd(true));
+    c.on(ev("DISCONNECTED", "disconnected"), () => onEnd(false));
     c.on?.("error", () => {});
 
     try {
@@ -178,7 +183,8 @@ export function startTikTok(
       failKind = ""; failCount = 0;
       handle.connected = true;
       log(`[tiktok] @${username} connected id=${attemptId} room=${state?.roomId ?? "?"} key=${keySet() ? "set" : "missing"}`);
-      set({ state: "connected", attempt: 0, maxAttempts: 0, kind: undefined, admin: undefined, text: `متصل ببث @${username}` + (state?.roomId ? ` (غرفة ${state.roomId})` : "") }, true);
+      lr = state?.roomId != null ? String(state.roomId) : null;
+      set({ state: "connected", attempt: 0, maxAttempts: 0, kind: undefined, admin: undefined, liveRoomId: lr ?? undefined, ended: false, text: `متصل ببث @${username}` + (state?.roomId ? ` (غرفة ${state.roomId})` : "") }, true);
       const syncFollowers = async () => { try { const inf: any = await c.fetchRoomInfo?.(); const o = inf?.owner ?? inf?.data?.owner ?? inf?.roomInfo?.owner; const n = Number(o?.follow_info?.follower_count ?? o?.followInfo?.followerCount);
         if (Number.isFinite(n) && n > 0) cb.onFollowers?.(n); } catch (e: any) { console.error("[tiktok] follower sync failed:", String(e?.message || e).slice(0, 160)); } };
       clearInterval(fcTimer); syncFollowers(); fcTimer = setInterval(() => { if (handle.connected && live()) syncFollowers(); }, 60_000);

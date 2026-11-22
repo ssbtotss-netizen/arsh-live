@@ -1,7 +1,7 @@
 // مركز البث: غرفة لكل صانع محتوى. الخادم هو المرجع للوقت والبيانات.
 // استقبال الأحداث (tiktok.ts) ← غرفة (engine/room.js: منع التكرار → محرك القوائم + محرك السبثون/المؤقتات) ← العملاء
 import type { WebSocketServer, WebSocket } from "ws";
-import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound } from "../lib/core";
+import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound, roomSessionConnect, roomSessionEnd, roomSessionOp } from "../lib/core";
 import type { Layout, LiveEvent } from "../lib/core";
 import { startTikTok, type TikTokHandle, type TkInfo } from "./tiktok";
 /** حالة الربط للواجهة وروابط البث — ملاحظة المشرف (اسم المتغير ومكانه) لا تُرسل هنا بل تظهر في لوحة الإدارة */
@@ -42,7 +42,13 @@ function seenGift(r: any, e: any): boolean {
   r.gifts.sort((a: any, b: any) => (+a.diamonds || 0) - (+b.diamonds || 0)); r.dirty = true;
   return true;
 }
-const withCatalog = (r: any) => (r.gifts?.length ? { ...r.C, giftCatalog: { at: Date.now(), list: r.gifts } } : r.C);
+/** نسخة مضغوطة من بيانات البث الحالي (أعلى 3000 لكل قائمة) — تُحفظ مع معرّف الجلسة لتُستعاد بعد إعادة تشغيل الخادم */
+const topN = (o: any, n = 3000) => { const a = Object.values(o || {}) as any[]; if (a.length <= n) return o || {}; a.sort((x, y) => (y.v || 0) - (x.v || 0)); const m: any = {}; for (const x of a.slice(0, n)) m[x.k] = x; return m; };
+const compactD = (D: any) => ({ ...D, likes: topN(D.likes), gifts: topN(D.gifts), comments: topN(D.comments), interact: topN(D.interact), giftBy: {}, feed: (D.feed || []).slice(0, 30) });
+const withCatalog = (r: any) => { const live = r.C?.live; const C: any = { ...r.C };
+  if (r.gifts?.length) C.giftCatalog = { at: Date.now(), list: r.gifts };
+  if (live?.sid) C.liveD = { sid: live.sid, at: Date.now(), D: compactD(r.D) };
+  return C; };
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
   const rooms = new Map<string, Room>();
   const loading = new Map<string, Promise<Room>>();
@@ -54,6 +60,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       const saved = await opt.loadRoom?.(id).catch(() => null);
       if (saved?.C) room.C = saved.C;
       if ((room.C as any)?.giftCatalog) { const gc = (room.C as any).giftCatalog; if (gc.list?.length) room.gifts = gc.list; delete (room.C as any).giftCatalog; } // آخر قائمة هدايا من TikTok حتى خارج البث
+      // بيانات البث الحالي: تُستعاد فقط إذا كانت لنفس الجلسة (نفس معرّف الجلسة) — بيانات بث سابق لا تنتقل لبث جديد
+      if ((room.C as any)?.liveD) { const ld = (room.C as any).liveD; delete (room.C as any).liveD; if (ld?.D && ld.sid && (room.C as any).live?.sid === ld.sid) room.D = { ...room.D, ...ld.D }; }
       if (saved?.H) room.H = saved.H;
       if (saved?.logs) room.logs = saved.logs;
       if (saved?.DN) room.DN = saved.DN;
@@ -76,7 +84,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "musicsearch") { const find = opt.ytFind ? opt.ytFind(m.q, m.cfg) : Promise.resolve({ ok: false, message: "البحث في YouTube غير متاح على هذا الخادم" });
         find.catch(() => ({ ok: false, message: "تعذر البحث في YouTube" })).then(yr => commit(id, r, { out: roomMusicFound(r as any, m, yr, Date.now()).out, logs: [] })); continue; }
       broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
-    if (res.out.some(m => m.t === "clock" || m.t === "glog")) { r.dirty = true; } // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
+    if (res.out.some(m => m.t === "clock" || m.t === "glog" || m.t === "session")) { r.dirty = true; } // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }
   function dispatch(id: string, r: Room, ev: LiveEvent) {
@@ -87,6 +95,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     // كتالوج الصور الحقيقية: كل هدية تصل من TikTok (اتصال حقيقي، ليست تجربة) تُحفظ بصورتها واسمها وقيمتها كما أرسلها TikTok
     if (ev.type === "gift" && !(ev as any).sim && !(ev as any).test && (ev as any).streak && (ev as any).giftId != null && seenGift(r, ev as any)) broadcast(r, { t: "gifts", gifts: r.gifts });
     const res = roomEvent(r, ev, Date.now());
+    if (!(res as any).dup && !(res as any).stale && !(res as any).bad) (r as any).dirtyD = true;
     if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return; }
     if (ev.type === "donation") { const ov = [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length; (r as any).lastDon = { id: ev.id, at: Date.now(), test: !!(ev as any).test, overlays: ov, acks: new Set() }; opt.onDonationDispatch?.(id, ev, { dup: false, overlays: ov }); }
     // أحداث التجربة لا تدخل سجل الهدايا الحقيقي في قاعدة البيانات
@@ -135,6 +144,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       // عرض فوري (حساب عند الطلب...) يُبث لكل روابط الغرفة
       if (m.t === "fx" && m.fx && typeof m.fx.kind === "string") { const f = m.fx; return broadcast(r, { t: "fx", fx: { kind: String(f.kind).slice(0, 20), accountId: String(f.accountId ?? "").slice(0, 40), at: +f.at || Date.now(), until: Math.min(+f.until || 0, Date.now() + 120000) } }); }
       if (m.t === "clock-op" && typeof m.target === "string" && typeof m.op === "string") return commit(id, r, roomClockOp(r, m, Date.now()));
+      // جلسات البث من لوحة التحكم: إعدادات التصفير، «تصفير التكبيس الآن»، «بدء جلسة بث جديدة»
+      if (m.t === "session-op" && typeof m.op === "string") return commit(id, r, roomSessionOp(r as any, m, Date.now()));
       if (m.t === "layout" && m.layout && typeof m.layout.id === "string" && Array.isArray(m.layout.widgets)) {
         r.layouts.set(m.layout.id, m.layout);
         // البوتات تعمل هنا فقط (مصدر واحد) — الإعدادات والسياق من آخر تخطيط أرسلته لوحة التحكم
@@ -156,13 +167,16 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         r.tiktok?.stop();
         let h: TikTokHandle | undefined;
         h = r.tiktok = startTikTok(username, {
-          onEvent: ev => dispatch(id, r, ev),
+          onEvent: ev => { if (h && r.tiktok !== h) return; dispatch(id, r, ev); }, // أحداث اتصال قديم بعد استبداله لا تصل للجلسة الحالية
           onGifts: gifts => { r.gifts = gifts; r.dirty = true; broadcast(r, { t: "gifts", gifts }); }, // قائمة هدايا TikTok الحقيقية: تُحفظ مع حالة الغرفة (خارج البث المرسل للروابط)
           onFollowers: n => commit(id, r, roomClockOp(r, { target: "followers", op: "official", platform: "tiktok", value: n, source: "tiktok_live" }, Date.now())),
           onStatus: (live, text, info) => {
             if (h && r.tiktok !== h) return; // اتصال قديم بعد الإيقاف أو الاستبدال
             const was = r.live;
             broadcast(r, { t: "status", live, text, ...(info ? { tk: tkPublic(info) } : {}) });
+            // جلسات البث: roomId مختلف = بث جديد (تصفير بيانات الجلسة)، نفس roomId = إعادة اتصال (استمرار) — الانقطاع وحده لا يصفّر شيئاً
+            if (info?.state === "connected") { const sr = roomSessionConnect(r as any, info.liveRoomId ?? null, Date.now()); if ((sr as any).act !== "same") console.log(`[session] ${id.slice(0, 6)}… ${(sr as any).act} roomId=${info.liveRoomId ?? "?"}`); commit(id, r, sr); }
+            if (info?.ended) commit(id, r, roomSessionEnd(r as any, Date.now(), "stream_end"));
             if (was !== live) commit(id, r, roomLive(r, live, Date.now())); // إيقاف/استكمال السبثون تلقائياً حسب الإعداد
             opt.onLiveStatus?.(id, live, text);
           },
@@ -193,7 +207,9 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     const now = Date.now();
     rooms.forEach((r, id) => {
       commit(id, r, roomTick(r, now));
-      if (r.dirty) { r.dirty = false; opt.saveClock?.(id, withCatalog(r)).catch(() => {}); }
+      // بيانات البث (تكبيس/دعم) تتغير كثيراً: تُحفظ كل 15 ثانية على الأكثر لتتحمل إعادة تشغيل الخادم
+      if (!r.dirty && (r as any).dirtyD && now - ((r as any).savedAt || 0) > 15000) r.dirty = true;
+      if (r.dirty) { r.dirty = false; (r as any).dirtyD = false; (r as any).savedAt = now; opt.saveClock?.(id, withCatalog(r)).catch(() => {}); }
     });
   }, 1000);
   const ping = setInterval(() => wss.clients.forEach((c: Client) => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);

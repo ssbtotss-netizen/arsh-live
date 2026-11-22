@@ -104,6 +104,7 @@ function send(msg){
  if(msg.t==="sim"){ syncBots(); res=roomEvent(R,msg.ev,now) }
  else if(msg.t==="clock-op") res=roomClockOp(R,msg,now);
  else if(msg.t==="fx") res={out:[{t:"fx",fx:msg.fx}],logs:[]};
+ else if(msg.t==="session-op") res=roomSessionOp(R,msg,now);
  else return;
  for(const m of res.out){ if(m.t==="musicsearch"){ demoMusicSearch(m); continue } receive(m,true); if(bus) bus.postMessage(m) }
  saveRoom();
@@ -118,6 +119,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
@@ -334,7 +336,7 @@ function renderPage(soft){
   const rows=p==="likes"?sorted(D.likes):p==="gifts"?sorted(D.gifts):sorted(D.comments);
   const cols=p==="likes"?[["الإعجابات",r=>fmt(r.v)]]:p==="gifts"?[["النقاط",r=>fmt(r.v)],["الهدايا",r=>fmt(r.c)]]:[["التعليقات",r=>fmt(r.v)]];
   h=head(PAGES.find(x=>x[0]===p)[1],p==="likes"?"تستقبل أحداث الإعجاب فقط — لا تختلط بنقاط الهدايا":p==="gifts"?"تستقبل الهدايا فقط — النقاط = قيمة الهدية بالألماس × العدد":"التعليقات، أكثر المتفاعلين، وآخر المتابعين",layoutPicker())+
-  lsSection(types,null,"قوائم هذا القسم")+`<div class="grid g2" style="margin-top:14px"><div class="card"><h3>ملاحظات البيانات</h3>
+  (p==="likes"?sessHTML():"")+lsSection(types,null,"قوائم هذا القسم")+`<div class="grid g2" style="margin-top:14px"><div class="card"><h3>ملاحظات البيانات</h3>
   ${p==="gifts"?`<div class="note" style="margin-top:10px">📌 <b>الفترات المتاحة فعلياً:</b> TikTok لا يعطي سجل دعم سابق. «البث الحالي» من أحداث هذا البث، و«اليوم/الأسبوع/الشهر» من الهدايا التي سجلتها المنصة أثناء اتصالها ببثوثك فقط.</div>`:""}
   ${p==="likes"?`<div class="note" style="margin-top:10px">📌 TikTok يرسل الإعجابات على دفعات، وفي البثوث الكبيرة قد لا تصل كل الدفعات.</div>`:""}
   ${p==="comments"?`<div class="note" style="margin-top:10px">📌 «أكثر المتفاعلين»: نقطة لكل تعليق، ونقطة لكل دفعة إعجاب، ونقطة لكل هدية.</div>`:""}</div>
@@ -628,6 +630,21 @@ function lsSection(types,addTypes,title){ const l=L(); const ws_=l.widgets.filte
  <div class="small mut" style="margin-top:6px">💡 الاستوديو اختياري: استخدمه فقط لدمج عدة عناصر في مشهد واحد. كل قائمة هنا لها رابط مستقل خاص بها.</div></div>${open?lsEditor(open):""}` }
 
 /* ---- السبثون ---- */
+/* ---- جلسات البث: «إعدادات إعادة التصفير» في صفحة التكبيس ---- */
+function sessHTML(){ const L=(R.C&&R.C.live)||{}, auto=L.auto!==false, keep=L.keep!==false, sc=L.scopes||{}, H=L.history||[], on=L.sid&&!L.endedAt;
+ const dur=(a,b)=>{ const m=Math.max(0,Math.round(((b||Date.now())-a)/60000)); return m>=60?`${Math.floor(m/60)}س ${m%60}د`:`${m}د` };
+ return `<div class="card ss-card" data-sess><h3><span>🔄 إعدادات إعادة التصفير</span><span class="tag ${on?"ok":""}">${L.sid?(on?"🟢 جلسة بث جارية":"⏹ آخر جلسة انتهت"):"لا توجد جلسة بعد"}</span></h3>
+  <div class="ss-grid"><div class="ss-kv"><span>بداية الجلسة الحالية</span><b>${L.startedAt?dt(L.startedAt):"—"}</b></div>
+   <div class="ss-kv"><span>تكبيس هذه الجلسة</span><b>${fmt((R.D.tot&&R.D.tot.likes)||0)}</b></div>
+   <div class="ss-kv"><span>معرّف البث من TikTok</span><b dir="ltr" class="small">${L.roomId?esc(String(L.roomId)):L.sid?"يدوية":"—"}</b></div>
+   <div class="ss-kv"><span>حالة الاتصال بالبث</span><div data-tkbox>${tkBox()}</div></div></div>
+  <label class="ss-tg"><input type="checkbox" data-sessauto ${auto?"checked":""}><span><b>تصفير التكبيس تلقائياً عند بدء بث جديد</b><br><span class="mut small">يُعرف البث الجديد من معرّفه في TikTok. الانقطاع وإعادة الاتصال بنفس البث، وتحديث الصفحة، وإعادة فتح OBS لا تصفّر شيئاً.</span></span></label>
+  <label class="ss-tg"><input type="checkbox" data-sesskeep ${keep?"checked":""}><span><b>الاحتفاظ بإحصائيات البث السابق</b><br><span class="mut small">تُحفظ أرقام كل بث عند انتهائه (التكبيس، أكثر المكبسين، الهدايا، التعليقات).</span></span></label>
+  <details class="ss-more"><summary class="small">تصفير بيانات أخرى مع التكبيس عند كل بث جديد</summary><div class="row" style="gap:14px;margin-top:8px">${[["gifts","قوائم الهدايا والداعمين"],["comments","التعليقات"],["follows","المتابعون الجدد"]].map(([k,l])=>`<label class="row small" style="gap:6px"><input type="checkbox" data-sessscope="${k}" ${sc[k]?"checked":""}> ${l}</label>`).join("")}</div></details>
+  <div class="row" style="margin-top:12px"><button class="btn pri" data-sessnew>▶ بدء جلسة بث جديدة</button><button class="btn dng" data-sessreset>🧹 تصفير التكبيس الآن</button></div>
+  <p class="mut small" style="margin:10px 0 0">يُصفَّر: عدد التكبيس، ترتيب المكبسين، آخر وأكثر شخص كبس، تقدم أهداف وتحدي التكبيس. <b>لا يُصفَّر:</b> التصاميم، الألوان، الأحجام، أهداف التكبيس المحددة، الحركات، ووقت السبثون (إعادة ضبطه مستقلة من صفحة السبثون).</p>
+  ${H.length?`<div class="ttl" style="margin-top:12px">📊 إحصائيات البثوث السابقة</div><div class="ss-hist">${H.slice(0,8).map(x=>`<div class="ss-h"><div><b>${dt(x.startedAt)}</b> <span class="mut small">· ${dur(x.startedAt,x.endedAt)}${x.why==="stream_end"?" · انتهى البث":x.why==="manual"?" · جلسة يدوية":""}</span></div>
+   <div class="ss-hm"><span>❤️ <b>${fmt(x.likes)}</b> تكبيسة</span><span>👥 ${fmt(x.likers||0)} مكبس</span><span>🎁 ${fmt(x.giftCount||0)} هدية</span><span>💬 ${fmt(x.comments||0)}</span>${x.topLikers&&x.topLikers[0]?`<span>👑 <bdi>${esc(x.topLikers[0].name)}</bdi> (${fmt(x.topLikers[0].v)})</span>`:""}</div></div>`).join("")}</div>`:""}</div>` }
 function subathonHTML(){
  const s=R.C.subathon, now=Date.now()+skew, l=L();
  const sw=l.widgets.filter(w=>w.type==="subathon");
@@ -1358,6 +1375,8 @@ function onClick(e){
  if(d.libtab){ S.libTab=d.libtab; S.libTarget=null; if(!d.go) return renderPage() }
  if(d.go) return go(d.go);
  if(d.sim){ const sc=document.getElementById("simScope")?.value||"likes"; S.scope=sc; if(d.sim==="shuffle"){ if(sc==="all"||sc==="follows") return toast("اختر قائمة ترتيب واحدة"); return SIM.shuffle(sc) } if(d.sim==="reset") return SIM.reset(sc); return SIM[d.sim]() }
+ if(t.hasAttribute&&t.hasAttribute("data-sessreset")) return ask("تصفير التكبيس الآن؟ يبدأ عدد التكبيس وترتيب المكبسين من الصفر (التصاميم والإعدادات لا تتأثر).").then(ok=>{ if(ok) send({t:"session-op",op:"resetNow"}) });
+ if(t.hasAttribute&&t.hasAttribute("data-sessnew")) return ask("بدء جلسة بث جديدة؟ تُحفظ إحصائيات الجلسة الحالية ويبدأ التكبيس من الصفر.").then(ok=>{ if(ok) send({t:"session-op",op:"newSession"}) });
  if(d.saOp) return clockOp("subathon",d.saOp);
  if(d.saAdd) return clockOp("subathon","add",{ms:+d.saAdd,source:"manual"});
  if(d.saCustom){ const m=+document.getElementById("saCustom").value||0, u=+((document.getElementById("saCustomU")||{}).value)||MIN; if(m>0){ clockOp("subathon","add",{ms:Math.round(m*u)*(+d.saCustom),source:"manual"}); toast(`${+d.saCustom>0?"＋":"－"} ${saDurTxt(Math.round(m*u))}`) } return }
@@ -1477,6 +1496,8 @@ function onInput(e){
  if(d.act==="snap"&&e.type==="change"){ S.settings.snap=t.checked; return save() }
  if(d.act==="gpct"){ S.gpct=+t.value; const b=document.getElementById("gpctv"); if(b) b.textContent=S.gpct+"%"; for(const v of [...liveViews].filter(v=>v.vg&&String(v.w.id).startsWith("pv_"))){ v.w.base=S.gpct; v.refreshVG({D:emptyData()},e.type==="input") } return }
  if(d.rbhide&&e.type==="change"){ const w=findW(d.wid); if(!w) return; const h=new Set(w.hideKinds||[]); if(t.checked) h.delete(d.rbhide); else h.add(d.rbhide); w.hideKinds=[...h]; save(); pushLayout(); if(S.page==="studio") refreshView(w); return }
+ if((d.sessauto!==undefined||d.sesskeep!==undefined)&&e.type==="change"){ send({t:"session-op",op:"config",config:d.sessauto!==undefined?{auto:t.checked}:{keep:t.checked}}); return }
+ if(d.sessscope&&e.type==="change"){ send({t:"session-op",op:"config",config:{scopes:{[d.sessscope]:t.checked}}}); return }
  if(d.act==="saW"&&e.type==="change"){ S.saW=t.value; return renderPage(true) }
  if(d.rl&&e.type==="change"){ const id=d.rl, k=d.rk; setRules(L=>{ const r=L.find(x=>x.id===id); if(!r) return;
    if(k.startsWith("amt:")||k.startsWith("unit:")){ const f=k.split(":")[1], card=t.closest("[data-rule]"); const amt=+card.querySelector(`[data-rk="amt:${f}"]`).value||0, unit=+card.querySelector(`[data-rk="unit:${f}"]`).value||1000; r[f]=Math.round(amt*unit); return }

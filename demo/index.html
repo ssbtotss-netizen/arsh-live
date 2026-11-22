@@ -410,6 +410,14 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .sa2-lg{display:inline-flex;align-items:center;gap:6px}
 .sa2-d{white-space:nowrap}
 
+/* جلسات البث — إعدادات إعادة التصفير */
+.ss-card{margin-bottom:14px;border-color:#2f7bff40;background:radial-gradient(100% 140% at 100% 0%,#2f7bff18,transparent 55%),linear-gradient(180deg,var(--card),#080d1a)}
+.ss-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px}@media(max-width:900px){.ss-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.ss-kv{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#ffffff05;display:flex;flex-direction:column;gap:4px;min-width:0}.ss-kv>span{font-size:12px;color:var(--mut)}.ss-kv b{font-size:16px;overflow-wrap:anywhere}
+.ss-tg{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border:1px solid var(--line);border-radius:12px;margin-top:8px;cursor:pointer}.ss-tg input{margin-top:4px}
+.ss-more{margin-top:8px}.ss-more summary{cursor:pointer;color:var(--mut)}
+.ss-hist{display:flex;flex-direction:column;gap:8px}.ss-h{padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#ffffff04}.ss-hm{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);margin-top:4px}.ss-hm b{color:var(--tx)}
+
 /* ============ OVERLAY WIDGETS (shared by editor, previews and OBS) ============ */
 body.ov{background:transparent!important;overflow:hidden}
 body.ov .stage{background:transparent!important}
@@ -1790,6 +1798,7 @@ const DONATION_SOURCES=["streamlabs","streamelements","kofi","stripe","paypal","
 
 /** أنواع الأحداث ووحدة قياس كل نوع */
 const EVENT_TYPES={
+ reset:{unit:"none",label:"تصفير قائمة"}, shuffle:{unit:"none",label:"خلط قائمة"},
  comment:{unit:"message",label:"تعليق"}, like:{unit:"likes",label:"لايك"}, gift:{unit:"platform_coins",label:"هدية منصة"},
  follow:{unit:"count",label:"متابعة"}, share:{unit:"count",label:"مشاركة"}, join:{unit:"count",label:"دخول"},
  subscribe:{unit:"platform_sub",label:"اشتراك منصة"}, superchat:{unit:"currency",label:"Super Chat"}, cheer:{unit:"bits",label:"Bits"}, raid:{unit:"viewers",label:"غارة"},
@@ -2094,10 +2103,56 @@ function glogPush(C,diag,res){
 function gsTotals(C){ const G=gsState(C), sa=(C.subathon&&C.subathon.startedAt)||0; if(!G.tot||G.tot.sa!==sa) G.tot={sa,coins:0,gifts:0,events:0,ms:0,last:0}; return G.tot }
 const GLOG_STATUS={added:"✅ أُضيف",none:"⚪ بدون وقت",dup:"🔁 مكرر",late:"⏪ متأخر"};
 
+/* ---- engine/session.js ---- */
+// ====== جلسات البث (Live Session Management) ======
+// كل بث TikTok LIVE له roomId فريد — هو معرّف الجلسة الحقيقي:
+//  • نفس roomId بعد انقطاع/إعادة اتصال/إعادة تشغيل الخادم = نفس الجلسة → لا تصفير.
+//  • roomId مختلف = بث جديد → تُغلق الجلسة السابقة (تُحفظ إحصائياتها) وتُصفّر بيانات الجلسة فقط.
+// الإعدادات الدائمة (التصاميم، الألوان، الأهداف المحددة، قواعد السبثون ووقته) لا تُلمس هنا أبداً.
+// الحالة في C.live (تُحفظ مع حالة الغرفة في قاعدة البيانات).
+
+const SESS_HISTORY_CAP=20;
+/** بدون roomId موثوق: بث جديد فقط إذا انتهى السابق منذ هذه المدة على الأقل */
+const SESS_NOID_GAP_MS=5*60_000;
+/** نطاقات البيانات القابلة للتصفير — التكبيس دائماً، والباقي حسب اختيار صانع المحتوى */
+const SESS_SCOPES=[["likes","التكبيس والإعجابات (العدد، الترتيب، آخر وأكثر مكبس، أهداف وتحدي التكبيس)",true],["gifts","قوائم الهدايا والداعمين لهذا البث",false],["comments","التعليقات",false],["follows","المتابعون الجدد",false]];
+
+function liveState(C){ const L=C.live&&typeof C.live==="object"?C.live:(C.live={});
+ if(L.auto===undefined) L.auto=true; if(L.keep===undefined) L.keep=true;
+ if(!Array.isArray(L.history)) L.history=[]; if(!L.scopes||typeof L.scopes!=="object") L.scopes={gifts:false,comments:false,follows:false};
+ return L }
+const sid=now=>"s"+now.toString(36)+Math.random().toString(36).slice(2,6);
+/** إحصائيات الجلسة (لحفظها عند إغلاقها) */
+function sessStats(D){ const t=(D&&D.tot)||{}, top=Object.values((D&&D.likes)||{}).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>({name:x.name,v:x.v}));
+ return {likes:t.likes||0,likers:Object.keys((D&&D.likes)||{}).length,gifts:t.gifts||0,giftCount:t.giftCount||0,comments:t.comments||0,follows:t.follows||0,topLikers:top} }
+/** النسخة المرسلة للواجهات (بدون تفاصيل داخلية زائدة) */
+function sessPublic(L){ return L?{sid:L.sid||null,roomId:L.roomId||null,startedAt:L.startedAt||null,endedAt:L.endedAt||null,endWhy:L.endWhy||"",source:L.source||"",auto:L.auto!==false,keep:L.keep!==false,scopes:{...(L.scopes||{})},history:(L.history||[]).slice(0,SESS_HISTORY_CAP)}:null }
+
+/** يغلق الجلسة الحالية ويحفظ إحصائياتها (لا يصفّر شيئاً) */
+function sessClose(L,D,now,why){ if(!L.sid||L.endedAt) return false; L.endedAt=now; L.endWhy=why||"";
+ if(L.keep!==false){ L.history=L.history.filter(h=>h.sid!==L.sid); L.history.unshift({sid:L.sid,roomId:L.roomId||null,startedAt:L.startedAt,endedAt:now,why:why||"",...sessStats(D)}); if(L.history.length>SESS_HISTORY_CAP) L.history.length=SESS_HISTORY_CAP }
+ return true }
+
+/**
+ * قرار الجلسة عند الاتصال بالبث: {act:"same"|"new"|"resume"|"first"}
+ *  same: نفس roomId والجلسة مفتوحة · resume: نفس roomId بعد «انتهاء» (انقطاع ظن أنه نهاية) → يعاد فتحها بدون تصفير
+ *  new: roomId مختلف (أو بدون معرّف وانتهى السابق منذ مدة كافية) · first: أول جلسة مسجلة لهذه الغرفة
+ */
+function sessDecide(L,roomId,now){ const id=roomId!=null&&roomId!==""?String(roomId):null;
+ if(!L.sid) return {act:"first",id};
+ if(id&&L.roomId){ if(id===String(L.roomId)) return {act:L.endedAt?"resume":"same",id}; return {act:"new",id} }
+ if(id&&!L.roomId) return {act:L.endedAt?"new":"same",id}; // جلسة يدوية سابقة بلا معرّف: إن كانت مفتوحة نربطها بهذا البث
+ // لا يوجد معرّف موثوق من المصدر: لا تصفير بسبب انقطاع — فقط إذا انتهى البث السابق فعلاً ومر وقت كافٍ
+ if(L.endedAt&&now-L.endedAt>=SESS_NOID_GAP_MS) return {act:"new",id:null};
+ return {act:L.endedAt?"resume":"same",id:null} }
+
+function sessOpen(L,{roomId=null,now,source="tiktok"}){ L.sid=sid(now); L.roomId=roomId!=null?String(roomId):null; L.startedAt=now; L.endedAt=null; L.endWhy=""; L.source=source; return L.sid }
+
 /* ---- engine/room.js ---- */
 // ====== غرفة البث: تربط المحركات الثلاثة دون خلطها ======
 // استقبال الأحداث → (منع التكرار) → محرك القوائم + محرك السبثون/المؤقتات → رسائل للعرض
 // نفس الكود يعمل على الخادم (الوضع الحقيقي) وفي المتصفح (وضع التجربة بدون خادم).
+
 
 
 
@@ -2121,6 +2176,8 @@ function keep(R,logs){ if(!logs.length) return; R.logs=(R.logs||[]); for(const l
 /** حدث بث (حقيقي أو تجريبي). يرجع {out: رسائل للبث للعملاء, logs: سجلات وقت للحفظ} */
 function roomEvent(R,ev,now){
  if(!ev||!LIVE_TYPES.has(ev.type)) return {out:[],logs:[]};
+ // أحداث متأخرة من بث سابق (roomId مختلف عن الجلسة الحالية، أو من جلسة أُغلقت) لا تغيّر أرقام البث الجديد
+ if(ev.lr!=null&&R.C&&R.C.live&&R.C.live.roomId&&(String(ev.lr)!==String(R.C.live.roomId)||(R.C.live.endedAt&&ev.type==="like"))) return {out:[],logs:[],stale:true};
  ev=normalizeEvent(ev,{now}); if(!ev) return {out:[],logs:[],bad:true};
  // التبرعات: محرك مستقل لا يلمس قوائم TikTok
  if(DON_TYPES.has(ev.type)){ R.DN=R.DN||emptyDonations(); ev.t=ev.t||now; if(!applyDonation(R.DN,ev)) return {out:[],logs:[],dup:true};
@@ -2274,6 +2331,43 @@ function roomSnapshot(R,now){ if(R.C&&R.C.subathon) migrateRules(R.C.subathon); 
 function faRoomTTS(R,ev,now,out){ const c=R.botCfg&&R.botCfg.falert; if(!c||!c.tts||ev.type!=="follow") return; const nm=String((ev.user&&(ev.user.name||ev.user.nick))||"").slice(0,40); if(!nm) return;
  const text=String(c.text||"يا هلا والله بـ {username}، نورتنا يا أسطورة!").replace(/\{(username|display_name)\}/g,nm).slice(0,200);
  out.push({t:"bot",items:[{id:"fa_tts_"+ev.id,kind:"reply",bot:"falert",text,speech:text,show:false,say:true,user:{name:nm},at:now,test:!!ev.test}]}) }
+
+/* ====== جلسات البث: تصفير بيانات الجلسة فقط ====== */
+/** يصفّر بيانات البث (التكبيس دائماً + النطاقات المختارة) ويرجع رسائل التحديث لكل الطبقات — الإعدادات والتصاميم والأهداف المحددة ووقت السبثون لا تُلمس */
+function roomSessionReset(R,now,scopes){ const L=liveState(R.C), sc=scopes||L.scopes||{}, out=[];
+ const list=["likes","interact",...["gifts","comments","follows"].filter(k=>sc[k])];
+ for(const s of list){ const r=roomEvent(R,{type:"reset",scope:s,id:`sr:${L.sid||"m"}:${s}:${now}`,t:now},now); out.push(...r.out) }
+ if(R.C.latest){ delete R.C.latest.like; if(sc.gifts) delete R.C.latest.gift; if(sc.follows) delete R.C.latest.follow; if(sc.comments) delete R.C.latest.comment } // آخر شخص كبس
+ if(R.C.battle&&+R.C.battle.likePts>0) battleOp(R.C.battle,{op:"reset"},now); // تحدي التكبيس: الإعدادات تبقى والنقاط تُصفّر
+ const s=R.C.subathon; if(s&&s.rstate&&s.rstate.acc){ for(const r of (s.rules&&s.rules.list)||[]) if(r.kind==="likes") delete s.rstate.acc[r.id]; s.likeAcc=0 } // بقايا تكبيس البث السابق لا تُحتسب في السبثون — الوقت المتبقي لا يُلمس
+ if(R.ACT&&R.botCfg&&Array.isArray(R.botCfg.actions)) for(const a of R.botCfg.actions){ const tr=a.trigger||{}; if(tr.type==="likes"&&R.ACT.acc) delete R.ACT.acc[a.id]; if(tr.type==="goal"&&tr.metric==="likes"&&R.ACT.goalsHit) delete R.ACT.goalsHit[a.id] } // مراحل أهداف التكبيس تبدأ من جديد
+ if(R.AL&&typeof R.AL==="object"){ if("tl" in R.AL) R.AL.tl=0; if(R.AL.ul) R.AL.ul={} } // تنبيهات مراحل اللايك: عدّاد جديد (لا تعاد تنبيهات المراحل القديمة)
+ R.D.startedAt=now; R.btDirty=false;
+ out.push({t:"clock",C:R.C,now,logs:[]});
+ return out }
+/** بدء جلسة جديدة (تلقائي عند بث جديد أو يدوي): يغلق السابقة ويحفظ إحصائياتها، ثم يصفّر */
+function roomSessionStart(R,now,o={}){ const L=liveState(R.C);
+ if(!L.sid&&L.keep!==false&&R.D&&R.D.tot&&(R.D.tot.likes||0)>0){ L.sid="pre"+now.toString(36); L.roomId=null; L.startedAt=R.D.startedAt||now; L.endedAt=null } // بيانات قبل نظام الجلسات: تُحفظ كجلسة سابقة بدل أن تضيع
+ sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual"});
+ const out=o.reset===false?[]:roomSessionReset(R,now);
+ out.push({t:"session",S:sessPublic(L),started:true,reset:o.reset!==false});
+ return {out,logs:[],session:true} }
+/** اتصال بـ TikTok نجح ومعه roomId: نفس البث = استمرار، بث جديد = جلسة جديدة (مع التصفير إن كان مفعّلاً) */
+function roomSessionConnect(R,roomId,now){ const L=liveState(R.C), d=sessDecide(L,roomId,now);
+ if(d.act==="same"){ if(d.id&&!L.roomId){ L.roomId=d.id; return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"same"} } return {out:[],logs:[],act:"same"} }
+ if(d.act==="resume"){ L.endedAt=null; L.endWhy=""; L.history=L.history.filter(h=>h.sid!==L.sid); return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"resume"} }
+ if(d.act==="first"){ // أول جلسة: إن كانت لدينا بيانات من قبل نظام الجلسات فهي من بث سابق غير معروف — تُصفّر فقط إن كان التصفير التلقائي مفعّلاً
+  const had=(R.D&&R.D.tot&&(R.D.tot.likes||0))>0; const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"first",reset:L.auto!==false&&had}); return {...r,act:"first"} }
+ const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"new_stream",reset:L.auto!==false}); return {...r,act:"new"} }
+/** انتهاء البث (حدث STREAM_END من TikTok): يُغلق ويحفظ الإحصائيات بدون تصفير — الأرقام تبقى ظاهرة حتى يبدأ بث جديد */
+function roomSessionEnd(R,now,why){ const L=liveState(R.C); if(!sessClose(L,R.D,now,why||"stream_end")) return {out:[],logs:[]}; return {out:[{t:"session",S:sessPublic(L),ended:true}],logs:[]} }
+/** أوامر من لوحة التحكم: إعدادات / تصفير يدوي / جلسة جديدة */
+function roomSessionOp(R,m,now){ const L=liveState(R.C);
+ if(m.op==="config"){ const c=m.config||{}; if(c.auto!==undefined) L.auto=!!c.auto; if(c.keep!==undefined) L.keep=!!c.keep; if(c.scopes&&typeof c.scopes==="object") for(const k of ["gifts","comments","follows"]) if(k in c.scopes) L.scopes[k]=!!c.scopes[k]; return {out:[{t:"session",S:sessPublic(L)}],logs:[]} }
+ if(m.op==="resetNow"){ const out=roomSessionReset(R,now); out.push({t:"session",S:sessPublic(L),reset:true}); return {out,logs:[]} }
+ if(m.op==="newSession") return roomSessionStart(R,now,{roomId:null,source:"manual",why:"manual"});
+ if(m.op==="clearHistory"){ L.history=[]; return {out:[{t:"session",S:sessPublic(L)}],logs:[]} }
+ return {out:[],logs:[]} }
 
 /* ---- engine/bio.js ---- */
 // ====== رابط البايو | B6O6 Bio Link: محرك عرض مشترك (لوحة التحكم + الصفحة العامة) ======
@@ -9703,6 +9797,7 @@ function send(msg){
  if(msg.t==="sim"){ syncBots(); res=roomEvent(R,msg.ev,now) }
  else if(msg.t==="clock-op") res=roomClockOp(R,msg,now);
  else if(msg.t==="fx") res={out:[{t:"fx",fx:msg.fx}],logs:[]};
+ else if(msg.t==="session-op") res=roomSessionOp(R,msg,now);
  else return;
  for(const m of res.out){ if(m.t==="musicsearch"){ demoMusicSearch(m); continue } receive(m,true); if(bus) bus.postMessage(m) }
  saveRoom();
@@ -9717,6 +9812,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
@@ -9933,7 +10029,7 @@ function renderPage(soft){
   const rows=p==="likes"?sorted(D.likes):p==="gifts"?sorted(D.gifts):sorted(D.comments);
   const cols=p==="likes"?[["الإعجابات",r=>fmt(r.v)]]:p==="gifts"?[["النقاط",r=>fmt(r.v)],["الهدايا",r=>fmt(r.c)]]:[["التعليقات",r=>fmt(r.v)]];
   h=head(PAGES.find(x=>x[0]===p)[1],p==="likes"?"تستقبل أحداث الإعجاب فقط — لا تختلط بنقاط الهدايا":p==="gifts"?"تستقبل الهدايا فقط — النقاط = قيمة الهدية بالألماس × العدد":"التعليقات، أكثر المتفاعلين، وآخر المتابعين",layoutPicker())+
-  lsSection(types,null,"قوائم هذا القسم")+`<div class="grid g2" style="margin-top:14px"><div class="card"><h3>ملاحظات البيانات</h3>
+  (p==="likes"?sessHTML():"")+lsSection(types,null,"قوائم هذا القسم")+`<div class="grid g2" style="margin-top:14px"><div class="card"><h3>ملاحظات البيانات</h3>
   ${p==="gifts"?`<div class="note" style="margin-top:10px">📌 <b>الفترات المتاحة فعلياً:</b> TikTok لا يعطي سجل دعم سابق. «البث الحالي» من أحداث هذا البث، و«اليوم/الأسبوع/الشهر» من الهدايا التي سجلتها المنصة أثناء اتصالها ببثوثك فقط.</div>`:""}
   ${p==="likes"?`<div class="note" style="margin-top:10px">📌 TikTok يرسل الإعجابات على دفعات، وفي البثوث الكبيرة قد لا تصل كل الدفعات.</div>`:""}
   ${p==="comments"?`<div class="note" style="margin-top:10px">📌 «أكثر المتفاعلين»: نقطة لكل تعليق، ونقطة لكل دفعة إعجاب، ونقطة لكل هدية.</div>`:""}</div>
@@ -10227,6 +10323,21 @@ function lsSection(types,addTypes,title){ const l=L(); const ws_=l.widgets.filte
  <div class="small mut" style="margin-top:6px">💡 الاستوديو اختياري: استخدمه فقط لدمج عدة عناصر في مشهد واحد. كل قائمة هنا لها رابط مستقل خاص بها.</div></div>${open?lsEditor(open):""}` }
 
 /* ---- السبثون ---- */
+/* ---- جلسات البث: «إعدادات إعادة التصفير» في صفحة التكبيس ---- */
+function sessHTML(){ const L=(R.C&&R.C.live)||{}, auto=L.auto!==false, keep=L.keep!==false, sc=L.scopes||{}, H=L.history||[], on=L.sid&&!L.endedAt;
+ const dur=(a,b)=>{ const m=Math.max(0,Math.round(((b||Date.now())-a)/60000)); return m>=60?`${Math.floor(m/60)}س ${m%60}د`:`${m}د` };
+ return `<div class="card ss-card" data-sess><h3><span>🔄 إعدادات إعادة التصفير</span><span class="tag ${on?"ok":""}">${L.sid?(on?"🟢 جلسة بث جارية":"⏹ آخر جلسة انتهت"):"لا توجد جلسة بعد"}</span></h3>
+  <div class="ss-grid"><div class="ss-kv"><span>بداية الجلسة الحالية</span><b>${L.startedAt?dt(L.startedAt):"—"}</b></div>
+   <div class="ss-kv"><span>تكبيس هذه الجلسة</span><b>${fmt((R.D.tot&&R.D.tot.likes)||0)}</b></div>
+   <div class="ss-kv"><span>معرّف البث من TikTok</span><b dir="ltr" class="small">${L.roomId?esc(String(L.roomId)):L.sid?"يدوية":"—"}</b></div>
+   <div class="ss-kv"><span>حالة الاتصال بالبث</span><div data-tkbox>${tkBox()}</div></div></div>
+  <label class="ss-tg"><input type="checkbox" data-sessauto ${auto?"checked":""}><span><b>تصفير التكبيس تلقائياً عند بدء بث جديد</b><br><span class="mut small">يُعرف البث الجديد من معرّفه في TikTok. الانقطاع وإعادة الاتصال بنفس البث، وتحديث الصفحة، وإعادة فتح OBS لا تصفّر شيئاً.</span></span></label>
+  <label class="ss-tg"><input type="checkbox" data-sesskeep ${keep?"checked":""}><span><b>الاحتفاظ بإحصائيات البث السابق</b><br><span class="mut small">تُحفظ أرقام كل بث عند انتهائه (التكبيس، أكثر المكبسين، الهدايا، التعليقات).</span></span></label>
+  <details class="ss-more"><summary class="small">تصفير بيانات أخرى مع التكبيس عند كل بث جديد</summary><div class="row" style="gap:14px;margin-top:8px">${[["gifts","قوائم الهدايا والداعمين"],["comments","التعليقات"],["follows","المتابعون الجدد"]].map(([k,l])=>`<label class="row small" style="gap:6px"><input type="checkbox" data-sessscope="${k}" ${sc[k]?"checked":""}> ${l}</label>`).join("")}</div></details>
+  <div class="row" style="margin-top:12px"><button class="btn pri" data-sessnew>▶ بدء جلسة بث جديدة</button><button class="btn dng" data-sessreset>🧹 تصفير التكبيس الآن</button></div>
+  <p class="mut small" style="margin:10px 0 0">يُصفَّر: عدد التكبيس، ترتيب المكبسين، آخر وأكثر شخص كبس، تقدم أهداف وتحدي التكبيس. <b>لا يُصفَّر:</b> التصاميم، الألوان، الأحجام، أهداف التكبيس المحددة، الحركات، ووقت السبثون (إعادة ضبطه مستقلة من صفحة السبثون).</p>
+  ${H.length?`<div class="ttl" style="margin-top:12px">📊 إحصائيات البثوث السابقة</div><div class="ss-hist">${H.slice(0,8).map(x=>`<div class="ss-h"><div><b>${dt(x.startedAt)}</b> <span class="mut small">· ${dur(x.startedAt,x.endedAt)}${x.why==="stream_end"?" · انتهى البث":x.why==="manual"?" · جلسة يدوية":""}</span></div>
+   <div class="ss-hm"><span>❤️ <b>${fmt(x.likes)}</b> تكبيسة</span><span>👥 ${fmt(x.likers||0)} مكبس</span><span>🎁 ${fmt(x.giftCount||0)} هدية</span><span>💬 ${fmt(x.comments||0)}</span>${x.topLikers&&x.topLikers[0]?`<span>👑 <bdi>${esc(x.topLikers[0].name)}</bdi> (${fmt(x.topLikers[0].v)})</span>`:""}</div></div>`).join("")}</div>`:""}</div>` }
 function subathonHTML(){
  const s=R.C.subathon, now=Date.now()+skew, l=L();
  const sw=l.widgets.filter(w=>w.type==="subathon");
@@ -10957,6 +11068,8 @@ function onClick(e){
  if(d.libtab){ S.libTab=d.libtab; S.libTarget=null; if(!d.go) return renderPage() }
  if(d.go) return go(d.go);
  if(d.sim){ const sc=document.getElementById("simScope")?.value||"likes"; S.scope=sc; if(d.sim==="shuffle"){ if(sc==="all"||sc==="follows") return toast("اختر قائمة ترتيب واحدة"); return SIM.shuffle(sc) } if(d.sim==="reset") return SIM.reset(sc); return SIM[d.sim]() }
+ if(t.hasAttribute&&t.hasAttribute("data-sessreset")) return ask("تصفير التكبيس الآن؟ يبدأ عدد التكبيس وترتيب المكبسين من الصفر (التصاميم والإعدادات لا تتأثر).").then(ok=>{ if(ok) send({t:"session-op",op:"resetNow"}) });
+ if(t.hasAttribute&&t.hasAttribute("data-sessnew")) return ask("بدء جلسة بث جديدة؟ تُحفظ إحصائيات الجلسة الحالية ويبدأ التكبيس من الصفر.").then(ok=>{ if(ok) send({t:"session-op",op:"newSession"}) });
  if(d.saOp) return clockOp("subathon",d.saOp);
  if(d.saAdd) return clockOp("subathon","add",{ms:+d.saAdd,source:"manual"});
  if(d.saCustom){ const m=+document.getElementById("saCustom").value||0, u=+((document.getElementById("saCustomU")||{}).value)||MIN; if(m>0){ clockOp("subathon","add",{ms:Math.round(m*u)*(+d.saCustom),source:"manual"}); toast(`${+d.saCustom>0?"＋":"－"} ${saDurTxt(Math.round(m*u))}`) } return }
@@ -11076,6 +11189,8 @@ function onInput(e){
  if(d.act==="snap"&&e.type==="change"){ S.settings.snap=t.checked; return save() }
  if(d.act==="gpct"){ S.gpct=+t.value; const b=document.getElementById("gpctv"); if(b) b.textContent=S.gpct+"%"; for(const v of [...liveViews].filter(v=>v.vg&&String(v.w.id).startsWith("pv_"))){ v.w.base=S.gpct; v.refreshVG({D:emptyData()},e.type==="input") } return }
  if(d.rbhide&&e.type==="change"){ const w=findW(d.wid); if(!w) return; const h=new Set(w.hideKinds||[]); if(t.checked) h.delete(d.rbhide); else h.add(d.rbhide); w.hideKinds=[...h]; save(); pushLayout(); if(S.page==="studio") refreshView(w); return }
+ if((d.sessauto!==undefined||d.sesskeep!==undefined)&&e.type==="change"){ send({t:"session-op",op:"config",config:d.sessauto!==undefined?{auto:t.checked}:{keep:t.checked}}); return }
+ if(d.sessscope&&e.type==="change"){ send({t:"session-op",op:"config",config:{scopes:{[d.sessscope]:t.checked}}}); return }
  if(d.act==="saW"&&e.type==="change"){ S.saW=t.value; return renderPage(true) }
  if(d.rl&&e.type==="change"){ const id=d.rl, k=d.rk; setRules(L=>{ const r=L.find(x=>x.id===id); if(!r) return;
    if(k.startsWith("amt:")||k.startsWith("unit:")){ const f=k.split(":")[1], card=t.closest("[data-rule]"); const amt=+card.querySelector(`[data-rk="amt:${f}"]`).value||0, unit=+card.querySelector(`[data-rk="unit:${f}"]`).value||1000; r[f]=Math.round(amt*unit); return }
