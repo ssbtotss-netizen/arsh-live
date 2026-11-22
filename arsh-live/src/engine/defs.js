@@ -29,6 +29,7 @@ export const TYPES={
  srules:{label:"لوحة قوانين السبثون",icon:"📜",title:"⏰ قوانين السبثون",listens:["clock"],board:false,tick:true,rules:true},
  botbox:{label:"ردود البوت والشكر",icon:"🤖",title:"",listens:["bot"],board:false,bot:true},
  fcount:{label:"عداد المتابعين",icon:"👥",title:"",listens:["follow"],board:false,fc:true},
+ duration:{label:"مدة البث — Live Duration",icon:"⏲️",title:"مدة البث",listens:["clock"],board:false,du:true,tick:true},
  donCard:{label:"آخر دعم",icon:"💵",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dc:true},
  donLast5:{label:"آخر 5 داعمين",icon:"🧾",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,d5:true},
  donText:{label:"آخر دعم نصي",icon:"💬",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dt:true},
@@ -130,6 +131,8 @@ export function newWidget(type,o={}){
  if(type==="abox"){Object.assign(base,{x:.1,y:.25,w:.8,h:.35,abEvents:[],abGap:600,abMax:30,abMerge:true,abHideTest:false})}
  if(type==="levent"){Object.assign(base,{design:"butterfly",kind:"follow",mode:"sticky",dur:5,layout:"",frame:"auto",card:"clear",palette:"",title:"",msg:"",showTitle:true,showMsg:true,showEmblem:true,showAv:true,w:.42,h:.3,glow:1,textScale:1,animOn:true,animSpeed:1,frameImg:"",defaultAv:""})}
  if(type==="battle"){Object.assign(base,{design:"rClash",x:.08,y:.06,w:.84,h:.2,showTop:true,showTimer:true,showTitle:true,title:"تحدي الفريقين"})}
+ if(type==="duration"){Object.assign(base,{design:"largeTimer",w:.42,h:.17,duMode:"auto",duLang:"ar",duDaysAlways:false,duShowD:true,duShowH:true,duShowM:true,duShowS:true,duUnitD:true,duUnitH:true,duSep:"|",duDayDetail:false,duTotalH:false,
+  duShowTitle:true,duTitle:"",duNumC:"",duDayC:"",duMsC:"",duTitleC:"",duBg:"",duBgA:-1,duFrameC:"",duGap:0,duTitleS:1,duDayS:1,duNumS:1,duAlign:"center",duNeon:true,duGlow:.6,duIn:"fade",duOut:"fade",duHideEnded:false,effects:true,fontScale:1})}
  if(type==="fcount"){Object.assign(base,{design:"minimalGold",platform:"tiktok",accountId:"",handle:"",avatar:"",w:.46,h:.16,showHead:true,showAvatar:true,showName:true,showLogo:true,showNew:true,showUnit:true,showLast:false,goalOn:false,goal:10000,goalAuto:true,goalStep:0,goalStyle:"bar",numFmt:"full",numScale:1,color:"",animOn:true,animSpeed:1})}
  if(TYPES[type].don){Object.assign(base,{period:type==="donTop"?"week":"month",currency:"",goalId:"",order:"recent",hideAnon:false,speed:110,dir:"rtl",enter:"zoomIn",exit:"fade",enterMs:700,exitMs:500,showMessage:true,showSub:true,
    design:type==="donGoal"?"b6o6":type==="donTicker"||type==="donLatest"||type==="donAlert"?"b6o6Signature":"b6o6",exit:"fadeOut",topN:type==="donTop"?1:5,

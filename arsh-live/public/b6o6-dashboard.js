@@ -33,6 +33,7 @@ const TYPES={
  srules:{label:"لوحة قوانين السبثون",icon:"📜",title:"⏰ قوانين السبثون",listens:["clock"],board:false,tick:true,rules:true},
  botbox:{label:"ردود البوت والشكر",icon:"🤖",title:"",listens:["bot"],board:false,bot:true},
  fcount:{label:"عداد المتابعين",icon:"👥",title:"",listens:["follow"],board:false,fc:true},
+ duration:{label:"مدة البث — Live Duration",icon:"⏲️",title:"مدة البث",listens:["clock"],board:false,du:true,tick:true},
  donCard:{label:"آخر دعم",icon:"💵",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dc:true},
  donLast5:{label:"آخر 5 داعمين",icon:"🧾",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,d5:true},
  donText:{label:"آخر دعم نصي",icon:"💬",title:"",listens:["donation","donation_refund","donation_clear_tests"],board:false,dt:true},
@@ -134,6 +135,8 @@ function newWidget(type,o={}){
  if(type==="abox"){Object.assign(base,{x:.1,y:.25,w:.8,h:.35,abEvents:[],abGap:600,abMax:30,abMerge:true,abHideTest:false})}
  if(type==="levent"){Object.assign(base,{design:"butterfly",kind:"follow",mode:"sticky",dur:5,layout:"",frame:"auto",card:"clear",palette:"",title:"",msg:"",showTitle:true,showMsg:true,showEmblem:true,showAv:true,w:.42,h:.3,glow:1,textScale:1,animOn:true,animSpeed:1,frameImg:"",defaultAv:""})}
  if(type==="battle"){Object.assign(base,{design:"rClash",x:.08,y:.06,w:.84,h:.2,showTop:true,showTimer:true,showTitle:true,title:"تحدي الفريقين"})}
+ if(type==="duration"){Object.assign(base,{design:"largeTimer",w:.42,h:.17,duMode:"auto",duLang:"ar",duDaysAlways:false,duShowD:true,duShowH:true,duShowM:true,duShowS:true,duUnitD:true,duUnitH:true,duSep:"|",duDayDetail:false,duTotalH:false,
+  duShowTitle:true,duTitle:"",duNumC:"",duDayC:"",duMsC:"",duTitleC:"",duBg:"",duBgA:-1,duFrameC:"",duGap:0,duTitleS:1,duDayS:1,duNumS:1,duAlign:"center",duNeon:true,duGlow:.6,duIn:"fade",duOut:"fade",duHideEnded:false,effects:true,fontScale:1})}
  if(type==="fcount"){Object.assign(base,{design:"minimalGold",platform:"tiktok",accountId:"",handle:"",avatar:"",w:.46,h:.16,showHead:true,showAvatar:true,showName:true,showLogo:true,showNew:true,showUnit:true,showLast:false,goalOn:false,goal:10000,goalAuto:true,goalStep:0,goalStyle:"bar",numFmt:"full",numScale:1,color:"",animOn:true,animSpeed:1})}
  if(TYPES[type].don){Object.assign(base,{period:type==="donTop"?"week":"month",currency:"",goalId:"",order:"recent",hideAnon:false,speed:110,dir:"rtl",enter:"zoomIn",exit:"fade",enterMs:700,exitMs:500,showMessage:true,showSub:true,
    design:type==="donGoal"?"b6o6":type==="donTicker"||type==="donLatest"||type==="donAlert"?"b6o6Signature":"b6o6",exit:"fadeOut",topN:type==="donTop"?1:5,
@@ -1166,11 +1169,14 @@ const sid=now=>"s"+now.toString(36)+Math.random().toString(36).slice(2,6);
 function sessStats(D){ const t=(D&&D.tot)||{}, top=Object.values((D&&D.likes)||{}).sort((a,b)=>b.v-a.v).slice(0,5).map(x=>({name:x.name,v:x.v}));
  return {likes:t.likes||0,likers:Object.keys((D&&D.likes)||{}).length,gifts:t.gifts||0,giftCount:t.giftCount||0,comments:t.comments||0,follows:t.follows||0,topLikers:top} }
 /** النسخة المرسلة للواجهات (بدون تفاصيل داخلية زائدة) */
-function sessPublic(L){ return L?{sid:L.sid||null,roomId:L.roomId||null,startedAt:L.startedAt||null,endedAt:L.endedAt||null,endWhy:L.endWhy||"",source:L.source||"",auto:L.auto!==false,keep:L.keep!==false,scopes:{...(L.scopes||{})},history:(L.history||[]).slice(0,SESS_HISTORY_CAP)}:null }
+function sessPublic(L){ return L?{sid:L.sid||null,roomId:L.roomId||null,startedAt:L.startedAt||null,streamStart:L.streamStart||null,durCarry:!!L.durCarry,durAcc:+L.durAcc||0,durMan:L.durMan||null,lastDurMs:L.lastDurMs||0,endedAt:L.endedAt||null,endWhy:L.endWhy||"",source:L.source||"",auto:L.auto!==false,keep:L.keep!==false,scopes:{...(L.scopes||{})},history:(L.history||[]).slice(0,SESS_HISTORY_CAP)}:null }
 
 /** يغلق الجلسة الحالية ويحفظ إحصائياتها (لا يصفّر شيئاً) */
 function sessClose(L,D,now,why){ if(!L.sid||L.endedAt) return false; L.endedAt=now; L.endWhy=why||"";
- if(L.keep!==false){ L.history=L.history.filter(h=>h.sid!==L.sid); L.history.unshift({sid:L.sid,roomId:L.roomId||null,startedAt:L.startedAt,endedAt:now,why:why||"",...sessStats(D)}); if(L.history.length>SESS_HISTORY_CAP) L.history.length=SESS_HISTORY_CAP }
+ // مدة البث: في وضع «الاستمرار بين البثوث» تُضاف مدة هذا البث للمتراكم (وتُسترجع إن تبيّن أنه انقطاع وعاد نفس البث)
+ const M=L.durMan, man=M&&M.at&&(M.sid==null||M.sid===L.sid), st=man?M.at:(L.streamStart||L.startedAt), dur=st?Math.max(0,((man&&M.stop)||now)-st):0;
+ L.lastDurMs=dur; L.durAdded=0; if(L.durCarry&&dur>0){ L.durAcc=(+L.durAcc||0)+dur; L.durAdded=dur }
+ if(L.keep!==false){ L.history=L.history.filter(h=>h.sid!==L.sid); L.history.unshift({sid:L.sid,roomId:L.roomId||null,startedAt:L.startedAt,endedAt:now,why:why||"",durMs:dur,...sessStats(D)}); if(L.history.length>SESS_HISTORY_CAP) L.history.length=SESS_HISTORY_CAP }
  return true }
 
 /**
@@ -1186,7 +1192,99 @@ function sessDecide(L,roomId,now){ const id=roomId!=null&&roomId!==""?String(roo
  if(L.endedAt&&now-L.endedAt>=SESS_NOID_GAP_MS) return {act:"new",id:null};
  return {act:L.endedAt?"resume":"same",id:null} }
 
-function sessOpen(L,{roomId=null,now,source="tiktok"}){ L.sid=sid(now); L.roomId=roomId!=null?String(roomId):null; L.startedAt=now; L.endedAt=null; L.endWhy=""; L.source=source; return L.sid }
+/** وقت بدء البث الحقيقي (من TikTok) مقبول فقط إن كان منطقياً: قبل الآن وخلال آخر 30 يوماً */
+const okStart=(t,now)=>{ const x=+t||0; return x>0&&x<=now+60_000&&now-x<30*86400_000?Math.min(x,now):null };
+function sessOpen(L,{roomId=null,now,source="tiktok",startAt=null}){ L.sid=sid(now); L.roomId=roomId!=null?String(roomId):null; L.startedAt=now; L.streamStart=okStart(startAt,now); L.endedAt=null; L.endWhy=""; L.source=source; if(L.durMan&&L.durMan.sid!=null) L.durMan=null; return L.sid }
+
+/* ---- engine/duration.js ---- */
+// ====== مدة البث (Live Duration): الاحتساب من جلسة البث على الخادم + صياغات العرض ======
+// البداية: وقت بدء البث الحقيقي من TikTok (create_time) إن توفر، وإلا بداية الجلسة المسجلة على الخادم، أو بداية يدوية.
+// لا يعتمد على وقت فتح الصفحة: تحديث الصفحة/OBS وإعادة الاتصال لا تغيّر المدة. الانتهاء الفعلي يجمّد المدة.
+
+/** بداية الاحتساب للجلسة الحالية (يدوي ← TikTok ← الجلسة) */
+function durStartOf(L){ if(!L) return null; const M=L.durMan; if(M&&M.at&&(M.sid==null||M.sid===L.sid)) return M.at; return L.sid?(L.streamStart||L.startedAt||null):null }
+/** المدة الحالية: {ms (مع المتراكم إن فُعّل الاستمرار), cur (هذا البث فقط), acc, running, ended, src} */
+function durOf(C,now){ const L=(C&&C.live)||{}, M=L.durMan, man=!!(M&&M.at&&(M.sid==null||M.sid===L.sid));
+ const start=durStartOf(L); let end=null;
+ if(man&&M.stop) end=M.stop; else if(!man&&L.sid&&L.endedAt) end=L.endedAt;
+ const cur=start?Math.max(0,(end||now)-start):0, acc=L.durCarry?Math.max(0,+L.durAcc||0):0;
+ return {ms:cur+acc,cur,acc,running:!!start&&!end,ended:!!start&&!!end,idle:!start,src:man?"manual":L.streamStart?"tiktok":start?"session":"none",start} }
+
+/** تقسيم المدة حسب المعادلات: إجمالي الساعات = ث÷3600، الأيام = ث÷86400، ساعات اليوم = إجمالي الساعات %24 */
+function durSplit(ms){ const s=Math.floor(Math.max(0,+ms||0)/1000); return {s,tm:Math.floor(s/60),th:Math.floor(s/3600),d:Math.floor(s/86400),h:Math.floor(s/3600)%24,m:Math.floor(s/60)%60,sec:s%60} }
+
+const DU_MODES=[
+ ["auto","تلقائي — 19:22:18 ثم «1 يوم | 02:15:30» بعد 24 ساعة"],
+ ["hours","الساعات فقط — 48:35:20"],
+ ["hours_days","الساعات مع الأيام — 48 ساعة | يومان"],
+ ["hours_days_detail","الساعات والأيام بالتفصيل — 53 ساعة | يومان و5 ساعات"],
+ ["hms_days","الوقت الإجمالي مع الأيام — 48:35:20 | يومان"],
+ ["days_time","الأيام مع الوقت — يومان | 05:20:15"],
+ ["full","التفاصيل الكاملة — يومان | 5 ساعات | 30 دقيقة | 45 ثانية"],
+ ["minimal","مختصر — 2D : 05H : 30M : 45S"],
+ ["custom","عرض مخصص — تختار العناصر الظاهرة"]];
+
+const p2=n=>String(n).padStart(2,"0");
+/** صيغ العدد العربية: 1 مفرد، 2 مثنى، 3–10 جمع، 11+ مفرد */
+const AR={d:["يوم","يومان","أيام","يوماً","يوم واحد"],h:["ساعة","ساعتان","ساعات","ساعة","ساعة واحدة"],m:["دقيقة","دقيقتان","دقائق","دقيقة","دقيقة واحدة"],s:["ثانية","ثانيتان","ثوانٍ","ثانية","ثانية واحدة"]};
+const EN={d:["Day","Days"],h:["Hour","Hours"],m:["Minute","Minutes"],s:["Second","Seconds"]};
+/**
+ * عبارة «عدد + وحدة» كقطع: [{k:"n"|"u", t}] — n=رقم، u=كلمة
+ * long: «يوم واحد» بدل «1 يوم» · unit=false: الرقم فقط (حتى «يومان» تصبح 2)
+ */
+function durWord(n,kind,lang,{long=false,unit=true}={}){ const N=Math.max(0,Math.floor(+n||0));
+ if(!unit) return [{k:"n",t:String(N)}];
+ if(lang==="en") return [{k:"n",t:String(N)},{k:"u",t:" "+(N===1?EN[kind][0]:EN[kind][1])}];
+ const w=AR[kind];
+ if(N===0) return [{k:"n",t:"0"},{k:"u",t:" "+w[0]}];
+ if(N===1) return long?[{k:"u",t:w[4]}]:[{k:"n",t:"1"},{k:"u",t:" "+w[0]}];
+ if(N===2) return [{k:"u",t:w[1]}];
+ if(N>=3&&N<=10) return [{k:"n",t:String(N)},{k:"u",t:" "+w[2]}];
+ return [{k:"n",t:String(N)},{k:"u",t:" "+w[3]}] }
+const tag=(arr,kind)=>arr.map(x=>({...x,c:kind}));
+/** «يومان و5 ساعات» / «2 Days 5 Hours» */
+function daysDetail(d,h,lang,o){ const a=tag(durWord(d,"d",lang,{long:true,unit:o.unitD}),"d"); if(!h) return a;
+ return [...a,{k:"x",t:lang==="en"?" ":" و",c:"d"},...tag(durWord(h,"h",lang,{unit:o.unitH}),"h")] }
+
+/**
+ * يحوّل المدة إلى قطع عرض حسب طريقة العرض — كل قطعة {k:"n"|"u"|":"|"|"|"x", t, c:"d"|"h"|"m"|"s"}
+ * o: {mode, lang, daysAlways, showD, showH, showM, showS, unitD, unitH, sep, dayDetail, totalH}
+ */
+function duParts(ms,o={}){
+ const lang=o.lang==="en"?"en":"ar", mode=o.mode||"auto", S=durSplit(ms);
+ const showD=o.showD!==false, showH=o.showH!==false, showM=o.showM!==false, showS=o.showS!==false;
+ const unitD=o.unitD!==false, unitH=o.unitH!==false, sep=o.sep!=null?String(o.sep):"|";
+ const SEP=[{k:"|",t:` ${sep} `}], C={k:":",t:":"};
+ const daysOn=showD&&(S.d>0||!!o.daysAlways);
+ /** وقت HH:MM:SS — الساعات إجمالية أو ضمن اليوم، والمخفي يُدمج فيما قبله حتى لا يضيع وقت */
+ const clock=(hoursTotal)=>{ const out=[];
+  let H=hoursTotal?S.th:S.h, M=S.m, Sx=S.sec;
+  if(!showH){ M=(hoursTotal?S.tm:S.tm-S.d*1440) } // بدون ساعات: الدقائق إجمالية
+  if(showH){ out.push({k:"n",t:p2(H),c:"h"}) }
+  if(showM){ if(out.length) out.push({...C,c:"m"}); out.push({k:"n",t:p2(M),c:"m"}) }
+  if(showS){ if(out.length) out.push({...C,c:"s"}); out.push({k:"n",t:p2(Sx),c:"s"}) }
+  return out };
+ const dShort=()=>tag(durWord(S.d,"d",lang,{unit:unitD}),"d"), dLong=()=>tag(durWord(S.d,"d",lang,{long:true,unit:unitD}),"d");
+ const hTot=()=>tag(durWord(S.th,"h",lang,{unit:unitH}),"h");
+ switch(mode){
+  case "hours": return clock(true);
+  case "hours_days": return [...(showH?hTot():[]),...(daysOn&&showH?SEP:[]),...(daysOn?dLong():[])];
+  case "hours_days_detail": return [...(showH?hTot():[]),...(daysOn&&showH?SEP:[]),...(daysOn?daysDetail(S.d,S.h,lang,{unitD,unitH}):[])];
+  case "hms_days": return [...clock(true),...(daysOn?[...SEP,...(o.dayDetail?daysDetail(S.d,S.h,lang,{unitD,unitH}):dLong())]:[])];
+  case "days_time": return [...(showD?dShort():[]),...(showD?SEP:[]),...clock(!showD)];
+  case "full": { const parts=[]; const add=a=>{ if(parts.length) parts.push(...SEP); parts.push(...a) };
+   if(daysOn) add(dLong()); if(showH) add(tag(durWord(daysOn?S.h:S.th,"h",lang,{unit:unitH}),"h"));
+   if(showM) add(tag(durWord(showH?S.m:S.tm,"m",lang),"m")); if(showS) add(tag(durWord(S.sec,"s",lang),"s")); return parts }
+  case "minimal": { const L=lang==="en"?{d:"D",h:"H",m:"M",s:"S"}:{d:"ي",h:"س",m:"د",s:"ث"}, parts=[]; const add=(n,k)=>{ if(parts.length) parts.push({k:":",t:" : ",c:k}); parts.push({k:"n",t:n,c:k},{k:"u",t:L[k],c:k}) };
+   if(daysOn) add(String(S.d),"d"); if(showH) add(p2(daysOn?S.h:S.th),"h"); if(showM) add(p2(showH?S.m:S.tm),"m"); if(showS) add(p2(S.sec),"s"); return parts }
+  case "custom": { const tot=!!o.totalH||!daysOn; return [...(daysOn?[...dShort(),...SEP]:[]),...clock(tot)] }
+  default: // auto: أقل من يوم «19:22:18»، ومن 24 ساعة «1 يوم | 02:15:30» — الساعات لا تُصفّر دون زيادة الأيام
+   return daysOn?[...dShort(),...SEP,...clock(false)]:clock(true) }
+}
+/** النص الكامل (للسجل والاختبارات وقارئ الشاشة) */
+const durText=(ms,o)=>duParts(ms,o).map(p=>p.t).join("");
+/** خيارات العرض من إعدادات العنصر */
+const durOpts=w=>({mode:w.duMode||"auto",lang:w.duLang==="en"?"en":"ar",daysAlways:!!w.duDaysAlways,showD:w.duShowD!==false,showH:w.duShowH!==false,showM:w.duShowM!==false,showS:w.duShowS!==false,unitD:w.duUnitD!==false,unitH:w.duUnitH!==false,sep:w.duSep??"|",dayDetail:!!w.duDayDetail,totalH:!!w.duTotalH});
 
 /* ---- engine/room.js ---- */
 // ====== غرفة البث: تربط المحركات الثلاثة دون خلطها ======
@@ -1388,17 +1486,18 @@ function roomSessionReset(R,now,scopes){ const L=liveState(R.C), sc=scopes||L.sc
 /** بدء جلسة جديدة (تلقائي عند بث جديد أو يدوي): يغلق السابقة ويحفظ إحصائياتها، ثم يصفّر */
 function roomSessionStart(R,now,o={}){ const L=liveState(R.C);
  if(!L.sid&&L.keep!==false&&R.D&&R.D.tot&&(R.D.tot.likes||0)>0){ L.sid="pre"+now.toString(36); L.roomId=null; L.startedAt=R.D.startedAt||now; L.endedAt=null } // بيانات قبل نظام الجلسات: تُحفظ كجلسة سابقة بدل أن تضيع
- sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual"});
+ sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual",startAt:o.startAt});
  const out=o.reset===false?[]:roomSessionReset(R,now);
  out.push({t:"session",S:sessPublic(L),started:true,reset:o.reset!==false});
  return {out,logs:[],session:true} }
 /** اتصال بـ TikTok نجح ومعه roomId: نفس البث = استمرار، بث جديد = جلسة جديدة (مع التصفير إن كان مفعّلاً) */
-function roomSessionConnect(R,roomId,now){ const L=liveState(R.C), d=sessDecide(L,roomId,now);
- if(d.act==="same"){ if(d.id&&!L.roomId){ L.roomId=d.id; return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"same"} } return {out:[],logs:[],act:"same"} }
- if(d.act==="resume"){ L.endedAt=null; L.endWhy=""; L.history=L.history.filter(h=>h.sid!==L.sid); return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"resume"} }
+function roomSessionConnect(R,roomId,now,o={}){ const L=liveState(R.C), d=sessDecide(L,roomId,now), st=okStart(o.startAt,now);
+ if(d.act==="same"){ let ch=false; if(d.id&&!L.roomId){ L.roomId=d.id; ch=true } if(st&&!L.streamStart&&(!L.roomId||!d.id||String(L.roomId)===d.id)){ L.streamStart=st; ch=true } // وقت البدء الحقيقي يصل لاحقاً (مثلاً بعد إعادة تشغيل الخادم)
+  return ch?{out:[{t:"session",S:sessPublic(L)}],logs:[],act:"same"}:{out:[],logs:[],act:"same"} }
+ if(d.act==="resume"){ L.endedAt=null; L.endWhy=""; L.history=L.history.filter(h=>h.sid!==L.sid); if(L.durAdded){ L.durAcc=Math.max(0,(+L.durAcc||0)-L.durAdded); L.durAdded=0 } if(st&&!L.streamStart) L.streamStart=st; return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"resume"} }
  if(d.act==="first"){ // أول جلسة: إن كانت لدينا بيانات من قبل نظام الجلسات فهي من بث سابق غير معروف — تُصفّر فقط إن كان التصفير التلقائي مفعّلاً
-  const had=(R.D&&R.D.tot&&(R.D.tot.likes||0))>0; const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"first",reset:L.auto!==false&&had}); return {...r,act:"first"} }
- const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"new_stream",reset:L.auto!==false}); return {...r,act:"new"} }
+  const had=(R.D&&R.D.tot&&(R.D.tot.likes||0))>0; const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"first",reset:L.auto!==false&&had,startAt:st}); return {...r,act:"first"} }
+ const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"new_stream",reset:L.auto!==false,startAt:st}); return {...r,act:"new"} }
 /** انتهاء البث (حدث STREAM_END من TikTok): يُغلق ويحفظ الإحصائيات بدون تصفير — الأرقام تبقى ظاهرة حتى يبدأ بث جديد */
 function roomSessionEnd(R,now,why){ const L=liveState(R.C); if(!sessClose(L,R.D,now,why||"stream_end")) return {out:[],logs:[]}; return {out:[{t:"session",S:sessPublic(L),ended:true}],logs:[]} }
 /** أوامر من لوحة التحكم: إعدادات / تصفير يدوي / جلسة جديدة */
@@ -1407,6 +1506,13 @@ function roomSessionOp(R,m,now){ const L=liveState(R.C);
  if(m.op==="resetNow"){ const out=roomSessionReset(R,now); out.push({t:"session",S:sessPublic(L),reset:true}); return {out,logs:[]} }
  if(m.op==="newSession") return roomSessionStart(R,now,{roomId:null,source:"manual",why:"manual"});
  if(m.op==="clearHistory"){ L.history=[]; return {out:[{t:"session",S:sessPublic(L)}],logs:[]} }
+ // مدة البث: استمرار بين البثوث، بدء/إيقاف يدوي، العودة للتلقائي، تصفير المتراكم
+ const pub=()=>({out:[{t:"session",S:sessPublic(L)}],logs:[]});
+ if(m.op==="durCarry"){ L.durCarry=!!m.on; if(!L.durCarry){ L.durAcc=0; L.durAdded=0 } return pub() }
+ if(m.op==="durStart"){ L.durMan={sid:L.sid||null,at:now,stop:null}; return pub() }
+ if(m.op==="durStop"){ const st=(L.durMan&&L.durMan.at&&(L.durMan.sid==null||L.durMan.sid===L.sid))?L.durMan.at:(L.sid?(L.streamStart||L.startedAt):null); if(!st) return {out:[],logs:[]}; L.durMan={sid:L.sid||null,at:st,stop:now}; return pub() }
+ if(m.op==="durAuto"){ L.durMan=null; return pub() }
+ if(m.op==="durAccReset"){ L.durAcc=0; L.durAdded=0; return pub() }
  return {out:[],logs:[]} }
 
 /* ---- engine/bio.js ---- */
@@ -3860,6 +3966,7 @@ class View{
   if(T.rules){ this.applyRules(w,W,Hh,pad,gap); return }
   if(T.bot){ this.applyBot(w,W,Hh,pad,gap); return }
   if(T.fc){ this.applyFc(w,W,Hh,pad,gap); return }
+  if(T.du){ this.applyDur(w,W,Hh); return }
   if(T.fa){ this.applyFa(w,W,Hh); return }
   if(T.abox){ this.applyAbox(w,W,Hh); return }
   if(T.le){ this.applyLe(w,W,Hh); return }
@@ -3923,6 +4030,7 @@ class View{
   if(t.bot) return;
   if(t.abox) return;
   if(t.fc) return this.refreshFc(src,silent);
+  if(t.du) return this.refreshDur(src);
   if(t.le) return this.refreshLe(src,silent);
   if(t.chat) return;
   if(t.bt) return this.refreshBt(src);
@@ -5357,6 +5465,205 @@ const FC_CSS=`
 .fcw .fc-b6{position:absolute;left:0;right:0;bottom:calc(var(--nfs)*-.18);height:calc(var(--nfs)*.07);border-radius:99px;background:linear-gradient(90deg,transparent,#2f7bff,#c0c7d4,#2f7bff,transparent);box-shadow:0 0 10px #2f7bff;animation:fc-b6 calc(3s/var(--as,1)) ease-in-out infinite}
 @keyframes fc-b6{50%{transform:scaleX(.7);opacity:.7}}.fcd-b6o6Sig{--acc:#2f7bff}
 `;
+
+/* ---- engine/durview.js ---- */
+// ====== طبقة «مدة البث» (Live Duration): 20 تصميماً + العرض المباشر من جلسة البث ======
+
+
+
+const DU_CATS={clear:"شفافة",panel:"بلوحات",fx:"متحركة ومؤثرات",big:"كبيرة"};
+const DU_DESIGNS=[
+ {id:"basicClear",n:1,name:"Basic Transparent",cat:"clear",desc:"أرقام بيضاء بظل ناعم بدون خلفية"},
+ {id:"digitalClock",n:2,name:"Digital Clock",cat:"panel",desc:"شاشة LCD خضراء بخط رقمي وأرقام شبحية خلفها"},
+ {id:"neonBlue",n:3,name:"Neon Blue",cat:"fx",desc:"أنبوب نيون أزرق يرمش ويتوهج بإطار مضيء"},
+ {id:"royalGold",n:4,name:"Royal Gold",cat:"panel",desc:"ذهب ملكي بإطار مزدوج وزخارف زوايا ولمعة متحركة"},
+ {id:"glass",n:5,name:"Glass",cat:"panel",desc:"بطاقة زجاجية ضبابية شفافة بحافة لامعة"},
+ {id:"cyberpunk",n:6,name:"Cyberpunk",cat:"fx",desc:"لوحة مقصوصة الزوايا صفراء/وردية مع تشويش Glitch"},
+ {id:"gaming",n:7,name:"Gaming",cat:"fx",desc:"شريط ألعاب مائل بخطوط مسح وشارة LIVE نابضة"},
+ {id:"luxury",n:8,name:"Luxury",cat:"panel",desc:"مخمل أسود بخطوط ذهبية رفيعة وخط كلاسيكي"},
+ {id:"minimalText",n:9,name:"Minimal Text",cat:"clear",desc:"سطر واحد صغير: العنوان والوقت متجاوران"},
+ {id:"futuristicHud",n:10,name:"Futuristic HUD",cat:"fx",desc:"أقواس زوايا HUD وخط مسح يدور بلون سماوي"},
+ {id:"fire",n:11,name:"Fire",cat:"fx",desc:"أرقام لهب متدرجة تتراقص مع جمر متوهج"},
+ {id:"ice",n:12,name:"Ice",cat:"fx",desc:"جليد بلوري بحواف مثلجة ولمعات تتلألأ"},
+ {id:"rgbAnimated",n:13,name:"RGB Animated",cat:"fx",desc:"إطار ألوان قوس قزح يدور حول العداد"},
+ {id:"metallic",n:14,name:"Metallic",cat:"panel",desc:"لوحة معدن مصقول بأرقام بارزة محفورة"},
+ {id:"holographic",n:15,name:"Holographic",cat:"fx",desc:"خلفية هولوغرافية قزحية متغيرة باستمرار"},
+ {id:"largeTimer",n:16,name:"Large Timer",cat:"big",desc:"عداد رقمي كبير مع عنوان «مدة البث» في الأعلى"},
+ {id:"flipCards",n:17,name:"Flip Cards",cat:"big",desc:"كل جزء في بطاقة مستقلة مثل الساعات القلّابة"},
+ {id:"livePill",n:18,name:"Live Pill",cat:"clear",desc:"كبسولة حمراء صغيرة بنقطة LIVE نابضة"},
+ {id:"terminal",n:19,name:"Retro Terminal",cat:"panel",desc:"شاشة أوامر خضراء بخطوط مسح ومؤشر وامض"},
+ {id:"orbit",n:20,name:"Orbit Ring",cat:"big",desc:"حلقة دائرية حول الوقت ونقطة تدور حولها"}];
+const DU_INS=[["none","بدون"],["fade","ظهور تدريجي"],["slideUp","صعود"],["zoom","تكبير"],["slideSide","انزلاق جانبي"],["flip","قلب"],["blur","وضوح من الضباب"]];
+const duDesignOf=id=>DU_DESIGNS.find(d=>d.id===id)||DU_DESIGNS.find(d=>d.id==="largeTimer");
+const FONT_MAP={changa:'"Changa","Readex Pro",sans-serif',readex:'"Readex Pro",sans-serif',mono:'ui-monospace,"SFMono-Regular",Menlo,monospace',serif:'"Amiri",Georgia,serif'};
+const duHexA=(hex,a)=>{ const m=/^#?([0-9a-f]{6})$/i.exec(String(hex||"")); if(!m) return null; const n=parseInt(m[1],16); return `rgba(${n>>16&255},${n>>8&255},${n&255},${Math.max(0,Math.min(1,a))})` };
+
+const DU_CSS=`
+.wd.t-duration{display:flex;align-items:center;justify-content:center;overflow:visible}
+.du{position:absolute;inset:0;display:flex;align-items:center;justify-content:var(--duJ,center);pointer-events:none}
+.du-box{--g:var(--duNum,#fff);position:relative;display:inline-flex;flex-direction:column;align-items:var(--duJ,center);gap:.14em;padding:.32em .7em;font-size:var(--dfs,40px);line-height:1;max-width:100%;
+ color:var(--duNum,#fff);background:var(--duBg,transparent);border:var(--duBw,0) solid var(--duFrame,transparent);border-radius:.45em;transition:font-size .6s ease;box-sizing:border-box;font-family:var(--duFont,"Orbitron","Readex Pro",sans-serif)}
+.du-ttl{font-size:calc(.34em*var(--duTitleS,1));color:var(--duTitle,currentColor);font-weight:700;letter-spacing:.05em;white-space:nowrap;font-family:"Readex Pro","Changa",sans-serif;opacity:.92}
+.du-val{white-space:pre;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:var(--duGap,0em)}
+.du-clk{display:inline-block;direction:ltr;unicode-bidi:isolate}
+.du-n{color:var(--duNum,inherit)}.du-n.c-d,.du-u.c-d{color:var(--duDay,var(--duNum,inherit))}.du-n.c-m,.du-n.c-s,.du-c.c-m,.du-c.c-s{color:var(--duMs,var(--duNum,inherit))}
+.du-u{font-size:calc(.5em*var(--duUs,1));font-weight:700;font-family:"Readex Pro","Changa",sans-serif;letter-spacing:0}.du-u.c-d,.du-n.c-d{font-size:calc(1em*var(--duDayS,1))}.du-u.c-d{font-size:calc(.56em*var(--duDayS,1))}
+.du-s{opacity:.55;font-weight:400}.du-c{opacity:.9}
+.du-day-in .c-d{animation:duDayIn .8s ease both}@keyframes duDayIn{from{opacity:0;filter:blur(6px)}to{opacity:1;filter:none}}
+.du-box.neon .du-val{text-shadow:0 0 calc(.12em*var(--duGlow,.6)) var(--g),0 0 calc(.35em*var(--duGlow,.6)) var(--g)}
+.du-idle .du-val{opacity:.55}.du-ended .du-val{opacity:.85}
+.du-dec{position:absolute;inset:0;pointer-events:none;border-radius:inherit}
+/* حركات الدخول/الخروج */
+.wd:not(.no-fx) .du-box.in-fade{animation:duFade .7s ease both}.wd:not(.no-fx) .du-box.in-slideUp{animation:duUp .7s cubic-bezier(.2,.9,.3,1.2) both}.wd:not(.no-fx) .du-box.in-zoom{animation:duZoom .6s cubic-bezier(.2,.9,.3,1.3) both}
+.wd:not(.no-fx) .du-box.in-slideSide{animation:duSide .7s cubic-bezier(.2,.9,.3,1.1) both}.wd:not(.no-fx) .du-box.in-flip{animation:duFlip .8s ease both}.wd:not(.no-fx) .du-box.in-blur{animation:duBlur .8s ease both}
+.du-box.out-fade{animation:duFade .6s ease reverse both}.du-box.out-slideUp{animation:duUp .6s ease reverse both}.du-box.out-zoom{animation:duZoom .5s ease reverse both}.du-box.out-slideSide{animation:duSide .6s ease reverse both}.du-box.out-flip{animation:duFlip .6s ease reverse both}.du-box.out-blur{animation:duBlur .6s ease reverse both}.du-box.out-none{opacity:0}
+@keyframes duFade{from{opacity:0}}@keyframes duUp{from{opacity:0;transform:translateY(40%)}}@keyframes duZoom{from{opacity:0;transform:scale(.4)}}@keyframes duSide{from{opacity:0;transform:translateX(60%)}}@keyframes duFlip{from{opacity:0;transform:perspective(600px) rotateX(90deg)}}@keyframes duBlur{from{opacity:0;filter:blur(14px)}}
+/* 1 Basic Transparent */
+.du-basicClear .du-box{text-shadow:0 2px 6px #000c,0 0 2px #000}
+/* 2 Digital Clock — LCD */
+.du-digitalClock .du-box{--duNum0:#7dff8a;color:var(--duNum,#7dff8a);--g:var(--duNum,#7dff8a);background:var(--duBg,linear-gradient(180deg,#0b1a0e,#050b06));border:var(--duBw,.06em) solid var(--duFrame,#1e3b22);border-radius:.25em;box-shadow:inset 0 0 .5em #000,0 .1em .4em #000a;font-family:var(--duFont,"Orbitron",ui-monospace,monospace)}
+.du-digitalClock .du-val{position:relative}.du-digitalClock .du-val::before{content:attr(data-ghost);position:absolute;inset:0;color:currentColor;opacity:.08;white-space:pre}
+.du-digitalClock .du-ttl{color:var(--duTitle,#7dff8a);opacity:.7;font-family:var(--duFont,"Orbitron",monospace);font-size:calc(.26em*var(--duTitleS,1))}
+/* 3 Neon Blue */
+.du-neonBlue .du-box{color:var(--duNum,#e8fdff);--g:var(--duFrame,#22d3ee);background:var(--duBg,#020a14aa);border:var(--duBw,.07em) solid var(--duFrame,#22d3ee);border-radius:.6em;box-shadow:0 0 calc(.5em*var(--duGlow,.6)) var(--g),inset 0 0 calc(.4em*var(--duGlow,.6)) var(--g)}
+.du-neonBlue .du-ttl{color:var(--duTitle,#7df9ff)}.wd:not(.no-fx) .du-neonBlue .du-val{animation:duFlick 4s infinite}
+@keyframes duFlick{0%,19%,21%,62%,64%,100%{opacity:1}20%,63%{opacity:.55}}
+/* 4 Royal Gold */
+.du-royalGold .du-box{color:var(--duNum,#ffe08a);--g:#f5b942;background:var(--duBg,radial-gradient(120% 140% at 50% 0%,#3a2608,#120a02));border:var(--duBw,.08em) double var(--duFrame,#e9b949);border-radius:.3em;box-shadow:0 0 0 .06em #6b4a12,0 .15em .5em #000b;font-family:var(--duFont,"Amiri","Changa",serif)}
+.du-royalGold .du-val{background:linear-gradient(100deg,#c98b1e 20%,#fff3c4 45%,#e9b949 55%,#c98b1e 80%) 0 0/250% 100%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.du-royalGold.has-c .du-val{-webkit-text-fill-color:currentColor;background:none}.wd:not(.no-fx) .du-royalGold .du-val{animation:duShine 4s linear infinite}
+.du-royalGold .du-dec::before,.du-royalGold .du-dec::after{content:"◆";position:absolute;top:-.42em;font-size:.4em;color:var(--duFrame,#e9b949)}.du-royalGold .du-dec::before{right:.5em}.du-royalGold .du-dec::after{left:.5em}
+.du-royalGold .du-ttl{color:var(--duTitle,#e9b949)}
+@keyframes duShine{to{background-position:-250% 0}}
+/* 5 Glass */
+.du-glass .du-box{background:var(--duBg,#ffffff1f);backdrop-filter:blur(12px) saturate(1.4);-webkit-backdrop-filter:blur(12px) saturate(1.4);border:var(--duBw,.04em) solid var(--duFrame,#ffffff55);border-radius:.6em;box-shadow:inset 0 .06em 0 #ffffff70,0 .2em .6em #0005}
+/* 6 Cyberpunk */
+.du-cyberpunk .du-box{color:var(--duNum,#0b0b0f);--g:#ff2bd6;background:var(--duBg,#fcee0a);border-radius:0;clip-path:polygon(0 0,92% 0,100% 30%,100% 100%,8% 100%,0 70%);padding:.34em 1em;font-family:var(--duFont,"Orbitron",sans-serif)}
+.du-cyberpunk .du-ttl{color:var(--duTitle,#ff2bd6);letter-spacing:.2em}.du-cyberpunk .du-dec{border-bottom:.08em solid var(--duFrame,#ff2bd6)}
+.wd:not(.no-fx) .du-cyberpunk .du-val{animation:duGlitch 3.2s infinite steps(1)}
+@keyframes duGlitch{0%,92%,100%{text-shadow:none;transform:none}93%{text-shadow:.05em 0 #ff2bd6,-.05em 0 #00f0ff;transform:translateX(.02em)}95%{text-shadow:-.06em 0 #ff2bd6,.04em 0 #00f0ff;transform:translateX(-.03em)}97%{text-shadow:none}}
+/* 7 Gaming */
+.du-gaming .du-box{color:var(--duNum,#fff);--g:#ff2e4d;background:var(--duBg,linear-gradient(90deg,#14060a,#2a0a12));border-inline-start:.14em solid var(--duFrame,#ff2e4d);border-radius:.15em;transform:skewX(-10deg);padding:.3em .9em .3em 1.3em;overflow:hidden}
+.du-gaming .du-box>*{transform:skewX(10deg)}.du-gaming .du-dec{background:repeating-linear-gradient(0deg,#ffffff08 0 2px,transparent 2px 5px)}
+.du-gaming .du-ttl::before{content:"● LIVE  ";color:#ff2e4d;font-family:"Orbitron",sans-serif}.wd:not(.no-fx) .du-gaming .du-ttl::before{animation:duPulse 1.2s infinite}
+@keyframes duPulse{50%{opacity:.25}}
+/* 8 Luxury */
+.du-luxury .du-box{color:var(--duNum,#f6ead0);--g:#d4af37;background:var(--duBg,radial-gradient(130% 160% at 50% 0%,#1d1a16,#070605));border:var(--duBw,.03em) solid var(--duFrame,#d4af37);border-radius:.1em;padding:.4em 1em;font-family:var(--duFont,"Amiri",Georgia,serif);box-shadow:0 0 0 .14em #070605,0 0 0 .17em var(--duFrame,#d4af3799)}
+.du-luxury .du-ttl{color:var(--duTitle,#d4af37);letter-spacing:.3em;font-weight:400}.du-luxury .du-val{font-weight:700}
+.wd:not(.no-fx) .du-luxury .du-dec{background:linear-gradient(115deg,transparent 40%,#ffffff1c 50%,transparent 60%) -200% 0/300% 100% no-repeat;animation:duSweep 6s ease-in-out infinite}
+@keyframes duSweep{to{background-position:200% 0}}
+/* 9 Minimal Text */
+.du-minimalText .du-box{flex-direction:row;align-items:baseline;gap:.4em;padding:.1em .2em;text-shadow:0 1px 4px #000b}.du-minimalText .du-ttl{font-size:calc(.5em*var(--duTitleS,1));opacity:.75}
+.du-minimalText .du-ttl::after{content:" •";opacity:.6}
+/* 10 Futuristic HUD */
+.du-futuristicHud .du-box{color:var(--duNum,#bff6ff);--g:var(--duFrame,#22e3ff);background:var(--duBg,#03141c99);border-radius:0;padding:.4em 1em}
+.du-futuristicHud .du-dec{background:linear-gradient(var(--g),var(--g)) 0 0/.6em .06em,linear-gradient(var(--g),var(--g)) 0 0/.06em .6em,linear-gradient(var(--g),var(--g)) 100% 0/.6em .06em,linear-gradient(var(--g),var(--g)) 100% 0/.06em .6em,linear-gradient(var(--g),var(--g)) 0 100%/.6em .06em,linear-gradient(var(--g),var(--g)) 0 100%/.06em .6em,linear-gradient(var(--g),var(--g)) 100% 100%/.6em .06em,linear-gradient(var(--g),var(--g)) 100% 100%/.06em .6em;background-repeat:no-repeat}
+.du-futuristicHud .du-dec::after{content:"";position:absolute;left:0;right:0;height:.05em;background:linear-gradient(90deg,transparent,var(--g),transparent);top:0;opacity:.8}
+.wd:not(.no-fx) .du-futuristicHud .du-dec::after{animation:duScan 2.6s linear infinite}@keyframes duScan{to{top:100%}}
+.du-futuristicHud .du-ttl{color:var(--duTitle,#22e3ff);letter-spacing:.25em;font-family:"Orbitron","Readex Pro",sans-serif}
+/* 11 Fire */
+.du-fire .du-box{--g:#ff6a00;color:var(--duNum,#ffb347)}.du-fire .du-val{background:linear-gradient(0deg,#ff2a00,#ff8a00 40%,#ffe066 80%) 0 0/100% 200%;-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;filter:drop-shadow(0 0 calc(.15em*var(--duGlow,.6)) #ff5a00)}
+.du-fire.has-c .du-val{-webkit-text-fill-color:currentColor;background:none}.wd:not(.no-fx) .du-fire .du-val{animation:duFlame 1.6s ease-in-out infinite alternate}
+@keyframes duFlame{0%{background-position:0 0;transform:skewX(0)}50%{transform:skewX(-1.5deg)}100%{background-position:0 100%;transform:skewX(1deg)}}
+.du-fire .du-ttl{color:var(--duTitle,#ffb347)}.du-fire .du-dec{background:radial-gradient(60% 50% at 50% 100%,#ff4d0033,transparent)}
+/* 12 Ice */
+.du-ice .du-box{color:var(--duNum,#e9fbff);--g:#9be7ff;background:var(--duBg,linear-gradient(160deg,#0d2a3acc,#061722cc));border:var(--duBw,.05em) solid var(--duFrame,#bdefff);border-radius:.2em .9em;box-shadow:inset 0 0 .6em #9be7ff44,0 0 calc(.4em*var(--duGlow,.6)) #9be7ff66}
+.du-ice .du-dec::before{content:"❄  ✦  ❄";position:absolute;top:-.55em;inset-inline-start:.6em;font-size:.32em;color:#e9fbff;letter-spacing:.3em}
+.wd:not(.no-fx) .du-ice .du-dec::before{animation:duTwinkle 2.4s ease-in-out infinite}@keyframes duTwinkle{50%{opacity:.3}}
+.du-ice .du-ttl{color:var(--duTitle,#9be7ff)}
+/* 13 RGB Animated */
+.du-rgbAnimated .du-box{background:var(--duBg,#05060c);border-radius:.5em;isolation:isolate}
+.du-rgbAnimated .du-dec{inset:-.07em;z-index:-1;border-radius:.56em;background:conic-gradient(from var(--duA,0deg),#ff004c,#ffcc00,#33ff66,#00ccff,#9a3dff,#ff004c);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:.07em}
+@property --duA{syntax:"<angle>";inherits:false;initial-value:0deg}.wd:not(.no-fx) .du-rgbAnimated .du-dec{animation:duSpin 3s linear infinite}@keyframes duSpin{to{--duA:360deg}}
+.wd:not(.no-fx) .du-rgbAnimated .du-ttl{animation:duHue 4s linear infinite}@keyframes duHue{to{filter:hue-rotate(360deg)}}.du-rgbAnimated .du-ttl{color:var(--duTitle,#ff4d8d)}
+/* 14 Metallic */
+.du-metallic .du-box{color:var(--duNum,#2a2f36);background:var(--duBg,linear-gradient(180deg,#f4f6f8,#aeb6bf 48%,#d7dce1 52%,#8f98a2));border:var(--duBw,.05em) solid var(--duFrame,#6b737c);border-radius:.3em;box-shadow:inset 0 .05em 0 #fff,0 .12em .3em #0007}
+.du-metallic .du-val{text-shadow:0 .03em 0 #fff,0 -.02em 0 #0005}.du-metallic .du-ttl{color:var(--duTitle,#3a4048)}
+.du-metallic .du-dec{background:repeating-linear-gradient(90deg,#ffffff10 0 1px,transparent 1px 3px);border-radius:inherit}
+/* 15 Holographic */
+.du-holographic .du-box{color:var(--duNum,#fff);background:var(--duBg,linear-gradient(120deg,#ff9ad5,#9ad0ff,#b6ffda,#fff59a,#d3a6ff,#ff9ad5) 0 0/400% 400%);border-radius:.7em;text-shadow:0 .03em .1em #0006;border:var(--duBw,.04em) solid var(--duFrame,#ffffffaa)}
+.wd:not(.no-fx) .du-holographic .du-box{animation:duHolo 8s ease-in-out infinite}@keyframes duHolo{50%{background-position:100% 100%}}
+.du-holographic .du-ttl{color:var(--duTitle,#2b1450);text-shadow:none}
+/* 16 Large Timer — مثل الصورة المرجعية */
+.du-largeTimer .du-box{color:var(--duNum,#fff);--g:var(--duFrame,#4f8bff);background:var(--duBg,linear-gradient(180deg,#0f1830ee,#070b16ee));border:var(--duBw,.05em) solid var(--duFrame,#4f8bff);border-radius:.35em;padding:.18em .55em .3em;box-shadow:0 0 calc(.4em*var(--duGlow,.6)) #4f8bff55}
+.du-largeTimer .du-ttl{order:-1;background:var(--duFrame,#4f8bff);color:var(--duTitle,#fff);padding:.18em .9em;border-radius:0 0 .4em .4em;margin-top:-.18em;font-size:calc(.28em*var(--duTitleS,1))}
+.du-largeTimer .du-val{font-size:1.25em}
+/* 17 Flip Cards */
+.du-flipCards .du-box{background:none;padding:0}.du-flipCards .du-ttl{color:var(--duTitle,#fff);text-shadow:0 1px 4px #000}
+.du-flipCards .du-n{display:inline-block;background:var(--duBg,linear-gradient(180deg,#2a2d36 50%,#1c1e25 50%));color:var(--duNum,#fff);border-radius:.14em;padding:.08em .14em;margin:0 .04em;box-shadow:0 .06em .14em #000a,inset 0 -.02em 0 #000;position:relative}
+.du-flipCards .du-n.c-d{color:var(--duDay,#ffd166)}.du-flipCards .du-n.c-m,.du-flipCards .du-n.c-s{color:var(--duMs,var(--duNum,#fff))}
+.du-flipCards .du-n::after{content:"";position:absolute;left:0;right:0;top:50%;height:.02em;background:#0009}
+.du-flipCards .du-c{color:var(--duFrame,#fff);text-shadow:0 1px 3px #000}
+.wd:not(.no-fx) .du-flipCards .du-n.tick{animation:duFlipN .45s ease}@keyframes duFlipN{0%{transform:perspective(300px) rotateX(-80deg)}100%{transform:none}}
+/* 18 Live Pill */
+.du-livePill .du-box{flex-direction:row;align-items:center;gap:.45em;background:var(--duBg,#e0103a);color:var(--duNum,#fff);border-radius:99em;padding:.18em .7em;box-shadow:0 .08em .3em #0008;font-family:var(--duFont,"Readex Pro",sans-serif)}
+.du-livePill .du-ttl{font-size:calc(.5em*var(--duTitleS,1));color:var(--duTitle,#fff)}.du-livePill .du-ttl::before{content:"";display:inline-block;width:.55em;height:.55em;border-radius:50%;background:#fff;margin-inline-end:.35em;vertical-align:middle}
+.wd:not(.no-fx) .du-livePill .du-ttl::before{animation:duPulse 1s infinite}.du-livePill .du-val{font-size:.8em}
+/* 19 Retro Terminal */
+.du-terminal .du-box{color:var(--duNum,#33ff77);--g:var(--duNum,#33ff77);background:var(--duBg,#020a04);border:var(--duBw,.04em) solid var(--duFrame,#1b5e2c);border-radius:.15em;font-family:var(--duFont,ui-monospace,"Courier New",monospace);align-items:flex-start}
+.du-terminal .du-ttl{font-family:inherit;color:var(--duTitle,#33ff77);opacity:.7}.du-terminal .du-ttl::before{content:"> "}
+.du-terminal .du-val::after{content:"█";margin-inline-start:.08em;font-size:.8em}.wd:not(.no-fx) .du-terminal .du-val::after{animation:duPulse 1s steps(1) infinite}
+.du-terminal .du-dec{background:repeating-linear-gradient(0deg,#33ff7708 0 1px,transparent 1px 3px)}
+/* 20 Orbit Ring */
+.du-orbit .du-box{background:var(--duBg,radial-gradient(circle,#0e1530 55%,transparent 56%));padding:.9em .8em;border-radius:50%;aspect-ratio:auto;min-height:2.4em;justify-content:center}
+.du-orbit .du-dec{border:.06em solid var(--duFrame,#6d7bff);border-radius:50%;box-shadow:0 0 calc(.4em*var(--duGlow,.6)) var(--duFrame,#6d7bff)}
+.du-orbit .du-dec::after{content:"";position:absolute;width:.22em;height:.22em;border-radius:50%;background:#fff;box-shadow:0 0 .3em #fff;top:-.11em;left:50%;transform-origin:0 calc(50% + 50%)}
+.wd:not(.no-fx) .du-orbit .du-dec{animation:duSpinR 6s linear infinite}@keyframes duSpinR{to{transform:rotate(360deg)}}
+.du-orbit .du-ttl{color:var(--duTitle,#a9b4ff)}
+.du-box.noneon .du-val{text-shadow:none!important;filter:none!important}
+`;
+let duCss=false;
+function ensureDuCSS(){ if(duCss||typeof document==="undefined") return; duCss=true; const st=document.createElement("style"); st.id="b6o6-du"; st.textContent=DU_CSS; document.head.appendChild(st) }
+/** HTML القطع: تشغيلات الوقت (أرقام و«:») تُغلّف LTR حتى لا تنقلب في العربية */
+function durHTML(parts,flip){ let html="", run="";
+ const flush=()=>{ if(run){ html+=`<span class="du-clk">${run}</span>`; run="" } };
+ for(const p of parts){ const c=p.c?" c-"+p.c:"";
+  if(p.k==="n"||p.k===":"){ run+=p.k==="n"?`<span class="du-n${c}${flip?" fl":""}">${esc(p.t)}</span>`:`<span class="du-c${c}">${esc(p.t)}</span>`; continue }
+  flush(); html+=p.k==="|"?`<span class="du-s">${esc(p.t)}</span>`:`<span class="du-u${c}">${esc(p.t)}</span>` }
+ flush(); return html }
+
+Object.assign(View.prototype,{
+ applyDur(w,W,Hh){ ensureDuCSS(); const e=this.el, d=duDesignOf(w.design);
+  e.classList.add("du-"+d.id);
+  const set=(k,v)=>{ if(v==null||v==="") e.style.removeProperty(k); else e.style.setProperty(k,v) };
+  set("--duNum",w.duNumC); set("--duDay",w.duDayC); set("--duMs",w.duMsC); set("--duTitle",w.duTitleC); set("--duFrame",w.duFrameC);
+  const bgA=+w.duBgA; set("--duBg",w.duBg?(duHexA(w.duBg,bgA>=0?bgA:1)||w.duBg):(bgA>=0&&bgA<1?`rgba(0,0,0,${bgA})`:null)); if(w.duBg===""&&bgA===0) set("--duBg","transparent");
+  set("--duBw",w.duFrameC?".06em":null); set("--duGlow",String(Math.max(0,Math.min(2,w.duGlow??.6)))); set("--duGap",(+w.duGap||0)+"em");
+  set("--duTitleS",String(+w.duTitleS||1)); set("--duDayS",String(+w.duDayS||1)); set("--duFont",FONT_MAP[w.font]||null);
+  set("--duJ",w.duAlign==="start"?"flex-start":w.duAlign==="end"?"flex-end":"center");
+  this.duBase=Math.min(Hh*.42,W*.16)*(+w.fontScale||1)*(+w.duNumS||1); this.duW=W; this.duH=Hh;
+  e.innerHTML=`<div class="du"><div class="du-box ${w.duNeon!==false?"neon":"noneon"} ${w.duNumC?"has-c":""} in-${w.duIn||"fade"}" dir="${w.duLang==="en"?"ltr":"rtl"}"><i class="du-dec"></i><div class="du-ttl"></div><div class="du-val"></div></div></div>`;
+  this.du={box:e.querySelector(".du-box"),ttl:e.querySelector(".du-ttl"),val:e.querySelector(".du-val"),html:"",sig:"",days:false,out:false};
+  this.du.box.style.setProperty("--dfs",this.duBase+"px");
+  if(this.opts.data) this.refreshDur(this.opts.data(),true) },
+ refreshDur(src){ const U=this.du, w=this.w; if(!U||!src) return;
+  const now=Date.now()+(+src.skew||0);
+  // المعاينة في المكتبة/المحرر بدون بث: قيمة نموذجية ثابتة للعرض فقط (لا تُستخدم في رابط البث)
+  const demo=w.duDemoMs!=null&&(this.opts.editor||String(w.id).startsWith("pv_"));
+  const R=demo?{ms:+w.duDemoMs,running:true,ended:false,idle:false}:durOf(src.C,now);
+  const o=durOpts(w), parts=duParts(R.ms,o), html=durHTML(parts,w.design==="flipCards");
+  const title=w.duShowTitle===false?"":(w.duTitle||(o.lang==="en"?"LIVE TIME":"مدة البث"));
+  if(U.ttl.textContent!==title||U.ttl.style.display!==(title?"":"none")){ U.ttl.textContent=title; U.ttl.style.display=title?"":"none"; U.sig="" }
+  U.box.classList.toggle("du-idle",!!R.idle); U.box.classList.toggle("du-ended",!!R.ended);
+  // الخروج عند انتهاء البث (اختياري) — والدخول من جديد عند بث جديد
+  const hide=!!(w.duHideEnded&&R.ended&&!demo);
+  if(hide!==U.out){ U.out=hide; U.box.classList.remove("in-"+(w.duIn||"fade")); U.box.classList.toggle("out-"+(w.duOut||"fade"),hide); if(!hide){ void U.box.offsetWidth; U.box.classList.add("in-"+(w.duIn||"fade")) } }
+  if(html===U.html) return;
+  const prevFlip=w.design==="flipCards"?[...U.val.querySelectorAll(".du-n")].map(x=>x.textContent):null;
+  U.val.innerHTML=html; U.html=html; U.val.dataset.ghost=parts.map(p=>p.k==="n"?p.t.replace(/\d/g,"8"):p.t).join("");
+  if(prevFlip){ U.val.querySelectorAll(".du-n").forEach((x,i)=>{ if(prevFlip[i]!==undefined&&prevFlip[i]!==x.textContent) x.classList.add("tick") }) }
+  const hasDays=parts.some(p=>p.c==="d"); if(hasDays&&!U.days&&U.sig) U.box.classList.add("du-day-in"); U.days=hasDays;
+  // ملاءمة الحجم فقط عند تغيّر بنية العرض (ظهور الأيام، تغيّر عدد الخانات) — لا اهتزاز كل ثانية
+  const sig=title+"|"+parts.map(p=>p.k+(p.k==="n"?p.t.length:p.t)).join("");
+  if(sig!==U.sig){ U.sig=sig; this.fitDur() } },
+ fitDur(tries=0){ const U=this.du; if(!U) return;
+  // العنصر لم يُعرض بعد (القياس = 0): نعيد المحاولة بعد الرسم
+  if(!U.box.isConnected||!U.box.scrollWidth){ if(tries<20&&typeof requestAnimationFrame==="function") requestAnimationFrame(()=>this.fitDur(tries+1)); return }
+  let fs=this.duBase; U.box.style.transition="none"; U.box.style.setProperty("--dfs",fs+"px");
+  const W=this.duW*.97, H=this.duH*.97, bw=U.box.scrollWidth, bh=U.box.scrollHeight;
+  requestAnimationFrame&&requestAnimationFrame(()=>{ U.box.style.transition="" });
+  if(bw>W||bh>H){ fs=fs*Math.min(W/Math.max(1,bw),H/Math.max(1,bh)); U.box.style.setProperty("--dfs",Math.max(6,fs)+"px") } }
+});
 
 /* ---- engine/fc_designs.js ---- */
 // ====== عداد المتابعين V2: 50 تصميماً إضافياً (بطاقات فاخرة 10، إبداعية 10، صغيرة 5، Premium Mini 25) ======
@@ -8852,7 +9159,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
- else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes") renderPage(true); return }
+ else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes"||S.page==="duration") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
@@ -8871,7 +9178,8 @@ function receive(m,applied){
 let srT; function softRefresh(){clearTimeout(srT);srT=setTimeout(()=>{ if(!document.activeElement||!document.activeElement.closest||!document.activeElement.closest("#pg input,#pg select,#pg textarea")) renderPage(true) },250)}
 // ساعة محلية في وضع التجربة (في الوضع الحقيقي الخادم هو المرجع)
 setInterval(()=>{ if(wsReady||location.hash.startsWith("#/overlay")) return; syncBots(); const r=roomTick(R,Date.now()); for(const m of r.out){ receive(m,true); if(bus) bus.postMessage(m) } if(r.out.length) saveRoom() },1000);
-setInterval(()=>{ for(const v of allViews()) if(TYPES[v.w.type]?.tick) v.refresh(SRC()); document.querySelectorAll("[data-live-clock]").forEach(e=>e.textContent=liveClockText(e.dataset.liveClock)) },250);
+setInterval(()=>{ if(S.page==="duration"){ const D=durOf(R.C,Date.now()+skew); document.querySelectorAll("[data-live-dur]").forEach(e=>e.textContent=durText(D.ms,{mode:"auto"})); document.querySelectorAll("[data-live-dur-cur]").forEach(e=>e.textContent=durText(D.cur,{mode:"auto"})) }
+ for(const v of allViews()) if(TYPES[v.w.type]?.tick) v.refresh(SRC()); document.querySelectorAll("[data-live-clock]").forEach(e=>e.textContent=liveClockText(e.dataset.liveClock)) },250);
 function liveClockText(id){ const now=Date.now()+skew; if(id==="subathon") return fmtClock(remaining(R.C.subathon,now)); const t=R.C.timers.find(x=>x.id===id); return t?fmtClock(timerValue(t,now),t.dir==="up"||t.durationMs>=HOUR):"--" }
 
 const rnd=a=>a[Math.floor(Math.random()*a.length)];
@@ -8920,7 +9228,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -9078,6 +9386,7 @@ function renderPage(soft){
   ${p==="comments"?`<div class="ttl">آخر التعليقات</div><div class="feed">${D.feed.slice(0,20).map(f=>`<div><b>${esc(f.name)}:</b> ${esc(f.text)}</div>`).join("")||'<div class="mut">لا توجد تعليقات</div>'}</div><div class="ttl">آخر المتابعين</div>${userTable((D.recentFollows||[]).slice(0,8),[["الوقت",r=>dt(r.t)]])}`:""}</div></div>`+testBar();
  }
  else if(p==="subathon"){ h=subathonHTML() }
+ else if(p==="duration"){ h=duHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -9145,6 +9454,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
+ if(p==="duration") duMount();
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -9378,6 +9688,60 @@ function sessHTML(){ const L=(R.C&&R.C.live)||{}, auto=L.auto!==false, keep=L.ke
   <p class="mut small" style="margin:10px 0 0">يُصفَّر: عدد التكبيس، ترتيب المكبسين، آخر وأكثر شخص كبس، تقدم أهداف وتحدي التكبيس. <b>لا يُصفَّر:</b> التصاميم، الألوان، الأحجام، أهداف التكبيس المحددة، الحركات، ووقت السبثون (إعادة ضبطه مستقلة من صفحة السبثون).</p>
   ${H.length?`<div class="ttl" style="margin-top:12px">📊 إحصائيات البثوث السابقة</div><div class="ss-hist">${H.slice(0,8).map(x=>`<div class="ss-h"><div><b>${dt(x.startedAt)}</b> <span class="mut small">· ${dur(x.startedAt,x.endedAt)}${x.why==="stream_end"?" · انتهى البث":x.why==="manual"?" · جلسة يدوية":""}</span></div>
    <div class="ss-hm"><span>❤️ <b>${fmt(x.likes)}</b> تكبيسة</span><span>👥 ${fmt(x.likers||0)} مكبس</span><span>🎁 ${fmt(x.giftCount||0)} هدية</span><span>💬 ${fmt(x.comments||0)}</span>${x.topLikers&&x.topLikers[0]?`<span>👑 <bdi>${esc(x.topLikers[0].name)}</bdi> (${fmt(x.topLikers[0].v)})</span>`:""}</div></div>`).join("")}</div>`:""}</div>` }
+/* ---- طبقة «مدة البث» (Live Duration): الحالة من جلسة البث، الاستمرار بين البثوث، التصاميم، والتحكم الكامل ---- */
+const DU_SRC_LBL={tiktok:"🟢 وقت بدء البث من TikTok",session:"🟡 بداية الجلسة كما سجلها الخادم",manual:"✋ بداية يدوية",none:"⚪ لا يوجد بث بعد"};
+function duSess(){ return (R.C&&R.C.live)||{} }
+function duHTML(){ const l=L(), ws_=l.widgets.filter(w=>w.type==="duration"), w=ws_.find(x=>x.id===S.duW)||ws_[0], Ls=duSess(), D=durOf(R.C,Date.now()+skew);
+ const fmtD=ms=>durText(ms,{mode:"auto"});
+ return head("مدة البث — Live Duration","المدة الحقيقية منذ بداية البث المباشر — محسوبة من جلسة البث المحفوظة على الخادم، لا من وقت فتح الصفحة")+
+ `<div class="grid g2"><div class="card du-st"><h3><span>⏲️ المدة الآن</span><span class="tag ${D.running?"ok":""}">${D.running?"🟢 يعمل":D.ended?"⏹ انتهى البث — المدة محفوظة":"⚪ لم يبدأ"}</span></h3>
+   <div class="du-big" data-live-dur>${esc(fmtD(D.ms))}</div>
+   <div class="du-kv"><span>المصدر</span><b>${DU_SRC_LBL[D.src]||D.src}</b></div>
+   <div class="du-kv"><span>بداية الاحتساب</span><b>${D.start?dt(D.start):"—"}</b></div>
+   ${Ls.durCarry?`<div class="du-kv"><span>المتراكم من البثوث السابقة</span><b>${esc(fmtD(D.acc))}</b></div><div class="du-kv"><span>هذا البث فقط</span><b data-live-dur-cur>${esc(fmtD(D.cur))}</b></div>`:""}
+   <div class="du-kv"><span>الاتصال بالبث</span><div data-tkbox>${tkBox()}</div></div>
+   <div class="row" style="margin-top:10px">${Ls.durMan?`<button class="btn sm" data-duop="durAuto">↺ العودة للتلقائي (من البث)</button>`:""}<button class="btn sm" data-duop="durStart">▶ بدء العداد يدوياً الآن</button>${D.running?`<button class="btn sm" data-duop="durStop">⏹ إيقاف العداد</button>`:""}</div>
+   <p class="mut small" style="margin:8px 0 0">تلقائياً: يبدأ مع كل بث جديد من الصفر، ولا يتأثر بتحديث الصفحة أو إعادة فتح OBS أو انقطاع الاتصال، ويتوقف ويحفظ المدة عند انتهاء البث فعلياً. البدء اليدوي للحالات التي لا يتوفر فيها وقت بداية موثوق.</p></div>
+  <div class="card"><h3>🔁 استمرار احتساب المدة بين البثوث</h3>
+   <label class="ss-tg"><input type="checkbox" data-ducarry ${Ls.durCarry?"checked":""}><span><b>استمرار احتساب المدة بين البثوث</b><br><span class="mut small">مفعّل: تُضاف مدة كل بث للمتراكم ويكمل العداد في البث التالي بدون تصفير. معطّل (الافتراضي): كل بث يبدأ من الصفر.</span></span></label>
+   ${Ls.durCarry?`<div class="row" style="margin-top:8px"><span class="mut small">المتراكم: <b>${esc(fmtD(D.acc))}</b></span><button class="btn sm dng" data-duop="durAccReset">تصفير المتراكم</button></div>`:""}
+   ${Ls.lastDurMs?`<p class="small" style="margin:10px 0 0">آخر بث انتهى بمدة <b>${esc(fmtD(Ls.lastDurMs))}</b></p>`:""}
+   ${(Ls.history||[]).filter(h=>h.durMs).slice(0,5).map(h=>`<div class="du-kv"><span>${dt(h.startedAt)}</span><b>${esc(fmtD(h.durMs))}</b></div>`).join("")}</div></div>
+ ${w?`<div class="ttl">🎨 الطبقة على الشاشة ${ws_.length>1?`<select class="inp" data-act="duW" style="width:auto;display:inline-block">${ws_.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select>`:""}</div>
+  <div class="grid g2" style="align-items:start"><div class="card"><div class="row" style="justify-content:space-between"><span class="mut small">معاينة مباشرة (الخلفية الشبكية = شفاف في OBS)</span><span class="tag">${esc(duDesignOf(w.design).name)}</span></div>
+   <div class="pv du-pv" id="du-pv" data-wid="${w.id}"></div>
+   <div class="row" style="margin-top:10px"><button class="btn pri" data-copylink="${w.id}">🔗 نسخ رابط Browser Source</button><button class="btn" data-edit="${w.id}">📐 الحجم والموقع في الاستوديو</button><button class="btn sm" data-add="duration">＋ عداد آخر</button></div>
+   <p class="mut small" style="margin:8px 0 0">الرابط شفاف ويعمل في OBS وTikTok LIVE Studio — للبث العمودي والأفقي (الحجم والموقع من الاستوديو).</p></div>
+  <div class="card">${duPropsHTML(w)}</div></div>
+  <div class="ttl">✨ التصاميم (${DU_DESIGNS.length})</div>
+  <div class="du-gal">${DU_DESIGNS.map(d=>`<button class="du-gc ${w.design===d.id?"on":""}" data-dupick="${d.id}"><div class="du-gpv" data-dupv="${d.id}"></div><b>${d.n}. ${esc(d.name)}</b><span>${esc(d.desc)}</span></button>`).join("")}</div>`
+ :`<div class="card" style="margin-top:14px;text-align:center"><p>لا توجد طبقة «مدة البث» في «${esc(l.name)}».</p><button class="btn pri" data-add="duration">＋ إضافة للمشهد</button></div>`}`+testBar() }
+function duPropsHTML(w){ const id=w.id;
+ const sel=(f,l,opts,val)=>`<div class="fld"><label>${l}</label><select class="inp" data-wf="${f}" data-wid="${id}">${opts.map(o=>`<option value="${o[0]}" ${String(val)===String(o[0])?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;
+ const tg=(f,l,def=true)=>sel(f,l,[["1","ظاهر"],["0","مخفي"]],(w[f]??def)!==false?"1":"0");
+ const on=(f,l,def=false)=>sel(f,l,[["1","مفعّل"],["0","متوقف"]],(w[f]??def)?"1":"0");
+ const rng=(f,l,min,max,step,val,fm)=>`<div class="fld"><label><span>${l}</span><span id="v_${f}">${fm?fm(val):val}</span></label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}" data-wf="${f}" data-wid="${id}"></div>`;
+ const col=(f,l,def)=>`<div class="fld du-colf"><label>${l}</label><div class="row" style="gap:4px;flex-wrap:nowrap"><input type="color" data-wf="${f}" data-wid="${id}" value="${esc(w[f]||def)}">${w[f]?`<button class="btn xs" data-ducol="${f}" title="لون التصميم الافتراضي">↺</button>`:`<span class="mut small">افتراضي</span>`}</div></div>`;
+ const txt=(f,l,ph)=>`<div class="fld"><label>${l}</label><input class="inp" data-wf="${f}" data-wid="${id}" value="${esc(w[f]??"")}" placeholder="${esc(ph)}"></div>`;
+ const pct=v=>Math.round(v*100)+"%";
+ return `<h3>⚙️ طريقة عرض مدة البث</h3>
+  ${sel("duMode","طريقة العرض",DU_MODES,w.duMode||"auto")}
+  <div class="grid g3" style="gap:8px">${sel("duLang","اللغة",[["ar","العربية"],["en","English"]],w.duLang||"ar")}${on("duDaysAlways","الأيام ظاهرة دائماً (حتى لو صفر)")}${(w.duMode==="hms_days")?on("duDayDetail","الأيام بالتفصيل (يومان و5 ساعات)"):(w.duMode==="custom")?on("duTotalH","الساعات إجمالية"):""}</div>
+  <div class="du-sample">مثال الآن: <b>${esc(durText(53*3600e3+20*60e3+15e3,durOpts(w)))}</b> · <b>${esc(durText(19*3600e3+22*60e3+18e3,durOpts(w)))}</b></div>
+  <h4>العناصر الظاهرة</h4><div class="grid g4" style="gap:8px">${tg("duShowD","الأيام")}${tg("duShowH","الساعات")}${tg("duShowM","الدقائق")}${tg("duShowS","الثواني")}${tg("duShowTitle","عنوان «مدة البث»")}${tg("duUnitH","كلمة «ساعة»")}${tg("duUnitD","كلمة «يوم»")}${on("duHideEnded","إخفاء عند انتهاء البث")}</div>
+  <div class="grid g2" style="gap:8px">${txt("duTitle","نص العنوان",w.duLang==="en"?"LIVE TIME":"مدة البث")}${txt("duSep","الفاصل بين الساعات والأيام","|")}</div>
+  <h4>الألوان</h4><div class="grid g3" style="gap:8px">${col("duNumC","الأرقام / الساعات","#ffffff")}${col("duDayC","الأيام وكلمة يوم","#ffd166")}${col("duMsC","الدقائق والثواني","#ffffff")}${col("duTitleC","العنوان","#ffffff")}${col("duBg","الخلفية","#000000")}${col("duFrameC","الإطار","#4f8bff")}</div>
+  ${rng("duBgA","شفافية الخلفية",0,1,.05,(+w.duBgA>=0?+w.duBgA:1),pct)}
+  <h4>الخط والأحجام</h4><div class="grid g2" style="gap:8px">${sel("font","نوع الخط",FONTS,w.font||"default")}${sel("duAlign","المحاذاة",[["center","وسط"],["start","بداية"],["end","نهاية"]],w.duAlign||"center")}</div>
+  <div class="grid g2" style="gap:8px">${rng("fontScale","حجم الخط",.5,2,.05,+w.fontScale||1,pct)}${rng("duNumS","حجم الأرقام",.6,1.6,.05,+w.duNumS||1,pct)}${rng("duTitleS","حجم العنوان",.5,2,.05,+w.duTitleS||1,pct)}${rng("duDayS","حجم الأيام",.5,1.8,.05,+w.duDayS||1,pct)}${rng("duGap","المسافة بين الأرقام",-.05,.4,.01,+w.duGap||0,v=>(+v).toFixed(2)+"em")}${rng("opacity","شفافية الطبقة",.2,1,.05,w.opacity==null?1:+w.opacity,pct)}</div>
+  <h4>النيون والحركة</h4><div class="grid g3" style="gap:8px">${on("duNeon","النيون",true)}${rng("duGlow","شدة التوهج",0,2,.05,w.duGlow??.6,pct)}${sel("effects","الحركات",[["1","مفعّلة"],["0","متوقفة"]],w.effects?"1":"0")}${sel("duIn","حركة الدخول",DU_INS,w.duIn||"fade")}${sel("duOut","حركة الخروج",DU_INS,w.duOut||"fade")}</div>` }
+/** المعاينات: الطبقة المختارة (حية من جلسة البث) + بطاقات التصاميم (قيمة نموذجية 2 يوم و5 ساعات) */
+function duMount(){ const box=document.getElementById("du-pv"); const l=L();
+ if(box){ const w=l.widgets.find(x=>x.id===box.dataset.wid); if(w){ box.innerHTML=""; const cv={w:1000,h:Math.round(1000*box.clientHeight/Math.max(1,box.clientWidth))}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${box.clientWidth/cv.w})`; box.appendChild(stg);
+  const pw={...w,id:"pvl_"+w.id,x:.03,y:.06,w:.94,h:.88,locked:true,visible:true}; const v=new View(pw,cv,{data:SRC,globalFx:S.settings.fx,mute:true}); stg.appendChild(v.el); liveViews.add(v); S.duPvView=v } }
+ const tgt=l.widgets.find(x=>x.type==="duration"&&x.id===S.duW)||l.widgets.find(x=>x.type==="duration");
+ document.querySelectorAll("[data-dupv]").forEach(b=>{ const cv={w:600,h:220}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${b.clientWidth/cv.w})`; b.appendChild(stg);
+  const pw=newWidget("duration",{...(tgt?{duMode:tgt.duMode,duLang:tgt.duLang}:{}),id:"pv_du_"+b.dataset.dupv,design:b.dataset.dupv,x:.04,y:.06,w:.92,h:.88,duDemoMs:(2*86400+5*3600+30*60+45)*1000,locked:true,visible:true}); const v=new View(pw,cv,{data:SRC,globalFx:S.settings.fx,mute:true}); stg.appendChild(v.el) }) }
 function subathonHTML(){
  const s=R.C.subathon, now=Date.now()+skew, l=L();
  const sw=l.widgets.filter(w=>w.type==="subathon");
@@ -9959,7 +10323,7 @@ function renderProps(){
  ${t.bt?btPropsHTML(w,sel,rng):""}${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
  ${t.rules?rbPropsHTML(w,sel,rng):""}
- ${t.fc?fcPropsHTML(w,sel,rng):""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
+ ${t.fc?fcPropsHTML(w,sel,rng):""}${t.du?`${sel("design","التصميم",DU_DESIGNS.map(d=>[d.id,d.n+". "+d.name]),w.design)}<button class="btn sm" data-go="duration" style="margin:6px 0">⏲️ كل إعدادات مدة البث</button>`:""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
  ${t.soc?`${w.type==="social"?sel("mode","طريقة العرض",[["rotation","تدوير تلقائي"],["single","حساب واحد"],["ondemand","عند الطلب فقط"]],w.mode):sel("filter","الحسابات",[["all","التواصل + الألعاب"],["social","التواصل فقط"],["game","الألعاب فقط"]],w.filter)}
   ${w.type==="social"&&w.mode==="single"?sel("accountId","الحساب",S.socials.accounts.map(a=>[a.id,accountView(a).platform+" "+accountView(a).user]),w.accountId)+`<div class="grid g2" style="gap:8px">${sel("repeat","تكرار الظهور",[["0","ظاهر دائماً"],["1","يظهر ويختفي"]],w.repeat?"1":"0")}${w.repeat?`<div class="fld"><label>ظهور / اختفاء (ث)</label><div class="row" style="flex-wrap:nowrap"><input class="inp" type="number" min="2" data-wf="showSec" data-wid="${w.id}" value="${w.showSec}"><input class="inp" type="number" min="1" data-wf="gapSec" data-wid="${w.id}" value="${w.gapSec}"></div></div>`:""}</div>`:""}
   ${w.type==="social"&&w.mode==="rotation"?`<div class="note small">التوقيت والحسابات المشاركة من «حساباتي ← التناوب والمعاينة». يظهر حساب واحد فقط في كل مرة.</div>`:""}
@@ -10108,6 +10472,9 @@ function onClick(e){
  if(d.libtab){ S.libTab=d.libtab; S.libTarget=null; if(!d.go) return renderPage() }
  if(d.go) return go(d.go);
  if(d.sim){ const sc=document.getElementById("simScope")?.value||"likes"; S.scope=sc; if(d.sim==="shuffle"){ if(sc==="all"||sc==="follows") return toast("اختر قائمة ترتيب واحدة"); return SIM.shuffle(sc) } if(d.sim==="reset") return SIM.reset(sc); return SIM[d.sim]() }
+ if(d.duop) return d.duop==="durAccReset"?ask("تصفير المدة المتراكمة من البثوث السابقة؟").then(ok=>{ if(ok) send({t:"session-op",op:"durAccReset"}) }):send({t:"session-op",op:d.duop});
+ if(d.dupick){ const w=L().widgets.find(x=>x.type==="duration"&&x.id===S.duW)||L().widgets.find(x=>x.type==="duration"); if(w){ w.design=d.dupick; save(); pushLayout(); renderPage(true); toast("✨ "+duDesignOf(d.dupick).name) } return }
+ if(d.ducol){ const w=L().widgets.find(x=>x.type==="duration"&&x.id===S.duW)||L().widgets.find(x=>x.type==="duration"); if(w){ w[d.ducol]=""; save(); pushLayout(); renderPage(true) } return }
  if(t.hasAttribute&&t.hasAttribute("data-sessreset")) return ask("تصفير التكبيس الآن؟ يبدأ عدد التكبيس وترتيب المكبسين من الصفر (التصاميم والإعدادات لا تتأثر).").then(ok=>{ if(ok) send({t:"session-op",op:"resetNow"}) });
  if(t.hasAttribute&&t.hasAttribute("data-sessnew")) return ask("بدء جلسة بث جديدة؟ تُحفظ إحصائيات الجلسة الحالية ويبدأ التكبيس من الصفر.").then(ok=>{ if(ok) send({t:"session-op",op:"newSession"}) });
  if(d.saOp) return clockOp("subathon",d.saOp);
@@ -10231,6 +10598,8 @@ function onInput(e){
  if(d.rbhide&&e.type==="change"){ const w=findW(d.wid); if(!w) return; const h=new Set(w.hideKinds||[]); if(t.checked) h.delete(d.rbhide); else h.add(d.rbhide); w.hideKinds=[...h]; save(); pushLayout(); if(S.page==="studio") refreshView(w); return }
  if((d.sessauto!==undefined||d.sesskeep!==undefined)&&e.type==="change"){ send({t:"session-op",op:"config",config:d.sessauto!==undefined?{auto:t.checked}:{keep:t.checked}}); return }
  if(d.sessscope&&e.type==="change"){ send({t:"session-op",op:"config",config:{scopes:{[d.sessscope]:t.checked}}}); return }
+ if(d.ducarry!==undefined&&e.type==="change"){ if(!t.checked) return ask("إيقاف الاستمرار؟ سيُصفّر المتراكم وتُحتسب مدة البث الحالي فقط.").then(ok=>{ if(ok) send({t:"session-op",op:"durCarry",on:false}); else t.checked=true }); send({t:"session-op",op:"durCarry",on:true}); return }
+ if(d.act==="duW"&&e.type==="change"){ S.duW=t.value; return renderPage(true) }
  if(d.act==="saW"&&e.type==="change"){ S.saW=t.value; return renderPage(true) }
  if(d.rl&&e.type==="change"){ const id=d.rl, k=d.rk; setRules(L=>{ const r=L.find(x=>x.id===id); if(!r) return;
    if(k.startsWith("amt:")||k.startsWith("unit:")){ const f=k.split(":")[1], card=t.closest("[data-rule]"); const amt=+card.querySelector(`[data-rk="amt:${f}"]`).value||0, unit=+card.querySelector(`[data-rk="unit:${f}"]`).value||1000; r[f]=Math.round(amt*unit); return }
@@ -10262,6 +10631,8 @@ function onInput(e){
   if(/^tk[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(f==="tkAnim") v=v==="1" }
   if(f==="tkBgA"&&!w.tkBg) w.tkBg="#0b0f17";
   if(/^(lc|l5)[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")) v=v==="1" }
+  if(/^du[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")&&!["duMode","duLang","duAlign","duIn","duOut","duSep","duTitle"].includes(f)) v=v==="1" }
+  if(w.type==="duration"&&f==="effects"&&t.tagName==="SELECT") v=v==="1";
   if(f==="idle"){ v=[v,...((findW(d.wid)||{}).idle||[]).slice(1)].filter(Boolean) }
   if(t.type==="range"&&e.type==="change") return;
   if((t.tagName==="SELECT"||t.type==="number"||t.type==="checkbox")&&e.type==="input") return;
@@ -10273,6 +10644,7 @@ function onInput(e){
   const lab=document.getElementById("v_"+f); if(lab){ const cv=CV(); lab.textContent=f==="w"?Math.round(v*cv.w)+"px":f==="h"?Math.round(v*cv.h)+"px":["fontScale","avatarScale","opacity","logoScale","rowOpacity"].includes(f)?Math.round(v*100)+"%":["enterMs","exitMs","delayMs"].includes(f)?v+"ms":f==="speed"?v+" px/ث":v }
   if(lab&&/^(lc|l5)[A-Z]/.test(f)) lab.textContent=t.step==="0.01"?Math.round(v*100)+"%":v;
   save(); pushLayout();
+  if(S.page==="duration"&&w.type==="duration"){ if(lab&&/^du[A-Z]/.test(f)) lab.textContent=f==="duGap"?(+v).toFixed(2)+"em":Math.round(v*100)+"%"; const pv=S.duPvView; if(pv&&t.tagName!=="SELECT") pv.apply({...pv.w,[f]:v}); if(t.tagName==="SELECT"||(e.type==="change"&&t.type!=="range"&&t.type!=="text")) renderPage(true); return }
   if(S.page!=="studio"&&S.lsOpen===w.id){ if(t.tagName==="SELECT") renderPage(true); else lsLive(w); return }
   if(S.page==="studio"&&(w.type==="donCard"||w.type==="donLast5")){ refreshView(w); if(t.tagName==="SELECT") renderProps(); else mountDcPreview(w); return }
   if(S.page==="studio"){ refreshView(w); if(f==="name") renderLayers(); if(["design","topN","sortBy","showTitle","effects","timerId","mode","repeat","filter","order","source","target","base","tickerDir","stages","levelStages","platform","goalOn","kind"].includes(f)) renderProps() }

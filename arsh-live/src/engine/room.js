@@ -15,7 +15,7 @@ import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, mus
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { giftStreak, glogPush } from "./giftstreak.js";
-import { liveState, sessDecide, sessOpen, sessClose, sessPublic } from "./session.js";
+import { liveState, sessDecide, sessOpen, sessClose, sessPublic, okStart } from "./session.js";
 import { newClockState, giftCoins, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
 
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
@@ -198,17 +198,18 @@ export function roomSessionReset(R,now,scopes){ const L=liveState(R.C), sc=scope
 /** بدء جلسة جديدة (تلقائي عند بث جديد أو يدوي): يغلق السابقة ويحفظ إحصائياتها، ثم يصفّر */
 export function roomSessionStart(R,now,o={}){ const L=liveState(R.C);
  if(!L.sid&&L.keep!==false&&R.D&&R.D.tot&&(R.D.tot.likes||0)>0){ L.sid="pre"+now.toString(36); L.roomId=null; L.startedAt=R.D.startedAt||now; L.endedAt=null } // بيانات قبل نظام الجلسات: تُحفظ كجلسة سابقة بدل أن تضيع
- sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual"});
+ sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual",startAt:o.startAt});
  const out=o.reset===false?[]:roomSessionReset(R,now);
  out.push({t:"session",S:sessPublic(L),started:true,reset:o.reset!==false});
  return {out,logs:[],session:true} }
 /** اتصال بـ TikTok نجح ومعه roomId: نفس البث = استمرار، بث جديد = جلسة جديدة (مع التصفير إن كان مفعّلاً) */
-export function roomSessionConnect(R,roomId,now){ const L=liveState(R.C), d=sessDecide(L,roomId,now);
- if(d.act==="same"){ if(d.id&&!L.roomId){ L.roomId=d.id; return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"same"} } return {out:[],logs:[],act:"same"} }
- if(d.act==="resume"){ L.endedAt=null; L.endWhy=""; L.history=L.history.filter(h=>h.sid!==L.sid); return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"resume"} }
+export function roomSessionConnect(R,roomId,now,o={}){ const L=liveState(R.C), d=sessDecide(L,roomId,now), st=okStart(o.startAt,now);
+ if(d.act==="same"){ let ch=false; if(d.id&&!L.roomId){ L.roomId=d.id; ch=true } if(st&&!L.streamStart&&(!L.roomId||!d.id||String(L.roomId)===d.id)){ L.streamStart=st; ch=true } // وقت البدء الحقيقي يصل لاحقاً (مثلاً بعد إعادة تشغيل الخادم)
+  return ch?{out:[{t:"session",S:sessPublic(L)}],logs:[],act:"same"}:{out:[],logs:[],act:"same"} }
+ if(d.act==="resume"){ L.endedAt=null; L.endWhy=""; L.history=L.history.filter(h=>h.sid!==L.sid); if(L.durAdded){ L.durAcc=Math.max(0,(+L.durAcc||0)-L.durAdded); L.durAdded=0 } if(st&&!L.streamStart) L.streamStart=st; return {out:[{t:"session",S:sessPublic(L)}],logs:[],act:"resume"} }
  if(d.act==="first"){ // أول جلسة: إن كانت لدينا بيانات من قبل نظام الجلسات فهي من بث سابق غير معروف — تُصفّر فقط إن كان التصفير التلقائي مفعّلاً
-  const had=(R.D&&R.D.tot&&(R.D.tot.likes||0))>0; const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"first",reset:L.auto!==false&&had}); return {...r,act:"first"} }
- const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"new_stream",reset:L.auto!==false}); return {...r,act:"new"} }
+  const had=(R.D&&R.D.tot&&(R.D.tot.likes||0))>0; const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"first",reset:L.auto!==false&&had,startAt:st}); return {...r,act:"first"} }
+ const r=roomSessionStart(R,now,{roomId:d.id,source:"tiktok",why:"new_stream",reset:L.auto!==false,startAt:st}); return {...r,act:"new"} }
 /** انتهاء البث (حدث STREAM_END من TikTok): يُغلق ويحفظ الإحصائيات بدون تصفير — الأرقام تبقى ظاهرة حتى يبدأ بث جديد */
 export function roomSessionEnd(R,now,why){ const L=liveState(R.C); if(!sessClose(L,R.D,now,why||"stream_end")) return {out:[],logs:[]}; return {out:[{t:"session",S:sessPublic(L),ended:true}],logs:[]} }
 /** أوامر من لوحة التحكم: إعدادات / تصفير يدوي / جلسة جديدة */
@@ -217,4 +218,11 @@ export function roomSessionOp(R,m,now){ const L=liveState(R.C);
  if(m.op==="resetNow"){ const out=roomSessionReset(R,now); out.push({t:"session",S:sessPublic(L),reset:true}); return {out,logs:[]} }
  if(m.op==="newSession") return roomSessionStart(R,now,{roomId:null,source:"manual",why:"manual"});
  if(m.op==="clearHistory"){ L.history=[]; return {out:[{t:"session",S:sessPublic(L)}],logs:[]} }
+ // مدة البث: استمرار بين البثوث، بدء/إيقاف يدوي، العودة للتلقائي، تصفير المتراكم
+ const pub=()=>({out:[{t:"session",S:sessPublic(L)}],logs:[]});
+ if(m.op==="durCarry"){ L.durCarry=!!m.on; if(!L.durCarry){ L.durAcc=0; L.durAdded=0 } return pub() }
+ if(m.op==="durStart"){ L.durMan={sid:L.sid||null,at:now,stop:null}; return pub() }
+ if(m.op==="durStop"){ const st=(L.durMan&&L.durMan.at&&(L.durMan.sid==null||L.durMan.sid===L.sid))?L.durMan.at:(L.sid?(L.streamStart||L.startedAt):null); if(!st) return {out:[],logs:[]}; L.durMan={sid:L.sid||null,at:st,stop:now}; return pub() }
+ if(m.op==="durAuto"){ L.durMan=null; return pub() }
+ if(m.op==="durAccReset"){ L.durAcc=0; L.durAdded=0; return pub() }
  return {out:[],logs:[]} }

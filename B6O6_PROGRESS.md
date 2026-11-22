@@ -142,6 +142,14 @@
 - اللوحة: «🔄 إعدادات إعادة التصفير» أعلى صفحة التكبيس (`sessHTML`): التصفير التلقائي (افتراضياً مفعّل)، الاحتفاظ بالإحصائيات، نطاقات إضافية (هدايا/تعليقات/متابعين — افتراضياً لا)، «تصفير التكبيس الآن» و«بدء جلسة بث جديدة» بتأكيد، بداية الجلسة، معرّف البث، حالة الاتصال، إحصائيات البثوث السابقة. رسالة `session` تحدّث اللوحة وتظهر تنبيهاً.
 - اختبارات: `npx tsx ../tests/live-session.test.mts` (32 — المسار الكامل بالسيناريوهات العشرة + إعادة تشغيل الخادم)، `npx tsx ../tests/live-session-engine.test.mts` (20)، `node tests/live-session-ui.test.js` (20).
 
+## طبقة «مدة البث» (Live Duration) — 2026-11-22
+- نوع جديد `duration` (`TYPES.duration {du,tick}`) — منفصل عن مؤقت «مدة البث» القديم (`timer/elapsed`) الذي بقي كما هو.
+- `src/engine/duration.js`: `durStartOf/durOf(C,now)` من جلسة البث (`C.live`): يدوي ← `streamStart` (create_time من TikTok) ← بداية الجلسة؛ متوقف عند انتهاء البث؛ `durAcc` للاستمرار بين البثوث. `durSplit` بالمعادلات (th=ث÷3600، d=ث÷86400، h=th%24). `duParts/durText` لكل الأوضاع: auto، hours، hours_days، hours_days_detail، hms_days(+dayDetail)، days_time، full، minimal، custom؛ عربي (مفرد/مثنى/جمع) وإنجليزي؛ إخفاء أيام/ساعات/دقائق/ثواني وكلمتي ساعة/يوم، الفاصل، الأيام دائماً.
+- `session.js`: `okStart`، `sessOpen({startAt})`، `sessClose` يحفظ `durMs` ويضيف للمتراكم في وضع الاستمرار (ويُسترجع عند «resume»). `room.js` ops: `durCarry`، `durStart`، `durStop`، `durAuto`، `durAccReset`. `tiktok.ts`: `liveStartAt` من `state.roomInfo.create_time` أو من `fetchRoomInfo` (سجل أسماء الحقول للتحقق). `live-hub` يمرره لـ `roomSessionConnect`. صفحة OBS (`overlay/[token]/page.tsx`) تستقبل رسالة `session`.
+- `src/engine/durview.js`: 20 تصميماً مختلفاً شكلاً وحركة (Basic Transparent، Digital Clock، Neon Blue، Royal Gold، Glass، Cyberpunk، Gaming، Luxury، Minimal Text، Futuristic HUD، Fire، Ice، RGB Animated، Metallic، Holographic، Large Timer، Flip Cards، Live Pill، Retro Terminal، Orbit Ring) + متغيرات CSS لكل الألوان/الخلفية/الشفافية/الإطار/الخط/الأحجام/المسافات/التوهج، نيون، حركات دخول/خروج، إخفاء عند الانتهاء. الوقت يُغلّف LTR داخل العربية، والملاءمة تُعاد فقط عند تغيّر البنية (لا اهتزاز عند ظهور الأيام).
+- اللوحة: صفحة «⏲️ مدة البث» (`duHTML`, `duPropsHTML`, `duMount`): المدة الحية، المصدر، بداية الاحتساب، الاتصال، بدء/إيقاف يدوي والعودة للتلقائي، الاستمرار بين البثوث، آخر المدد، معاينة حية، نسخ رابط Browser Source، الاستوديو للحجم/الموقع، معرض التصاميم الـ20. مفاتيح `du*` في معالج `data-wf`.
+- اختبارات: `npx tsx ../tests/live-duration.test.mts` (49)، `node tests/live-duration-ui.test.js` (33).
+
 ## الأخطاء غير المحلولة
 - `rot` و`socials` يفشلان أحياناً بسبب التوقيت عند التشغيل المتتالي، وينجحان عند الإعادة (معروف).
 - أُصلح: `vg.test.js` كان ينهار بصمت (ReferenceError) — فحص الاختبارات الآن يلتقط `Error` أيضاً.

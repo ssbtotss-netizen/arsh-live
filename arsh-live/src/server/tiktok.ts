@@ -31,7 +31,7 @@ export function userOf(d: any): LiveUser {
 /** حالة الربط المعروضة للواجهة — «متصل» فقط بعد نجاح connect() فعلياً */
 export type TkState = "connecting" | "waiting" | "connected" | "failed" | "stopped";
 export type TkInfo = { state: TkState; username: string; attempt: number; maxAttempts: number; retryAt?: number; kind?: string; text: string; admin?: string; at: number;
-  /** معرّف البث الحقيقي من TikTok (roomId) — معرّف جلسة البث */ liveRoomId?: string; /** TikTok أعلن انتهاء البث (STREAM_END) — يختلف عن انقطاع الاتصال */ ended?: boolean };
+  /** معرّف البث الحقيقي من TikTok (roomId) — معرّف جلسة البث */ liveRoomId?: string; /** وقت بدء البث الحقيقي من TikTok (ms) إن توفر */ liveStartAt?: number; /** TikTok أعلن انتهاء البث (STREAM_END) — يختلف عن انقطاع الاتصال */ ended?: boolean };
 export type TikTokHandle = { stop(): void; connected: boolean; username: string; info: TkInfo };
 
 /** تصنيف خطأ الاتصال (بدون كشف أي مفتاح) — يقرأ صنف الخطأ وretryAfter/resetTime من المكتبة (≥2.5) وحالة HTTP إن وُجدت */
@@ -184,9 +184,18 @@ export function startTikTok(
       handle.connected = true;
       log(`[tiktok] @${username} connected id=${attemptId} room=${state?.roomId ?? "?"} key=${keySet() ? "set" : "missing"}`);
       lr = state?.roomId != null ? String(state.roomId) : null;
-      set({ state: "connected", attempt: 0, maxAttempts: 0, kind: undefined, admin: undefined, liveRoomId: lr ?? undefined, ended: false, text: `متصل ببث @${username}` + (state?.roomId ? ` (غرفة ${state.roomId})` : "") }, true);
+      // وقت بدء البث الحقيقي (create_time بالثواني) من معلومات الغرفة إن أرسلتها المكتبة — لمدة البث
+      const ri: any = state?.roomInfo ?? state?.roomInfoResponse ?? null, rd: any = ri?.data ?? ri ?? {};
+      const ct = Number(rd?.create_time ?? rd?.createTime ?? rd?.start_time ?? rd?.room?.create_time ?? 0);
+      const liveStartAt = ct > 1e12 ? ct : ct > 1e9 ? ct * 1000 : undefined;
+      log(`[tiktok] room info id=${attemptId} stateKeys=${Object.keys(state || {}).slice(0, 12).join(",")} infoKeys=${Object.keys(rd || {}).slice(0, 20).join(",")} start=${liveStartAt ? new Date(liveStartAt).toISOString() : "n/a"}`);
+      set({ state: "connected", attempt: 0, maxAttempts: 0, kind: undefined, admin: undefined, liveRoomId: lr ?? undefined, liveStartAt, ended: false, text: `متصل ببث @${username}` + (state?.roomId ? ` (غرفة ${state.roomId})` : "") }, true);
       const syncFollowers = async () => { try { const inf: any = await c.fetchRoomInfo?.(); const o = inf?.owner ?? inf?.data?.owner ?? inf?.roomInfo?.owner; const n = Number(o?.follow_info?.follower_count ?? o?.followInfo?.followerCount);
-        if (Number.isFinite(n) && n > 0) cb.onFollowers?.(n); } catch (e: any) { console.error("[tiktok] follower sync failed:", String(e?.message || e).slice(0, 160)); } };
+        if (Number.isFinite(n) && n > 0) cb.onFollowers?.(n);
+        // وقت بدء البث من معلومات الغرفة (إن لم يصل مع الاتصال) — مرة واحدة
+        if (!info.liveStartAt) { const d: any = inf?.data ?? inf ?? {}; const ct2 = Number(d?.create_time ?? d?.createTime ?? d?.room?.create_time ?? 0); const at = ct2 > 1e12 ? ct2 : ct2 > 1e9 ? ct2 * 1000 : 0;
+          if (at && live() && handle.connected) { log(`[tiktok] stream start from room info id=${attemptId} start=${new Date(at).toISOString()}`); set({ liveStartAt: at, text: info.text }, true); } }
+      } catch (e: any) { console.error("[tiktok] follower sync failed:", String(e?.message || e).slice(0, 160)); } };
       clearInterval(fcTimer); syncFollowers(); fcTimer = setInterval(() => { if (handle.connected && live()) syncFollowers(); }, 60_000);
       try {
         const raw: any = state?.availableGifts ?? (await (c.fetchAvailableGifts?.() ?? c.getAvailableGifts?.()));

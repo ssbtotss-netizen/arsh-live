@@ -175,7 +175,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
             const was = r.live;
             broadcast(r, { t: "status", live, text, ...(info ? { tk: tkPublic(info) } : {}) });
             // جلسات البث: roomId مختلف = بث جديد (تصفير بيانات الجلسة)، نفس roomId = إعادة اتصال (استمرار) — الانقطاع وحده لا يصفّر شيئاً
-            if (info?.state === "connected") { const sr = roomSessionConnect(r as any, info.liveRoomId ?? null, Date.now()); if ((sr as any).act !== "same") console.log(`[session] ${id.slice(0, 6)}… ${(sr as any).act} roomId=${info.liveRoomId ?? "?"}`); commit(id, r, sr); }
+            if (info?.state === "connected") { const sr = roomSessionConnect(r as any, info.liveRoomId ?? null, Date.now(), { startAt: info.liveStartAt }); if ((sr as any).act !== "same") console.log(`[session] ${id.slice(0, 6)}… ${(sr as any).act} roomId=${info.liveRoomId ?? "?"}`); commit(id, r, sr); }
             if (info?.ended) commit(id, r, roomSessionEnd(r as any, Date.now(), "stream_end"));
             if (was !== live) commit(id, r, roomLive(r, live, Date.now())); // إيقاف/استكمال السبثون تلقائياً حسب الإعداد
             opt.onLiveStatus?.(id, live, text);

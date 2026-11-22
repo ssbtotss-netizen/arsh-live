@@ -19,6 +19,8 @@ export * from "../engine/bots.js";
 export * from "../engine/botview.js";
 export * from "../engine/followers.js";
 export * from "../engine/fcview.js";
+export * from "../engine/duration.js";
+export * from "../engine/durview.js";
 export * from "../engine/latest.js";
 export * from "../engine/tops.js";
 export * from "../engine/events.js";

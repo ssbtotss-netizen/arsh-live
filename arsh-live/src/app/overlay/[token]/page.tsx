@@ -51,6 +51,7 @@ function Overlay({ token }: { token: string }) {
         else { if (m.ev.type === "gift" && m.ev.big === undefined) m.ev.big = m.ev.value >= big; applyEvent(st.D, st.H, m.ev); if (st.C) { st.C.tops = st.C.tops || {}; topsOnEvent(st.C.tops, m.ev, Date.now(), 180); } }
       }
       else if (m.t === "clock") { st.C = m.C; if (m.now) st.skew = m.now - Date.now(); }
+      else if (m.t === "session") { if (st.C && m.S) st.C.live = Object.assign(st.C.live || {}, m.S); return; } // جلسة البث (مدة البث/التصفير): العناصر الدورية تقرأها في النبضة التالية
       else if (m.t === "layout") {
         if (m.layout?.socials) st.SO = m.layout.socials; // تعديل الحسابات يظهر فوراً
         if (m.layout?.donCfg) st.DC = m.layout.donCfg; // تعديل الهدف (المبلغ/العملة/التصميم) يظهر فوراً
