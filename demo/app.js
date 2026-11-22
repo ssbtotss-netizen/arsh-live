@@ -118,7 +118,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
- else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80) } } if(S.page==="subathon") saGlogRefresh(); return }
+ else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
@@ -195,6 +195,7 @@ function shell(){
  <main class="main" id="pg"></main></div>`;
  const root=document.getElementById("root");
  root.addEventListener("click",onClick); root.addEventListener("input",onInput); root.addEventListener("change",onInput);
+ root.addEventListener("toggle",e=>{ const d=e.target; if(d&&d.dataset&&d.dataset.sadet){ S.saDet=S.saDet||{}; S.saDet[d.dataset.sadet]=d.open } },true);
 }
 function go(p){ S.page=p; renderPage(); scrollTo(0,0) }
 function head(t,sub,extra=""){return `<div class="top"><div><h1>${t}</h1>${sub?`<p>${sub}</p>`:""}</div><div class="row">${extra}<span class="pill" id="savedot" style="opacity:.5">✓ محفوظ تلقائياً</span></div></div>`}
@@ -409,7 +410,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="subathon") mountClockPreview("sa-pv",l.widgets.find(w=>w.type==="subathon")||newWidget("subathon"));
+ if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
 function widgetQuick(w){ const t=TYPES[w.type];
@@ -628,92 +629,185 @@ function lsSection(types,addTypes,title){ const l=L(); const ws_=l.widgets.filte
 
 /* ---- السبثون ---- */
 function subathonHTML(){
- const s=R.C.subathon, now=Date.now()+skew, r=s.rules, l=L();
+ const s=R.C.subathon, now=Date.now()+skew, l=L();
  const sw=l.widgets.filter(w=>w.type==="subathon");
- const chk=(path,on)=>`<label class="row small" style="gap:6px;cursor:pointer"><input type="checkbox" data-sa="${path}" ${on?"checked":""}> مفعّل</label>`;
- const num=(path,val,lab,step=1,attrs="")=>`<div class="fld" style="margin:0"><label>${lab}</label><input class="inp" type="number" step="${step}" data-sa="${path}" value="${val}" ${attrs}></div>`;
  return head("نظام السبثون","وقت البث يزيد تلقائياً حسب تفاعل الجمهور — الوقت محسوب ومحفوظ على الخادم")+
- `<div class="grid g2"><div class="card"><h3><span>⏳ ${esc(s.name)}</span><span class="tag">${SA_STATUS[s.status]}${s.autoPaused?" (انقطاع البث)":""}</span></h3>
-  <div class="pv" id="sa-pv" style="height:150px;position:relative;border-radius:12px;overflow:hidden;background:radial-gradient(ellipse at 50% 30%,#2a2238,#0b0a10)"></div>
-  <div class="grid g3" style="margin-top:12px;gap:8px">${stat("المتبقي",fmtClock(remaining(s,now)),1,'data-live-clock="subathon"')}${stat("الوقت المضاف",fmtDelta(s.totalAddedMs).replace("+",""))}${stat("النهاية المتوقعة",s.status==="running"?dt(s.endsAt):"—")}</div>
-  <div class="row" style="margin-top:12px">
-   <button class="btn pri sm" data-sa-op="start">▶ بدء السبثون</button><button class="btn sm" data-sa-op="pause">⏸ إيقاف مؤقت</button><button class="btn sm" data-sa-op="resume">⏯ استكمال</button>
-   <button class="btn sm" data-sa-add="60000">+1 دقيقة</button><button class="btn sm" data-sa-add="300000">+5 دقائق</button><button class="btn sm" data-sa-add="600000">+10 دقائق</button><button class="btn sm" data-sa-add="-60000">−1 دقيقة</button>
-   <button class="btn sm dng" data-sa-op="reset">↺ إعادة ضبط</button><button class="btn sm dng" data-sa-op="end">⏹ إنهاء</button></div>
-  <div class="row" style="margin-top:8px"><input class="inp" id="saCustom" type="number" min="1" value="15" style="width:90px"><span class="mut small">دقيقة</span><button class="btn sm" data-sa-custom="1">إضافة</button><button class="btn sm" data-sa-custom="-1">خصم</button></div>
-  ${s.startedAt?`<p class="mut small">بدأ: ${dt(s.startedAt)}</p>`:""}
- </div>
- <div class="card"><h3>إعداد السبثون</h3>
-  <div class="grid g2" style="gap:8px"><div class="fld" style="margin:0"><label>اسم السبثون</label><input class="inp" data-sa="name" value="${esc(s.name)}"></div><div class="fld" style="margin:0"><label>الوصف</label><input class="inp" data-sa="desc" value="${esc(s.desc)}"></div>
+ `<div class="sa2">
+ <nav class="sa2-nav">${[["sa-s1","⏳ التحكم"],["sa-s2","🪙 قواعد العملات"],["sa-s3","🎁 قواعد الهدايا"],["sa-s4","🎨 تصميم العداد"],["sa-s5","🧾 سجل التفاعلات"],["sa-s6","⚙️ إعدادات إضافية"]].map(([id,t])=>`<button class="sa2-jump" data-sajump="${id}">${t}</button>`).join("")}</nav>
+ ${saHeroHTML(s,now)}
+ ${saCoinsHTML(s)}
+ ${saGiftsHTML(s)}
+ ${saDesignHTML(sw,l)}
+ <section class="sa2-sec" id="sa-s5"><div data-saglog>${saGlogHTML()}</div></section>
+ ${saMoreHTML(s,l)}
+ </div>`+testBar();
+}
+/* ---- السبثون (واجهة 2): الأقسام الخمسة ---- */
+/** حالة فتح الأقسام القابلة للطي تبقى بعد إعادة الرسم (التعديل داخلها لا يغلقها) */
+const saDet=(k,def)=>((S.saDet&&k in S.saDet)?S.saDet[k]:def)?"open":"";
+const SA_MODES={gifts_first:"قاعدة الهدية أولاً، وإلا العملات",coins:"حسب العملات فقط (كوين)",gifts:"حسب نوع الهدية فقط"};
+/** الكتالوج: هدايا وصلت من TikTok فعلاً (صورة واسم وقيمة حقيقية) + القائمة التقريبية للباقي (بدون صور — أيقونة بديلة) */
+const saCatalog=()=>{ const real=(S.catalog||[]).filter(g=>g&&g.id!=null&&g.name).map(g=>({id:g.id,name:g.name,coins:+g.diamonds||0,img:/^https:\/\//.test(g.image||"")?g.image:"",real:true}));
+ const ids=new Set(real.map(g=>String(g.id)));
+ return [...real,...GIFTS.filter(g=>!ids.has(String(g[2]))).map(g=>({id:g[2],name:g[0],coins:+g[1]||0,img:"",real:false}))] };
+const SA_TONES=[[0,"#6b7a99"],[10,"#2f7bff"],[100,"#a855f7"],[1000,"#f59e0b"],[10000,"#ef4444"]];
+/** صورة الهدية الحقيقية، وإلا أيقونة بديلة واضحة (الحرف الأول بلون حسب القيمة) — لا صور تخمينية */
+function giftIcon(g,cls="sa-ic"){ const nm=String((g&&g.name)||"؟").trim(), c=+(g&&g.coins)||0, tone=(SA_TONES.filter(x=>c>=x[0]).pop()||SA_TONES[0])[1];
+ return g&&g.img?`<span class="${cls}" style="--tone:${tone}"><img src="${esc(g.img)}" alt="${esc(nm)}" loading="lazy" referrerpolicy="no-referrer" data-safb></span>`
+  :`<span class="${cls} sa-fb" style="--tone:${tone}" title="لا تتوفر صورة حقيقية لهذه الهدية بعد — تظهر تلقائياً عند وصولها في البث"><b>${esc(nm.charAt(0))}</b></span>` }
+// صورة لم تُحمّل → أيقونة بديلة (لا نعرض صورة مكسورة أو خاطئة)
+document.addEventListener("error",e=>{ const i=e.target; if(!i||!i.matches||!i.matches("img[data-safb]")) return; const s=i.parentNode; s.classList.add("sa-fb"); s.title="تعذر تحميل صورة الهدية"; const b=document.createElement("b"); b.textContent=(i.alt||"؟").charAt(0); i.replaceWith(b) },true);
+const saGiftOf=x=>{ const cat=saCatalog(), g=cat.find(c=>String(c.id)===String(x.giftId)); return {id:x.giftId,name:(g&&g.name)||x.giftName||"هدية",coins:g?g.coins:0,img:(g&&g.img)||(/^https:\/\//.test(x.img||"")?x.img:""),real:!!(g&&g.real)} };
+/** مدة مقروءة دائماً برقم: «5 ثوانٍ»، «1 دقيقة»، «30 دقيقة»، «2 ساعة» */
+const saDurTxt=ms=>{ const a=Math.abs(ms); if(!a) return "0 ثانية"; const W=(n,one,few)=>`${n} ${n>=3&&n<=10?few:one}`;
+ if(a%3600000===0) return W(a/3600000,"ساعة","ساعات"); if(a%60000===0) return W(a/60000,"دقيقة","دقائق"); if(a<60000&&a%1000===0) return W(a/1000,"ثانية","ثوانٍ"); return fmtDur(a) };
+const saSigned=(ms,dir)=>`<bdi class="sa2-d">${(dir??1)<0||ms<0?"−":"+"}${saDurTxt(ms)}</bdi>`;
+function saGiftRuleText(x,g){ if(x.giftId==="*") return `أي هدية أخرى = ${saSigned(x.perDiamondMs||0,x.dir)} لكل كوين`;
+ const n=Math.max(1,+x.every||1); return `${n===1?"كل":"كل "+n} <bdi>${esc(g.name)}</bdi> = ${saSigned(x.ms,x.dir)}` }
+function saCoinRuleText(x){ return x.mode==="tier"?`هدية قيمتها ≥ ${fmt(x.coins)} كوين = ${saSigned(x.ms,x.dir)}`:`كل ${fmt(x.coins)} كوين = ${saSigned(x.ms,x.dir)}` }
+const saTot=()=>{ const s=R.C.subathon, T=R.C.gs&&R.C.gs.tot; return T&&T.sa===(s.startedAt||0)?T:{coins:0,gifts:0,events:0,ms:0} };
+function saStatsHTML(){ const s=R.C.subathon, T=saTot();
+ return `<div class="sa2-kpi"><span>الوقت المضاف أثناء البث</span><b>${fmtDelta(s.totalAddedMs||0).replace("+","")}</b></div>
+  <div class="sa2-kpi"><span>العملات المحتسبة</span><b>${fmt(T.coins)} <small>كوين</small></b></div>
+  <div class="sa2-kpi"><span>الهدايا المستقبلة</span><b>${fmt(T.gifts)}</b></div>
+  <div class="sa2-kpi"><span>النهاية المتوقعة</span><b>${s.status==="running"?dt(s.endsAt):"—"}</b></div>` }
+function saHeroHTML(s,now){ const st=s.status, on=st==="running";
+ return `<section class="sa2-sec sa2-hero st-${st}" id="sa-s1">
+  <div class="sa2-hl"><div class="sa2-top"><span class="sa2-name">⏳ ${esc(s.name)}</span><span class="sa2-badge b-${st}">${SA_STATUS[st]}${s.autoPaused?" — انقطاع البث":""}</span></div>
+   <div class="sa2-clock" data-live-clock="subathon">${fmtClock(remaining(s,now))}</div><div class="sa2-sub">الوقت المتبقي</div>
+   <div class="sa2-tk"><span class="mut small">TikTok LIVE</span><div data-tkbox>${tkBox()}</div></div></div>
+  <div class="sa2-hr"><div class="sa2-kpis" data-sastats>${saStatsHTML()}</div>
+   <div class="sa2-ctl">
+    <button class="btn pri" data-sa-op="start" ${on?"disabled":""}>▶ بدء السبثون</button><button class="btn" data-sa-op="pause" ${on?"":"disabled"}>⏸ إيقاف مؤقت</button><button class="btn" data-sa-op="resume" ${st==="paused"?"":"disabled"}>⏯ استكمال</button><button class="btn dng" data-sa-end>⏹ إنهاء</button></div>
+   <div class="sa2-man"><span class="small mut">تعديل يدوي:</span><input class="inp" id="saCustom" type="number" min="1" value="5"><select class="inp" id="saCustomU">${UNITS.map(u=>`<option value="${u[0]}" ${u[0]===60000?"selected":""}>${u[1]}</option>`).join("")}</select>
+    <button class="btn sm ok" data-sa-custom="1">＋ إضافة وقت</button><button class="btn sm dng" data-sa-custom="-1">－ خصم وقت</button>
+    <span class="sa2-quick">${[[60000,"+1د"],[300000,"+5د"],[600000,"+10د"],[-60000,"−1د"]].map(([m,t])=>`<button class="btn xs" data-sa-add="${m}">${t}</button>`).join("")}</span></div></div>
+ </section>` }
+function saCoinsHTML(s){ const r=s.rules, L=r.list.filter(x=>x.kind==="coins"), E=S.saCoinEdit&&L.find(x=>x.id===S.saCoinEdit), f=E||{mode:"rate",coins:100,ms:300000,dir:1}, u=bestUnit(f.ms||60000);
+ return `<section class="sa2-sec" id="sa-s2"><div class="sa2-h"><h2>🪙 قواعد العملات</h2><span class="mut small">كل كوين يرسله المشاهدون يتحول لوقت حسب قاعدتك</span></div>
+  <div class="sa2-grid2">
+  <div class="card sa2-form ${E?"editing":""}"><h3>${E?"✏️ تعديل القاعدة":"➕ قاعدة جديدة"}</h3>
+   <div class="sa2-eq"><select class="inp" id="saCMode"><option value="rate" ${f.mode!=="tier"?"selected":""}>كل</option><option value="tier" ${f.mode==="tier"?"selected":""}>هدية قيمتها ≥</option></select>
+    <input class="inp" id="saCN" type="number" min="1" value="${f.coins}"><span class="sa2-u">كوين</span><span class="sa2-is">=</span>
+    <select class="inp" id="saCDir"><option value="1" ${(f.dir??1)>=0?"selected":""}>＋ إضافة</option><option value="-1" ${(f.dir??1)<0?"selected":""}>－ خصم</option></select>
+    <input class="inp" id="saCAmt" type="number" min="0" step="any" value="${Math.abs(f.ms||0)/u}"><select class="inp" id="saCUnit">${UNITS.map(x=>`<option value="${x[0]}" ${x[0]===u?"selected":""}>${x[1]}</option>`).join("")}</select></div>
+   <p class="mut small">«كل»: كل N كوين = وقت، والباقي يُرحَّل للهدية التالية. «هدية قيمتها ≥»: وقت ثابت للهدية الكبيرة (أعلى شريحة تنطبق وتسبق «كل»).</p>
+   <div class="row"><button class="btn pri" data-sacoinsave>💾 ${E?"حفظ التعديل":"حفظ القاعدة"}</button>${E?`<button class="btn" data-sacoincancel>إلغاء</button>`:`<button class="btn sm" data-coinadd="examples">📋 أمثلة جاهزة</button>`}</div></div>
+  <div class="card"><h3><span>القواعد المفعّلة</span><span class="tag">${L.filter(x=>x.enabled).length} / ${L.length}</span></h3>
+   ${L.length?`<div class="sa2-rules">${L.map(x=>`<div class="sa2-rule ${x.enabled?"":"off"} ${E&&E.id===x.id?"sel":""}" data-rule="${x.id}"><label class="sa2-sw"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}><i></i></label>
+    <b class="${(x.dir??1)<0?"neg":"pos"}">${saCoinRuleText(x)}</b><span class="sa2-act"><button class="btn xs" data-sacoinedit="${x.id}">تعديل</button><button class="btn xs dng" data-rdel="${x.id}">حذف</button></span></div>`).join("")}</div>`
+   :`<div class="sa2-empty">لا توجد قواعد عملات بعد.<br><span class="small">مثال: 100 كوين = +5 دقائق</span></div>`}
+   <label class="row small" style="gap:6px;margin-top:10px"><input type="checkbox" data-sa="rules.coinsOn" ${r.coinsOn!==false?"checked":""}> احتساب العملات مفعّل</label></div></div></section>` }
+function saGiftsHTML(s){ const r=s.rules, L=r.list.filter(x=>x.kind==="gift"&&x.giftId!=null&&x.giftId!==""), mode=r.giftMode||"gifts_first", cat=saCatalog(), nReal=cat.filter(g=>g.real&&g.img).length, T=S.saGT||{};
+ const ed=S.saEdit&&L.find(x=>x.id===S.saEdit);
+ const cards=L.map(x=>{ const g=x.giftId==="*"?{name:"أي هدية أخرى",coins:0,img:""}:saGiftOf(x), tst=T.id===x.id?T:null;
+  return `<div class="sa2-gc ${x.enabled?"on":"off"} ${ed&&ed.id===x.id?"sel":""}" data-rule="${x.id}">
+   <div class="sa2-gc-top">${x.giftId==="*"?`<span class="sa-ic sa-any">✦</span>`:giftIcon(g)}<label class="sa2-sw" title="${x.enabled?"مفعّلة":"متوقفة"}"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}><i></i></label></div>
+   <div class="sa2-gc-n"><bdi>${esc(g.name)}</bdi></div><div class="sa2-gc-c">${x.giftId==="*"?"حسب قيمة الهدية":g.coins?`🪙 ${fmt(g.coins)} كوين`:`<span class="mut">القيمة غير متاحة</span>`}</div>
+   <div class="sa2-gc-r ${(x.dir??1)<0?"neg":"pos"}">${saGiftRuleText(x,g)}</div>
+   <div class="sa2-gc-s"><span class="sa2-dot"></span>${x.enabled?"مفعّلة":"متوقفة"}</div>
+   ${tst?`<div class="sa2-gc-t">${tst.html}</div>`:""}
+   <div class="sa2-gc-b"><button class="btn xs pri" data-saedit="${x.id}">✏️ تعديل القاعدة</button><button class="btn xs" data-sagtest="${x.id}">🧪 تجربة</button><button class="btn xs dng" data-rdel="${x.id}" title="حذف">🗑</button></div></div>` }).join("");
+ return `<section class="sa2-sec" id="sa-s3"><div class="sa2-h"><h2>🎁 قواعد الهدايا</h2><span class="tag ${nReal?"ok":""}">${nReal?`✅ صور حقيقية لـ ${nReal} هدية من بثوثك`:"الصور الحقيقية تظهر تلقائياً عند وصول كل هدية في البث"}</span><button class="btn pri sm" data-sapick>${S.saPick?"✕ إغلاق":"＋ إضافة هدية"}</button></div>
+  ${S.saPick?saPickHTML(cat,L):""}
+  ${ed?saEditHTML(ed):""}
+  ${L.length?`<div class="sa2-gcs">${cards}</div>`:`<div class="sa2-empty">لا توجد قواعد هدايا. اضغط «＋ إضافة هدية» واختر الهدية وحدد الوقت الذي تضيفه.</div>`}
+  <details class="sa2-det" data-sadet="calc" ${saDet("calc",false)}><summary>⚙️ طريقة الحساب والقيم اليدوية</summary>
+   <div class="grid g3" style="gap:8px;margin-top:10px"><div class="fld" style="margin:0"><label>طريقة حساب الهدايا</label><select class="inp" data-sa="rules.giftMode">${Object.entries(SA_MODES).map(([k,v])=>`<option value="${k}" ${mode===k?"selected":""}>${v}</option>`).join("")}</select></div>
+   <label class="row small" style="gap:6px"><input type="checkbox" data-sa="rules.giftsOn" ${r.giftsOn!==false?"checked":""}> احتساب قواعد الهدايا</label><span class="tag">هدية واحدة = قاعدة واحدة (لا احتساب مزدوج)</span></div>
+   <p class="mut small">الأولوية: ${mode==="coins"?"شريحة العملات ← معدّل العملات (قواعد الهدايا لا تُستخدم)":mode==="gifts"?"قاعدة الهدية فقط (الهدايا بلا قاعدة لا تضيف وقتاً)":"قاعدة الهدية ← شريحة العملات ← معدّل العملات"}. «أحبني» هدية مستقلة — ليست دونيشن ولا تكبيس.</p>
+   ${saManualCoinsHTML(s)}</details></section>` }
+function saPickHTML(cat,L){ const q=(S.saGiftQ||"").trim().toLowerCase(), has=g=>L.some(x=>String(x.giftId)===String(g.id));
+ const shown=cat.filter(g=>!q||g.name.toLowerCase().includes(q)||String(g.id)===q).sort((a,b)=>(b.real?1:0)-(a.real?1:0)||a.coins-b.coins).slice(0,S.saGiftN||48);
+ return `<div class="card sa2-pick"><div class="row" style="justify-content:space-between"><b>اختر الهدية</b><input class="inp" data-sagiftq placeholder="🔍 ابحث باسم الهدية أو رقمها…" value="${esc(S.saGiftQ||"")}" style="max-width:280px"></div>
+  <div class="sa2-pg">${shown.map(g=>`<button class="sa2-pi ${has(g)?"has":""}" ${has(g)?"disabled":`data-giftadd="${esc(String(g.id))}"`}>${giftIcon(g,"sa-ic sm")}<b>${esc(g.name)}</b><span>${g.coins?fmt(g.coins)+" كوين":"—"}${has(g)?" · مضافة":""}</span></button>`).join("")}
+   ${L.some(x=>x.giftId==="*")?"":`<button class="sa2-pi" data-saany><span class="sa-ic sm sa-any">✦</span><b>أي هدية أخرى</b><span>وقت لكل كوين</span></button>`}</div>
+  ${cat.length>shown.length&&!q?`<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm" data-sagiftmore>عرض المزيد</button></div>`:""}</div>` }
+function saEditHTML(x){ const g=x.giftId==="*"?{name:"أي هدية أخرى",coins:0,img:""}:saGiftOf(x);
+ return `<div class="card sa2-edit" data-rule="${x.id}"><div class="row" style="justify-content:space-between"><div class="row" style="gap:10px">${x.giftId==="*"?`<span class="sa-ic sa-any">✦</span>`:giftIcon(g)}<div><b>${esc(g.name)}</b><div class="mut small">${g.coins?fmt(g.coins)+" كوين":""}</div></div></div><button class="btn sm" data-saeditclose>✕ إغلاق</button></div>
+  <div class="grid g3" style="gap:10px;margin-top:12px">
+   <div class="fld" style="margin:0"><label>التأثير</label><select class="inp" data-rl="${x.id}" data-rk="dir"><option value="1" ${(x.dir??1)>=0?"selected":""}>＋ يضيف وقتاً</option><option value="-1" ${(x.dir??1)<0?"selected":""}>－ يخصم وقتاً</option></select></div>
+   ${x.giftId==="*"?durInput({...x,perDiamondMs:x.perDiamondMs||1000},"perDiamondMs","الوقت لكل كوين"):durInput(x,"ms","الوقت")}
+   ${x.giftId==="*"?"":`<div class="fld" style="margin:0"><label>لكل (عدد الهدايا)</label><input class="inp" type="number" min="1" data-rl="${x.id}" data-rk="every" value="${x.every||1}"></div>`}
+   <label class="row small" style="gap:6px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}> القاعدة مفعّلة</label></div>
+  <div class="sa2-preview">النتيجة: <b class="${(x.dir??1)<0?"neg":"pos"}">${saGiftRuleText(x,g)}</b>${x.giftId==="*"?"":` — مثال: 30 × ${esc(g.name)} = <b>${saSigned(Math.floor(30/Math.max(1,+x.every||1))*Math.abs(x.ms),x.dir)}</b>`}</div>
+  <details style="margin-top:8px"><summary class="mut small" style="cursor:pointer">خيارات متقدمة</summary><div class="grid g3" style="gap:8px;margin-top:8px">
+   ${durInput(x,"cooldownMs","انتظار بين التنفيذات")}${durInput(x,"userCooldownMs","انتظار لكل مستخدم")}<div class="fld" style="margin:0"><label>أقصى تنفيذ بالدقيقة (0 = بلا حد)</label><input class="inp" type="number" min="0" data-rl="${x.id}" data-rk="perMin" value="${x.perMin||0}"></div>${durInput(x,"maxMs","أقصى تأثير للحدث (0 = بلا حد)")}</div></details></div>` }
+function saManualCoinsHTML(s){ const r=s.rules, unk=Object.entries((s.rstate&&s.rstate.unknown)||{}), GC=r.giftCoins||{};
+ return `<div style="margin-top:10px"><b class="small">✍️ قيم يدوية بالكوين</b> <span class="mut small">(للهدايا التي لا تصل قيمتها من الاتصال)${unk.length?` — <b>${unk.length} هدية وصلت بلا قيمة</b>`:""}</span>
+   ${unk.map(([n,c])=>`<div class="row small" style="gap:6px;margin-top:6px"><b>${esc(n)}</b> <span class="mut">وصلت ${c} مرة بدون قيمة</span><input class="inp" type="number" min="0" placeholder="القيمة بالكوين" data-gcoin="n:${esc(n.toLowerCase())}" value="${GC["n:"+n.toLowerCase()]||""}" style="width:130px"></div>`).join("")}
+   ${Object.entries(GC).filter(([k])=>!unk.some(([n])=>"n:"+n.toLowerCase()===k)).map(([k,v])=>`<div class="row small" style="gap:6px;margin-top:6px"><b>${esc(k.replace(/^n:/,""))}</b><input class="inp" type="number" min="0" data-gcoin="${esc(k)}" value="${v}" style="width:130px"> كوين</div>`).join("")}
+   <div class="row small" style="gap:6px;margin-top:6px"><input class="inp" id="gcName" placeholder="اسم الهدية أو رقمها" style="width:180px"><input class="inp" id="gcVal" type="number" min="1" placeholder="كوين" style="width:110px"><button class="btn sm" data-gcoinadd>إضافة قيمة</button></div></div>` }
+function saDesignHTML(sw,l){ const w=sw.find(x=>x.id===S.saW)||sw[0];
+ if(!w) return `<section class="sa2-sec" id="sa-s4"><div class="sa2-h"><h2>🎨 تصميم عداد السبثون</h2></div><div class="sa2-empty">لا يوجد عداد سبثون في «${esc(l.name)}».<br><button class="btn pri" data-add="subathon" style="margin-top:10px">＋ إضافة عداد السبثون</button></div><div id="sa-pv" hidden></div></section>`;
+ const rng=(f,lab,min,max,step,v)=>`<div class="fld" style="margin:0"><label>${lab} <b id="v_${f}">${Math.round(v*100)}%</b></label><input type="range" min="${min}" max="${max}" step="${step}" data-wf="${f}" data-wid="${w.id}" value="${v}"></div>`;
+ const col=(f,lab,v)=>`<label class="sa2-col"><input type="color" data-wf="${f}" data-wid="${w.id}" value="${esc(v)}"><span>${lab}</span></label>`;
+ return `<section class="sa2-sec" id="sa-s4"><div class="sa2-h"><h2>🎨 تصميم عداد السبثون</h2>${sw.length>1?`<select class="inp" data-act="saW" style="width:auto">${sw.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select>`:""}</div>
+  <div class="sa2-grid2 sa2-des"><div class="card sa2-pvw"><div class="sa2-pvh"><span class="small mut">معاينة مباشرة</span><span class="tag">${esc(wdname(w))}</span></div><div class="pv" id="sa-pv" data-wid="${w.id}"></div>
+   <div class="row" style="margin-top:10px"><button class="btn pri" data-copylink="${w.id}">🔗 نسخ رابط OBS</button><button class="btn" data-edit="${w.id}">فتح في الاستوديو</button></div></div>
+  <div class="card"><div class="grid g2" style="gap:10px">
+   <div class="fld" style="margin:0;grid-column:1/-1"><label>شكل العداد</label><div class="row" style="flex-wrap:nowrap;gap:6px"><select class="inp" data-wf="design" data-wid="${w.id}">${designsOf(w).map(d=>`<option value="${d.id}" ${w.design===d.id?"selected":""}>${d.name}</option>`).join("")}</select><button class="btn sm" data-libtab="clocks" data-go="library">🎨 المكتبة (${CLOCK_DESIGNS.length})</button></div></div>
+   <div class="fld" style="margin:0"><label>الألوان</label><div class="row" style="gap:10px">${col("acc","اللون الرئيسي",w.acc||"#2f7bff")}${col("tx","لون النص",w.tx||"#ffffff")}</div></div>
+   <div class="fld" style="margin:0"><label>الخط</label><select class="inp" data-wf="font" data-wid="${w.id}">${FONTS.map(f=>`<option value="${f[0]}" ${(w.font||"default")===f[0]?"selected":""}>${f[1]}</option>`).join("")}</select></div>
+   ${rng("fontScale","الحجم",.5,2,.05,+w.fontScale||1)}${rng("opacity","الشفافية",.2,1,.05,w.opacity==null?1:+w.opacity)}
+   <label class="sa2-tg"><input type="checkbox" data-wf="effects" data-wid="${w.id}" ${w.effects?"checked":""}><span>✨ المؤثرات الحركية</span></label>
+   <label class="sa2-tg"><input type="checkbox" data-wf="sound" data-wid="${w.id}" ${w.sound?"checked":""}><span>🔔 صوت عند إضافة الوقت</span></label></div></div></div></section>` }
+function saMoreHTML(s,l){ const r=s.rules, chk=(path,on)=>`<label class="row small" style="gap:6px;cursor:pointer"><input type="checkbox" data-sa="${path}" ${on?"checked":""}> مفعّل</label>`;
+ const num=(path,val,lab,step=1,attrs="")=>`<div class="fld" style="margin:0"><label>${lab}</label><input class="inp" type="number" step="${step}" data-sa="${path}" value="${val}" ${attrs}></div>`;
+ return `<section class="sa2-sec" id="sa-s6"><div class="sa2-h"><h2>⚙️ إعدادات إضافية</h2><span class="mut small">إعداد السبثون، قواعد التفاعل الأخرى، الهدف، لوحة القوانين، سجل العمليات</span></div>
+ <details class="sa2-det" data-sadet="setup" ${saDet("setup",true)}><summary>🛠 إعداد السبثون</summary><div class="grid g3" style="gap:8px;margin-top:10px"><div class="fld" style="margin:0"><label>اسم السبثون</label><input class="inp" data-sa="name" value="${esc(s.name)}"></div><div class="fld" style="margin:0"><label>الوصف</label><input class="inp" data-sa="desc" value="${esc(s.desc)}"></div>
   ${num("initialMin",msToMin(s.initialMs),"مدة البداية (دقيقة)",1,'min="1"')}${num("minMin",msToMin(s.minMs),"الحد الأدنى عند الخصم (دقيقة)")}
   ${num("maxMin",msToMin(s.maxMs),"الحد الأقصى للوقت المتبقي (دقيقة، 0 = بلا حد)")}${num("maxTotalMin",msToMin(s.maxTotalMs),"حد مجموع الإضافات (دقيقة، 0 = بلا حد)")}
   <div class="fld" style="margin:0"><label>بدء مجدول (اختياري)</label><input class="inp" type="datetime-local" data-sa="scheduledAt" value="${s.scheduledAt?new Date(s.scheduledAt-new Date().getTimezoneOffset()*60000).toISOString().slice(0,16):""}"></div>
-  <div class="fld" style="margin:0"><label>عند انقطاع البث</label><select class="inp" data-sa="pauseOnDisconnect"><option value="1" ${s.pauseOnDisconnect?"selected":""}>يتوقف العد تلقائياً</option><option value="0" ${!s.pauseOnDisconnect?"selected":""}>يستمر العد</option></select></div></div>
-  <div class="fld" style="margin-top:8px"><label>احتساب الأحداث أثناء الإيقاف المؤقت</label><select class="inp" data-sa="countWhilePaused"><option value="1" ${s.countWhilePaused?"selected":""}>نعم، يُضاف الوقت ويُحفظ</option><option value="0" ${!s.countWhilePaused?"selected":""}>لا</option></select></div>
- </div></div>
- ${saTikTokHTML(s)}
- <div data-saglog>${saGlogHTML()}</div>
- <div class="ttl" style="margin-top:14px">⚙️ قواعد التفاعل الأخرى (متابعة، لايك، اشتراك، تعليقات، دونيشن، شرائح الهدايا) — كل قاعدة مستقلة وتُقرأ تلقائياً في لوحة القوانين</div>
- ${rulesEditorHTML(s)}
- <div class="grid g2" style="margin-top:14px"><div class="card"><h3><span>🎯 تحقيق هدف</span>${chk("rules.goal.enabled",r.goal.enabled)}</h3><div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>المقياس</label><select class="inp" data-sa="rules.goal.metric">${[["likes","الإعجابات"],["gifts","نقاط الدعم"],["follows","المتابعون"]].map(o=>`<option value="${o[0]}" ${r.goal.metric===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>${num("rules.goal.target",r.goal.target,"الهدف")}${num("rules.goal.sec",r.goal.sec,"يضيف (ثانية)")}</div>${r.goal.reached?'<p class="small" style="color:var(--ok)">✓ تم تحقيق الهدف</p>':""}
-  <h3 style="margin-top:14px"><span>✋ الإضافة والخصم اليدوي</span>${chk("rules.manual.enabled",r.manual.enabled)}</h3></div>
- <div class="card"><h3>📜 لوحة القوانين للمشاهدين</h3><p class="mut small">تعرض القواعد المفعّلة تلقائياً — أي تعديل هنا يظهر فوراً في البث بدون كتابة يدوية.</p>
+  <div class="fld" style="margin:0"><label>عند انقطاع البث</label><select class="inp" data-sa="pauseOnDisconnect"><option value="1" ${s.pauseOnDisconnect?"selected":""}>يتوقف العد تلقائياً</option><option value="0" ${!s.pauseOnDisconnect?"selected":""}>يستمر العد</option></select></div>
+  <div class="fld" style="margin:0"><label>احتساب الأحداث أثناء الإيقاف المؤقت</label><select class="inp" data-sa="countWhilePaused"><option value="1" ${s.countWhilePaused?"selected":""}>نعم، يُضاف الوقت ويُحفظ</option><option value="0" ${!s.countWhilePaused?"selected":""}>لا</option></select></div></div>
+  <div class="row" style="margin-top:10px"><button class="btn sm dng" data-sa-op="reset">↺ إعادة ضبط السبثون</button>${s.startedAt?`<span class="mut small">بدأ: ${dt(s.startedAt)}</span>`:""}</div></details>
+ <details class="sa2-det" data-sadet="rules" ${saDet("rules",false)}><summary>⚡ قواعد التفاعل الأخرى (متابعة، لايك، اشتراك، تعليقات، دونيشن، شرائح الهدايا)</summary><div style="margin-top:10px">${rulesEditorHTML(s)}</div></details>
+ <details class="sa2-det" data-sadet="goal" ${saDet("goal",false)}><summary>🎯 تحقيق هدف والإضافة اليدوية</summary><div class="card" style="margin-top:10px"><h3><span>🎯 تحقيق هدف</span>${chk("rules.goal.enabled",r.goal.enabled)}</h3><div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>المقياس</label><select class="inp" data-sa="rules.goal.metric">${[["likes","الإعجابات"],["gifts","نقاط الدعم"],["follows","المتابعون"]].map(o=>`<option value="${o[0]}" ${r.goal.metric===o[0]?"selected":""}>${o[1]}</option>`).join("")}</select></div>${num("rules.goal.target",r.goal.target,"الهدف")}${num("rules.goal.sec",r.goal.sec,"يضيف (ثانية)")}</div>${r.goal.reached?'<p class="small" style="color:var(--ok)">✓ تم تحقيق الهدف</p>':""}
+  <h3 style="margin-top:14px"><span>✋ الإضافة والخصم اليدوي</span>${chk("rules.manual.enabled",r.manual.enabled)}</h3></div></details>
+ <details class="sa2-det" data-sadet="board" ${saDet("board",false)}><summary>📜 لوحة القوانين للمشاهدين</summary><div class="card" style="margin-top:10px"><p class="mut small">تعرض القواعد المفعّلة تلقائياً — أي تعديل هنا يظهر فوراً في البث بدون كتابة يدوية.</p>
   ${l.widgets.filter(w=>w.type==="srules").map(w=>widgetQuick(w)).join("")||`<div class="empty">لا توجد لوحة قوانين في «${esc(l.name)}»</div>`}
-  <div class="row" style="margin-top:8px"><button class="btn sm pri" data-add-rb="list">+ قائمة كاملة</button><button class="btn sm" data-add-rb="rotate">+ قانون بالتناوب</button><button class="btn sm" data-add-rb="ticker">+ شريط متحرك</button><button class="btn sm" data-add-rb="cards">+ بطاقات</button><button class="btn sm" data-add-rb="compact">+ مختصرة</button><button class="btn sm" data-libtab="rules" data-go="library">🎨 تصاميم القوانين (${RB_DESIGNS.length}/40)</button></div></div></div>
- <div class="grid g2" style="margin-top:14px"><div class="card"><h3>العداد على الشاشة</h3>${sw.length?sw.map(w=>widgetQuick(w)+`<div class="row"><label class="row small"><input type="checkbox" data-wf="sound" data-wid="${w.id}" ${w.sound?"checked":""}> صوت عند إضافة الوقت</label></div>`).join(""):`<div class="empty">لا يوجد عداد سبثون في «${esc(l.name)}»</div><button class="btn pri sm" data-add="subathon">+ إضافة عداد السبثون</button>`}
-  <button class="btn sm" data-libtab="clocks" data-go="library" style="margin-top:8px">🎨 مكتبة أشكال العداد (${CLOCK_DESIGNS.length})</button></div>
- <div class="card"><h3>سجل العمليات <span class="tag">${R.logs.length}</span></h3><div class="feed">${R.logs.slice(0,60).map(x=>`<div><b style="color:${x.deltaMs>0?"var(--ok)":x.deltaMs<0?"var(--bad)":"var(--mut)"}">${x.deltaMs?fmtDelta(x.deltaMs):"•"}</b> ${x.test?'🧪 ':''}${esc(x.reason)}${x.ruleId?` <span class="tag" dir="ltr">${x.ruleId}</span>`:''} <span class="mut small">— ${dt(x.at)} · متبقٍ ${fmtClock(x.remainingMs)}</span></div>`).join("")||'<div class="mut">لا عمليات بعد</div>'}</div></div></div>`+testBar();
-}
-/* ---- السبثون: عملات وهدايا TikTok (طريقة الحساب، قواعد العملات، كتالوج الهدايا الحقيقي، قيم يدوية، تجربة هدية منفصلة) ---- */
-const SA_MODES={gifts_first:"قاعدة الهدية أولاً، وإلا العملات",coins:"حسب العملات فقط (كوين)",gifts:"حسب نوع الهدية فقط"};
-const saCatalog=()=>S.catalog&&S.catalog.length?S.catalog.map(g=>({id:g.id,name:g.name,coins:+g.diamonds||0,img:g.image||"",real:true})):GIFTS.map(g=>({id:g[2],name:g[0],coins:+g[1]||0,img:"",emoji:g[3]||"🎁",real:false}));
-/** «سجل الهدايا»: كل حدث هدية من TikTok — العدد المرسل، المحتسب فعلياً، الوقت المضاف، الحالة والسبب */
-function saGlogHTML(){ const G=(R.C&&R.C.glog)||[], ST={added:["✅ أُضيف","ok"],none:["⚪ بدون وقت","warn"],dup:["🔁 مكرر — محتسب مسبقاً","muted"],late:["⏪ متأخر","muted"]};
- const fmt=ms=>{ const s=Math.round(Math.abs(ms)/1000), m=Math.floor(s/60); return (ms<0?"−":"+")+(m?`${m}د `:"")+`${s%60}ث` };
- const rows=G.slice(0,40).map(g=>{ const st=ST[g.status]||ST.none; const nm=esc(g.gift||"هدية")+(g.giftId!=null?` <span class="muted small">#${esc(String(g.giftId))}</span>`:"");
-  return `<tr class="gl-${st[1]}"><td class="small muted">${new Date(g.at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit",second:"2-digit"})}</td><td>${g.img?`<img src="${esc(g.img)}" alt="" class="gl-img">`:"🎁"} ${nm}${g.test||g.sim?` <span class="tag">تجربة</span>`:""}</td><td>${esc(g.user||"")}</td><td>${g.raw?`${g.sent}${g.raw.end?" <span class='muted small'>(نهائي)</span>":""}`:g.sent}</td><td><b>${g.counted}</b></td><td>${g.ms?`<b>${fmt(g.ms)}</b>`:"—"}</td><td><span class="tag ${st[1]}">${st[0]}</span>${g.why?`<div class="small muted">${esc(g.why)}</div>`:""}</td></tr>` }).join("");
- return `<div class="card" style="margin-top:14px"><h3><span>🧾 سجل الهدايا</span><span class="muted small">آخر ${Math.min(G.length,40)} حدث</span></h3>
-  <p class="small muted" style="margin:0 0 8px">سلاسل الهدايا (مثل الورود المتتالية) تصل من TikTok بعدد تراكمي 1 ← 5 ← 10 ← 30. يُحتسب الفرق الجديد فقط في كل تحديث، فالـ 30 وردة تُحتسب 30 مرة واحدة بالضبط حتى لو ما وصل الحدث النهائي أو انقطع الاتصال.</p>
-  ${G.length?`<div class="gl-wrap"><table class="tbl gl-tbl"><tr><th>الوقت</th><th>الهدية</th><th>المرسل</th><th>العدد في السلسلة</th><th>المحتسب الآن</th><th>الوقت المضاف</th><th>الحالة</th></tr>${rows}</table></div>`:`<div class="muted small">لا توجد هدايا بعد في هذا البث.</div>`}</div>` }
-function saGlogRefresh(){ const el=document.querySelector("[data-saglog]"); if(el) el.innerHTML=saGlogHTML() }
-function saTikTokHTML(s){ const r=s.rules, L=r.list, mode=r.giftMode||"gifts_first", cat=saCatalog(), real=cat.some(g=>g.real), q=(S.saGiftQ||"").trim().toLowerCase();
- const rowDur=(x,f,lab)=>durInput(x,f,lab);
- const coinRows=L.filter(x=>x.kind==="coins").map(x=>`<div class="sa-coin ${x.enabled?"":"off"}" data-rule="${x.id}"><label class="row small" style="gap:4px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}></label>
-   <div class="fld" style="margin:0"><label>النوع</label><select class="inp" data-rl="${x.id}" data-rk="mode"><option value="rate" ${x.mode!=="tier"?"selected":""}>معدّل: كل</option><option value="tier" ${x.mode==="tier"?"selected":""}>شريحة: هدية قيمتها ≥</option></select></div>
-   <div class="fld" style="margin:0"><label>عدد العملات</label><input class="inp" type="number" min="1" data-rl="${x.id}" data-rk="coins" value="${x.coins}"></div>
-   <div class="fld" style="margin:0"><label>التأثير</label><select class="inp" data-rl="${x.id}" data-rk="dir"><option value="1" ${x.dir>=0?"selected":""}>➕ يزيد</option><option value="-1" ${x.dir<0?"selected":""}>➖ ينقص</option></select></div>
-   ${rowDur(x,"ms","الوقت")}<button class="btn sm" data-rdel="${x.id}" title="حذف">🗑</button></div>`).join("")||'<div class="empty small">لا توجد قواعد عملات — أضف معدّلاً أو شريحة</div>';
- const ruleOf=g=>L.find(x=>x.kind==="gift"&&x.giftId!=null&&x.giftId!=="*"&&String(x.giftId)===String(g.id));
- const shown=cat.filter(g=>!q||g.name.toLowerCase().includes(q)||String(g.id)===q).sort((a,b)=>(ruleOf(b)?1:0)-(ruleOf(a)?1:0)||a.coins-b.coins).slice(0,S.saGiftN||48);
- const unk=Object.entries((s.rstate&&s.rstate.unknown)||{}), GC=r.giftCoins||{};
- const pv=S.saPv;
- return `<div class="ttl">🪙 عملات وهدايا تيك توك</div>
- <div class="card" style="margin-bottom:12px"><h3>⚙️ طريقة الحساب <span class="tag">هدية واحدة = قاعدة واحدة (لا احتساب مزدوج)</span></h3>
-  <div class="grid g3" style="gap:8px"><div class="fld" style="margin:0"><label>طريقة حساب الهدايا</label><select class="inp" data-sa="rules.giftMode">${Object.entries(SA_MODES).map(([k,v])=>`<option value="${k}" ${mode===k?"selected":""}>${v}</option>`).join("")}</select></div>
-  <label class="row small" style="gap:6px"><input type="checkbox" data-sa="rules.giftsOn" ${r.giftsOn!==false?"checked":""}> احتساب قواعد الهدايا</label><label class="row small" style="gap:6px"><input type="checkbox" data-sa="rules.coinsOn" ${r.coinsOn!==false?"checked":""}> احتساب العملات</label></div>
-  <p class="mut small" style="margin:8px 0 0">الأولوية: ${mode==="coins"?"شريحة العملات ← معدّل العملات (قواعد الهدايا لا تُستخدم)":mode==="gifts"?"قاعدة الهدية فقط (الهدايا بلا قاعدة لا تضيف وقتاً)":"قاعدة الهدية ← شريحة العملات ← معدّل العملات"}. الحد الأقصى للوقت من «إعداد السبثون».</p></div>
- <div class="grid g2" style="align-items:start">
- <div class="card"><h3><span>🪙 قواعد عملات تيك توك</span><span class="row" style="gap:4px"><button class="btn sm" data-coinadd="rate">+ معدّل</button><button class="btn sm" data-coinadd="tier">+ شريحة</button><button class="btn sm" data-coinadd="examples">أمثلة جاهزة</button></span></h3>
-  <p class="mut small">«معدّل»: كل N كوين = وقت (الباقي يُرحَّل للهدية التالية). «شريحة»: هدية قيمتها ≥ N كوين = وقت ثابت (أعلى شريحة تنطبق).</p>${coinRows}</div>
- <div class="card"><h3>🧪 تجربة هدية <span class="tag">لا تلمس العداد الحقيقي</span></h3>
-  <div class="grid g3" style="gap:8px"><div class="fld" style="margin:0;grid-column:span 2"><label>الهدية</label><select class="inp" id="saPvGift">${cat.map(g=>`<option value="${esc(String(g.id))}" ${pv&&String(pv.id)===String(g.id)?"selected":""}>${esc(g.name)} (${g.coins||"؟"} كوين)</option>`).join("")}</select></div>
-  <div class="fld" style="margin:0"><label>العدد</label><input class="inp" id="saPvCount" type="number" min="1" max="999" value="${pv?pv.count:1}"></div></div>
-  <div class="row" style="margin-top:8px"><button class="btn sm pri" data-sapv>احسب التأثير</button>${pv&&pv.res?`<button class="btn sm" data-sapvapply>⚡ تطبيق على العداد الحقيقي (تجريبي)</button>`:""}</div>
-  ${pv&&pv.res?`<div class="note small" style="margin-top:8px">${pv.res.unknown?"⚠️ قيمة هذه الهدية بالكوين غير معروفة — حدّدها يدوياً أدناه أو أضف لها قاعدة هدية.":pv.res.rule?`النتيجة: <b>${pv.res.deltaMs>=0?"+":""}${fmtDelta(pv.res.deltaMs)}</b> عبر «${esc(pv.res.rule.label)}»${pv.res.coins!=null?` — ${pv.res.coins} كوين`:""}${pv.res.capped?" (مقيّدة بالحد الأقصى)":""}`:pv.res.coins!=null?`لا تُضيف وقتاً الآن (${pv.res.coins} كوين ${mode==="gifts"?"— الطريقة «الهدايا فقط» ولا قاعدة لها":"— أقل من معدّل العملات وتُرحَّل للهدية التالية"}).`:"لا تنطبق أي قاعدة."}</div>`:""}</div></div>
- <div class="card" style="margin-top:12px"><h3><span>🎁 قواعد الهدايا</span><span class="tag">${real?`✅ قائمة TikTok الحقيقية (${cat.length})`:"⚠️ قائمة تقريبية — تتحدث من TikTok عند أول اتصال ببث"}</span></h3>
-  <div class="row" style="gap:6px"><input class="inp" data-sagiftq placeholder="🔍 ابحث باسم الهدية…" value="${esc(S.saGiftQ||"")}" style="max-width:260px"><span class="mut small">«أحبني» هدية مستقلة — ليست دونيشن ولا تكبيس.</span></div>
-  <div class="sa-gifts">${shown.map(g=>{ const x=ruleOf(g); return `<div class="sa-g ${x?(x.enabled?"on":"off"):""}" ${x?`data-rule="${x.id}"`:""}><div class="sa-gi">${g.img?`<img src="${esc(g.img)}" alt="" loading="lazy">`:`<span>${g.emoji||"🎁"}</span>`}</div>
-   <div class="sa-gn"><b>${esc(g.name)}</b><span class="mut small">${g.coins?g.coins+" كوين":"القيمة غير متاحة"}</span></div>
-   ${x?`<label class="row small" style="gap:4px"><input type="checkbox" data-rl="${x.id}" data-rk="enabled" ${x.enabled?"checked":""}> مفعّلة</label><select class="inp sm" data-rl="${x.id}" data-rk="dir"><option value="1" ${x.dir>=0?"selected":""}>➕ يزيد</option><option value="-1" ${x.dir<0?"selected":""}>➖ ينقص</option></select>${durInput(x,"ms","الوقت لكل هدية")}<button class="btn sm" data-rdel="${x.id}">إزالة</button>`
-   :`<button class="btn sm" data-giftadd="${esc(String(g.id))}">+ قاعدة لهذه الهدية</button>`}</div>` }).join("")}</div>
-  ${cat.length>shown.length&&!q?`<div class="row" style="justify-content:center;margin-top:8px"><button class="btn sm" data-sagiftmore>عرض المزيد</button></div>`:""}
-  <details style="margin-top:10px" ${unk.length?"open":""}><summary class="small" style="cursor:pointer">✍️ قيم يدوية بالكوين (للهدايا التي لا تصل قيمتها من الاتصال)${unk.length?` — <b>${unk.length} هدية وصلت بلا قيمة</b>`:""}</summary>
-   ${unk.map(([n,c])=>`<div class="row small" style="gap:6px;margin-top:6px"><b>${esc(n)}</b> <span class="mut">وصلت ${c} مرة بدون قيمة</span><input class="inp" type="number" min="0" placeholder="القيمة بالكوين" data-gcoin="n:${esc(n.toLowerCase())}" value="${GC["n:"+n.toLowerCase()]||""}" style="width:130px"></div>`).join("")}
-   ${Object.entries(GC).filter(([k])=>!unk.some(([n])=>"n:"+n.toLowerCase()===k)).map(([k,v])=>`<div class="row small" style="gap:6px;margin-top:6px"><b>${esc(k.replace(/^n:/,""))}</b><input class="inp" type="number" min="0" data-gcoin="${esc(k)}" value="${v}" style="width:130px"> كوين</div>`).join("")}
-   <div class="row small" style="gap:6px;margin-top:6px"><input class="inp" id="gcName" placeholder="اسم الهدية أو رقمها" style="width:180px"><input class="inp" id="gcVal" type="number" min="1" placeholder="كوين" style="width:110px"><button class="btn sm" data-gcoinadd>إضافة قيمة</button></div></details></div>` }
+  <div class="row" style="margin-top:8px"><button class="btn sm pri" data-add-rb="list">+ قائمة كاملة</button><button class="btn sm" data-add-rb="rotate">+ قانون بالتناوب</button><button class="btn sm" data-add-rb="ticker">+ شريط متحرك</button><button class="btn sm" data-add-rb="cards">+ بطاقات</button><button class="btn sm" data-add-rb="compact">+ مختصرة</button><button class="btn sm" data-libtab="rules" data-go="library">🎨 تصاميم القوانين (${RB_DESIGNS.length}/40)</button></div></div></details>
+ <details class="sa2-det" data-sadet="ops" ${saDet("ops",false)}><summary>📋 سجل عمليات المؤقت <span class="tag">${R.logs.length}</span></summary><div class="card" style="margin-top:10px"><div class="feed">${R.logs.slice(0,60).map(x=>`<div><b style="color:${x.deltaMs>0?"var(--ok)":x.deltaMs<0?"var(--bad)":"var(--mut)"}">${x.deltaMs?fmtDelta(x.deltaMs):"•"}</b> ${x.test?'🧪 ':''}${esc(x.reason)}${x.ruleId?` <span class="tag" dir="ltr">${x.ruleId}</span>`:''} <span class="mut small">— ${dt(x.at)} · متبقٍ ${fmtClock(x.remainingMs)}</span></div>`).join("")||'<div class="mut">لا عمليات بعد</div>'}</div></div></details>
+ </section>` }
+/** القسم 5 «سجل التفاعلات»: آخر هدية بارزة + جدول بكل حدث — الهدية، المرسل، العدد، العملات، الوقت المضاف، الحالة والسبب */
+function saGlogHTML(){ const G=(R.C&&R.C.glog)||[], ST={added:["✅ احتُسبت","ok"],none:["⚪ بدون وقت","warn"],dup:["🔁 مكرر — محتسب مسبقاً","muted"],late:["⏪ متأخر","muted"]}, cat=saCatalog();
+ const gi=g=>({name:g.gift||"هدية",img:g.img||((cat.find(c=>String(c.id)===String(g.giftId))||{}).img)||"",coins:(cat.find(c=>String(c.id)===String(g.giftId))||{}).coins||0});
+ const fmtS=ms=>{ const s=Math.round(Math.abs(ms)/1000), m=Math.floor(s/60), h=Math.floor(m/60); return (ms<0?"−":"+")+(h?`${h}س `:"")+(m%60?`${m%60}د `:"")+(s%60||!m?`${s%60}ث`:"") };
+ const tm=at=>new Date(at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit",second:"2-digit"});
+ const last=G.find(g=>g.counted>0)||G[0];
+ const rows=G.slice(0,40).map(g=>{ const st=ST[g.status]||ST.none;
+  return `<tr class="gl-${st[1]}"><td class="small mut">${tm(g.at)}</td><td><span class="sa2-lg">${giftIcon(gi(g),"sa-ic xs")}<b><bdi>${esc(g.gift||"هدية")}</bdi></b>${g.test||g.sim?` <span class="tag">تجربة</span>`:""}</span></td><td>${esc(g.user||"")}</td><td>${g.sent}${g.raw&&g.raw.end?" <span class='mut small'>(نهائي)</span>":""}</td><td><b>${g.counted}</b></td><td>${g.coins!=null&&g.counted?fmt(g.coins):"—"}</td><td>${g.ms?`<b class="${g.ms<0?"neg":"pos"}">${fmtS(g.ms)}</b>`:"—"}</td><td><span class="tag ${st[1]}">${st[0]}</span>${g.why?`<div class="small mut">${esc(g.why)}</div>`:""}</td></tr>` }).join("");
+ return `<div class="sa2-h"><h2>🧾 سجل التفاعلات</h2><span class="mut small">آخر ${Math.min(G.length,40)} حدث هدية</span></div>
+  ${last?`<div class="sa2-last">${giftIcon(gi(last),"sa-ic lg")}<div class="sa2-lt"><span class="mut small">آخر هدية وصلت · ${tm(last.at)}</span><b><bdi>${esc(last.gift||"هدية")}</bdi> <span class="mut">من</span> <bdi>${esc(last.user||"")}</bdi></b>
+   <div class="sa2-lm"><span>العدد <b>${last.counted||last.sent}</b></span><span>العملات <b>${last.coins!=null?fmt(last.coins):"—"}</b></span><span>الوقت المضاف <b class="${(last.ms||0)<0?"neg":"pos"}">${last.ms?fmtS(last.ms):"—"}</b></span><span class="tag ${(ST[last.status]||ST.none)[1]}">${(ST[last.status]||ST.none)[0]}</span></div></div></div>`:""}
+  <div class="card"><p class="small mut" style="margin:0 0 8px">سلاسل الهدايا (مثل الورود المتتالية) تصل من TikTok بعدد تراكمي 1 ← 5 ← 10 ← 30. يُحتسب الفرق الجديد فقط في كل تحديث، فالـ 30 وردة تُحتسب 30 مرة واحدة بالضبط حتى لو ما وصل الحدث النهائي أو انقطع الاتصال.</p>
+  ${G.length?`<div class="gl-wrap"><table class="tbl gl-tbl"><tr><th>الوقت</th><th>الهدية</th><th>المرسل</th><th>العدد في السلسلة</th><th>المحتسب</th><th>العملات</th><th>الوقت المضاف</th><th>الحالة</th></tr>${rows}</table></div>`:`<div class="muted small">لا توجد هدايا بعد في هذا البث.</div>`}</div>` }
+function saGlogRefresh(){ const el=document.querySelector("[data-saglog]"); if(el) el.innerHTML=saGlogHTML(); const k=document.querySelector("[data-sastats]"); if(k) k.innerHTML=saStatsHTML() }
 function saClick(t){ const d=t.dataset;
+ const saGo=id=>setTimeout(()=>{ const el=document.getElementById(id)||document.querySelector(id); if(el) el.scrollIntoView({behavior:"smooth",block:"start"}) },90);
+ if(d.sajump){ saGo(d.sajump); return true }
+ if(t.hasAttribute("data-sa-end")){ ask("إنهاء السبثون؟ يتوقف العداد نهائياً (يمكنك إعادة الضبط لاحقاً).").then(ok=>{ if(ok) clockOp("subathon","end") }); return true }
+ if(t.hasAttribute("data-sacoinsave")){ const v=id=>(document.getElementById(id)||{}).value; const coins=Math.floor(+v("saCN")||0), amt=+v("saCAmt")||0, unit=+v("saCUnit")||1000, mode=v("saCMode")==="tier"?"tier":"rate", dir=+v("saCDir")<0?-1:1;
+  if(coins<1) return toast("اكتب عدد الكوين (1 أو أكثر)"), true; if(!(amt>0)) return toast("اكتب مقدار الوقت"), true;
+  const ms=Math.round(amt*unit), id=S.saCoinEdit; S.saCoinEdit=null;
+  setRules(L=>{ const x=id&&L.find(r=>r.id===id); if(x) Object.assign(x,{coins,ms,mode,dir}); else L.unshift(newRule("coins",{mode,coins,ms,dir,emoji:"🪙"})) });
+  toast(`✅ ${saCoinRuleText({mode,coins,ms,dir}).replace(/<[^>]+>/g,"")}`); return true }
+ if(d.sacoinedit){ S.saCoinEdit=d.sacoinedit; renderPage(true); saGo("sa-s2"); return true }
+ if(t.hasAttribute("data-sacoincancel")){ S.saCoinEdit=null; renderPage(true); return true }
+ if(d.saedit){ S.saEdit=d.saedit; S.saPick=false; renderPage(true); saGo(".sa2-edit"); return true }
+ if(t.hasAttribute("data-saeditclose")){ S.saEdit=null; renderPage(true); return true }
+ if(t.hasAttribute("data-sapick")){ S.saPick=!S.saPick; if(S.saPick) S.saEdit=null; renderPage(true); if(S.saPick) saGo(".sa2-pick"); return true }
+ if(t.hasAttribute("data-saany")){ const x=newRule("gift",{giftId:"*",giftName:"أي هدية أخرى",perDiamondMs:1000,ms:0,emoji:"🎁"}); S.saEdit=x.id; S.saPick=false; setRules(L=>L.push(x)); saGo(".sa2-edit"); return true }
+ if(d.sagtest){ const x=R.C.subathon.rules.list.find(r=>r.id===d.sagtest); if(!x) return true;
+  const g=x.giftId==="*"?{id:"*",name:"هدية تجريبية",coins:10}:saGiftOf(x), n=Math.max(1,+x.every||1);
+  const ev={type:"gift",gift:g.name,giftId:x.giftId==="*"?-1:(isNaN(+g.id)?g.id:+g.id),diamonds:g.coins||undefined,value:(g.coins||0)*n,count:n,user:{id:"saTest",name:"تجربة"}};
+  const res=subathonPreview(R.C.subathon,ev,Date.now()+skew);
+  const html=res.unknown?"⚠️ قيمة الهدية بالكوين غير معروفة":res.rule?`🧪 ${n} × ${esc(g.name)}${x.giftId==="*"?` (${g.coins} كوين)`:""} → <b>${res.deltaMs>=0?"+":""}${fmtDelta(res.deltaMs)}</b>${res.rule.id!==x.id?` <span class="mut">عبر «${esc(res.rule.label||"قاعدة أخرى")}»</span>`:""}${res.capped?" (مقيّدة بالحد الأقصى)":""}`:"لا تضيف وقتاً الآن (القاعدة متوقفة أو طريقة الحساب لا تستخدمها)";
+  S.saGT={id:x.id,ev,html:html+`<div class="mut small">معاينة فقط — العداد الحقيقي لم يتغير</div>${res.rule?`<button class="btn xs" data-sagapply="${x.id}" style="margin-top:6px">⚡ تطبيق تجريبي على العداد</button>`:""}`}; renderPage(true); return true }
+ if(d.sagapply){ const T=S.saGT; if(!T||T.id!==d.sagapply) return true; send({t:"sim",ev:{...T.ev,id:"satest_"+Date.now(),test:true}}); S.saGT=null; toast("🧪 أُرسلت هدية تجريبية للعداد الحقيقي (مُعلّمة «تجربة» في السجل)"); return true }
  if(d.coinadd){ setRules(L=>{ if(d.coinadd==="examples"){ for(const x of L.filter(x=>x.kind==="coins")) L.splice(L.indexOf(x),1); L.unshift(newRule("coins",{mode:"rate",coins:1,ms:1000,emoji:"🪙"}),...[[100,60000],[500,300000],[1000,600000],[5000,1800000],[10000,3600000]].map(([c,m])=>newRule("coins",{mode:"tier",coins:c,ms:m,emoji:"🪙"}))) } else L.unshift(newRule("coins",{mode:d.coinadd,coins:d.coinadd==="tier"?1000:100,ms:d.coinadd==="tier"?600000:60000,emoji:"🪙"})) }); return true }
- if(d.giftadd){ const g=saCatalog().find(x=>String(x.id)===d.giftadd); if(g) setRules(L=>L.push(newRule("gift",{giftId:isNaN(+g.id)?g.id:+g.id,giftName:g.name,img:g.img||"",emoji:g.emoji||"🎁",ms:g.coins>=1000?600000:g.coins>=100?60000:5000}))); return true }
+ if(d.giftadd){ const g=saCatalog().find(x=>String(x.id)===d.giftadd); if(g){ const x=newRule("gift",{giftId:isNaN(+g.id)?g.id:+g.id,giftName:g.name,img:g.img||"",emoji:"🎁",ms:g.coins>=1000?600000:g.coins>=100?60000:5000}); S.saEdit=x.id; S.saPick=false; setRules(L=>L.push(x)); saGo(".sa2-edit") } return true }
  if(d.rdel){ setRules(L=>{ const i=L.findIndex(x=>x.id===d.rdel); if(i>=0) L.splice(i,1) }); return true }
  if(t.hasAttribute("data-sagiftmore")){ S.saGiftN=(S.saGiftN||48)+48; renderPage(true); return true }
  if(t.hasAttribute("data-sapv")||t.hasAttribute("data-sapvapply")){ const id=(document.getElementById("saPvGift")||{}).value, count=Math.max(1,Math.min(999,+(document.getElementById("saPvCount")||{}).value||1)), g=saCatalog().find(x=>String(x.id)===String(id)); if(!g) return true;
@@ -746,7 +840,7 @@ function rulesEditorHTML(s){ const L=s.rules.list, shares=(R.D.tot&&R.D.tot.shar
   <div class="row"><select class="inp" data-act="rAdd" style="width:auto"><option value="">+ إضافة قاعدة…</option>${Object.entries(RULE_KINDS).map(([k,x])=>`<option value="${k}">${x.icon} ${x.label}</option>`).join("")}</select>
   <select class="inp" data-act="rPreset" style="width:auto"><option value="">📋 قالب جاهز…</option>${Object.entries(RULE_PRESETS).map(([k,n])=>`<option value="${k}">${n}</option>`).join("")}</select></div></div>
   <p class="mut small" style="margin:8px 0 0">الأحداث المدعومة فعلياً من TikTok: الهدايا، الإعجابات، المتابعات، الاشتراكات، التعليقات. المشاركات: ${shares?"✅ وصلت فعلاً":"⚠️ غير مؤكدة بعد"}. الدونيشن: بعد تأكيد الدفع.</p></div>
-  <div class="grid g2">${L.filter(r=>r.kind!=="coins"&&!(r.kind==="gift"&&r.giftId!=null&&r.giftId!=="*"&&saCatalog().some(g=>String(g.id)===String(r.giftId)))).map(card).join("")}</div>` }
+  <div class="grid g2">${L.filter(r=>r.kind!=="coins"&&!(r.kind==="gift"&&r.giftId!=null&&r.giftId!=="")).map(card).join("")}</div>` }
 function setRules(fn){ const L=R.C.subathon.rules.list.map(r=>({...r})); fn(L); saConfig({rules:{list:L}}); setTimeout(()=>renderPage(true),60) }
 function mountClockPreview(id,w){ const box=document.getElementById(id); if(!box) return; const cv={w:1000,h:Math.round(1000*box.clientHeight/Math.max(1,box.clientWidth))};
  const pw={...w,id:"pv_sa",x:.04,y:.06,w:.92,h:.88,locked:true}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${box.clientWidth/cv.w})`; box.appendChild(stg);
@@ -1228,7 +1322,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
- { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
+ { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd],[data-sajump],[data-sa-end],[data-sacoinsave],[data-sacoinedit],[data-sacoincancel],[data-saedit],[data-saeditclose],[data-sapick],[data-saany],[data-sagtest],[data-sagapply]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
  { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
  { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
  { const lb=e.target.closest&&e.target.closest("[data-leladd],[data-leldel]"); if(lb){ const w=findW(lb.dataset.wid); if(w){ w.lvls=Array.isArray(w.lvls)?w.lvls:[]; if(lb.dataset.leladd!==undefined){ const v=lb.dataset.leladd, base=w.design; if(v==="custom") w.lvls.push(w.kind==="gift"?{gift:"",design:base}:{at:100,design:base}); else if(v.startsWith("gift:")) w.lvls.push({gift:v.slice(5),design:base}); else w.lvls.push({at:+v,design:base}) } else w.lvls.splice(+lb.dataset.leldel,1); save(); pushLayout(); refreshView(w); renderProps() } return } }
@@ -1266,7 +1360,7 @@ function onClick(e){
  if(d.sim){ const sc=document.getElementById("simScope")?.value||"likes"; S.scope=sc; if(d.sim==="shuffle"){ if(sc==="all"||sc==="follows") return toast("اختر قائمة ترتيب واحدة"); return SIM.shuffle(sc) } if(d.sim==="reset") return SIM.reset(sc); return SIM[d.sim]() }
  if(d.saOp) return clockOp("subathon",d.saOp);
  if(d.saAdd) return clockOp("subathon","add",{ms:+d.saAdd,source:"manual"});
- if(d.saCustom){ const m=+document.getElementById("saCustom").value||0; if(m>0) clockOp("subathon","add",{ms:m*MIN*(+d.saCustom),source:"manual"}); return }
+ if(d.saCustom){ const m=+document.getElementById("saCustom").value||0, u=+((document.getElementById("saCustomU")||{}).value)||MIN; if(m>0){ clockOp("subathon","add",{ms:Math.round(m*u)*(+d.saCustom),source:"manual"}); toast(`${+d.saCustom>0?"＋":"－"} ${saDurTxt(Math.round(m*u))}`) } return }
  if(t.hasAttribute("data-gadd")){ const tb=[...R.C.subathon.rules.gifts.table,{giftId:null,name:"هدية جديدة",sec:10}]; saConfig({rules:{gifts:{table:tb}}}); return setTimeout(()=>renderPage(true),50) }
  if(d.gdel!==undefined){ const tb=R.C.subathon.rules.gifts.table.filter((_,i)=>i!=+d.gdel); saConfig({rules:{gifts:{table:tb}}}); return setTimeout(()=>renderPage(true),50) }
  if(d.gcat){ const g=S.catalog.find(x=>String(x.id)===d.gcat); const tb=R.C.subathon.rules.gifts.table; if(tb.find(r=>String(r.giftId)===d.gcat)) return toast("موجودة في الجدول"); saConfig({rules:{gifts:{table:[...tb,{giftId:g.id,name:g.name,sec:Math.max(1,Math.round(g.diamonds/2))}]}}}); return setTimeout(()=>renderPage(true),50) }
@@ -1383,6 +1477,7 @@ function onInput(e){
  if(d.act==="snap"&&e.type==="change"){ S.settings.snap=t.checked; return save() }
  if(d.act==="gpct"){ S.gpct=+t.value; const b=document.getElementById("gpctv"); if(b) b.textContent=S.gpct+"%"; for(const v of [...liveViews].filter(v=>v.vg&&String(v.w.id).startsWith("pv_"))){ v.w.base=S.gpct; v.refreshVG({D:emptyData()},e.type==="input") } return }
  if(d.rbhide&&e.type==="change"){ const w=findW(d.wid); if(!w) return; const h=new Set(w.hideKinds||[]); if(t.checked) h.delete(d.rbhide); else h.add(d.rbhide); w.hideKinds=[...h]; save(); pushLayout(); if(S.page==="studio") refreshView(w); return }
+ if(d.act==="saW"&&e.type==="change"){ S.saW=t.value; return renderPage(true) }
  if(d.rl&&e.type==="change"){ const id=d.rl, k=d.rk; setRules(L=>{ const r=L.find(x=>x.id===id); if(!r) return;
    if(k.startsWith("amt:")||k.startsWith("unit:")){ const f=k.split(":")[1], card=t.closest("[data-rule]"); const amt=+card.querySelector(`[data-rk="amt:${f}"]`).value||0, unit=+card.querySelector(`[data-rk="unit:${f}"]`).value||1000; r[f]=Math.round(amt*unit); return }
    let v=t.type==="checkbox"?t.checked:t.value;

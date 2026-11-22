@@ -31,6 +31,17 @@ export type HubOptions = {
 };
 
 /** الحفظ فقط: حالة الغرفة + قائمة هدايا TikTok (لا تُرسل مع كل تحديث للروابط) */
+/** يضيف/يحدّث هدية في كتالوج الغرفة من حدث حقيقي — لا يستبدل بيانات صحيحة بأخرى ناقصة */
+function seenGift(r: any, e: any): boolean {
+  const name = e.gift && e.gift !== "هدية" ? String(e.gift) : "", img = /^https:\/\//.test(String(e.image || "")) ? String(e.image) : "", dia = +e.diamonds > 0 ? +e.diamonds : 0;
+  if (!name && !img) return false;
+  r.gifts = Array.isArray(r.gifts) ? r.gifts : [];
+  const g = r.gifts.find((x: any) => String(x.id) === String(e.giftId));
+  if (!g) { r.gifts.push({ id: e.giftId, name: name || "هدية #" + e.giftId, diamonds: dia, image: img, seen: Date.now() }); }
+  else { let ch = false; if (!g.image && img) { g.image = img; ch = true; } if ((!g.name || /^هدية #/.test(g.name)) && name) { g.name = name; ch = true; } if (!(+g.diamonds > 0) && dia) { g.diamonds = dia; ch = true; } if (!ch) return false; }
+  r.gifts.sort((a: any, b: any) => (+a.diamonds || 0) - (+b.diamonds || 0)); r.dirty = true;
+  return true;
+}
 const withCatalog = (r: any) => (r.gifts?.length ? { ...r.C, giftCatalog: { at: Date.now(), list: r.gifts } } : r.C);
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
   const rooms = new Map<string, Room>();
@@ -73,6 +84,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     // اسم/صورة الهدية من قائمة هدايا TikTok الحقيقية إن لم يرسلها الحدث (بالمعرّف فقط — لا نخمّن)
     if (ev.type === "gift" && r.gifts?.length && (ev as any).giftId != null) { const g = r.gifts.find((x: any) => String(x.id) === String((ev as any).giftId));
       if (g) { const e: any = ev; if (!e.gift || e.gift === "هدية") e.gift = g.name; if (!e.image && g.image) e.image = g.image; if (!(+e.diamonds > 0) && +g.diamonds > 0) { e.diamonds = +g.diamonds; e.value = e.diamonds * Math.max(1, +e.count || 1); } } }
+    // كتالوج الصور الحقيقية: كل هدية تصل من TikTok (اتصال حقيقي، ليست تجربة) تُحفظ بصورتها واسمها وقيمتها كما أرسلها TikTok
+    if (ev.type === "gift" && !(ev as any).sim && !(ev as any).test && (ev as any).streak && (ev as any).giftId != null && seenGift(r, ev as any)) broadcast(r, { t: "gifts", gifts: r.gifts });
     const res = roomEvent(r, ev, Date.now());
     if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return; }
     if (ev.type === "donation") { const ov = [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length; (r as any).lastDon = { id: ev.id, at: Date.now(), test: !!(ev as any).test, overlays: ov, acks: new Set() }; opt.onDonationDispatch?.(id, ev, { dup: false, overlays: ov }); }

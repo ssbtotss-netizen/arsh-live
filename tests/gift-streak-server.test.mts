@@ -49,5 +49,15 @@ try {
   ok(logs.some(l => /gift catalog loaded n=2/.test(l)), "server logs catalog load");
   ok((room as any).dirty === true, "room marked dirty → saved with subathon state");
   ok((room as any).C.gs && Object.keys((room as any).C.gs.s).length > 0, "streak state stored in C.gs (persisted with saveClock)");
+  // كتالوج الصور الحقيقية من الأحداث: هدية لم تكن في القائمة تصل بصورتها من TikTok
+  const nG = dash.msgs.filter((m: any) => m.t === "gifts").length;
+  c.emit("gift", { common: { msgId: "9001" }, user: { uniqueId: "x1", nickname: "X" }, giftId: 7934, repeatCount: 1, repeatEnd: 1, groupId: "g9", gift: { name: "Heart Me", diamondCount: 1, type: 1, image: { urlList: ["https://p16-webcast.tiktokcdn.com/img/heartme.png"] } } }); await sleep(5);
+  const hm = (room as any).gifts.find((g: any) => g.id === 7934);
+  ok(hm && hm.name === "Heart Me" && hm.image === "https://p16-webcast.tiktokcdn.com/img/heartme.png" && hm.diamonds === 1, "real gift image/name/value added to catalog from the live event: " + JSON.stringify(hm));
+  ok(dash.msgs.filter((m: any) => m.t === "gifts").length === nG + 1, "dashboard receives the updated catalog");
+  c.emit("gift", { common: { msgId: "9002" }, user: { uniqueId: "x1", nickname: "X" }, giftId: 7934, repeatCount: 1, repeatEnd: 1, groupId: "g10", gift: { name: "Heart Me", diamondCount: 1, type: 1, image: { urlList: ["https://p16-webcast.tiktokcdn.com/img/heartme.png"] } } }); await sleep(5);
+  ok(dash.msgs.filter((m: any) => m.t === "gifts").length === nG + 1, "no re-broadcast when nothing changed");
+  // المجاميع (العملات/الهدايا) للسبثون الحالي — من الهدايا الحقيقية فقط
+  const T = (room as any).C.gs.tot; ok(T && T.gifts === 42 && T.coins === 42 && T.events > 0, "subathon totals = 30 + 10 roses + 2 Heart Me (coins 42): " + JSON.stringify(T));
 } finally { console.log = ol; }
 console.log(`gift-streak-server: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

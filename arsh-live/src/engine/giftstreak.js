@@ -23,7 +23,7 @@ const gsStr=v=>v==null?"":String(v);
 export function giftStreak(C,ev,now){
  const st=ev&&ev.streak;
  const base={at:now,user:(ev.user&&(ev.user.name||ev.user.id))||"",gift:ev.gift||"هدية",giftId:ev.giftId??null,img:ev.image||"",test:!!ev.test,sim:!!ev.sim};
- if(!st||typeof st!=="object"){ const n=Math.max(1,+ev.count||1); return {ev,diag:{...base,sent:n,counted:n,raw:null}} }
+ if(!st||typeof st!=="object"){ const n=Math.max(1,+ev.count||1); return {ev,diag:{...base,sent:n,counted:n,coins:ev.diamonds!=null&&ev.diamonds!==""?(+ev.diamonds||0)*n:null,raw:null}} }
  const G=gsState(C); gsPrune(G,now);
  const gc=Math.max(1,Math.floor(+st.gc||1)); // عدد الهدايا في الضغطة الواحدة (إرسال متعدد) إن أرسله TikTok
  const cum=Math.max(1,Math.floor(+st.cum||1))*gc; // العدد التراكمي للسلسلة
@@ -48,7 +48,7 @@ export function giftStreak(C,ev,now){
  const out={...ev,count:add,value:diamonds!=null?diamonds*add:(+ev.value>0?Math.round((+ev.value)/cum*add):0),streakTotal:cum,
   id:`gs:${key}#${s.n||0}:${cum}`}; // معرّف ثابت لكل (سلسلة، عدد): إعادة إرسال نفس التحديث لا تضيف مرتين حتى بعد إعادة التشغيل
  delete out.streak;
- return {ev:out,diag:{...base,sent:cum,counted:add,raw}};
+ return {ev:out,diag:{...base,sent:cum,counted:add,coins:diamonds!=null?diamonds*add:null,raw}};
 }
 
 /** يكمل سجل الهدايا بنتيجة السبثون ويضيفه (الأحدث أولاً) */
@@ -56,6 +56,9 @@ export function glogPush(C,diag,res){
  const it={...diag,id:"gl"+(diag.at||0).toString(36)+Math.random().toString(36).slice(2,6)};
  if(res){ it.ms=res.ms||0; if(!it.status) it.status=res.ms?"added":"none"; if(!it.why&&!res.ms) it.why=res.why||"" }
  gsState(C); C.glog.unshift(it); if(C.glog.length>GLOG_CAP) C.glog.length=GLOG_CAP;
+ if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at }
  return it;
 }
+/** مجاميع السبثون الحالي من هدايا TikTok الحقيقية (تُصفّر مع كل بدء جديد للسبثون) — التجارب لا تُحتسب */
+export function gsTotals(C){ const G=gsState(C), sa=(C.subathon&&C.subathon.startedAt)||0; if(!G.tot||G.tot.sa!==sa) G.tot={sa,coins:0,gifts:0,events:0,ms:0,last:0}; return G.tot }
 export const GLOG_STATUS={added:"✅ أُضيف",none:"⚪ بدون وقت",dup:"🔁 مكرر",late:"⏪ متأخر"};

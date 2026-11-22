@@ -5,7 +5,7 @@ const url='file:///home/claude/najd/demo/index.html';
  const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
  const ctx=await b.newContext({viewport:{width:1440,height:1000}}); const p=await ctx.newPage();
  const errs=[]; p.on('pageerror',e=>errs.push(e.message));
- await p.goto(url); await p.click('.nav [data-go="subathon"]'); await p.waitForTimeout(200);
+ await p.goto(url); await p.click('.nav [data-go="subathon"]'); await p.evaluate(()=>document.querySelectorAll('details[data-sadet]').forEach(d=>d.open=true)); await p.waitForTimeout(60); await p.waitForTimeout(200);
  const rem=()=>p.evaluate(()=>{const s=window.__arsh.R().C.subathon; return s.status==='running'?s.endsAt-Date.now():s.remainingMs});
  await p.click('[data-sa-op="start"]'); await p.waitForTimeout(1200);
  const r0=await rem(); ok(r0<7200000&&r0>7190000,'subathon started and counting ('+r0+')');
@@ -21,7 +21,7 @@ const url='file:///home/claude/najd/demo/index.html';
  ok(Math.abs((await rem())-g1)<1500,'automatic rules switched off from UI → no time added');
  await p.check('input[data-sa="rules.auto"]'); await p.waitForTimeout(150);
  // edit gift table: rose -> 60 sec
- const roseId=await p.evaluate(()=>window.__arsh.R().C.subathon.rules.list.find(r=>r.giftId===5655).id); await p.fill(`[data-rl="${roseId}"][data-rk="amt:ms"]`,'60'); await p.press(`[data-rl="${roseId}"][data-rk="amt:ms"]`,'Tab'); await p.waitForTimeout(250);
+ const roseId=await p.evaluate(()=>window.__arsh.R().C.subathon.rules.list.find(r=>r.giftId===5655).id); await p.click(`[data-saedit="${roseId}"]`); await p.waitForTimeout(300); await p.selectOption(`.sa2-edit [data-rl="${roseId}"][data-rk="unit:ms"]`,'1000'); await p.fill(`.sa2-edit [data-rl="${roseId}"][data-rk="amt:ms"]`,'60'); await p.press(`.sa2-edit [data-rl="${roseId}"][data-rk="amt:ms"]`,'Tab'); await p.waitForTimeout(250);
  const g2=await rem(); await p.evaluate(()=>window.__arsh.send({t:'sim',ev:{id:'r9',type:'gift',user:{id:'y',name:'y'},gift:'Rose',giftId:5655,diamonds:1,value:3,count:3}}));
  ok(Math.abs((await rem())-(g2+180000))<1500,'edited rose = 60s × streak of 3');
  // overlay shows subathon and +time effect
@@ -38,7 +38,7 @@ const url='file:///home/claude/najd/demo/index.html';
  const before=await rem(); await p.reload(); await p.waitForTimeout(1500);
  const after=await rem(); ok(after<before&&before-after<4000,'subathon survives reload and kept counting');
  // pause freezes
- await p.click('.nav [data-go="subathon"]'); await p.click('[data-sa-op="pause"]'); const pz=await rem(); await p.waitForTimeout(1500); ok((await rem())===pz,'pause freezes time');
+ await p.click('.nav [data-go="subathon"]'); await p.evaluate(()=>document.querySelectorAll('details[data-sadet]').forEach(d=>d.open=true)); await p.waitForTimeout(60); await p.click('[data-sa-op="pause"]'); const pz=await rem(); await p.waitForTimeout(1500); ok((await rem())===pz,'pause freezes time');
  await p.click('[data-sa-op="resume"]');
  // logs recorded
  const logs=await p.evaluate(()=>window.__arsh.R().logs.length); ok(logs>=6,'operations logged ('+logs+')');

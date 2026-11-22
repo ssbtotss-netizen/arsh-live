@@ -4,7 +4,7 @@ let pass=0,fail=0; const ok=(c,m)=>{ c?pass++:(fail++,console.log('FAIL',m)) };
 (async()=>{ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome'}); const p=await (await b.newContext({viewport:{width:1440,height:1000}})).newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
  await p.goto('file://'+path.resolve(__dirname,'../demo/index.html')); await p.evaluate(()=>localStorage.clear()); await p.reload();
  await p.click('.nav [data-go="subathon"]'); await p.waitForTimeout(400);
- ok(/سجل الهدايا/.test(await p.evaluate(()=>document.body.innerText)),'gift log section exists in subathon settings');
+ ok(/سجل التفاعلات/.test(await p.evaluate(()=>document.body.innerText)),'interactions log section exists in subathon page');
  ok(/لا توجد هدايا بعد/.test(await p.evaluate(()=>document.querySelector('[data-saglog]').innerText)),'empty state');
  await p.evaluate(()=>{ const A=window.__arsh; A.clockOp("subathon","config",{config:{initialMs:3600000,maxMs:0,rules:{list:[{id:"r_rose",kind:"gift",enabled:true,dir:1,every:1,giftId:5655,giftName:"وردة",ms:5000,minDiamonds:0,perDiamondMs:0,cooldownMs:0,userCooldownMs:0,perMin:0,maxMs:0}],giftMode:"gifts_first"}}}); A.clockOp("subathon","start") });
  await p.waitForTimeout(200);
@@ -17,7 +17,7 @@ let pass=0,fail=0; const ok=(c,m)=>{ c?pass++:(fail++,console.log('FAIL',m)) };
  const rows=await p.$$eval('[data-saglog] tr',r=>r.slice(1).map(x=>x.innerText.replace(/\s+/g,' ')));
  ok(rows.length===6,'6 rows (5 updates + final), got '+rows.length);
  ok(/مكرر/.test(rows[0])&&/محتسب مسبقاً/.test(rows[0]),'final event row: duplicate + reason');
- ok(/أُضيف/.test(rows[1])&&/\+50ث/.test(rows[1])&&/مشاهد/.test(rows[1])&&/Rose/.test(rows[1]),'update row: gift, sender, counted, time added → '+rows[1]);
+ ok(/احتُسبت/.test(rows[1])&&/\+50ث/.test(rows[1])&&/مشاهد/.test(rows[1])&&/Rose/.test(rows[1]),'update row: gift, sender, counted, time added → '+rows[1]);
  // رسالة من الخادم (glog) تظهر مباشرة دون إعادة تحميل
  await p.evaluate(()=>window.__arsh.receive({t:"glog",it:{id:"glX",at:Date.now(),user:"Turki",gift:"Lion",giftId:6369,sent:1,counted:1,ms:0,status:"none",why:"لا توجد قاعدة مطابقة لهذه الهدية"}}));
  await p.waitForTimeout(150);

@@ -328,3 +328,76 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 
 /* سجل الهدايا (السبثون) */
 .gl-wrap{max-height:420px;overflow:auto}.gl-tbl td,.gl-tbl th{padding:6px 8px;vertical-align:top}.gl-img{width:22px;height:22px;object-fit:contain;vertical-align:middle}.gl-tbl tr.gl-muted{opacity:.62}
+
+/* ===== السبثون — الواجهة 2 (خمسة أقسام) ===== */
+.sa2{display:flex;flex-direction:column;gap:22px}
+.sa2-nav{position:sticky;top:0;z-index:5;display:flex;gap:6px;flex-wrap:wrap;padding:8px;border:1px solid var(--line);border-radius:14px;background:#060a15e6;backdrop-filter:blur(10px)}
+.sa2-jump{border:1px solid transparent;background:none;color:var(--mut);padding:7px 12px;border-radius:10px;cursor:pointer;font:inherit;font-size:13px}.sa2-jump:hover{color:var(--tx);background:var(--card2);border-color:var(--line)}
+.sa2-sec{scroll-margin-top:70px}
+.sa2-h{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:0 0 12px}.sa2-h h2{margin:0;font-size:19px;letter-spacing:-.2px}.sa2-h .btn{margin-inline-start:auto}
+.sa2-grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:14px;align-items:start}
+@media(max-width:900px){.sa2-grid2{grid-template-columns:1fr}}
+.sa2-empty{border:1px dashed var(--line);border-radius:16px;padding:22px;text-align:center;color:var(--mut)}
+.pos{color:var(--ok)}.neg{color:var(--bad)}
+.btn.xs{padding:5px 9px;font-size:12px;border-radius:9px}.btn.ok{border-color:#34d39966;color:var(--ok)}
+/* القسم 1 */
+.sa2-hero{display:grid;grid-template-columns:minmax(280px,1.05fr) 1.4fr;gap:18px;padding:22px;border-radius:22px;border:1px solid #2f7bff40;
+ background:radial-gradient(120% 140% at 100% 0%,#2f7bff26,transparent 55%),radial-gradient(90% 120% at 0% 100%,#a855f71c,transparent 60%),linear-gradient(180deg,#0d1528,#070b16)}
+.sa2-hero.st-running{border-color:#34d39955}.sa2-hero.st-paused{border-color:#f59e0b55}.sa2-hero.st-ended{border-color:#f8717155}
+@media(max-width:900px){.sa2-hero{grid-template-columns:1fr}}
+.sa2-top{display:flex;align-items:center;justify-content:space-between;gap:8px}.sa2-name{font-weight:700}
+.sa2-badge{font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line);color:var(--mut)}
+.sa2-badge.b-running{color:#34d399;border-color:#34d39966;background:#34d39914}.sa2-badge.b-paused{color:#f59e0b;border-color:#f59e0b66;background:#f59e0b14}.sa2-badge.b-ended{color:#f87171;border-color:#f8717166}
+.sa2-clock{font-family:Orbitron,"Readex Pro",monospace;font-weight:800;font-size:clamp(44px,6.4vw,84px);line-height:1.05;margin-top:14px;letter-spacing:1px;direction:ltr;text-align:center;
+ background:linear-gradient(180deg,#fff,#9cc2ff);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:0 0 34px #2f7bff40;font-variant-numeric:tabular-nums}
+.sa2-sub{text-align:center;color:var(--mut);font-size:13px;margin-top:2px}
+.sa2-tk{margin-top:16px;padding:10px 12px;border:1px solid var(--line);border-radius:14px;background:#ffffff06}.sa2-tk .tk-st{margin-top:4px}
+.sa2-kpis{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.sa2-kpi{padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:#ffffff06;display:flex;flex-direction:column;gap:4px}.sa2-kpi span{color:var(--mut);font-size:12px}.sa2-kpi b{font-size:20px}.sa2-kpi small{font-size:12px;color:var(--mut);font-weight:400}
+.sa2-ctl{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px;margin-top:14px}.sa2-ctl .btn{padding:12px 8px}.sa2-ctl .btn[disabled]{opacity:.38;cursor:not-allowed}
+@media(max-width:600px){.sa2-ctl{grid-template-columns:repeat(2,1fr)}}
+.sa2-man{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-top:12px;padding:10px;border:1px solid var(--line);border-radius:14px;background:#00000026}
+.sa2-man .inp{width:auto;min-width:70px}.sa2-man #saCustom{width:78px}.sa2-quick{display:flex;gap:4px;margin-inline-start:auto}
+/* القسم 2 */
+.sa2-form.editing{border-color:#f59e0b88;box-shadow:0 0 0 3px #f59e0b14}
+.sa2-eq{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:6px 0 10px}.sa2-eq .inp{width:auto}.sa2-eq #saCN{width:100px}.sa2-eq #saCAmt{width:80px}
+.sa2-u{color:var(--mut);font-size:13px}.sa2-is{font-size:20px;font-weight:800;color:var(--acc);padding:0 2px}
+.sa2-rules{display:flex;flex-direction:column;gap:8px}
+.sa2-rule{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;background:#ffffff05}.sa2-rule b{flex:1;font-size:14px}.sa2-rule.off{opacity:.55}.sa2-rule.sel{border-color:#f59e0b88}
+.sa2-act{display:flex;gap:4px}
+.sa2-sw{position:relative;display:inline-flex;cursor:pointer;flex:none}.sa2-sw input{position:absolute;opacity:0;inset:0;cursor:pointer;margin:0;z-index:1;width:100%;height:100%}
+.sa2-sw i{width:36px;height:20px;border-radius:99px;background:#26324f;transition:.2s;position:relative}.sa2-sw i:after{content:"";position:absolute;top:3px;right:3px;width:14px;height:14px;border-radius:50%;background:#8794b4;transition:.2s}
+.sa2-sw input:checked+i{background:#34d39955}.sa2-sw input:checked+i:after{right:19px;background:#34d399}
+/* القسم 3 */
+.sa2-gcs{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:12px}
+.sa2-gc{position:relative;display:flex;flex-direction:column;gap:6px;padding:14px;border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,#101a31,#0a1020);transition:.2s}
+.sa2-gc:hover{transform:translateY(-2px);border-color:#2f7bff66}.sa2-gc.on{border-color:#34d39940}.sa2-gc.off{opacity:.62}.sa2-gc.sel{border-color:#f59e0bcc;box-shadow:0 0 0 3px #f59e0b1a}
+.sa2-gc-top{display:flex;align-items:flex-start;justify-content:space-between}
+.sa2-gc-n{font-weight:700;font-size:15px}.sa2-gc-c{font-size:12px;color:#ffd572}
+.sa2-gc-r{font-weight:800;font-size:15px;padding:8px 10px;border-radius:10px;background:#ffffff08;border:1px solid var(--line);margin-top:2px}
+.sa2-gc-s{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut)}.sa2-dot{width:8px;height:8px;border-radius:50%;background:#8794b4}.sa2-gc.on .sa2-dot{background:#34d399;box-shadow:0 0 8px #34d399}
+.sa2-gc-t{font-size:12px;padding:8px;border-radius:10px;background:#2f7bff14;border:1px solid #2f7bff40}
+.sa2-gc-b{display:flex;gap:4px;margin-top:auto;padding-top:4px}.sa2-gc-b .btn:first-child{flex:1}
+.sa-ic{width:58px;height:58px;border-radius:16px;display:inline-grid;place-items:center;flex:none;background:radial-gradient(circle at 50% 35%,color-mix(in srgb,var(--tone,#2f7bff) 30%,transparent),#ffffff05);border:1px solid #ffffff14;overflow:hidden}
+.sa-ic img{width:86%;height:86%;object-fit:contain;filter:drop-shadow(0 4px 8px #0008)}
+.sa-ic.sm{width:44px;height:44px;border-radius:12px}.sa-ic.xs{width:26px;height:26px;border-radius:8px}.sa-ic.lg{width:76px;height:76px;border-radius:20px}
+.sa-fb{background:linear-gradient(145deg,color-mix(in srgb,var(--tone) 75%,#000),color-mix(in srgb,var(--tone) 35%,#000));border-color:color-mix(in srgb,var(--tone) 60%,transparent)}
+.sa-fb b{font-size:1.5em;color:#fff;text-shadow:0 2px 6px #0007}.sa-ic.xs.sa-fb b{font-size:13px}.sa-ic.sm.sa-fb b{font-size:19px}
+.sa-any{background:linear-gradient(145deg,#a855f7,#2f7bff);color:#fff;font-size:24px}
+.sa2-pick{margin-bottom:12px}.sa2-pg{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px;max-height:380px;overflow:auto}
+.sa2-pi{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:1px solid var(--line);border-radius:14px;background:#ffffff05;color:var(--tx);cursor:pointer;font:inherit}
+.sa2-pi:hover:not([disabled]){border-color:#2f7bff88;background:#2f7bff12}.sa2-pi b{font-size:13px;text-align:center}.sa2-pi span{font-size:11px;color:var(--mut)}.sa2-pi.has{opacity:.45;cursor:default}
+.sa2-edit{margin-bottom:12px;border-color:#f59e0b88;box-shadow:0 0 0 3px #f59e0b12}
+.sa2-preview{margin-top:12px;padding:10px 12px;border-radius:12px;background:#ffffff08;border:1px solid var(--line);font-size:14px}
+.sa2-det{margin-top:12px;border:1px solid var(--line);border-radius:14px;padding:10px 14px;background:#ffffff04}.sa2-det>summary{cursor:pointer;font-weight:600;font-size:14px}
+/* القسم 4 */
+.sa2-des .pv{height:190px;position:relative;border-radius:14px;overflow:hidden;background:repeating-conic-gradient(#ffffff08 0 25%,transparent 0 50%) 0 0/18px 18px,radial-gradient(ellipse at 50% 30%,#2a2238,#0b0a10)}
+.sa2-pvh{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.sa2-col{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--mut);cursor:pointer}.sa2-col input{width:34px;height:30px;border:1px solid var(--line);border-radius:8px;background:none;padding:0;cursor:pointer}
+.sa2-tg{display:flex;align-items:center;gap:8px;padding:10px 12px;border:1px solid var(--line);border-radius:12px;cursor:pointer;font-size:13px}
+/* القسم 5 */
+.sa2-last{display:flex;align-items:center;gap:14px;padding:14px 16px;margin-bottom:12px;border-radius:18px;border:1px solid #2f7bff40;background:linear-gradient(90deg,#2f7bff18,transparent)}
+.sa2-lt{display:flex;flex-direction:column;gap:4px;min-width:0}.sa2-lt>b{font-size:17px}
+.sa2-lm{display:flex;gap:14px;flex-wrap:wrap;font-size:13px;color:var(--mut);align-items:center}.sa2-lm b{color:var(--tx)}
+.sa2-lg{display:inline-flex;align-items:center;gap:6px}
+.sa2-d{white-space:nowrap}
