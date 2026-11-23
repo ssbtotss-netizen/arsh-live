@@ -2,7 +2,7 @@
 // رابط OBS / TikTok LIVE Studio: خلفية شفافة، تحديث لحظي من الخادم (أحداث + وقت السبثون/المؤقتات + تعديلات الاستوديو)
 import { Suspense, use, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
-import { CANVASES, canvasOf, topsOnEvent, TYPES, View, deliver, migrateWidget, applyEvent, emptyData, newClockState, newWidget, aboxSetDefs, emptyDonations, applyDonation } from "@/lib/core";
+import { CANVASES, canvasOf, topsOnEvent, TYPES, View, deliver, migrateWidget, applyEvent, emptyData, newClockState, newWidget, aboxSetDefs, emptyDonations, applyDonation, chatPush } from "@/lib/core";
 
 export default function Page({ params }: { params: Promise<{ token: string }> }) {
   const { token } = use(params);
@@ -19,7 +19,8 @@ function Overlay({ token }: { token: string }) {
     document.documentElement.style.background = "transparent";
     document.body.className = "ov";
     // الحالة من الخادم فقط (لا LocalStorage): الدونيشن المؤكدة + إعدادات الأهداف — نفس مصدر لوحة التحكم
-    const st: any = { D: emptyData(), H: [], C: newClockState(), skew: 0, SO: null, DN: emptyDonations(), DC: null };
+    // CHAT: سجل الشات في الصفحة نفسها — طبقة الشات تعيد بناء رسائلها منه عند تغيير التصميم/التخطيط (كانت تفرغ)
+    const st: any = { D: emptyData(), H: [], C: newClockState(), skew: 0, SO: null, DN: emptyDonations(), DC: null, CHAT: [] };
     const src = () => st;
     const views = new Map<string, any>();
     let L: any = null, big = 1000, fx = true, ws: WebSocket | null = null, closed = false, retry: any, n = 0, lastMsg = Date.now(), pollT: any = null;
@@ -44,8 +45,9 @@ function Overlay({ token }: { token: string }) {
     function onMsg(m: any) {
       lastMsg = Date.now();
       if (m.t === "hb") return;
-      if (m.t === "snapshot") { st.D = m.D; st.H = m.H || []; st.C = m.C; if (m.DN) st.DN = m.DN; st.skew = (m.now || Date.now()) - Date.now(); }
+      if (m.t === "snapshot") { st.D = m.D; st.H = m.H || []; st.C = m.C; if (m.DN) st.DN = m.DN; if (Array.isArray(m.CH)) st.CHAT = m.CH.slice(-60); st.skew = (m.now || Date.now()) - Date.now(); }
       else if (m.t === "event") {
+        try { chatPush(st.CHAT, m.ev); } catch {}
         // الإصلاح: أحداث الدونيشن كانت تُتجاهل هنا فلا يتحرك هدف الدعم في OBS/LIVE Studio
         if (DON.has(m.ev.type)) { if (!applyDonation(st.DN, m.ev)) return; if (m.ev.type === "donation") setTimeout(() => { try { const g = stageRef.current?.querySelector("[data-pct]") as HTMLElement | null; ws?.readyState === 1 && ws.send(JSON.stringify({ t: "ack", id: m.ev.id, goal: g ? +(g.dataset.pct || 0) : null })); } catch {} }, 50); }
         else { if (m.ev.type === "gift" && m.ev.big === undefined) m.ev.big = m.ev.value >= big; applyEvent(st.D, st.H, m.ev); if (st.C) { st.C.tops = st.C.tops || {}; topsOnEvent(st.C.tops, m.ev, Date.now(), 180); } }

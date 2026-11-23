@@ -87,7 +87,17 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     if (res.out.some(m => m.t === "clock" || m.t === "glog" || m.t === "session")) { r.dirty = true; } // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }
+  /** تشخيص الشات لكل منصة: استقبال ← الاسم ← النص ← الخادم ← البث للواجهات (أعداد وأسباب فقط — بدون نصوص المحادثات) */
+  function chatDiagIn(r: any, ev: any) {
+    const D = (r.chatDiag ||= {}); const P = (D[ev.platform || "tiktok"] ||= { recv: 0, name: 0, text: 0, emote: 0, empty: 0, sent: 0, dup: 0, field: "", fail: "", failAt: 0, okAt: 0 });
+    P.recv++; const nm = String(ev.user?.name ?? ev.user?.id ?? "").trim(); const tx = String(ev.text ?? "").trim(); const em = Array.isArray(ev.emotes) && ev.emotes.length > 0;
+    if (nm) P.name++; else { P.fail = "وصل الحدث بدون اسم مرسل"; P.failAt = Date.now(); }
+    if (tx) { P.text++; P.field = ev.diag?.field || P.field || "text"; } else if (em) P.emote++;
+    else { P.empty++; P.fail = "وصل الحدث بدون نص رسالة" + (ev.diag?.keys ? ` — الحقول المتاحة: ${String(ev.diag.keys).slice(0, 300)}` : ""); P.failAt = Date.now(); console.log(`[chat] ${ev.platform || "tiktok"} empty message keys=${ev.diag?.keys ?? "?"}`); }
+    return P;
+  }
   function dispatch(id: string, r: Room, ev: LiveEvent) {
+    const cd = (ev as any).type === "comment" ? chatDiagIn(r, ev) : null;
     const before = r.H.length;
     // اسم/صورة الهدية من قائمة هدايا TikTok الحقيقية إن لم يرسلها الحدث (بالمعرّف فقط — لا نخمّن)
     if (ev.type === "gift" && r.gifts?.length && (ev as any).giftId != null) { const g = r.gifts.find((x: any) => String(x.id) === String((ev as any).giftId));
@@ -95,6 +105,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     // كتالوج الصور الحقيقية: كل هدية تصل من TikTok (اتصال حقيقي، ليست تجربة) تُحفظ بصورتها واسمها وقيمتها كما أرسلها TikTok
     if (ev.type === "gift" && !(ev as any).sim && !(ev as any).test && (ev as any).streak && (ev as any).giftId != null && seenGift(r, ev as any)) broadcast(r, { t: "gifts", gifts: r.gifts });
     const res = roomEvent(r, ev, Date.now());
+    if (cd) { if (res.out.some((m: any) => m.t === "event" && m.ev?.type === "comment")) { cd.sent++; cd.okAt = Date.now(); } else if ((res as any).dup) cd.dup++; }
     if (!(res as any).dup && !(res as any).stale && !(res as any).bad) (r as any).dirtyD = true;
     if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return; }
     if (ev.type === "donation") { const ov = [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length; (r as any).lastDon = { id: ev.id, at: Date.now(), test: !!(ev as any).test, overlays: ov, acks: new Set() }; opt.onDonationDispatch?.(id, ev, { dup: false, overlays: ov }); }
@@ -145,6 +156,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "fx" && m.fx && typeof m.fx.kind === "string") { const f = m.fx; return broadcast(r, { t: "fx", fx: { kind: String(f.kind).slice(0, 20), accountId: String(f.accountId ?? "").slice(0, 40), at: +f.at || Date.now(), until: Math.min(+f.until || 0, Date.now() + 120000) } }); }
       if (m.t === "clock-op" && typeof m.target === "string" && typeof m.op === "string") return commit(id, r, roomClockOp(r, m, Date.now()));
       // جلسات البث من لوحة التحكم: إعدادات التصفير، «تصفير التكبيس الآن»، «بدء جلسة بث جديدة»
+      if (m.t === "chatdiag-get") return send(ws, { t: "chatdiag", D: (r as any).chatDiag || {} });
       if (m.t === "session-op" && typeof m.op === "string") return commit(id, r, roomSessionOp(r as any, m, Date.now()));
       if (m.t === "layout" && m.layout && typeof m.layout.id === "string" && Array.isArray(m.layout.widgets)) {
         r.layouts.set(m.layout.id, m.layout);

@@ -60,7 +60,9 @@ export function normalizeEvent(raw,ctx={}){
  if(raw.type==="donation"){ ev.amount=Math.round(evN(raw.amount,0,1e7)*100)/100; ev.currency=evS(raw.currency||"USD",8).toUpperCase(); ev.platform="donation" }
  // الاسترجاع: غياب المبلغ يعني استرجاعاً كاملاً — لا نحوّله إلى صفر
  if(raw.type==="donation_refund"){ if(raw.amount!=null) ev.amount=Math.round(evN(raw.amount,0,1e7)*100)/100; if(raw.currency) ev.currency=evS(raw.currency,8).toUpperCase(); ev.platform="donation" }
- if(raw.type==="comment") ev.text=evS(raw.text,500);
+ if(raw.type==="comment"){ ev.text=evS(raw.text,500); const em=Array.isArray(raw.emotes)?raw.emotes.filter(u=>typeof u==="string"&&/^https:\/\//.test(u)).slice(0,8).map(u=>u.slice(0,600)):[]; if(em.length) ev.emotes=em; else delete ev.emotes }
+ else delete ev.emotes;
+ delete ev.diag;
  ev.data={...(raw.data||{})};
  return ev }
 

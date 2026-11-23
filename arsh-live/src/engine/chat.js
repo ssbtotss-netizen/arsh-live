@@ -12,7 +12,8 @@ export function chatMsgOf(ev){ if(!ev||!CHAT_EVENT_TYPES.has(ev.type)) return nu
  const m={id:String(ev.id||ev.type+"_"+(ev.at||Date.now())),platform:ev.platform||"tiktok",kind:ev.type==="comment"?"msg":ev.type,
   uid:String(u.id||u.name||ev.name||""),name:String(u.name||ev.name||"").slice(0,60),av:u.avatar||ev.avatar||"",
   mod:!!(u.mod||u.isModerator),sub:!!(u.sub||u.isSubscriber),owner:!!u.owner,at:ev.at||Date.now(),test:!!ev.test,text:""};
- if(ev.type==="comment") m.text=String(ev.text||"").slice(0,300);
+ if(ev.type==="comment"){ m.text=String(ev.text||"").slice(0,300); if(Array.isArray(ev.emotes)&&ev.emotes.length) m.emotes=ev.emotes.slice(0,8);
+  if(!m.text.trim()&&!m.emotes) return null } // رسالة بلا نص ولا ملصق: لا نعرض اسماً وحده (يُسجَّل في تشخيص الشات)
  else if(ev.type==="gift"){ m.text=`أرسل ${ev.gift||"هدية"} ×${ev.count||1}`; m.value=ev.value||0 }
  else if(ev.type==="follow") m.text="تابع البث";
  else if(ev.type==="subscribe") m.text="اشترك في القناة";

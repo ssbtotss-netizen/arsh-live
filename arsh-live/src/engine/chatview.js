@@ -79,7 +79,7 @@ Object.assign(View.prototype,{
   el.className=`uc-m p-${m.platform} k-${m.kind}${m.mod?" mod":""}${m.sub?" sub":""}${m.owner?" own":""}${imp&&w.highlight!==false?" imp":""}${m.test?" test":""}`; el.dataset.id=m.id;
   const money=m.amount!=null?`<span class="uc-amt" dir="ltr">${esc((m.currency==="USD"?"$":"")+m.amount+(m.currency&&m.currency!=="USD"?" "+m.currency:""))}</span>`:"";
   const time=w.showTime?`<span class="uc-tm">${new Date(m.at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"})}</span>`:"";
-  el.innerHTML=`${w.showAv!==false?`<img class="uc-av" src="${esc(m.av||avatar(m.name))}" alt="">`:""}<div class="uc-b"><div class="uc-h">${w.showLogo!==false?`<i class="uc-lg">${UC_ICONS[m.platform]||""}</i>`:""}<span class="uc-tag">[${UC_TAG[m.platform]||"??"}]</span>${m.owner?'<i class="uc-bd own" title="المذيع">🎙</i>':""}${m.mod?'<i class="uc-bd mod" title="مشرف">🛡</i>':""}${m.sub?'<i class="uc-bd sub" title="مشترك">★</i>':""}<b class="uc-n">${esc(m.name)}</b><span class="uc-sep">:</span>${time}</div><div class="uc-t">${money}${esc(m.text||"")}</div></div>${m.kind==="gift"||m.kind==="donation"||m.kind==="superchat"||m.kind==="cheer"?'<i class="uc-st s1">✦</i><i class="uc-st s2">✦</i><i class="uc-st s3">✦</i>':""}<i class="uc-sh"></i>`;
+  el.innerHTML=`${w.showAv!==false?`<img class="uc-av" src="${esc(m.av||avatar(m.name))}" alt="">`:""}<div class="uc-b"><div class="uc-h">${w.showLogo!==false?`<i class="uc-lg">${UC_ICONS[m.platform]||""}</i>`:""}<span class="uc-tag">[${UC_TAG[m.platform]||"??"}]</span>${m.owner?'<i class="uc-bd own" title="المذيع">🎙</i>':""}${m.mod?'<i class="uc-bd mod" title="مشرف">🛡</i>':""}${m.sub?'<i class="uc-bd sub" title="مشترك">★</i>':""}<b class="uc-n">${esc(m.name)}</b><span class="uc-sep">:</span>${time}</div><div class="uc-t">${money}${esc(m.text||"")}${(m.emotes||[]).map(u=>`<img class="uc-em" src="${esc(u)}" alt="" referrerpolicy="no-referrer">`).join("")}</div></div>${m.kind==="gift"||m.kind==="donation"||m.kind==="superchat"||m.kind==="cheer"?'<i class="uc-st s1">✦</i><i class="uc-st s2">✦</i><i class="uc-st s3">✦</i>':""}<i class="uc-sh"></i>`;
   const im=el.querySelector(".uc-av"); if(im) im.onerror=()=>{ im.onerror=null; im.src=avatar(m.name) };
   return el },
  /** حدث مباشر من الحافلة */
@@ -107,7 +107,7 @@ const UC_CSS=`
 .ucw .p-tiktok{--pc:#fe2c55}.ucw .p-youtube{--pc:#ff3b3b}.ucw .p-kick{--pc:#53fc18}.ucw .p-twitch{--pc:#a970ff}.ucw .p-donation{--pc:#22c55e}
 .ucw .uc-av{width:calc(var(--ufs)*2);height:calc(var(--ufs)*2);border-radius:50%;object-fit:cover;flex:none;background:#111}
 .ucw.uc-noav .uc-av{display:none}
-.ucw .uc-b{min-width:0;flex:1}
+.ucw .uc-b{min-width:0;flex:1}.uc-em{height:1.35em;width:auto;vertical-align:middle;margin:0 .12em}
 .ucw .uc-h{display:flex;align-items:center;gap:calc(var(--ufs)*.3);font-size:calc(var(--ufs)*.82);line-height:1.3;min-width:0}
 .ucw .uc-lg{width:calc(var(--ufs)*1.05);height:calc(var(--ufs)*1.05);flex:none;display:inline-flex}.ucw .uc-lg svg{width:100%;height:100%}
 .ucw.uc-nologo .uc-lg{display:none}

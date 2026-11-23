@@ -41,8 +41,8 @@ function bootOverlay(q){
   for(const [id,v] of views) if(!seen.has(id)){v.el.remove();views.delete(id)}
  }
  function onMsg(m){
-  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now() }
-  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
+  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; if(Array.isArray(m.CH)) R.CHAT=m.CH.slice(-60); skew=(m.now||Date.now())-Date.now() }
+  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
   if(m.t==="bot"&&q.get("voice")==="1") for(const it of m.items||[]) if(it.say) vpPush(it);
@@ -114,11 +114,12 @@ function demoMusicSearch(m){ const t=musicSearch(R.MLIB||[],m.q); const res=t?{o
  setTimeout(()=>{ const r=roomMusicFound(R,m,res,Date.now()); for(const x of r.out){ receive(x,true); if(bus) bus.postMessage(x) } saveRoom() },0) }
 function receive(m,applied){
  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now(); saveRoom() }
- else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; chatPush(R.CHAT,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
+ else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; { const cm=chatPush(R.CHAT,m.ev); if(cm&&cm.kind==="msg"){ S.chatShown=S.chatShown||{}; S.chatShown[cm.platform]=(S.chatShown[cm.platform]||0)+1 } }; R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
  else if(m.t==="clock"){ if(!applied){ R.C=m.C; if(m.now) skew=m.now-Date.now(); for(const l of [...(m.logs||[])].reverse()) R.logs.unshift(l); R.logs.length=Math.min(R.logs.length,300); saveRoom() } }
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="chatdiag"){ S.chatDiag=m.D||{}; ucDiagRefresh(); return }
  else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes"||S.page==="duration") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
@@ -2228,8 +2229,22 @@ function connHTML(){ if(CFG&&!S.connsAt){ S.connsAt=Date.now(); connLoad() }
  <div class="card" style="margin-top:14px"><h3>حالة دعم الميزات لكل منصة</h3><div style="overflow:auto"><table class="tbl"><tr><th>الميزة</th>${caps.map(c=>`<th>${c.name}</th>`).join("")}</tr>
   ${[["comment","التعليقات"],["like","اللايكات"],["gift","الهدايا"],["follow","المتابعات"],["subscribe","الاشتراكات"],["share","المشاركات"],["join","دخول المشاهدين"],["viewers","عدد المشاهدين"],["sendChat","إرسال رد في الشات"],["moderate","أوامر الإشراف"]].map(([f,l])=>`<tr><td>${l}</td>${caps.map(c=>{ const x=c.caps.find(y=>y.feature===f); return `<td><span class="tag ${x?x.tone:"bad"}">${x?x.label:CAP.no[0]}</span></td>` }).join("")}</tr>`).join("")}</table></div>
   <p class="mut small">«تجريبية» لـ TikTok = اتصال LIVE غير رسمي بالاسم فقط. «تتطلب تفويضاً» = تعمل بعد الربط عبر OAuth الرسمي. لا نعرض «متصل» قبل التحقق من الحساب فعلياً.</p></div>
- <div class="card" style="margin-top:14px"><h3>💬 الشات الموحد</h3><div class="row"><button class="btn sm pri" data-ucadd="1">+ إضافة الشات الموحد للمشهد</button><button class="btn sm" data-libtab="uchat" data-go="library">🎨 تصاميم الشات (${UC_DESIGNS.length})</button><button class="btn sm" data-conntest="all">🧪 رسائل تجربة من المنصات الأربع</button></div>
-  <p class="mut small">رسائل التجربة مُعلَّمة ولا تُحفظ في سجل الشات الحقيقي.</p></div>` }
+ <div class="card" style="margin-top:14px"><h3>💬 الشات الموحد</h3><div class="row"><button class="btn sm" data-ucdiag>${S.ucDiag?"✕ إغلاق التشخيص":"🩺 تشخيص الشات"}</button><button class="btn sm pri" data-ucadd="1">+ إضافة الشات الموحد للمشهد</button><button class="btn sm" data-libtab="uchat" data-go="library">🎨 تصاميم الشات (${UC_DESIGNS.length})</button><button class="btn sm" data-conntest="all">🧪 رسائل تجربة من المنصات الأربع</button></div>
+  <p class="mut small">رسائل التجربة مُعلَّمة ولا تُحفظ في سجل الشات الحقيقي.</p>${S.ucDiag?`<div data-ucdiagbox>${ucDiagHTML()}</div>`:""}</div>` }
+/** تشخيص الشات (للمطورين): المراحل الست لكل منصة — أعداد وأسباب فقط، بدون نصوص المحادثات */
+function ucDiagHTML(){ const D=S.chatDiag||{}, Sh=S.chatShown||{}, ps=[...new Set([...Object.keys(D),...Object.keys(Sh)])];
+ if(!CFG) return `<p class="mut small" style="margin-top:10px">التشخيص يقرأ مراحل الرسائل من خادم المنصة — يعمل في لوحة التحكم المنشورة.</p>`;
+ if(!ps.length) return `<p class="mut small" style="margin-top:10px">لم تصل رسائل شات بعد منذ آخر تشغيل للخادم. اكتب رسالة في البث وانتظر ثوانٍ.</p>`;
+ const st=(n,of)=>`<b class="${of&&n<of?"neg":"pos"}">${fmt(n)}</b>`;
+ return `<div class="ucd">${ps.map(p=>{ const x=D[p]||{recv:0,name:0,text:0,emote:0,empty:0,sent:0,dup:0}, shown=Sh[p]||0, P=LIVE_PLATFORMS[p]||{name:p};
+  return `<div class="ucd-p"><b>${esc(P.name||p)}</b><ol>
+   <li>تم استقبال الحدث: ${st(x.recv)}</li><li>تم استخراج اسم المستخدم: ${st(x.name,x.recv)}</li>
+   <li>تم استخراج نص الرسالة: ${st(x.text,x.recv-x.emote)}${x.emote?` <span class="mut small">+ ${x.emote} ملصق بدون نص</span>`:""}${x.field?` <span class="tag" dir="ltr">${esc(x.field)}</span>`:""}</li>
+   <li>تم إرسال الرسالة إلى الخادم: ${st(x.recv)}</li><li>تم بث الرسالة إلى الواجهة: ${st(x.sent,x.recv-x.empty-x.dup)}${x.dup?` <span class="mut small">(${x.dup} مكررة تُجوهلت)</span>`:""}</li>
+   <li>تم عرض الرسالة في هذه الصفحة: ${st(shown)}</li></ol>
+   ${x.empty?`<div class="ucd-err">⚠️ ${x.empty} رسالة وصلت بدون نص${x.fail?` — ${esc(x.fail)}`:""}${x.failAt?` <span class="mut small">(${ago(x.failAt)})</span>`:""}</div>`:x.fail?`<div class="ucd-err">⚠️ ${esc(x.fail)}</div>`:`<div class="ucd-ok">✅ كل الرسائل وصلت بنصها كاملاً</div>`}</div>` }).join("")}</div>
+  <p class="mut small">يتحدث كل 3 ثوانٍ. لا تُسجَّل نصوص المحادثات — أعداد وأسماء حقول فقط.</p>` }
+function ucDiagRefresh(){ const b=document.querySelector("[data-ucdiagbox]"); if(b) b.innerHTML=ucDiagHTML() }
 function connGuide(p){ const G=PLATFORM_GUIDES[p], P=LIVE_PLATFORMS[p]; const li=a=>`<ol>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`;
  const m=modal(`<h3 class="row" style="gap:8px"><i class="conn-lg">${UC_ICONS[p]}</i> كيف أربط ${P.name}؟</h3>
   <div class="cguide"><h4>1. متطلبات الربط</h4>${li(G.req)}<h4>2. طريقة التفويض</h4><p>${esc(G.auth)}</p><h4>3. خطوات الاتصال</h4>${li(G.steps)}<h4>4. تشغيل الشات</h4><p>${esc(G.chat)}</p><h4>5. تفعيل OBS</h4>${li(G.obs)}<h4>6. اختبار الاتصال</h4><p>${esc(G.test)}</p><h4>7. حل المشاكل الشائعة</h4>${li(G.fix)}</div>
@@ -2245,6 +2260,7 @@ function connClick(t,d){
  if(d.conntest){ connTest(d.conntest); toast("أُرسلت رسالة تجربة (مُعلَّمة)"); return true }
  if(d.connect){ if(!CFG) return toast("الربط الرسمي متاح في لوحة التحكم المنشورة على الخادم"),true; location.href="/api/connect/"+d.connect; return true }
  if(d.conndel){ if(CFG) fetch("/api/connections?platform="+d.conndel,{method:"DELETE"}).then(()=>{ S.connsAt=0; connLoad() }); return true }
+ if(t.hasAttribute&&t.hasAttribute("data-ucdiag")){ S.ucDiag=!S.ucDiag; clearInterval(S.ucDiagT); if(S.ucDiag){ const ask_=()=>{ if(!S.ucDiag||!document.querySelector("[data-ucdiagbox]")){ clearInterval(S.ucDiagT); return } send({t:"chatdiag-get"}) }; S.ucDiagT=setInterval(ask_,3000); setTimeout(ask_,50) } renderPage(true); return true }
  if(d.ucadd){ const w=addWidget("uchat",{}); applyPreset(w,"mr",CV()); save(); pushLayout(); toast("أُضيف الشات الموحد"); return true }
  return false }
 function ucPropsHTML(w,sel,rng){ const inp=(f,l,ph="")=>`<div class="fld"><label>${l}</label><input class="inp" data-wf="${f}" data-wid="${w.id}" value="${esc(w[f]??"")}" placeholder="${esc(ph)}"></div>`, col=(f,l,d)=>`<div class="fld"><label>${l}</label><input type="color" data-wf="${f}" data-wid="${w.id}" value="${w[f]||d}"></div>`;

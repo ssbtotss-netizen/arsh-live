@@ -6,6 +6,7 @@
 //  - لا يوجد سجل تاريخي من TikTok: دعم اليوم/الأسبوع/الشهر = ما سجلته المنصة أثناء اتصالها فقط.
 //  - قد تتوقف المكتبة إذا غيّر TikTok نظامه — حدّثها بـ npm i tiktok-live-connector@latest
 import type { LiveEvent, LiveUser } from "../lib/core";
+import { normChat, chatShape } from "../engine/chatnorm.js";
 
 
 export function userOf(d: any): LiveUser {
@@ -158,9 +159,13 @@ export function startTikTok(
       emit({ type: "gift", id, user: u, value: diamonds * total, count: total, gift: name != null && String(name).trim() ? String(name) : "هدية", giftId, diamonds, image: String(image || ""),
         streak: { cum: repeat, gc: groupCount, end, type: giftType ?? null, group: groupId != null ? String(groupId) : "" } } as any);
     });
+    let chatShown = 0;
     c.on(ev("CHAT", "chat"), (d: any) => { if (!live()) return;
       const cu: any = userOf(d); if (String(cu.id).toLowerCase() === username.toLowerCase()) cu.owner = true;
-      emit({ type: "comment", id: mid(d, "chat"), user: cu, text: String(d.comment ?? "").slice(0, 200) });
+      // النص في v2 داخل content (وكان الكود يقرأ comment من v1 فيصل الاسم بلا نص) — الموحِّد يقرأ الحقل الصحيح أياً كان
+      const n = normChat("tiktok", d, { userId: cu.id, username: cu.name, avatar: cu.avatar, messageId: mid(d, "chat") });
+      if (chatShown < 3 || (!n.message && !n.emotes.length && chatShown < 10)) { chatShown++; log(`[tiktok] chat shape id=${attemptId} keys=${chatShape(d)} field=${n.field ?? "none"} len=${n.message.length} emotes=${n.emotes.length}`); } // بدون نص المحادثة
+      emit({ type: "comment", id: n.messageId ?? undefined, user: cu, text: n.message, emotes: n.emotes, diag: { field: n.field, keys: n.message || n.emotes.length ? undefined : chatShape(d) } } as any);
     });
     const onFollow = (d: any) => { if (live()) emit({ type: "follow", id: mid(d, "follow") ?? `follow:${userOf(d).id}`, user: userOf(d) }); };
     if (E.FOLLOW) c.on(E.FOLLOW, onFollow);

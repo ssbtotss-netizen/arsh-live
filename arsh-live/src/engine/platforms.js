@@ -1,3 +1,4 @@
+import { chatTextOf, chatEmotesOf } from "./chatnorm.js";
 // ====== ربط المنصات: تحويل حمولات الواجهات الرسمية إلى الأحداث الموحدة + إعدادات OAuth + أدلة الربط ======
 // دوال نقية قابلة للاختبار بدون مفاتيح. الاتصال الفعلي في src/server/platforms.ts (المفاتيح على الخادم فقط).
 
@@ -20,7 +21,7 @@ const u_=(id,name,avatar,extra)=>({id:String(id||name||""),name:String(name||id|
 export function twitchToEvent(msg){ const t=msg?.metadata?.subscription_type||msg?.payload?.subscription?.type, e=msg?.payload?.event; if(!t||!e) return null; const mid=msg.metadata?.message_id;
  const badges=new Set((e.badges||[]).map(b=>b.set_id));
  switch(t){
-  case "channel.chat.message": return {platform:"twitch",type:"comment",id:e.message_id||mid,user:u_(e.chatter_user_id,e.chatter_user_name,"",{mod:badges.has("moderator"),sub:badges.has("subscriber")||badges.has("founder"),owner:badges.has("broadcaster")}),text:e.message?.text||"",source:"twitch-eventsub",verified:true};
+  case "channel.chat.message": return {platform:"twitch",type:"comment",id:e.message_id||mid,user:u_(e.chatter_user_id,e.chatter_user_name,"",{mod:badges.has("moderator"),sub:badges.has("subscriber")||badges.has("founder"),owner:badges.has("broadcaster")}),text:e.message?.text||chatTextOf(e.message||{}).text||"",source:"twitch-eventsub",verified:true};
   case "channel.follow": return {platform:"twitch",type:"follow",id:mid,user:u_(e.user_id,e.user_name),source:"twitch-eventsub",verified:true};
   case "channel.subscribe": return {platform:"twitch",type:"subscribe",id:mid,user:u_(e.user_id,e.user_name),data:{tier:e.tier,gift:!!e.is_gift},source:"twitch-eventsub",verified:true};
   case "channel.subscription.gift": return {platform:"twitch",type:"subscribe",id:mid,user:u_(e.user_id,e.is_anonymous?"مجهول":e.user_name),data:{tier:e.tier,giftCount:e.total},source:"twitch-eventsub",verified:true};
@@ -32,7 +33,7 @@ export function twitchToEvent(msg){ const t=msg?.metadata?.subscription_type||ms
 export function kickToEvent(type,b,messageId){ if(!type||!b) return null; const s=b.sender||b.follower||b.subscriber||b.gifter||{};
  const user=u_(s.user_id,s.username,s.profile_picture,{mod:!!(s.identity?.badges||[]).find(x=>x.type==="moderator"),sub:!!(s.identity?.badges||[]).find(x=>x.type==="subscriber"),owner:!!(s.identity?.badges||[]).find(x=>x.type==="broadcaster")});
  switch(type){
-  case "chat.message.sent": return {platform:"kick",type:"comment",id:b.message_id||messageId,user,text:b.content||"",source:"kick-webhook",verified:true};
+  case "chat.message.sent": return {platform:"kick",type:"comment",id:b.message_id||messageId,user,text:b.content||chatTextOf(b).text||"",emotes:chatEmotesOf(b),source:"kick-webhook",verified:true};
   case "channel.followed": return {platform:"kick",type:"follow",id:messageId,user,source:"kick-webhook",verified:true};
   case "channel.subscription.new": case "channel.subscription.renewal": return {platform:"kick",type:"subscribe",id:messageId,user,data:{months:b.duration},source:"kick-webhook",verified:true};
   case "channel.subscription.gifts": return {platform:"kick",type:"subscribe",id:messageId,user:u_(s.user_id,s.is_anonymous?"مجهول":s.username,s.profile_picture),data:{giftCount:(b.giftees||[]).length},source:"kick-webhook",verified:true};
@@ -43,7 +44,7 @@ export function kickToEvent(type,b,messageId){ if(!type||!b) return null; const 
 export function youtubeToEvents(items){ const out=[]; for(const it of items||[]){ const sn=it.snippet||{}, a=it.authorDetails||{};
   const user=u_(a.channelId,a.displayName,a.profileImageUrl,{mod:!!a.isChatModerator,sub:!!a.isChatSponsor,owner:!!a.isChatOwner});
   const base={platform:"youtube",id:it.id,user,source:"youtube-data-api",verified:true,at:sn.publishedAt?Date.parse(sn.publishedAt):undefined};
-  if(sn.type==="textMessageEvent") out.push({...base,type:"comment",text:sn.displayMessage||sn.textMessageDetails?.messageText||""});
+  if(sn.type==="textMessageEvent") out.push({...base,type:"comment",text:sn.displayMessage||sn.textMessageDetails?.messageText||chatTextOf(sn).text||""});
   else if(sn.type==="superChatEvent"){ const d=sn.superChatDetails||{}; out.push({...base,type:"superchat",amount:(+d.amountMicros||0)/1e6,currency:d.currency,text:d.userComment||""}) }
   else if(sn.type==="newSponsorEvent"||sn.type==="memberMilestoneChatEvent") out.push({...base,type:"subscribe"}) }
  return out }

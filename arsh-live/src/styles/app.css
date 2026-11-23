@@ -420,3 +420,7 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .du-gpv{height:96px;position:relative;border-radius:10px;overflow:hidden;background:repeating-conic-gradient(#ffffff0a 0 25%,transparent 0 50%) 0 0/14px 14px,#0b0e18;pointer-events:none}
 .du-sample{margin:6px 0 10px;padding:8px 10px;border-radius:10px;background:#ffffff08;border:1px solid var(--line);font-size:13px}
 .du-colf input[type=color]{width:42px;height:32px;border:1px solid var(--line);border-radius:8px;background:none;padding:0;cursor:pointer}
+
+/* تشخيص الشات */
+.ucd{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:12px}.ucd-p{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:#ffffff05}
+.ucd-p ol{margin:8px 0;padding-inline-start:18px;font-size:13px;line-height:1.9}.ucd-err{font-size:12px;color:#fca5a5;overflow-wrap:anywhere}.ucd-ok{font-size:12px;color:var(--ok)}

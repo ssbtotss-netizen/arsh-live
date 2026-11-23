@@ -874,7 +874,9 @@ function normalizeEvent(raw,ctx={}){
  if(raw.type==="donation"){ ev.amount=Math.round(evN(raw.amount,0,1e7)*100)/100; ev.currency=evS(raw.currency||"USD",8).toUpperCase(); ev.platform="donation" }
  // الاسترجاع: غياب المبلغ يعني استرجاعاً كاملاً — لا نحوّله إلى صفر
  if(raw.type==="donation_refund"){ if(raw.amount!=null) ev.amount=Math.round(evN(raw.amount,0,1e7)*100)/100; if(raw.currency) ev.currency=evS(raw.currency,8).toUpperCase(); ev.platform="donation" }
- if(raw.type==="comment") ev.text=evS(raw.text,500);
+ if(raw.type==="comment"){ ev.text=evS(raw.text,500); const em=Array.isArray(raw.emotes)?raw.emotes.filter(u=>typeof u==="string"&&/^https:\/\//.test(u)).slice(0,8).map(u=>u.slice(0,600)):[]; if(em.length) ev.emotes=em; else delete ev.emotes }
+ else delete ev.emotes;
+ delete ev.diag;
  ev.data={...(raw.data||{})};
  return ev }
 
@@ -899,7 +901,41 @@ class EventBus{
 /** ملخص حالة الدعم لكل منصة/ميزة لعرضه في الواجهة */
 function capabilityTable(){ return PLATFORM_IDS.map(p=>({platform:p,name:LIVE_PLATFORMS[p].name,connect:LIVE_PLATFORMS[p].connect,caps:Object.entries(LIVE_PLATFORMS[p].caps).map(([k,v])=>({feature:k,status:v,label:CAP[v][0],tone:CAP[v][1]}))})) }
 
+/* ---- engine/chatnorm.js ---- */
+// ====== Unified Chat Message Normalizer — توحيد رسائل الشات من كل المنصات ======
+// السبب الجذري الذي أصلحه هذا الملف: مكتبة TikTok v2 تضع نص التعليق في الحقل content،
+// بينما الكود كان يقرأ comment (اسم الحقل في الإصدار الأول) → يصل الاسم بدون النص، وأوامر بوت الأغاني لا تُقرأ.
+// القاعدة: نقرأ الحقل الموثق لكل منصة أولاً، ثم نجرّب الحقول البديلة المعروفة — ولا نخترع نصاً أبداً.
+
+/** الحقول المحتملة لنص الرسالة بالترتيب (الأول غير الفارغ هو المعتمد) */
+const CHAT_TEXT_FIELDS=["comment","content","text","message","body","msg"];
+const strOf=v=>typeof v==="string"?v:(v&&typeof v==="object"&&typeof v.text==="string")?v.text:"";
+/** نص الرسالة + اسم الحقل الذي وُجد فيه (للتشخيص) */
+function chatTextOf(d,first){ if(!d||typeof d!=="object") return {text:"",field:null};
+ if(first){ const s=strOf(d[first]); if(s&&s.trim()) return {text:s,field:first} }
+ for(const f of CHAT_TEXT_FIELDS){ const s=strOf(d[f]); if(s&&s.trim()) return {text:s,field:f} }
+ return {text:"",field:null} }
+/** الملصقات/الإيموجي المخصص المرفق بالرسالة (روابط https فقط) */
+function chatEmotesOf(d){ const a=Array.isArray(d&&d.emotes)?d.emotes:Array.isArray(d&&d.emoteList)?d.emoteList:[], out=[];
+ for(const e of a){ const em=(e&&(e.emote||e))||{}, img=em.image||em.icon||{};
+  const u=img.imageUrl||img.url||(img.urlList||img.url_list||[])[0]||em.imageUrl||em.url;
+  if(typeof u==="string"&&/^https:\/\//.test(u)&&!out.includes(u)) out.push(u); if(out.length>=8) break }
+ return out }
+/** تنظيف بدون تشويه: يحذف محارف التحكم فقط — العربية والإنجليزية والإيموجي والرموز تبقى كما هي */
+function chatClean(s,max=500){ return String(s??"").replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/g,"").replace(/\r\n?/g,"\n").slice(0,max) }
+/**
+ * الصيغة الموحدة لأي رسالة: {platform, userId, username, avatar, message, timestamp, messageId, emotes, field}
+ * field = اسم الحقل الذي جاء منه النص (للتشخيص فقط)
+ */
+function normChat(platform,raw,{userId="",username="",avatar="",messageId=null,timestamp=null,field=null}={}){
+ const t=chatTextOf(raw,field);
+ return {platform:String(platform||""),userId:String(userId||""),username:String(username||""),avatar:String(avatar||""),
+  message:chatClean(t.text),field:t.field,emotes:chatEmotesOf(raw),timestamp:+timestamp||Date.now(),messageId:messageId!=null?String(messageId):null} }
+/** تشخيص بدون محتوى: أسماء الحقول فقط (لا نصوص محادثات في سجلات الإنتاج) */
+const chatShape=d=>Object.keys(d||{}).slice(0,30).join(",");
+
 /* ---- engine/platforms.js ---- */
+
 // ====== ربط المنصات: تحويل حمولات الواجهات الرسمية إلى الأحداث الموحدة + إعدادات OAuth + أدلة الربط ======
 // دوال نقية قابلة للاختبار بدون مفاتيح. الاتصال الفعلي في src/server/platforms.ts (المفاتيح على الخادم فقط).
 
@@ -922,7 +958,7 @@ const u_=(id,name,avatar,extra)=>({id:String(id||name||""),name:String(name||id|
 function twitchToEvent(msg){ const t=msg?.metadata?.subscription_type||msg?.payload?.subscription?.type, e=msg?.payload?.event; if(!t||!e) return null; const mid=msg.metadata?.message_id;
  const badges=new Set((e.badges||[]).map(b=>b.set_id));
  switch(t){
-  case "channel.chat.message": return {platform:"twitch",type:"comment",id:e.message_id||mid,user:u_(e.chatter_user_id,e.chatter_user_name,"",{mod:badges.has("moderator"),sub:badges.has("subscriber")||badges.has("founder"),owner:badges.has("broadcaster")}),text:e.message?.text||"",source:"twitch-eventsub",verified:true};
+  case "channel.chat.message": return {platform:"twitch",type:"comment",id:e.message_id||mid,user:u_(e.chatter_user_id,e.chatter_user_name,"",{mod:badges.has("moderator"),sub:badges.has("subscriber")||badges.has("founder"),owner:badges.has("broadcaster")}),text:e.message?.text||chatTextOf(e.message||{}).text||"",source:"twitch-eventsub",verified:true};
   case "channel.follow": return {platform:"twitch",type:"follow",id:mid,user:u_(e.user_id,e.user_name),source:"twitch-eventsub",verified:true};
   case "channel.subscribe": return {platform:"twitch",type:"subscribe",id:mid,user:u_(e.user_id,e.user_name),data:{tier:e.tier,gift:!!e.is_gift},source:"twitch-eventsub",verified:true};
   case "channel.subscription.gift": return {platform:"twitch",type:"subscribe",id:mid,user:u_(e.user_id,e.is_anonymous?"مجهول":e.user_name),data:{tier:e.tier,giftCount:e.total},source:"twitch-eventsub",verified:true};
@@ -934,7 +970,7 @@ function twitchToEvent(msg){ const t=msg?.metadata?.subscription_type||msg?.payl
 function kickToEvent(type,b,messageId){ if(!type||!b) return null; const s=b.sender||b.follower||b.subscriber||b.gifter||{};
  const user=u_(s.user_id,s.username,s.profile_picture,{mod:!!(s.identity?.badges||[]).find(x=>x.type==="moderator"),sub:!!(s.identity?.badges||[]).find(x=>x.type==="subscriber"),owner:!!(s.identity?.badges||[]).find(x=>x.type==="broadcaster")});
  switch(type){
-  case "chat.message.sent": return {platform:"kick",type:"comment",id:b.message_id||messageId,user,text:b.content||"",source:"kick-webhook",verified:true};
+  case "chat.message.sent": return {platform:"kick",type:"comment",id:b.message_id||messageId,user,text:b.content||chatTextOf(b).text||"",emotes:chatEmotesOf(b),source:"kick-webhook",verified:true};
   case "channel.followed": return {platform:"kick",type:"follow",id:messageId,user,source:"kick-webhook",verified:true};
   case "channel.subscription.new": case "channel.subscription.renewal": return {platform:"kick",type:"subscribe",id:messageId,user,data:{months:b.duration},source:"kick-webhook",verified:true};
   case "channel.subscription.gifts": return {platform:"kick",type:"subscribe",id:messageId,user:u_(s.user_id,s.is_anonymous?"مجهول":s.username,s.profile_picture),data:{giftCount:(b.giftees||[]).length},source:"kick-webhook",verified:true};
@@ -945,7 +981,7 @@ function kickToEvent(type,b,messageId){ if(!type||!b) return null; const s=b.sen
 function youtubeToEvents(items){ const out=[]; for(const it of items||[]){ const sn=it.snippet||{}, a=it.authorDetails||{};
   const user=u_(a.channelId,a.displayName,a.profileImageUrl,{mod:!!a.isChatModerator,sub:!!a.isChatSponsor,owner:!!a.isChatOwner});
   const base={platform:"youtube",id:it.id,user,source:"youtube-data-api",verified:true,at:sn.publishedAt?Date.parse(sn.publishedAt):undefined};
-  if(sn.type==="textMessageEvent") out.push({...base,type:"comment",text:sn.displayMessage||sn.textMessageDetails?.messageText||""});
+  if(sn.type==="textMessageEvent") out.push({...base,type:"comment",text:sn.displayMessage||sn.textMessageDetails?.messageText||chatTextOf(sn).text||""});
   else if(sn.type==="superChatEvent"){ const d=sn.superChatDetails||{}; out.push({...base,type:"superchat",amount:(+d.amountMicros||0)/1e6,currency:d.currency,text:d.userComment||""}) }
   else if(sn.type==="newSponsorEvent"||sn.type==="memberMilestoneChatEvent") out.push({...base,type:"subscribe"}) }
  return out }
@@ -3579,7 +3615,8 @@ function chatMsgOf(ev){ if(!ev||!CHAT_EVENT_TYPES.has(ev.type)) return null; con
  const m={id:String(ev.id||ev.type+"_"+(ev.at||Date.now())),platform:ev.platform||"tiktok",kind:ev.type==="comment"?"msg":ev.type,
   uid:String(u.id||u.name||ev.name||""),name:String(u.name||ev.name||"").slice(0,60),av:u.avatar||ev.avatar||"",
   mod:!!(u.mod||u.isModerator),sub:!!(u.sub||u.isSubscriber),owner:!!u.owner,at:ev.at||Date.now(),test:!!ev.test,text:""};
- if(ev.type==="comment") m.text=String(ev.text||"").slice(0,300);
+ if(ev.type==="comment"){ m.text=String(ev.text||"").slice(0,300); if(Array.isArray(ev.emotes)&&ev.emotes.length) m.emotes=ev.emotes.slice(0,8);
+  if(!m.text.trim()&&!m.emotes) return null } // رسالة بلا نص ولا ملصق: لا نعرض اسماً وحده (يُسجَّل في تشخيص الشات)
  else if(ev.type==="gift"){ m.text=`أرسل ${ev.gift||"هدية"} ×${ev.count||1}`; m.value=ev.value||0 }
  else if(ev.type==="follow") m.text="تابع البث";
  else if(ev.type==="subscribe") m.text="اشترك في القناة";
@@ -4301,7 +4338,8 @@ function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
  else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||TYPES[v.w.type]?.bt||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
- else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ v.chatLoad(msg.CH||[]); continue } v.refresh(src,true) } }
+ else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ // سجل الشات: من اللقطة أو من سجل الصفحة — ولا نفرّغ الطبقة إذا لم يُرسل سجل (كان تحديث التخطيط يمسح رسائل OBS)
+   const list=Array.isArray(msg.CH)?msg.CH:(src&&(src.CHAT||src.CH)); if(Array.isArray(list)) v.chatLoad(list); else v.ucRender&&v.ucRender(false); continue } v.refresh(src,true) } }
  else if(msg.t==="alert"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxPush(msg.items) }
  else if(msg.t==="alertctl"){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxCtl(msg.op) }
  else if(msg.t==="act"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.act) v.actPush(msg.items) }
@@ -8696,7 +8734,7 @@ Object.assign(View.prototype,{
   el.className=`uc-m p-${m.platform} k-${m.kind}${m.mod?" mod":""}${m.sub?" sub":""}${m.owner?" own":""}${imp&&w.highlight!==false?" imp":""}${m.test?" test":""}`; el.dataset.id=m.id;
   const money=m.amount!=null?`<span class="uc-amt" dir="ltr">${esc((m.currency==="USD"?"$":"")+m.amount+(m.currency&&m.currency!=="USD"?" "+m.currency:""))}</span>`:"";
   const time=w.showTime?`<span class="uc-tm">${new Date(m.at).toLocaleTimeString("ar-SA",{hour:"2-digit",minute:"2-digit"})}</span>`:"";
-  el.innerHTML=`${w.showAv!==false?`<img class="uc-av" src="${esc(m.av||avatar(m.name))}" alt="">`:""}<div class="uc-b"><div class="uc-h">${w.showLogo!==false?`<i class="uc-lg">${UC_ICONS[m.platform]||""}</i>`:""}<span class="uc-tag">[${UC_TAG[m.platform]||"??"}]</span>${m.owner?'<i class="uc-bd own" title="المذيع">🎙</i>':""}${m.mod?'<i class="uc-bd mod" title="مشرف">🛡</i>':""}${m.sub?'<i class="uc-bd sub" title="مشترك">★</i>':""}<b class="uc-n">${esc(m.name)}</b><span class="uc-sep">:</span>${time}</div><div class="uc-t">${money}${esc(m.text||"")}</div></div>${m.kind==="gift"||m.kind==="donation"||m.kind==="superchat"||m.kind==="cheer"?'<i class="uc-st s1">✦</i><i class="uc-st s2">✦</i><i class="uc-st s3">✦</i>':""}<i class="uc-sh"></i>`;
+  el.innerHTML=`${w.showAv!==false?`<img class="uc-av" src="${esc(m.av||avatar(m.name))}" alt="">`:""}<div class="uc-b"><div class="uc-h">${w.showLogo!==false?`<i class="uc-lg">${UC_ICONS[m.platform]||""}</i>`:""}<span class="uc-tag">[${UC_TAG[m.platform]||"??"}]</span>${m.owner?'<i class="uc-bd own" title="المذيع">🎙</i>':""}${m.mod?'<i class="uc-bd mod" title="مشرف">🛡</i>':""}${m.sub?'<i class="uc-bd sub" title="مشترك">★</i>':""}<b class="uc-n">${esc(m.name)}</b><span class="uc-sep">:</span>${time}</div><div class="uc-t">${money}${esc(m.text||"")}${(m.emotes||[]).map(u=>`<img class="uc-em" src="${esc(u)}" alt="" referrerpolicy="no-referrer">`).join("")}</div></div>${m.kind==="gift"||m.kind==="donation"||m.kind==="superchat"||m.kind==="cheer"?'<i class="uc-st s1">✦</i><i class="uc-st s2">✦</i><i class="uc-st s3">✦</i>':""}<i class="uc-sh"></i>`;
   const im=el.querySelector(".uc-av"); if(im) im.onerror=()=>{ im.onerror=null; im.src=avatar(m.name) };
   return el },
  /** حدث مباشر من الحافلة */
@@ -8724,7 +8762,7 @@ const UC_CSS=`
 .ucw .p-tiktok{--pc:#fe2c55}.ucw .p-youtube{--pc:#ff3b3b}.ucw .p-kick{--pc:#53fc18}.ucw .p-twitch{--pc:#a970ff}.ucw .p-donation{--pc:#22c55e}
 .ucw .uc-av{width:calc(var(--ufs)*2);height:calc(var(--ufs)*2);border-radius:50%;object-fit:cover;flex:none;background:#111}
 .ucw.uc-noav .uc-av{display:none}
-.ucw .uc-b{min-width:0;flex:1}
+.ucw .uc-b{min-width:0;flex:1}.uc-em{height:1.35em;width:auto;vertical-align:middle;margin:0 .12em}
 .ucw .uc-h{display:flex;align-items:center;gap:calc(var(--ufs)*.3);font-size:calc(var(--ufs)*.82);line-height:1.3;min-width:0}
 .ucw .uc-lg{width:calc(var(--ufs)*1.05);height:calc(var(--ufs)*1.05);flex:none;display:inline-flex}.ucw .uc-lg svg{width:100%;height:100%}
 .ucw.uc-nologo .uc-lg{display:none}
@@ -9081,8 +9119,8 @@ function bootOverlay(q){
   for(const [id,v] of views) if(!seen.has(id)){v.el.remove();views.delete(id)}
  }
  function onMsg(m){
-  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now() }
-  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
+  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; if(Array.isArray(m.CH)) R.CHAT=m.CH.slice(-60); skew=(m.now||Date.now())-Date.now() }
+  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
   if(m.t==="bot"&&q.get("voice")==="1") for(const it of m.items||[]) if(it.say) vpPush(it);
@@ -9154,11 +9192,12 @@ function demoMusicSearch(m){ const t=musicSearch(R.MLIB||[],m.q); const res=t?{o
  setTimeout(()=>{ const r=roomMusicFound(R,m,res,Date.now()); for(const x of r.out){ receive(x,true); if(bus) bus.postMessage(x) } saveRoom() },0) }
 function receive(m,applied){
  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now(); saveRoom() }
- else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; chatPush(R.CHAT,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
+ else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; { const cm=chatPush(R.CHAT,m.ev); if(cm&&cm.kind==="msg"){ S.chatShown=S.chatShown||{}; S.chatShown[cm.platform]=(S.chatShown[cm.platform]||0)+1 } }; R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
  else if(m.t==="clock"){ if(!applied){ R.C=m.C; if(m.now) skew=m.now-Date.now(); for(const l of [...(m.logs||[])].reverse()) R.logs.unshift(l); R.logs.length=Math.min(R.logs.length,300); saveRoom() } }
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="chatdiag"){ S.chatDiag=m.D||{}; ucDiagRefresh(); return }
  else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes"||S.page==="duration") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
@@ -11268,8 +11307,22 @@ function connHTML(){ if(CFG&&!S.connsAt){ S.connsAt=Date.now(); connLoad() }
  <div class="card" style="margin-top:14px"><h3>حالة دعم الميزات لكل منصة</h3><div style="overflow:auto"><table class="tbl"><tr><th>الميزة</th>${caps.map(c=>`<th>${c.name}</th>`).join("")}</tr>
   ${[["comment","التعليقات"],["like","اللايكات"],["gift","الهدايا"],["follow","المتابعات"],["subscribe","الاشتراكات"],["share","المشاركات"],["join","دخول المشاهدين"],["viewers","عدد المشاهدين"],["sendChat","إرسال رد في الشات"],["moderate","أوامر الإشراف"]].map(([f,l])=>`<tr><td>${l}</td>${caps.map(c=>{ const x=c.caps.find(y=>y.feature===f); return `<td><span class="tag ${x?x.tone:"bad"}">${x?x.label:CAP.no[0]}</span></td>` }).join("")}</tr>`).join("")}</table></div>
   <p class="mut small">«تجريبية» لـ TikTok = اتصال LIVE غير رسمي بالاسم فقط. «تتطلب تفويضاً» = تعمل بعد الربط عبر OAuth الرسمي. لا نعرض «متصل» قبل التحقق من الحساب فعلياً.</p></div>
- <div class="card" style="margin-top:14px"><h3>💬 الشات الموحد</h3><div class="row"><button class="btn sm pri" data-ucadd="1">+ إضافة الشات الموحد للمشهد</button><button class="btn sm" data-libtab="uchat" data-go="library">🎨 تصاميم الشات (${UC_DESIGNS.length})</button><button class="btn sm" data-conntest="all">🧪 رسائل تجربة من المنصات الأربع</button></div>
-  <p class="mut small">رسائل التجربة مُعلَّمة ولا تُحفظ في سجل الشات الحقيقي.</p></div>` }
+ <div class="card" style="margin-top:14px"><h3>💬 الشات الموحد</h3><div class="row"><button class="btn sm" data-ucdiag>${S.ucDiag?"✕ إغلاق التشخيص":"🩺 تشخيص الشات"}</button><button class="btn sm pri" data-ucadd="1">+ إضافة الشات الموحد للمشهد</button><button class="btn sm" data-libtab="uchat" data-go="library">🎨 تصاميم الشات (${UC_DESIGNS.length})</button><button class="btn sm" data-conntest="all">🧪 رسائل تجربة من المنصات الأربع</button></div>
+  <p class="mut small">رسائل التجربة مُعلَّمة ولا تُحفظ في سجل الشات الحقيقي.</p>${S.ucDiag?`<div data-ucdiagbox>${ucDiagHTML()}</div>`:""}</div>` }
+/** تشخيص الشات (للمطورين): المراحل الست لكل منصة — أعداد وأسباب فقط، بدون نصوص المحادثات */
+function ucDiagHTML(){ const D=S.chatDiag||{}, Sh=S.chatShown||{}, ps=[...new Set([...Object.keys(D),...Object.keys(Sh)])];
+ if(!CFG) return `<p class="mut small" style="margin-top:10px">التشخيص يقرأ مراحل الرسائل من خادم المنصة — يعمل في لوحة التحكم المنشورة.</p>`;
+ if(!ps.length) return `<p class="mut small" style="margin-top:10px">لم تصل رسائل شات بعد منذ آخر تشغيل للخادم. اكتب رسالة في البث وانتظر ثوانٍ.</p>`;
+ const st=(n,of)=>`<b class="${of&&n<of?"neg":"pos"}">${fmt(n)}</b>`;
+ return `<div class="ucd">${ps.map(p=>{ const x=D[p]||{recv:0,name:0,text:0,emote:0,empty:0,sent:0,dup:0}, shown=Sh[p]||0, P=LIVE_PLATFORMS[p]||{name:p};
+  return `<div class="ucd-p"><b>${esc(P.name||p)}</b><ol>
+   <li>تم استقبال الحدث: ${st(x.recv)}</li><li>تم استخراج اسم المستخدم: ${st(x.name,x.recv)}</li>
+   <li>تم استخراج نص الرسالة: ${st(x.text,x.recv-x.emote)}${x.emote?` <span class="mut small">+ ${x.emote} ملصق بدون نص</span>`:""}${x.field?` <span class="tag" dir="ltr">${esc(x.field)}</span>`:""}</li>
+   <li>تم إرسال الرسالة إلى الخادم: ${st(x.recv)}</li><li>تم بث الرسالة إلى الواجهة: ${st(x.sent,x.recv-x.empty-x.dup)}${x.dup?` <span class="mut small">(${x.dup} مكررة تُجوهلت)</span>`:""}</li>
+   <li>تم عرض الرسالة في هذه الصفحة: ${st(shown)}</li></ol>
+   ${x.empty?`<div class="ucd-err">⚠️ ${x.empty} رسالة وصلت بدون نص${x.fail?` — ${esc(x.fail)}`:""}${x.failAt?` <span class="mut small">(${ago(x.failAt)})</span>`:""}</div>`:x.fail?`<div class="ucd-err">⚠️ ${esc(x.fail)}</div>`:`<div class="ucd-ok">✅ كل الرسائل وصلت بنصها كاملاً</div>`}</div>` }).join("")}</div>
+  <p class="mut small">يتحدث كل 3 ثوانٍ. لا تُسجَّل نصوص المحادثات — أعداد وأسماء حقول فقط.</p>` }
+function ucDiagRefresh(){ const b=document.querySelector("[data-ucdiagbox]"); if(b) b.innerHTML=ucDiagHTML() }
 function connGuide(p){ const G=PLATFORM_GUIDES[p], P=LIVE_PLATFORMS[p]; const li=a=>`<ol>${a.map(x=>`<li>${esc(x)}</li>`).join("")}</ol>`;
  const m=modal(`<h3 class="row" style="gap:8px"><i class="conn-lg">${UC_ICONS[p]}</i> كيف أربط ${P.name}؟</h3>
   <div class="cguide"><h4>1. متطلبات الربط</h4>${li(G.req)}<h4>2. طريقة التفويض</h4><p>${esc(G.auth)}</p><h4>3. خطوات الاتصال</h4>${li(G.steps)}<h4>4. تشغيل الشات</h4><p>${esc(G.chat)}</p><h4>5. تفعيل OBS</h4>${li(G.obs)}<h4>6. اختبار الاتصال</h4><p>${esc(G.test)}</p><h4>7. حل المشاكل الشائعة</h4>${li(G.fix)}</div>
@@ -11285,6 +11338,7 @@ function connClick(t,d){
  if(d.conntest){ connTest(d.conntest); toast("أُرسلت رسالة تجربة (مُعلَّمة)"); return true }
  if(d.connect){ if(!CFG) return toast("الربط الرسمي متاح في لوحة التحكم المنشورة على الخادم"),true; location.href="/api/connect/"+d.connect; return true }
  if(d.conndel){ if(CFG) fetch("/api/connections?platform="+d.conndel,{method:"DELETE"}).then(()=>{ S.connsAt=0; connLoad() }); return true }
+ if(t.hasAttribute&&t.hasAttribute("data-ucdiag")){ S.ucDiag=!S.ucDiag; clearInterval(S.ucDiagT); if(S.ucDiag){ const ask_=()=>{ if(!S.ucDiag||!document.querySelector("[data-ucdiagbox]")){ clearInterval(S.ucDiagT); return } send({t:"chatdiag-get"}) }; S.ucDiagT=setInterval(ask_,3000); setTimeout(ask_,50) } renderPage(true); return true }
  if(d.ucadd){ const w=addWidget("uchat",{}); applyPreset(w,"mr",CV()); save(); pushLayout(); toast("أُضيف الشات الموحد"); return true }
  return false }
 function ucPropsHTML(w,sel,rng){ const inp=(f,l,ph="")=>`<div class="fld"><label>${l}</label><input class="inp" data-wf="${f}" data-wid="${w.id}" value="${esc(w[f]??"")}" placeholder="${esc(ph)}"></div>`, col=(f,l,d)=>`<div class="fld"><label>${l}</label><input type="color" data-wf="${f}" data-wid="${w.id}" value="${w[f]||d}"></div>`;
