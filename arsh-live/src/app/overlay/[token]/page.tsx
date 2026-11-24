@@ -12,7 +12,7 @@ export default function Page({ params }: { params: Promise<{ token: string }> })
 function Overlay({ token }: { token: string }) {
   const q = useSearchParams();
   const layoutId = q.get("layout") ?? "", only = q.get("only"), acc = q.get("acc"), ds = q.get("ds"), pm = q.get("pm") || (q.get("lp") === "1" ? "perf" : "hq"), lowPerf = pm === "perf";
-  document.body.classList.add("pm-" + pm);
+  if (typeof document !== "undefined") document.body.classList.add("pm-" + pm); // لا يُنفذ أثناء العرض على الخادم
   const stageRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
