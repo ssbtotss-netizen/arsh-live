@@ -730,7 +730,7 @@ function pmBody(){ const m=S.perf; if(!m||!m.P) return `<div class="pm-empty">${
  ${(m.warn||[]).map(w=>`<div class="pm-warn">⚠️ ${esc(w)}</div>`).join("")}
  <div class="pm-mode ${P.explore?"on":""}">${P.explore?`🚀 وضع الإكسبلور مفعّل منذ ${pmAgo(P.exploreAt)} — تخفيف المؤثرات الثقيلة وتجميع تحديثات الواجهة، وكل الأحداث تُحتسب`:"✅ الوضع الطبيعي"}<span class="pm-s">يتفعل تلقائياً عند ${60}+ حدث/ث ويعود عند الهدوء · مرات التفعيل: ${P.exploreN||0}</span></div>
  <div class="pm-grid">
-  ${card("📡","اتصال البث",C.live?st(1,"متصل"):st(0,esc(C.text||C.state||"غير متصل")),`${cl.overlays||0} رابط OBS · ${cl.dashboards||0} لوحة`)}
+  ${card("📡","اتصال البث",C.live?st(1,"متصل"):st(0,esc(C.text||({stopped:"غير متصل",idle:"غير متصل",retry:"إعادة المحاولة",connecting:"جاري الاتصال",failed:"تعذر الاتصال"}[C.state])||"غير متصل")),`${cl.overlays||0} رابط OBS · ${cl.dashboards||0} لوحة`)}
   ${card("⚡","أحداث/ثانية",pmFmt(P.rate),`أعلى: ${pmFmt(P.peak)}`)}
   ${card("📥","المستقبلة",pmFmt(P.recv),"منذ تشغيل الخادم")}
   ${card("✅","تمت معالجتها",pmFmt(P.done))}
