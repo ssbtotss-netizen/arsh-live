@@ -434,3 +434,15 @@ body{background:radial-gradient(ellipse at 80% -10%,#0d2a6b55,transparent 50%),v
 .cc-src{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .cc-gal{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}.cc-gc{display:flex;flex-direction:column;gap:4px;padding:8px;border:1px solid var(--line);border-radius:14px;background:var(--card);color:var(--tx);cursor:pointer;text-align:start;font:inherit}.cc-gc:hover{border-color:#2f7bff88}.cc-gc.on{border-color:var(--gold);box-shadow:0 0 0 3px #2f7bff22}
 .cc-gc>b{font-size:13px}.cc-gc>span{font-size:11px;color:var(--mut)}.cc-gpv{height:78px;position:relative;border-radius:10px;overflow:hidden;background:linear-gradient(180deg,#2a3350,#11162a);pointer-events:none}
+/* مراقبة أداء البث */
+.pm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px;margin:10px 0}
+.pm-c{display:flex;flex-direction:column;gap:3px;padding:11px 13px;border:1px solid var(--line,#2a2f3a);border-radius:12px;background:rgba(255,255,255,.03)}
+.pm-c.bad{border-color:#f0506e;background:rgba(240,80,110,.08)}
+.pm-ic{font-size:18px}.pm-lb{font-size:12px;opacity:.75}.pm-v{font-size:20px;font-variant-numeric:tabular-nums}.pm-s{font-size:11px;opacity:.65;display:block}
+.pm-ok{color:#3ddc97}.pm-bad{color:#f0506e}
+.pm-warn{padding:9px 12px;border-radius:10px;background:rgba(240,170,60,.12);border:1px solid rgba(240,170,60,.4);margin:6px 0;font-size:13px}
+.pm-mode{padding:11px 14px;border-radius:12px;border:1px solid var(--line,#2a2f3a);margin:8px 0;font-weight:700}.pm-mode.on{border-color:#8b5cf6;background:rgba(139,92,246,.12)}
+.pm-h{margin:10px 0}.pm-bars{display:flex;align-items:flex-end;gap:2px;height:70px;padding:6px;border:1px solid var(--line,#2a2f3a);border-radius:10px;margin-top:5px}
+.pm-bars i{flex:1;background:linear-gradient(#8b5cf6,#3b82f6);border-radius:2px 2px 0 0;min-width:2px}
+.pm-by{display:flex;flex-wrap:wrap;gap:6px}.pm-tag{padding:4px 9px;border-radius:20px;background:rgba(255,255,255,.06);font-size:12px}
+.pm-empty{padding:22px;text-align:center;opacity:.75}

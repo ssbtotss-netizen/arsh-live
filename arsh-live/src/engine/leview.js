@@ -152,12 +152,18 @@ Object.assign(View.prototype,{
  leReplay(){ const e=this.le&&this.le.cur||this.leCurrent(); if(!e) return; const c=this.el.querySelector(".le-card:not(.le-exit)"); if(c) c.remove(); if(this.le) this.le.cur=null; this.leShow({...e,id:e.id+"_r"+Date.now()},false) },
  lePulse(c,first){ if(!c||this.el.classList.contains("le-still")||leReduced()) return; c.classList.remove("le-bump"); void c.offsetWidth; c.classList.add("le-bump"); setTimeout(()=>c.classList.remove("le-bump"),900);
   const d=leDesignOf(this.leD||this.w.design); if(d.pulse) try{ d.pulse(c,this.w,first) }catch(err){} },
- refreshLe(src,silent){ if(LE_KINDS[this.w.kind]?.derived){ const d=leDerive(this.w.kind,src,lbEntries,topsList); if(d&&(!this.le||!this.le.cur||this.le.cur.id!==d.id||this.le.cur.count!==d.count)) this.leShow(d,silent); return }
+ refreshLe(src,silent){ if(LE_KINDS[this.w.kind]?.derived){ if(silent===false&&src){ this.leSrc=src; return this.leGate(()=>this.refreshLe(this.leSrc,"gated")) } if(silent==="gated") silent=false;
+   const d=leDerive(this.w.kind,src,lbEntries,topsList); if(d&&(!this.le||!this.le.cur||this.le.cur.id!==d.id||this.le.cur.count!==d.count)) this.leShow(d,silent); return }
   const e=src&&src.C&&src.C.latest&&src.C.latest[this.w.kind]; if(e&&(!this.le||!this.le.cur||this.le.cur.id!==e.id||this.le.cur.count!==e.count)) this.leShow({...e},silent) },
  /** حدث مباشر (يشمل أحداث الاختبار — تُعرض ولا تُحفظ) */
  lePush(ev){ const e=leEntry(ev,Date.now()); if(!e||e.kind!==this.w.kind) return; if(e.kind==="donation"&&!(e.amount>0)) return;
-  const c=this.le&&this.le.cur; if(e.kind==="like"&&c&&c.uid===e.uid&&!c.sample&&Date.now()-c.at<15000){ e.count+=c.count||0; e.at=Date.now() }
-  this.leShow(e,false) },
+  const c=this.lePendE||(this.le&&this.le.cur); if(e.kind==="like"&&c&&c.uid===e.uid&&!c.sample&&Date.now()-c.at<15000){ e.count+=c.count||0; e.at=Date.now() }
+  this.leGate(()=>{ const x=this.lePendE; this.lePendE=null; if(x) this.leShow(x,false) }, e) },
+ /** الأداء: عند تدفق أحداث كثيرة يُعرض آخر حدث فقط بمعدل محدود (العرض فقط — العدّ يتم في الخادم والبيانات) */
+ leGate(run,e){ if(e) this.lePendE=e; const ex=typeof window!=="undefined"&&!!window.__arshExplore, gap=ex?700:150, now=Date.now(), last=this.leLastAt||0;
+  const H=(this.leHits||(this.leHits=[])); while(H.length&&now-H[0]>1000) H.shift(); // تدفق عادي: عرض فوري — التجميع فقط عند أكثر من 4 تحديثات في الثانية
+  if(!this.leGateT&&(ex?now-last>=gap:H.length<4||now-last>=gap)){ this.leLastAt=now; H.push(now); run(); return }
+  this.leGateRun=run; if(this.leGateT) return; this.leGateT=setTimeout(()=>{ this.leGateT=0; this.leLastAt=Date.now(); (this.leHits||(this.leHits=[])).push(this.leLastAt); const f=this.leGateRun; this.leGateRun=null; f&&f() },Math.max(16,gap-(now-last))) },
 });
 
 // ---------- CSS الأساس: التخطيط + تسلسل الحركة + الإطارات + البطاقات + حركات الأنواع ----------

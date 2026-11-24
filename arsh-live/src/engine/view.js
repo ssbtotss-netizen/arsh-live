@@ -387,9 +387,13 @@ function ago(t){ const s=Math.max(0,Math.round((Date.now()-t)/1000)); return s<6
 
 /** موزّع الرسائل على العناصر — يستخدمه المحرر وروابط OBS والمعاينة */
 // تجميع التحديثات: عدة أحداث في نفس الإطار = إعادة رسم واحدة لكل عنصر (rAF مع مهلة احتياطية 50ms للصفحات غير المرئية)
-const RQ=new Map(); let rqT=0, rqF=0, rqSrc=null;
-function rqFlush(){ if(rqF){ cancelAnimationFrame(rqF); rqF=0 } if(rqT){ clearTimeout(rqT); rqT=0 } const list=[...RQ]; RQ.clear(); for(const [v,src] of list) try{ v.refresh(rqSrc||src) }catch(e){} }
-function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden){ v.refresh(src); return } RQ.set(v,src); if(rqF||rqT) return; if(typeof requestAnimationFrame==="function") rqF=requestAnimationFrame(rqFlush); rqT=setTimeout(rqFlush,50) }
+const RQ=new Map(); let rqT=0, rqF=0, rqW=0, rqSrc=null, rqLast=0;
+function rqFlush(){ if(rqF){ cancelAnimationFrame(rqF); rqF=0 } if(rqT){ clearTimeout(rqT); rqT=0 } if(rqW){ clearTimeout(rqW); rqW=0 } rqLast=Date.now(); const list=[...RQ]; RQ.clear(); for(const [v,src] of list) try{ v.refresh(rqSrc||src) }catch(e){} }
+function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden){ v.refresh(src); return } RQ.set(v,src); if(rqF||rqT||rqW) return;
+ // الأداء: تحديث القوائم 10 مرات/ث على الأكثر (4 في وضع الإكسبلور) — كل تحديث يقيس مواقع الصفوف، وتكراره مع كل إطار كان يعلّق OBS
+ const gap=typeof window!=="undefined"&&window.__arshExplore?400:100, wait=Math.max(0,gap-(Date.now()-rqLast));
+ const arm=()=>{ rqW=0; if(typeof requestAnimationFrame==="function") rqF=requestAnimationFrame(rqFlush); rqT=setTimeout(rqFlush,50) };
+ if(wait>16) rqW=setTimeout(arm,wait); else arm() }
 export function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }

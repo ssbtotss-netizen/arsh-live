@@ -531,3 +531,7 @@ body.ov .stage{background:transparent!important}
 .rs-top .rs-v{font-family:"Changa","Readex Pro",sans-serif;letter-spacing:0;color:#fde68a;font-weight:800}
 @keyframes rs-in{from{opacity:0;scale:.9}}
 @keyframes vgr-pulse{50%{opacity:.45}}
+/* وضع الإكسبلور (تلقائي عند الضغط العالي): يخفف المؤثرات الزخرفية الثقيلة فقط — التصاميم والأرقام والتنبيهات كما هي */
+body.ov-explore .fxl > *, body.ov-explore .ab-fx { display: none !important; }
+body.ov-explore .ucw .uc-m, body.ov-explore .lsb-row { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
+body.ov-explore .ucw .uc-m.uc-new { animation: none !important; }

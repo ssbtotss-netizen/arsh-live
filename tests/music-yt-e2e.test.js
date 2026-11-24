@@ -33,7 +33,7 @@ const FAKE_YT = `(()=>{ const S={UNSTARTED:-1,ENDED:0,PLAYING:1,PAUSED:2,BUFFERI
 
  // 1) شات TikTok: !شغل الأماكن
  await chat('fan_1', 'نورة', '!شغل الأماكن');
- ok(await wait(dash, () => R.C.music.current && R.C.music.current.track.src === 'yt'), 'TikTok chat «!شغل الأماكن» → searched on YouTube → added (no clicks)');
+ ok(await wait(dash, () => R.C.music && R.C.music.current && R.C.music.current.track.src === 'yt'), 'TikTok chat «!شغل الأماكن» → searched on YouTube → added (no clicks)');
  const cur = await dash.evaluate(() => R.C.music.current);
  ok(cur.track.vid === 'yt_amakenA1' && cur.track.title === 'الأماكن' && cur.track.artist === 'محمد عبده' && cur.by.name === 'نورة' && cur.by.platform === 'tiktok', 'found: title «الأماكن», artist «محمد عبده», requester @نورة from TikTok');
  ok(await wait(dash, () => S.botFeed.some(x => /🎵 تمت إضافة «الأماكن» — محمد عبده وتعمل الآن بواسطة @نورة/.test(x.text))), 'bot confirmation message with song name and @requester');
@@ -51,18 +51,18 @@ const FAKE_YT = `(()=>{ const S={UNSTARTED:-1,ENDED:0,PLAYING:1,PAUSED:2,BUFFERI
  // 3) الانتقال التلقائي: نقرب نهاية الأولى
  await obs.evaluate(() => { window.__ytAudio.playbackRate = 16 }); /* تسريع نهاية الأغنية الأولى */
  ok(await wait(dash, () => R.C.music.log.some(l => l.step === 'alt')), 'next song: owner blocked embedding (error 150) → automatically tries the alternative version '+await dash.evaluate(()=>JSON.stringify(R.C.music.log.slice(0,6).map(l=>l.step+':'+(l.title||'')+':'+(l.why||'')))));
- ok(await wait(dash, () => R.C.music.current && R.C.music.current.track.vid === 'yt_levitat2' && R.C.music.current.by.name === 'سعد' && R.C.music.status === 'playing'), 'second song plays automatically after the first, without touching anything');
+ ok(await wait(dash, () => R.C.music && R.C.music.current && R.C.music.current.track.vid === 'yt_levitat2' && R.C.music.current.by.name === 'سعد' && R.C.music.status === 'playing'), 'second song plays automatically after the first, without touching anything');
  ok(await wait(obs, () => /yt_levitat2/.test(window.__ytAudio.currentSrc) && !window.__ytAudio.paused), 'player switched videos by itself');
  const r2 = await rms(obs); ok(r2 > 0.01, 'second song audio — RMS ' + r2.toFixed(3));
 
  // 4) أوامر التحكم من الشات
  await chat('viewer_x', 'زائر', '!سكب'); await obs.waitForTimeout(400);
- ok(await dash.evaluate(() => R.C.music.current.track.vid === 'yt_levitat2'), 'viewer «!سكب» refused (mods only by default)');
+ ok(await dash.evaluate(() => R.C.music && R.C.music.current.track.vid === 'yt_levitat2'), 'viewer «!سكب» refused (mods only by default)');
  await chat('host_account', 'صاحب البث', '!وقف'); ok(await wait(obs, () => window.__ytAudio.paused), 'broadcaster «!وقف» → YouTube audio paused');
  await chat('host_account', 'صاحب البث', '!كمل'); ok(await wait(obs, () => !window.__ytAudio.paused), '«!كمل» → resumes');
  await chat('fan_3', 'هند', '!شغل blinding lights'); await obs.waitForTimeout(400);
  await chat('a_mod', 'مشرف', '!سكب', { mod: '1' });
- ok(await wait(dash, () => R.C.music.current && R.C.music.current.track.vid === 'yt_blinding'), 'moderator «!سكب» → skips to the next requested song');
+ ok(await wait(dash, () => R.C.music && R.C.music.current && R.C.music.current.track.vid === 'yt_blinding'), 'moderator «!سكب» → skips to the next requested song');
  await chat('ls', 'مستعرض', '!قائمة'); ok(await wait(dash, () => S.botFeed.some(x => /^📋|القائمة فاضية/.test(x.text))), '«!قائمة» answers with the waiting list');
  await chat('fan_9', 'ريم', '!شغل اغنية غير موجودة ابدا'); ok(await wait(dash, () => S.botFeed.some(x => /@ريم ما لقيت الأغنية في YouTube/.test(x.text))), 'not found on YouTube → clear reply, nothing queued');
  await dash.$eval('[data-mvol]', e => { e.value = '35'; e.dispatchEvent(new Event('change', { bubbles: true })) });

@@ -25,6 +25,8 @@ export function newRoom(){ return {D:emptyData(),H:[],C:newClockState(),DN:empty
 function keep(R,logs){ if(!logs.length) return; R.logs=(R.logs||[]); for(const l of logs) R.logs.unshift(l); if(R.logs.length>300) R.logs.length=300 }
 
 /** حدث بث (حقيقي أو تجريبي). يرجع {out: رسائل للبث للعملاء, logs: سجلات وقت للحفظ} */
+/** منع التكرار: نافذة زمنية (10 دقائق) بدل عدد ثابت — في الإكسبلور تصل آلاف الأحداث في دقيقة فكانت المعرفات القديمة تُنسى بسرعة */
+function seenPrune(S,now){ const lim=now-600000; for(const [k,t] of S){ if(S.size<=20000||t>=lim) break; S.delete(k) } if(S.size>60000){ const it=S.keys(); while(S.size>50000) S.delete(it.next().value) } }
 export function roomEvent(R,ev,now){
  if(!ev||!LIVE_TYPES.has(ev.type)) return {out:[],logs:[]};
  // أحداث متأخرة من بث سابق (roomId مختلف عن الجلسة الحالية، أو من جلسة أُغلقت) لا تغيّر أرقام البث الجديد
@@ -42,7 +44,7 @@ export function roomEvent(R,ev,now){
  // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
  let gdiag=null;
  if(ev.type==="gift"){ const g=giftStreak(R.C,ev,now); gdiag=g.diag; if(!g.ev){ const it=glogPush(R.C,gdiag); return {out:[{t:"glog",it}],logs:[],gsdup:true} } ev=g.ev }
- if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>8000){ const it=R.seen.keys(); for(let i=0;i<2000;i++) R.seen.delete(it.next().value) } }
+ if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>20000) seenPrune(R.seen,now) }
  ev.t=ev.t||now;
  applyEvent(R.D,R.H,ev);
  const out=[{t:"event",ev}];

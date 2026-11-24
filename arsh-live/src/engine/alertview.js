@@ -54,7 +54,7 @@ export const AB_CSS=`.t-abox{background:transparent!important;overflow:hidden;po
 const AB_FX_CH={butterflies:["🦋"],diamonds:["💎"],petals:["🌸","🌹"],meteors:["☄️"],lightning:["⚡"],crowns:["👑"],smoke:["☁️","🌫️"],confetti:["🟥","🟨","🟩","🟦","🟪"],hearts:["❤️","💖","💗"],stars:["⭐","✨","🌟"],sparkle:["✨","💫"],fireworks:["🎆","🎇","✨"],coins:["🪙","💰"],snow:["❄️","❅"]};
 let lottieP=null;
 /** Lottie: مكتبة lottie-web تُحمّل عند الحاجة فقط */
-function abLottie(){ if(typeof window==="undefined") return Promise.reject(); if(window.lottie) return Promise.resolve(window.lottie); if(!lottieP) lottieP=new Promise((ok,no)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"; s.onload=()=>ok(window.lottie); s.onerror=no; document.head.appendChild(s) }); return lottieP }
+function abLottie(){ if(typeof window==="undefined") return Promise.reject(); if(window.lottie) return Promise.resolve(window.lottie); if(!lottieP) lottieP=new Promise((ok,no)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"; s.onload=()=>ok(window.lottie); s.onerror=()=>{ lottieP=null; no() }; document.head.appendChild(s); setTimeout(()=>{ if(!window.lottie){ lottieP=null; no(new Error("lottie timeout")) } },6000) }); return lottieP } // مهلة آمنة: تعذر التحميل لا يعلّق الآيرتات
 
 Object.assign(View.prototype,{
  applyAbox(w,W,Hh){ abEnsureCSS(); this.abH=Hh; this.abW=W; if(!this.ab) this.ab={Q:alQueue(),busy:false,cur:null,last:null,paused:false};
@@ -66,7 +66,9 @@ Object.assign(View.prototype,{
   this.aboxNext() },
  aboxCtl(op){ const A=this.ab; if(!A) return; if(op==="skip"&&A.cur) A.cur.skip=true; if(op==="stop"){ A.Q.q.length=0; if(A.cur) A.cur.skip=true } if(op==="pause") A.paused=true; if(op==="resume"){ A.paused=false; this.aboxNext() } if(op==="replay"&&A.last){ A.Q.q.unshift({...A.last,id:A.last.id+":r"+Date.now()}); this.aboxNext() } },
  async aboxNext(){ const A=this.ab; if(!A||A.busy||A.paused) return; const it=alQueueNext(A.Q); if(!it) return; A.busy=true; A.cur={it,skip:false};
-  try{ await this.aboxPlay(it,A.cur) }catch(e){} A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
+  // حارس: آيرت تالف/مقطع لا ينتهي لا يوقف بقية الطابور (حد أعلى 3 دقائق لكل آيرت)
+  const cur=A.cur; let wd; try{ await Promise.race([this.aboxPlay(it,cur),new Promise(ok=>{ wd=setTimeout(()=>{ cur.skip=true; try{ cur.audio&&cur.audio.pause(); cur.audio2&&cur.audio2.pause() }catch(e){} ok() },180000) })]) }catch(e){} clearTimeout(wd);
+  A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
   const c=alMergeCfg(d.config,it.over&&it.over.cfg), fixed=!!(it.over&&it.over.durationSec), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى. «مدة مخصصة» = مدة ثابتة؛ التلقائي = طول المقطع كاملاً

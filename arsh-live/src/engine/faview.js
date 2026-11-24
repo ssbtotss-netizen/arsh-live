@@ -63,8 +63,9 @@ export function faDefaults(){ return {design:"duck_classic",char:"",duck:"",act:
 
 /** طابور التنبيهات (نقي — يُختبر بدون متصفح): منع التكرار، حد الانتظار، دمج المتابعات */
 export function faQueuePush(Q,ev,o){ Q.seen=Q.seen||[]; Q.q=Q.q||[]; if(!ev||!ev.id||Q.seen.includes(ev.id)) return "dup"; Q.seen.push(ev.id); if(Q.seen.length>300) Q.seen.splice(0,100);
- const merge=Math.max(0,+o.mergeAt||0), max=Math.max(1,+o.qMax||30);
- if(merge&&Q.q.length>=merge){ const last=Q.q[Q.q.length-1]; if(last.merged){ last.count++; last.names.push(ev.name) } else { const m=Q.q.splice(merge-1); Q.q.push({id:"m"+ev.id,merged:true,count:m.length+1,names:[...m.map(x=>x.name),ev.name],test:ev.test&&m.every(x=>x.test)}) } return "merged" }
+ let merge=Math.max(0,+o.mergeAt||0); const max=Math.max(1,+o.qMax||30);
+ if(typeof window!=="undefined"&&window.__arshExplore) merge=merge?Math.min(merge,3):3; // الإكسبلور: تجميع التنبيهات البصرية مبكراً (العدّ الفعلي لكل متابعة في الخادم)
+ if(merge&&Q.q.length>=merge){ const last=Q.q[Q.q.length-1]; if(last.merged){ last.count++; if(last.names.length<50) last.names.push(ev.name) } else { const m=Q.q.splice(merge-1); Q.q.push({id:"m"+ev.id,merged:true,count:m.length+1,names:[...m.map(x=>x.name),ev.name],test:ev.test&&m.every(x=>x.test)}) } return "merged" }
  if(Q.q.length>=max) return "full"; Q.q.push(ev); return "queued" }
 
 const SKIN_CSS={clear:"background:none;border:0;box-shadow:none",glass:"background:linear-gradient(135deg,#ffffff2e,#ffffff0a);border:1px solid #ffffff55;backdrop-filter:blur(10px)",gold:"background:linear-gradient(180deg,#2a1d06f0,#120c02f0);border:2px solid var(--fc,#f6c94a);box-shadow:0 0 18px #f6c94a55",
@@ -112,7 +113,7 @@ Object.assign(View.prototype,{
   if(!c||c==="none"||!FA_CHARS[c]) return ""; return c==="duck"?duckSVG(DUCK_VARIANTS[w.duck||d.duck||"classic"]||{}):FA_CHARS[c][1]() },
  faRender(it,still){ const w=this.w, d=faDesignOf(w.design), A=d.art?leDesignOf(d.art):null, ch=this.faCharHTML(d), src=this.opts.data?this.opts.data():{};
   const vars={username:it.name,display_name:it.name,platform:"TikTok",follower_count:(src.C&&src.C.followers&&src.C.followers.tiktok&&src.C.followers.tiktok.value)||"",stream_name:w.streamName||""};
-  const msgs=String(w.msgs||FA_MSGS[0]).split("\n").map(s=>s.trim()).filter(Boolean), tpl=it.merged?`❤️ شكراً لـ ${it.count} متابعاً جديداً!`:msgs[w.msgRandom?Math.floor(Math.random()*msgs.length):0]||FA_MSGS[0];
+  const msgs=String(w.msgs||FA_MSGS[0]).split("\n").map(s=>s.trim()).filter(Boolean), tpl=it.merged?`🔥 ${it.count} متابع جديد — شكراً لكم!`:msgs[w.msgRandom?Math.floor(Math.random()*msgs.length):0]||FA_MSGS[0];
   const pic=it.av||avatar(it.name||"?"), art=A?`<div class="le-back led-${A.id}">${A.back?A.back(w):""}</div>`:"", front=A?`<div class="le-front led-${A.id}">${A.front?A.front(w):""}</div>`:"";
   this.el.querySelectorAll(".fa-root").forEach(x=>x.remove());
   const r=document.createElement("div"); r.className="fa-root"; r.innerHTML=`${ch?`<div class="fa-char">${ch}</div>`:""}<div class="fa-card sk-${d.skin} led-${A?A.id:"none"}">${w.showAv!==false?`<div class="fa-stage">${art}<img class="fa-av" src="${esc(pic)}" alt="">${front}<div class="fa-stars">${[[8,10],[80,14],[86,76]].map(([x,y],i)=>`<i style="left:${x}%;top:${y}%;animation-delay:${i*.3}s"></i>`).join("")}</div></div>`:""}

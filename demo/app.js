@@ -6,11 +6,14 @@ function connectWS(url,room,key,onMsg,onStatus){
  try{ if(ws){ ws.onclose=ws.onerror=ws.onmessage=null; ws.close() } }catch(e){}
  if(!url) return;
  let sock; try{ sock=ws=new WebSocket(url) }catch(e){ onStatus&&onStatus(false,"رابط غير صالح"); return }
- sock.onopen=()=>{wsReady=true; sock.send(JSON.stringify({t:"join",room,key})); onStatus&&onStatus(true)};
+ sock.onopen=()=>{wsReady=true; sock.send(JSON.stringify({t:"join",room,key,b:1})); onStatus&&onStatus(true)};
  sock.onerror=()=>{sock._err=true};
  sock.onclose=()=>{ if(ws===sock) wsReady=false; onStatus&&onStatus(false,sock._err&&!sock._opened?"تعذر الاتصال":undefined)};
  sock.addEventListener("open",()=>sock._opened=true);
- sock.onmessage=m=>{ try{ onMsg(JSON.parse(m.data)) }catch(e){ console.error(e) } };
+ sock.onmessage=m=>{ let x; try{ x=JSON.parse(m.data) }catch(e){ return }
+  // دفعة أحداث من الخادم (أداء عالٍ في الإكسبلور): كل رسالة على حدة — خطأ في واحدة لا يوقف البقية
+  if(x&&x.t==="batch"&&Array.isArray(x.ms)){ for(const y of x.ms){ try{ onMsg(y) }catch(e){ console.error(e) } } return }
+  try{ onMsg(x) }catch(e){ console.error(e) } };
 }
 const b64e=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64d=s=>JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")))));
@@ -26,7 +29,7 @@ function bootOverlay(q){
  try{ const m={}; for(const a of ls("b6o6.alerts")||[]) m[a.id]={id:a.id,name:a.name,kind:a.kind,event:a.event,durationSec:a.durationSec,config:a.config,mediaUrl:a.mediaData||"",audioUrl:a.audioData||""}; for(const d of FA_DESIGNS) m["tpl:"+d.id]=alOfficialDef("tpl:"+d.id,d.name); aboxSetDefs(m) }catch(e){}
  const only=q.get("only"), room=q.get("room")||"", wsUrl=q.get("ws")||"", bigT=+q.get("big")||1000;
  const PM=q.get("pm")||(q.get("lp")==="1"?"perf":"hq"); document.body.classList.add("pm-"+PM); if(q.get("dock")==="1") document.body.classList.add("ov-dock");
- const R=loadRoom(); let skew=0;
+ const R=loadRoom(); let skew=0; window.__ov={R:()=>R}; // للاختبار والتشخيص: قراءة فقط
  const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
  const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
@@ -43,6 +46,7 @@ function bootOverlay(q){
  function onMsg(m){
   if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; if(Array.isArray(m.CH)) R.CHAT=m.CH.slice(-60); skew=(m.now||Date.now())-Date.now() }
   else if(m.t==="stats"){ if(m.ST) R.C.stats=m.ST; return }
+  else if(m.t==="perf"){ if(typeof m.explore==="boolean"){ window.__arshExplore=m.explore; document.body.classList.toggle("ov-explore",m.explore) } return }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
@@ -87,7 +91,7 @@ const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
 let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),e=>toast(e&&e.message&&e.message!=="save"?e.message:"تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
 function saveRoomNow(){ if(location.hash.startsWith("#/overlay")) return; /* رابط OBS يقرأ فقط — لا يكتب نسخة قديمة فوق حالة اللوحة */ ls("arsh.room",{D:R.D,H:R.H,C:R.C,logs:R.logs,DN:R.DN,CHAT:R.CHAT}) }
-let saveRT; function saveRoom(){clearTimeout(saveRT);saveRT=setTimeout(saveRoomNow,300)}
+let saveRT, saveFirst=0; function saveRoom(){ const now=Date.now(); if(!saveRT) saveFirst=now; clearTimeout(saveRT); const maxW=window.__arshExplore?10000:3000; saveRT=setTimeout(()=>{ saveRT=0; saveRoomNow() },Math.max(0,Math.min(window.__arshExplore?2000:300,saveFirst+maxW-now))) }
 addEventListener("pagehide",()=>{ if(!CFG) ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); saveRoomNow()});
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1600)}
 function flash(t){const e=document.getElementById("savedot");if(e){e.textContent="✓ "+t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=.5,900)}}
@@ -123,6 +127,7 @@ function receive(m,applied){
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
  else if(m.t==="stats"){ if(R.C&&m.ST) R.C.stats=m.ST; if(S.page==="chatcfg") sbLiveRefresh(); return } // إحصائيات البث: الطبقات تقرأها في النبضة التالية
  else if(m.t==="chatdiag"){ S.chatDiag=m.D||{}; ucDiagRefresh(); return }
+ else if(m.t==="perf"){ if(m.P){ S.perf=m; pmRefresh(); pmWarn(m) } if(typeof (m.P?m.P.explore:m.explore)==="boolean"){ window.__arshExplore=m.P?m.P.explore:m.explore; document.body.classList.toggle("ov-explore",window.__arshExplore) } return } // مراقبة أداء البث
  else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes"||S.page==="duration") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
@@ -139,7 +144,9 @@ function receive(m,applied){
  if(m.t==="event"&&["stats","likes","gifts","comments","home","boards","donations"].includes(S.page)) softRefresh();
  if((m.t==="clock"||m.t==="snapshot")&&["subathon","timers","stats","home"].includes(S.page)) softRefresh();
 }
-let srT; function softRefresh(){clearTimeout(srT);srT=setTimeout(()=>{ if(!document.activeElement||!document.activeElement.closest||!document.activeElement.closest("#pg input,#pg select,#pg textarea")) renderPage(true) },250)}
+// تحديث الصفحة: تجميع (250ms) مع حد أقصى للانتظار — كان التأجيل يتجدد مع كل حدث فلا تتحدث الصفحة أبداً أثناء تدفق مستمر (الإكسبلور)
+let srT, srFirst=0; function softRefresh(){ const now=Date.now(); if(!srT) srFirst=now; clearTimeout(srT); const gap=window.__arshExplore?1000:250, maxWait=window.__arshExplore?2000:800;
+ srT=setTimeout(()=>{ srT=0; if(!document.activeElement||!document.activeElement.closest||!document.activeElement.closest("#pg input,#pg select,#pg textarea")) renderPage(true) },Math.max(0,Math.min(gap,srFirst+maxWait-now))) }
 // ساعة محلية في وضع التجربة (في الوضع الحقيقي الخادم هو المرجع)
 setInterval(()=>{ if(wsReady||location.hash.startsWith("#/overlay")) return; syncBots(); const r=roomTick(R,Date.now()); for(const m of r.out){ receive(m,true); if(bus) bus.postMessage(m) } if(r.out.length) saveRoom() },1000);
 setInterval(()=>{ if(S.page==="duration"){ const D=durOf(R.C,Date.now()+skew); document.querySelectorAll("[data-live-dur]").forEach(e=>e.textContent=durText(D.ms,{mode:"auto"})); document.querySelectorAll("[data-live-dur-cur]").forEach(e=>e.textContent=durText(D.cur,{mode:"auto"})) }
@@ -192,7 +199,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -352,6 +359,7 @@ function renderPage(soft){
  else if(p==="subathon"){ h=subathonHTML() }
  else if(p==="duration"){ h=duHTML() }
  else if(p==="chatcfg"){ h=ccHTML() }
+ else if(p==="perf"){ h=pmHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -708,6 +716,42 @@ function duMount(){ const box=document.getElementById("du-pv"); const l=L();
  document.querySelectorAll("[data-dupv]").forEach(b=>{ const cv={w:600,h:220}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${b.clientWidth/cv.w})`; b.appendChild(stg);
   const pw=newWidget("duration",{...(tgt?{duMode:tgt.duMode,duLang:tgt.duLang}:{}),id:"pv_du_"+b.dataset.dupv,design:b.dataset.dupv,x:.04,y:.06,w:.92,h:.88,duDemoMs:(2*86400+5*3600+30*60+45)*1000,locked:true,visible:true}); const v=new View(pw,cv,{data:SRC,globalFx:S.settings.fx,mute:true}); stg.appendChild(v.el) }) }
 /* ---- «💬 إعدادات الشات»: عرض الرسائل + إحصائيات البث (Live Statistics) + الروابط ---- */
+/* ================= مراقبة أداء البث (Live Performance Monitor) — أرقام حقيقية من الخادم ================= */
+const PM_TYPES={like:"تكبيس",gift:"هدايا",comment:"تعليقات",follow:"متابعات",share:"مشاركات",join:"دخول",subscribe:"اشتراكات",donation:"دونيشن",superchat:"Super Chat",cheer:"Bits",member:"عضويات"};
+function pmFmt(n){ return (+n||0).toLocaleString("en-US") }
+function pmAgo(t){ if(!t) return "—"; const s=Math.max(0,Math.round((Date.now()-t)/1000)); return s<60?s+" ث":s<3600?Math.round(s/60)+" د":Math.round(s/3600)+" س" }
+function pmBody(){ const m=S.perf; if(!m||!m.P) return `<div class="pm-empty">${wsReady?"⏳ بانتظار أول قراءة من الخادم (كل ثانيتين)…":"مراقبة الأداء تعرض أرقام الخادم الحقيقية — تعمل عند تشغيل اللوحة داخل المنصة والاتصال بالخادم."}</div>`;
+ const P=m.P, G=m.G||{}, C=m.conn||{}, cl=m.clients||{}, stale=Date.now()-m.at>8000;
+ const st=(ok,txt)=>`<b class="${ok?"pm-ok":"pm-bad"}">${txt}</b>`;
+ const card=(ic,lb,val,sub,cls="")=>`<div class="pm-c ${cls}"><span class="pm-ic">${ic}</span><span class="pm-lb">${lb}</span><b class="pm-v">${val}</b>${sub?`<span class="pm-s">${sub}</span>`:""}</div>`;
+ const hist=(P.hist||[]), hm=Math.max(10,...hist);
+ const by=Object.entries(P.by||{}).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`<span class="pm-tag">${esc(PM_TYPES[k]||k)} <b>${pmFmt(v)}</b></span>`).join("");
+ return `${stale?`<div class="pm-warn">⚠️ آخر قراءة قبل ${pmAgo(m.at)} — تحقق من اتصال اللوحة بالخادم</div>`:""}
+ ${(m.warn||[]).map(w=>`<div class="pm-warn">⚠️ ${esc(w)}</div>`).join("")}
+ <div class="pm-mode ${P.explore?"on":""}">${P.explore?`🚀 وضع الإكسبلور مفعّل منذ ${pmAgo(P.exploreAt)} — تخفيف المؤثرات الثقيلة وتجميع تحديثات الواجهة، وكل الأحداث تُحتسب`:"✅ الوضع الطبيعي"}<span class="pm-s">يتفعل تلقائياً عند ${60}+ حدث/ث ويعود عند الهدوء · مرات التفعيل: ${P.exploreN||0}</span></div>
+ <div class="pm-grid">
+  ${card("📡","اتصال البث",C.live?st(1,"متصل"):st(0,esc(C.text||C.state||"غير متصل")),`${cl.overlays||0} رابط OBS · ${cl.dashboards||0} لوحة`)}
+  ${card("⚡","أحداث/ثانية",pmFmt(P.rate),`أعلى: ${pmFmt(P.peak)}`)}
+  ${card("📥","المستقبلة",pmFmt(P.recv),"منذ تشغيل الخادم")}
+  ${card("✅","تمت معالجتها",pmFmt(P.done))}
+  ${card("⏳","في الانتظار",pmFmt(P.pending),`أعلى: ${pmFmt(P.maxPending)}`,P.pending>100?"bad":"")}
+  ${card("♻️","المكررة (لم تُحتسب مرتين)",pmFmt(P.dup))}
+  ${card("❌","الفاشلة",pmFmt(P.failed),P.lastErr?esc(P.lastErr):"",P.failed?"bad":"")}
+  ${card("⏱️","تأخير المعالجة",(P.lagAvg||0)+" ms",`أعلى: ${pmFmt(P.lagMax)} ms`,P.lagAvg>1000?"bad":"")}
+  ${card("🧠","ذاكرة الخادم",(G.heapMB||0)+" MB",`RSS ${G.rssMB||0} MB`)}
+  ${card("🖥️","المعالج",(G.cpu||0)+"%",G.loop?`حلقة الأحداث p99: ${G.loop.p99} ms`:"",G.loop&&G.loop.p99>250?"bad":"")}
+  ${card("🗄️","قاعدة البيانات",G.db&&G.db.err&&Date.now()-G.db.errAt<120000?st(0,"خطأ"):st(1,"تعمل"),G.db?`آخر حفظ ${G.db.lastMs} ms قبل ${pmAgo(G.db.at)} · فشل: ${G.db.fail}`:"")}
+  ${card("📦","رسائل للواجهات",pmFmt(P.sent),`في ${pmFmt(P.batches)} دفعة`)}
+ </div>
+ <div class="pm-h"><span class="pm-lb">الأحداث في آخر 60 ثانية</span><div class="pm-bars">${hist.map(v=>`<i style="height:${Math.max(2,v/hm*100)}%" title="${v}/ث"></i>`).join("")}</div></div>
+ <div class="pm-by">${by||'<span class="pm-s">لا أحداث بعد</span>'}</div>` }
+function pmHTML(){ return `<div class="card"><h2>📈 مراقبة أداء البث — Live Performance Monitor</h2><p class="muted">أرقام حقيقية من الخادم تتحدث كل ثانيتين: الاستقبال والمعالجة والتأخير والذاكرة وقاعدة البيانات. لا تُعرض نصوص المحادثات ولا بيانات المشاهدين.</p><div id="pm-body">${pmBody()}</div></div>` }
+function pmRefresh(){ if(S.page!=="perf") return; const b=document.getElementById("pm-body"); if(b) b.innerHTML=pmBody() }
+/** تنبيه إداري عند الضغط/الخلل — مرة لكل نوع (لا إزعاج متكرر) */
+function pmWarn(m){ S.pmSeen=S.pmSeen||{}; const P=m.P||{}; const key=P.explore?"explore":"";
+ if(P.explore&&!S.pmSeen.explore){ S.pmSeen.explore=Date.now(); toast("🚀 ضغط تفاعل عالٍ — تفعّل وضع الإكسبلور تلقائياً (كل الأحداث تُحتسب)") } if(!P.explore) S.pmSeen.explore=0;
+ if(P.failed>(S.pmSeen.failed||0)){ S.pmSeen.failed=P.failed; toast("⚠️ تعذر معالجة بعض الأحداث — التفاصيل في «مراقبة أداء البث»") }
+ const dbErr=m.G&&m.G.db&&m.G.db.err&&Date.now()-m.G.db.errAt<10000; if(dbErr&&!S.pmSeen.db){ S.pmSeen.db=1; toast("⚠️ تعذر الحفظ في قاعدة البيانات — التفاصيل في «مراقبة أداء البث»") } if(!dbErr) S.pmSeen.db=0; return key }
 function ccHTML(){ const l=L(), ws_=l.widgets.filter(w=>w.type==="uchat"), w=ws_.find(x=>x.id===S.ccW)||ws_[0], sts=l.widgets.filter(x=>x.type==="chatstats");
  if(!w) return head("💬 إعدادات الشات","الشات الموحد وإحصائيات البث")+`<div class="card" style="text-align:center"><p>لا يوجد شات موحد في «${esc(l.name)}».</p><button class="btn pri" data-add="uchat">＋ إضافة الشات للمشهد</button></div>`;
  const id=w.id, sel=(f,lb,opts,val)=>`<div class="fld"><label>${lb}</label><select class="inp" data-wf="${f}" data-wid="${id}">${opts.map(o=>`<option value="${o[0]}" ${String(val)===String(o[0])?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;

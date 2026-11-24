@@ -210,9 +210,17 @@ function applyEvent(D,H,ev){
 /** أي القوائم تتأثر بحدث reset/shuffle */
 const SCOPE_OF={likes:["likes","interact"],gifts:["gifts","recentGifts","interact"],comments:["comments","interact"],interact:["interact"],follows:["recentFollows"]};
 
+const lbColl=typeof Intl!=="undefined"&&Intl.Collator?new Intl.Collator():null; // نفس نتيجة localeCompare() بلا معاملات — لكن بمقارن واحد مُعاد استخدامه (أسرع بكثير)
+const lbCmp=(a,b)=>b.v-a.v||(lbColl?lbColl.compare(String(a.name),String(b.name)):String(a.name).localeCompare(String(b.name)));
+/** أفضل K عنصر بنفس ترتيب sort().slice(0,K) تماماً (نفس المقارنة، ثابت عند التساوي) — بدون فرز كل المشاهدين في كل تحديث (الإكسبلور: عشرات الآلاف) */
+function lbTopK(src,k,mk){ const out=[]; if(!(k>0)) return out; for(const r of src){ const n=out.length;
+  if(n>=k){ const last=out[n-1]; if(r.v<last.v) continue; if(r.v===last.v&&lbCmp(last,r)<=0) continue }
+  let i=n; while(i>0&&lbCmp(out[i-1],r)>0) i--; out.splice(i,0,r); if(out.length>k) out.pop() }
+ return out.map(mk) }
 function entries(w,D,H){
  let list;
- const vals=o=>Object.values(o||{}).map(r=>({k:r.k,name:r.name,av:r.av,v:r.v}));
+ const vals=o=>Object.values(o||{});
+ const pick=r=>({k:r.k,name:r.name,av:r.av,v:r.v});
  if(w.type==="likes") list=vals(D.likes);
  else if(w.type==="comments") list=vals(D.comments);
  else if(w.type==="interact") list=vals(D.interact);
@@ -229,7 +237,8 @@ function entries(w,D,H){
    list=Object.values(m);
   }
  } else list=[];
- return list.sort((a,b)=>b.v-a.v||a.name.localeCompare(b.name)).slice(0,w.topN);
+ if(w.type==="likes"||w.type==="comments"||w.type==="interact") return lbTopK(list,+w.topN||0,pick);
+ return lbTopK(list,+w.topN||0,r=>r);
 }
 
 /* ---- engine/clock.js ---- */
@@ -1395,6 +1404,8 @@ function newRoom(){ return {D:emptyData(),H:[],C:newClockState(),DN:emptyDonatio
 function keep(R,logs){ if(!logs.length) return; R.logs=(R.logs||[]); for(const l of logs) R.logs.unshift(l); if(R.logs.length>300) R.logs.length=300 }
 
 /** حدث بث (حقيقي أو تجريبي). يرجع {out: رسائل للبث للعملاء, logs: سجلات وقت للحفظ} */
+/** منع التكرار: نافذة زمنية (10 دقائق) بدل عدد ثابت — في الإكسبلور تصل آلاف الأحداث في دقيقة فكانت المعرفات القديمة تُنسى بسرعة */
+function seenPrune(S,now){ const lim=now-600000; for(const [k,t] of S){ if(S.size<=20000||t>=lim) break; S.delete(k) } if(S.size>60000){ const it=S.keys(); while(S.size>50000) S.delete(it.next().value) } }
 function roomEvent(R,ev,now){
  if(!ev||!LIVE_TYPES.has(ev.type)) return {out:[],logs:[]};
  // أحداث متأخرة من بث سابق (roomId مختلف عن الجلسة الحالية، أو من جلسة أُغلقت) لا تغيّر أرقام البث الجديد
@@ -1412,7 +1423,7 @@ function roomEvent(R,ev,now){
  // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
  let gdiag=null;
  if(ev.type==="gift"){ const g=giftStreak(R.C,ev,now); gdiag=g.diag; if(!g.ev){ const it=glogPush(R.C,gdiag); return {out:[{t:"glog",it}],logs:[],gsdup:true} } ev=g.ev }
- if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>8000){ const it=R.seen.keys(); for(let i=0;i<2000;i++) R.seen.delete(it.next().value) } }
+ if(ev.id){ if(R.seen.has(ev.id)) return {out:[],logs:[],dup:true}; R.seen.set(ev.id,now); if(R.seen.size>20000) seenPrune(R.seen,now) }
  ev.t=ev.t||now;
  applyEvent(R.D,R.H,ev);
  const out=[{t:"event",ev}];
@@ -4385,9 +4396,13 @@ function ago(t){ const s=Math.max(0,Math.round((Date.now()-t)/1000)); return s<6
 
 /** موزّع الرسائل على العناصر — يستخدمه المحرر وروابط OBS والمعاينة */
 // تجميع التحديثات: عدة أحداث في نفس الإطار = إعادة رسم واحدة لكل عنصر (rAF مع مهلة احتياطية 50ms للصفحات غير المرئية)
-const RQ=new Map(); let rqT=0, rqF=0, rqSrc=null;
-function rqFlush(){ if(rqF){ cancelAnimationFrame(rqF); rqF=0 } if(rqT){ clearTimeout(rqT); rqT=0 } const list=[...RQ]; RQ.clear(); for(const [v,src] of list) try{ v.refresh(rqSrc||src) }catch(e){} }
-function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden){ v.refresh(src); return } RQ.set(v,src); if(rqF||rqT) return; if(typeof requestAnimationFrame==="function") rqF=requestAnimationFrame(rqFlush); rqT=setTimeout(rqFlush,50) }
+const RQ=new Map(); let rqT=0, rqF=0, rqW=0, rqSrc=null, rqLast=0;
+function rqFlush(){ if(rqF){ cancelAnimationFrame(rqF); rqF=0 } if(rqT){ clearTimeout(rqT); rqT=0 } if(rqW){ clearTimeout(rqW); rqW=0 } rqLast=Date.now(); const list=[...RQ]; RQ.clear(); for(const [v,src] of list) try{ v.refresh(rqSrc||src) }catch(e){} }
+function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden){ v.refresh(src); return } RQ.set(v,src); if(rqF||rqT||rqW) return;
+ // الأداء: تحديث القوائم 10 مرات/ث على الأكثر (4 في وضع الإكسبلور) — كل تحديث يقيس مواقع الصفوف، وتكراره مع كل إطار كان يعلّق OBS
+ const gap=typeof window!=="undefined"&&window.__arshExplore?400:100, wait=Math.max(0,gap-(Date.now()-rqLast));
+ const arm=()=>{ rqW=0; if(typeof requestAnimationFrame==="function") rqF=requestAnimationFrame(rqFlush); rqT=setTimeout(rqFlush,50) };
+ if(wait>16) rqW=setTimeout(arm,wait); else arm() }
 function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
@@ -6106,12 +6121,18 @@ Object.assign(View.prototype,{
  leReplay(){ const e=this.le&&this.le.cur||this.leCurrent(); if(!e) return; const c=this.el.querySelector(".le-card:not(.le-exit)"); if(c) c.remove(); if(this.le) this.le.cur=null; this.leShow({...e,id:e.id+"_r"+Date.now()},false) },
  lePulse(c,first){ if(!c||this.el.classList.contains("le-still")||leReduced()) return; c.classList.remove("le-bump"); void c.offsetWidth; c.classList.add("le-bump"); setTimeout(()=>c.classList.remove("le-bump"),900);
   const d=leDesignOf(this.leD||this.w.design); if(d.pulse) try{ d.pulse(c,this.w,first) }catch(err){} },
- refreshLe(src,silent){ if(LE_KINDS[this.w.kind]?.derived){ const d=leDerive(this.w.kind,src,lbEntries,topsList); if(d&&(!this.le||!this.le.cur||this.le.cur.id!==d.id||this.le.cur.count!==d.count)) this.leShow(d,silent); return }
+ refreshLe(src,silent){ if(LE_KINDS[this.w.kind]?.derived){ if(silent===false&&src){ this.leSrc=src; return this.leGate(()=>this.refreshLe(this.leSrc,"gated")) } if(silent==="gated") silent=false;
+   const d=leDerive(this.w.kind,src,lbEntries,topsList); if(d&&(!this.le||!this.le.cur||this.le.cur.id!==d.id||this.le.cur.count!==d.count)) this.leShow(d,silent); return }
   const e=src&&src.C&&src.C.latest&&src.C.latest[this.w.kind]; if(e&&(!this.le||!this.le.cur||this.le.cur.id!==e.id||this.le.cur.count!==e.count)) this.leShow({...e},silent) },
  /** حدث مباشر (يشمل أحداث الاختبار — تُعرض ولا تُحفظ) */
  lePush(ev){ const e=leEntry(ev,Date.now()); if(!e||e.kind!==this.w.kind) return; if(e.kind==="donation"&&!(e.amount>0)) return;
-  const c=this.le&&this.le.cur; if(e.kind==="like"&&c&&c.uid===e.uid&&!c.sample&&Date.now()-c.at<15000){ e.count+=c.count||0; e.at=Date.now() }
-  this.leShow(e,false) },
+  const c=this.lePendE||(this.le&&this.le.cur); if(e.kind==="like"&&c&&c.uid===e.uid&&!c.sample&&Date.now()-c.at<15000){ e.count+=c.count||0; e.at=Date.now() }
+  this.leGate(()=>{ const x=this.lePendE; this.lePendE=null; if(x) this.leShow(x,false) }, e) },
+ /** الأداء: عند تدفق أحداث كثيرة يُعرض آخر حدث فقط بمعدل محدود (العرض فقط — العدّ يتم في الخادم والبيانات) */
+ leGate(run,e){ if(e) this.lePendE=e; const ex=typeof window!=="undefined"&&!!window.__arshExplore, gap=ex?700:150, now=Date.now(), last=this.leLastAt||0;
+  const H=(this.leHits||(this.leHits=[])); while(H.length&&now-H[0]>1000) H.shift(); // تدفق عادي: عرض فوري — التجميع فقط عند أكثر من 4 تحديثات في الثانية
+  if(!this.leGateT&&(ex?now-last>=gap:H.length<4||now-last>=gap)){ this.leLastAt=now; H.push(now); run(); return }
+  this.leGateRun=run; if(this.leGateT) return; this.leGateT=setTimeout(()=>{ this.leGateT=0; this.leLastAt=Date.now(); (this.leHits||(this.leHits=[])).push(this.leLastAt); const f=this.leGateRun; this.leGateRun=null; f&&f() },Math.max(16,gap-(now-last))) },
 });
 
 // ---------- CSS الأساس: التخطيط + تسلسل الحركة + الإطارات + البطاقات + حركات الأنواع ----------
@@ -7966,8 +7987,9 @@ function faDefaults(){ return {design:"duck_classic",char:"",duck:"",act:"",side
 
 /** طابور التنبيهات (نقي — يُختبر بدون متصفح): منع التكرار، حد الانتظار، دمج المتابعات */
 function faQueuePush(Q,ev,o){ Q.seen=Q.seen||[]; Q.q=Q.q||[]; if(!ev||!ev.id||Q.seen.includes(ev.id)) return "dup"; Q.seen.push(ev.id); if(Q.seen.length>300) Q.seen.splice(0,100);
- const merge=Math.max(0,+o.mergeAt||0), max=Math.max(1,+o.qMax||30);
- if(merge&&Q.q.length>=merge){ const last=Q.q[Q.q.length-1]; if(last.merged){ last.count++; last.names.push(ev.name) } else { const m=Q.q.splice(merge-1); Q.q.push({id:"m"+ev.id,merged:true,count:m.length+1,names:[...m.map(x=>x.name),ev.name],test:ev.test&&m.every(x=>x.test)}) } return "merged" }
+ let merge=Math.max(0,+o.mergeAt||0); const max=Math.max(1,+o.qMax||30);
+ if(typeof window!=="undefined"&&window.__arshExplore) merge=merge?Math.min(merge,3):3; // الإكسبلور: تجميع التنبيهات البصرية مبكراً (العدّ الفعلي لكل متابعة في الخادم)
+ if(merge&&Q.q.length>=merge){ const last=Q.q[Q.q.length-1]; if(last.merged){ last.count++; if(last.names.length<50) last.names.push(ev.name) } else { const m=Q.q.splice(merge-1); Q.q.push({id:"m"+ev.id,merged:true,count:m.length+1,names:[...m.map(x=>x.name),ev.name],test:ev.test&&m.every(x=>x.test)}) } return "merged" }
  if(Q.q.length>=max) return "full"; Q.q.push(ev); return "queued" }
 
 const SKIN_CSS={clear:"background:none;border:0;box-shadow:none",glass:"background:linear-gradient(135deg,#ffffff2e,#ffffff0a);border:1px solid #ffffff55;backdrop-filter:blur(10px)",gold:"background:linear-gradient(180deg,#2a1d06f0,#120c02f0);border:2px solid var(--fc,#f6c94a);box-shadow:0 0 18px #f6c94a55",
@@ -8015,7 +8037,7 @@ Object.assign(View.prototype,{
   if(!c||c==="none"||!FA_CHARS[c]) return ""; return c==="duck"?duckSVG(DUCK_VARIANTS[w.duck||d.duck||"classic"]||{}):FA_CHARS[c][1]() },
  faRender(it,still){ const w=this.w, d=faDesignOf(w.design), A=d.art?leDesignOf(d.art):null, ch=this.faCharHTML(d), src=this.opts.data?this.opts.data():{};
   const vars={username:it.name,display_name:it.name,platform:"TikTok",follower_count:(src.C&&src.C.followers&&src.C.followers.tiktok&&src.C.followers.tiktok.value)||"",stream_name:w.streamName||""};
-  const msgs=String(w.msgs||FA_MSGS[0]).split("\n").map(s=>s.trim()).filter(Boolean), tpl=it.merged?`❤️ شكراً لـ ${it.count} متابعاً جديداً!`:msgs[w.msgRandom?Math.floor(Math.random()*msgs.length):0]||FA_MSGS[0];
+  const msgs=String(w.msgs||FA_MSGS[0]).split("\n").map(s=>s.trim()).filter(Boolean), tpl=it.merged?`🔥 ${it.count} متابع جديد — شكراً لكم!`:msgs[w.msgRandom?Math.floor(Math.random()*msgs.length):0]||FA_MSGS[0];
   const pic=it.av||avatar(it.name||"?"), art=A?`<div class="le-back led-${A.id}">${A.back?A.back(w):""}</div>`:"", front=A?`<div class="le-front led-${A.id}">${A.front?A.front(w):""}</div>`:"";
   this.el.querySelectorAll(".fa-root").forEach(x=>x.remove());
   const r=document.createElement("div"); r.className="fa-root"; r.innerHTML=`${ch?`<div class="fa-char">${ch}</div>`:""}<div class="fa-card sk-${d.skin} led-${A?A.id:"none"}">${w.showAv!==false?`<div class="fa-stage">${art}<img class="fa-av" src="${esc(pic)}" alt="">${front}<div class="fa-stars">${[[8,10],[80,14],[86,76]].map(([x,y],i)=>`<i style="left:${x}%;top:${y}%;animation-delay:${i*.3}s"></i>`).join("")}</div></div>`:""}
@@ -8464,7 +8486,7 @@ const AB_CSS=`.t-abox{background:transparent!important;overflow:hidden;pointer-e
 const AB_FX_CH={butterflies:["🦋"],diamonds:["💎"],petals:["🌸","🌹"],meteors:["☄️"],lightning:["⚡"],crowns:["👑"],smoke:["☁️","🌫️"],confetti:["🟥","🟨","🟩","🟦","🟪"],hearts:["❤️","💖","💗"],stars:["⭐","✨","🌟"],sparkle:["✨","💫"],fireworks:["🎆","🎇","✨"],coins:["🪙","💰"],snow:["❄️","❅"]};
 let lottieP=null;
 /** Lottie: مكتبة lottie-web تُحمّل عند الحاجة فقط */
-function abLottie(){ if(typeof window==="undefined") return Promise.reject(); if(window.lottie) return Promise.resolve(window.lottie); if(!lottieP) lottieP=new Promise((ok,no)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"; s.onload=()=>ok(window.lottie); s.onerror=no; document.head.appendChild(s) }); return lottieP }
+function abLottie(){ if(typeof window==="undefined") return Promise.reject(); if(window.lottie) return Promise.resolve(window.lottie); if(!lottieP) lottieP=new Promise((ok,no)=>{ const s=document.createElement("script"); s.src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"; s.onload=()=>ok(window.lottie); s.onerror=()=>{ lottieP=null; no() }; document.head.appendChild(s); setTimeout(()=>{ if(!window.lottie){ lottieP=null; no(new Error("lottie timeout")) } },6000) }); return lottieP } // مهلة آمنة: تعذر التحميل لا يعلّق الآيرتات
 
 Object.assign(View.prototype,{
  applyAbox(w,W,Hh){ abEnsureCSS(); this.abH=Hh; this.abW=W; if(!this.ab) this.ab={Q:alQueue(),busy:false,cur:null,last:null,paused:false};
@@ -8476,7 +8498,9 @@ Object.assign(View.prototype,{
   this.aboxNext() },
  aboxCtl(op){ const A=this.ab; if(!A) return; if(op==="skip"&&A.cur) A.cur.skip=true; if(op==="stop"){ A.Q.q.length=0; if(A.cur) A.cur.skip=true } if(op==="pause") A.paused=true; if(op==="resume"){ A.paused=false; this.aboxNext() } if(op==="replay"&&A.last){ A.Q.q.unshift({...A.last,id:A.last.id+":r"+Date.now()}); this.aboxNext() } },
  async aboxNext(){ const A=this.ab; if(!A||A.busy||A.paused) return; const it=alQueueNext(A.Q); if(!it) return; A.busy=true; A.cur={it,skip:false};
-  try{ await this.aboxPlay(it,A.cur) }catch(e){} A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
+  // حارس: آيرت تالف/مقطع لا ينتهي لا يوقف بقية الطابور (حد أعلى 3 دقائق لكل آيرت)
+  const cur=A.cur; let wd; try{ await Promise.race([this.aboxPlay(it,cur),new Promise(ok=>{ wd=setTimeout(()=>{ cur.skip=true; try{ cur.audio&&cur.audio.pause(); cur.audio2&&cur.audio2.pause() }catch(e){} ok() },180000) })]) }catch(e){} clearTimeout(wd);
+  A.last=it; A.cur=null; A.busy=false; if(A.Q.q.length) setTimeout(()=>this.aboxNext(),Math.max(0,+this.w.abGap||600)) },
  /** يرسم الآيرت: الطبقات (ملف + صورة بإطار + نصوص + تأثير) ثم دخول ← بقاء ← خروج ← شفاف */
  async aboxPlay(it,cur){ const d=AB_DEFS[it.alertId]; if(!d) return; const w=this.w, H=this.abH||300, ed=this.opts.editor;
   const c=alMergeCfg(d.config,it.over&&it.over.cfg), fixed=!!(it.over&&it.over.durationSec), dur=Math.max(1,+(it.over&&it.over.durationSec)||+d.durationSec||5)*1000; // بدون حد أعلى. «مدة مخصصة» = مدة ثابتة؛ التلقائي = طول المقطع كاملاً
@@ -8934,24 +8958,35 @@ Object.assign(View.prototype,{
   return el },
  /** حدث مباشر من الحافلة */
  chatPush(ev){ const m=ev&&ev.kind&&ev.platform?ev:chatMsgOf(ev); if(!m) return; if(m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) return; const w=this.w; this.ucBuf=this.ucBuf||[];
-  if(this.ucBuf.some(x=>x.id===m.id)) return; this.ucBuf.push(m); if(this.ucBuf.length>100) this.ucBuf.splice(0,this.ucBuf.length-100);
+  if(this.ucSeen?this.ucSeen.has(m.id):this.ucBuf.some(x=>x.id===m.id)) return; this.ucBuf.push(m); if(this.ucBuf.length>100) this.ucBuf.splice(0,this.ucBuf.length-100);
+  this.ucSeen=new Set(this.ucBuf.map(x=>x.id));
   const plat=w.mode==="rotate"?UC_ROT[this.ucRotI||0]:w.mode==="split"?m.platform:null;
   const r=(this.ucF||chatFilter(w))(m,plat||w.mode); if(!r) return;
-  const L=w.mode==="split"?this.ucRoot&&this.ucRoot.querySelector(`.uc-col[data-p="${m.platform}"] .uc-list`):this.ucRoot&&this.ucRoot.querySelector(".uc-list"); if(!L) return;
-  // أول رسالة حقيقية تستبدل رسائل المعاينة
-  if(L.querySelector('.uc-m[data-id^="s"]')&&!String(m.id).startsWith("s")) L.querySelectorAll('.uc-m[data-id^="s"]').forEach(x=>{ if(/^s\d$/.test(x.dataset.id)) x.remove() });
-  const el=this.ucEl(r); L.appendChild(el);
-  const max=Math.max(1,+w.max||8); while(L.children.length>max) L.firstElementChild.remove();
-  const spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
-  if(anim){ const en=w.enter||"right", K={right:[{opacity:0,transform:"translateX(45%)"},{opacity:1,transform:"none"}],left:[{opacity:0,transform:"translateX(-45%)"},{opacity:1,transform:"none"}],bottom:[{opacity:0,transform:"translateY(70%)"},{opacity:1,transform:"none"}],fade:[{opacity:0},{opacity:1}],pop:[{opacity:0,transform:"scale(.82)"},{opacity:1,transform:"scale(1.03)"},{opacity:1,transform:"none"}],neon:[{opacity:0,filter:"brightness(2.4) drop-shadow(0 0 .4em var(--pc))"},{opacity:1,filter:"brightness(1.3) drop-shadow(0 0 .25em var(--pc))",offset:.5},{opacity:1,filter:"none"}]}[en];
-   // بدون قفز: الرسالة الجديدة تنمو من ارتفاع 0 فتنزاح القديمة بسلاسة
-   if(en!=="none"&&w.mode!=="split"){ const h=el.offsetHeight; if(h) el.animate([{height:"0px",marginBlock:"0px",paddingBlock:"0px"},{height:h+"px"}],{duration:260/spd,easing:"ease-out"}) }
-   if(K) el.animate(K,{duration:420/spd,easing:"cubic-bezier(.2,.8,.2,1)"}); el.classList.add("uc-new"); setTimeout(()=>el.classList.remove("uc-new"),1200) }
-  if((+w.holdSec||0)>0) setTimeout(()=>{ if(!el.isConnected) return; const ex=w.ucExit||"fade";
-   if(!anim||ex==="none"){ el.remove(); return }
+  // الأداء: الرسائل تُجمع وتُرسم مرة واحدة لكل إطار (كانت كل رسالة تفرض قياس تخطيط + حركتين — يعلّق OBS في الإكسبلور)
+  (this.ucPend||(this.ucPend=[])).push({r,p:m.platform}); if(this.ucPend.length>300) this.ucPend.splice(0,this.ucPend.length-300);
+  if(this.ucFr) return; const go=()=>{ if(this.ucFrA) cancelAnimationFrame(this.ucFrA); clearTimeout(this.ucFrT); this.ucFr=0; this.ucFrA=0; this.ucFrT=0; this.ucFlush() };
+  this.ucFr=1; if(typeof requestAnimationFrame==="function") this.ucFrA=requestAnimationFrame(go); this.ucFrT=setTimeout(go,80) },
+ ucFlush(){ const P=this.ucPend||[]; this.ucPend=[]; if(!P.length||!this.ucRoot) return; const w=this.w, max=Math.max(1,+w.max||8);
+  const groups=new Map(); for(const it of P){ const L=w.mode==="split"?this.ucRoot.querySelector(`.uc-col[data-p="${it.p}"] .uc-list`):this.ucRoot.querySelector(".uc-list"); if(!L) continue; (groups.get(L)||groups.set(L,[]).get(L)).push(it.r) }
+  const explore=typeof window!=="undefined"&&!!window.__arshExplore, spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
+  const added=[];
+  for(const [L,rs] of groups){
+   // أول رسالة حقيقية تستبدل رسائل المعاينة
+   if(rs.some(r=>!String(r.id).startsWith("s"))) L.querySelectorAll('.uc-m[data-id^="s"]').forEach(x=>{ if(/^s\d$/.test(x.dataset.id)) x.remove() });
+   const show=rs.length>max?rs.slice(-max):rs; // العرض فقط: الرسائل القديمة في نفس الإطار ستُزاح على أي حال (السجل الكامل محفوظ)
+   const fr=document.createDocumentFragment(); for(const r of show){ const el=this.ucEl(r); fr.appendChild(el); added.push(el) } L.appendChild(fr);
+   while(L.children.length>max) L.firstElementChild.remove() }
+  const live=added.filter(el=>el.isConnected); const many=live.length>3||explore;
+  if(anim&&live.length){ const en=w.enter||"right", K={right:[{opacity:0,transform:"translateX(45%)"},{opacity:1,transform:"none"}],left:[{opacity:0,transform:"translateX(-45%)"},{opacity:1,transform:"none"}],bottom:[{opacity:0,transform:"translateY(70%)"},{opacity:1,transform:"none"}],fade:[{opacity:0},{opacity:1}],pop:[{opacity:0,transform:"scale(.82)"},{opacity:1,transform:"scale(1.03)"},{opacity:1,transform:"none"}],neon:[{opacity:0,filter:"brightness(2.4) drop-shadow(0 0 .4em var(--pc))"},{opacity:1,filter:"brightness(1.3) drop-shadow(0 0 .25em var(--pc))",offset:.5},{opacity:1,filter:"none"}]}[en];
+   // بدون قفز: الرسالة الجديدة تنمو من ارتفاع 0 — قياس واحد لكل الإطار (قراءة كل الارتفاعات ثم الكتابة)، وتُترك عند الضغط العالي
+   if(en!=="none"&&w.mode!=="split"&&!many){ const hs=live.map(el=>el.offsetHeight); live.forEach((el,k)=>{ if(hs[k]) el.animate([{height:"0px",marginBlock:"0px",paddingBlock:"0px"},{height:hs[k]+"px"}],{duration:260/spd,easing:"ease-out"}) }) }
+   if(K){ const kf=many?[{opacity:0},{opacity:1}]:K; live.forEach(el=>el.animate(kf,{duration:(many?220:420)/spd,easing:"cubic-bezier(.2,.8,.2,1)"})) }
+   if(!many) live.forEach(el=>{ el.classList.add("uc-new"); setTimeout(()=>el.classList.remove("uc-new"),1200) }) }
+  if((+w.holdSec||0)>0) for(const el of live) setTimeout(()=>{ if(!el.isConnected) return; const ex=w.ucExit||"fade";
+   if(!anim||ex==="none"||(typeof window!=="undefined"&&window.__arshExplore)){ el.remove(); return }
    const X={fade:[{opacity:1},{opacity:0}],slide:[{opacity:1,transform:"none"},{opacity:0,transform:"translateX(40%)"}],shrink:[{opacity:1,transform:"none",maxHeight:el.offsetHeight+"px"},{opacity:0,transform:"scale(.85)",maxHeight:"0px",marginBlock:"0px",paddingBlock:"0px"}]}[ex]||[{opacity:1},{opacity:0}];
    const a=el.animate(X,{duration:450/spd,fill:"forwards"}); a.onfinish=()=>el.remove() },(+w.holdSec)*1000) },
- chatLoad(list){ this.ucBuf=(list||[]).slice(-100); this.ucRender(false) },
+ chatLoad(list){ this.ucBuf=(list||[]).slice(-100); this.ucSeen=null; this.ucPend=[]; this.ucRender(false) },
 });
 
 const UC_CSS=`
@@ -9297,11 +9332,14 @@ function connectWS(url,room,key,onMsg,onStatus){
  try{ if(ws){ ws.onclose=ws.onerror=ws.onmessage=null; ws.close() } }catch(e){}
  if(!url) return;
  let sock; try{ sock=ws=new WebSocket(url) }catch(e){ onStatus&&onStatus(false,"رابط غير صالح"); return }
- sock.onopen=()=>{wsReady=true; sock.send(JSON.stringify({t:"join",room,key})); onStatus&&onStatus(true)};
+ sock.onopen=()=>{wsReady=true; sock.send(JSON.stringify({t:"join",room,key,b:1})); onStatus&&onStatus(true)};
  sock.onerror=()=>{sock._err=true};
  sock.onclose=()=>{ if(ws===sock) wsReady=false; onStatus&&onStatus(false,sock._err&&!sock._opened?"تعذر الاتصال":undefined)};
  sock.addEventListener("open",()=>sock._opened=true);
- sock.onmessage=m=>{ try{ onMsg(JSON.parse(m.data)) }catch(e){ console.error(e) } };
+ sock.onmessage=m=>{ let x; try{ x=JSON.parse(m.data) }catch(e){ return }
+  // دفعة أحداث من الخادم (أداء عالٍ في الإكسبلور): كل رسالة على حدة — خطأ في واحدة لا يوقف البقية
+  if(x&&x.t==="batch"&&Array.isArray(x.ms)){ for(const y of x.ms){ try{ onMsg(y) }catch(e){ console.error(e) } } return }
+  try{ onMsg(x) }catch(e){ console.error(e) } };
 }
 const b64e=o=>btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64d=s=>JSON.parse(decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/")))));
@@ -9317,7 +9355,7 @@ function bootOverlay(q){
  try{ const m={}; for(const a of ls("b6o6.alerts")||[]) m[a.id]={id:a.id,name:a.name,kind:a.kind,event:a.event,durationSec:a.durationSec,config:a.config,mediaUrl:a.mediaData||"",audioUrl:a.audioData||""}; for(const d of FA_DESIGNS) m["tpl:"+d.id]=alOfficialDef("tpl:"+d.id,d.name); aboxSetDefs(m) }catch(e){}
  const only=q.get("only"), room=q.get("room")||"", wsUrl=q.get("ws")||"", bigT=+q.get("big")||1000;
  const PM=q.get("pm")||(q.get("lp")==="1"?"perf":"hq"); document.body.classList.add("pm-"+PM); if(q.get("dock")==="1") document.body.classList.add("ov-dock");
- const R=loadRoom(); let skew=0;
+ const R=loadRoom(); let skew=0; window.__ov={R:()=>R}; // للاختبار والتشخيص: قراءة فقط
  const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
  const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
@@ -9334,6 +9372,7 @@ function bootOverlay(q){
  function onMsg(m){
   if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; if(Array.isArray(m.CH)) R.CHAT=m.CH.slice(-60); skew=(m.now||Date.now())-Date.now() }
   else if(m.t==="stats"){ if(m.ST) R.C.stats=m.ST; return }
+  else if(m.t==="perf"){ if(typeof m.explore==="boolean"){ window.__arshExplore=m.explore; document.body.classList.toggle("ov-explore",m.explore) } return }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
@@ -9378,7 +9417,7 @@ const L=()=>S.layouts.find(l=>l.id===S.active);
 const CV=()=>canvasOf(L());
 let saveT; function save(){clearTimeout(saveT);saveT=setTimeout(()=>{ if(CFG){ const {wsUrl,room,key,...rest}=S.settings; Promise.resolve(CFG.persist({layouts:S.layouts,activeLayoutId:S.active,settings:rest,name:S.profile.name,socials:S.socials,donCfg:S.donCfg,bots:S.bots})).then(()=>flash("تم الحفظ"),e=>toast(e&&e.message&&e.message!=="save"?e.message:"تعذر الحفظ — تحقق من الاتصال")) } else { ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); flash("تم الحفظ") } },400)}
 function saveRoomNow(){ if(location.hash.startsWith("#/overlay")) return; /* رابط OBS يقرأ فقط — لا يكتب نسخة قديمة فوق حالة اللوحة */ ls("arsh.room",{D:R.D,H:R.H,C:R.C,logs:R.logs,DN:R.DN,CHAT:R.CHAT}) }
-let saveRT; function saveRoom(){clearTimeout(saveRT);saveRT=setTimeout(saveRoomNow,300)}
+let saveRT, saveFirst=0; function saveRoom(){ const now=Date.now(); if(!saveRT) saveFirst=now; clearTimeout(saveRT); const maxW=window.__arshExplore?10000:3000; saveRT=setTimeout(()=>{ saveRT=0; saveRoomNow() },Math.max(0,Math.min(window.__arshExplore?2000:300,saveFirst+maxW-now))) }
 addEventListener("pagehide",()=>{ if(!CFG) ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); saveRoomNow()});
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1600)}
 function flash(t){const e=document.getElementById("savedot");if(e){e.textContent="✓ "+t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=.5,900)}}
@@ -9414,6 +9453,7 @@ function receive(m,applied){
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
  else if(m.t==="stats"){ if(R.C&&m.ST) R.C.stats=m.ST; if(S.page==="chatcfg") sbLiveRefresh(); return } // إحصائيات البث: الطبقات تقرأها في النبضة التالية
  else if(m.t==="chatdiag"){ S.chatDiag=m.D||{}; ucDiagRefresh(); return }
+ else if(m.t==="perf"){ if(m.P){ S.perf=m; pmRefresh(); pmWarn(m) } if(typeof (m.P?m.P.explore:m.explore)==="boolean"){ window.__arshExplore=m.P?m.P.explore:m.explore; document.body.classList.toggle("ov-explore",window.__arshExplore) } return } // مراقبة أداء البث
  else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes"||S.page==="duration") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
  else if(m.t==="gifts"){ S.catalog=m.gifts; if(S.page==="subathon") renderPage(true); return }
@@ -9430,7 +9470,9 @@ function receive(m,applied){
  if(m.t==="event"&&["stats","likes","gifts","comments","home","boards","donations"].includes(S.page)) softRefresh();
  if((m.t==="clock"||m.t==="snapshot")&&["subathon","timers","stats","home"].includes(S.page)) softRefresh();
 }
-let srT; function softRefresh(){clearTimeout(srT);srT=setTimeout(()=>{ if(!document.activeElement||!document.activeElement.closest||!document.activeElement.closest("#pg input,#pg select,#pg textarea")) renderPage(true) },250)}
+// تحديث الصفحة: تجميع (250ms) مع حد أقصى للانتظار — كان التأجيل يتجدد مع كل حدث فلا تتحدث الصفحة أبداً أثناء تدفق مستمر (الإكسبلور)
+let srT, srFirst=0; function softRefresh(){ const now=Date.now(); if(!srT) srFirst=now; clearTimeout(srT); const gap=window.__arshExplore?1000:250, maxWait=window.__arshExplore?2000:800;
+ srT=setTimeout(()=>{ srT=0; if(!document.activeElement||!document.activeElement.closest||!document.activeElement.closest("#pg input,#pg select,#pg textarea")) renderPage(true) },Math.max(0,Math.min(gap,srFirst+maxWait-now))) }
 // ساعة محلية في وضع التجربة (في الوضع الحقيقي الخادم هو المرجع)
 setInterval(()=>{ if(wsReady||location.hash.startsWith("#/overlay")) return; syncBots(); const r=roomTick(R,Date.now()); for(const m of r.out){ receive(m,true); if(bus) bus.postMessage(m) } if(r.out.length) saveRoom() },1000);
 setInterval(()=>{ if(S.page==="duration"){ const D=durOf(R.C,Date.now()+skew); document.querySelectorAll("[data-live-dur]").forEach(e=>e.textContent=durText(D.ms,{mode:"auto"})); document.querySelectorAll("[data-live-dur-cur]").forEach(e=>e.textContent=durText(D.cur,{mode:"auto"})) }
@@ -9483,7 +9525,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -9643,6 +9685,7 @@ function renderPage(soft){
  else if(p==="subathon"){ h=subathonHTML() }
  else if(p==="duration"){ h=duHTML() }
  else if(p==="chatcfg"){ h=ccHTML() }
+ else if(p==="perf"){ h=pmHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -9999,6 +10042,42 @@ function duMount(){ const box=document.getElementById("du-pv"); const l=L();
  document.querySelectorAll("[data-dupv]").forEach(b=>{ const cv={w:600,h:220}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${b.clientWidth/cv.w})`; b.appendChild(stg);
   const pw=newWidget("duration",{...(tgt?{duMode:tgt.duMode,duLang:tgt.duLang}:{}),id:"pv_du_"+b.dataset.dupv,design:b.dataset.dupv,x:.04,y:.06,w:.92,h:.88,duDemoMs:(2*86400+5*3600+30*60+45)*1000,locked:true,visible:true}); const v=new View(pw,cv,{data:SRC,globalFx:S.settings.fx,mute:true}); stg.appendChild(v.el) }) }
 /* ---- «💬 إعدادات الشات»: عرض الرسائل + إحصائيات البث (Live Statistics) + الروابط ---- */
+/* ================= مراقبة أداء البث (Live Performance Monitor) — أرقام حقيقية من الخادم ================= */
+const PM_TYPES={like:"تكبيس",gift:"هدايا",comment:"تعليقات",follow:"متابعات",share:"مشاركات",join:"دخول",subscribe:"اشتراكات",donation:"دونيشن",superchat:"Super Chat",cheer:"Bits",member:"عضويات"};
+function pmFmt(n){ return (+n||0).toLocaleString("en-US") }
+function pmAgo(t){ if(!t) return "—"; const s=Math.max(0,Math.round((Date.now()-t)/1000)); return s<60?s+" ث":s<3600?Math.round(s/60)+" د":Math.round(s/3600)+" س" }
+function pmBody(){ const m=S.perf; if(!m||!m.P) return `<div class="pm-empty">${wsReady?"⏳ بانتظار أول قراءة من الخادم (كل ثانيتين)…":"مراقبة الأداء تعرض أرقام الخادم الحقيقية — تعمل عند تشغيل اللوحة داخل المنصة والاتصال بالخادم."}</div>`;
+ const P=m.P, G=m.G||{}, C=m.conn||{}, cl=m.clients||{}, stale=Date.now()-m.at>8000;
+ const st=(ok,txt)=>`<b class="${ok?"pm-ok":"pm-bad"}">${txt}</b>`;
+ const card=(ic,lb,val,sub,cls="")=>`<div class="pm-c ${cls}"><span class="pm-ic">${ic}</span><span class="pm-lb">${lb}</span><b class="pm-v">${val}</b>${sub?`<span class="pm-s">${sub}</span>`:""}</div>`;
+ const hist=(P.hist||[]), hm=Math.max(10,...hist);
+ const by=Object.entries(P.by||{}).sort((a,b)=>b[1]-a[1]).slice(0,10).map(([k,v])=>`<span class="pm-tag">${esc(PM_TYPES[k]||k)} <b>${pmFmt(v)}</b></span>`).join("");
+ return `${stale?`<div class="pm-warn">⚠️ آخر قراءة قبل ${pmAgo(m.at)} — تحقق من اتصال اللوحة بالخادم</div>`:""}
+ ${(m.warn||[]).map(w=>`<div class="pm-warn">⚠️ ${esc(w)}</div>`).join("")}
+ <div class="pm-mode ${P.explore?"on":""}">${P.explore?`🚀 وضع الإكسبلور مفعّل منذ ${pmAgo(P.exploreAt)} — تخفيف المؤثرات الثقيلة وتجميع تحديثات الواجهة، وكل الأحداث تُحتسب`:"✅ الوضع الطبيعي"}<span class="pm-s">يتفعل تلقائياً عند ${60}+ حدث/ث ويعود عند الهدوء · مرات التفعيل: ${P.exploreN||0}</span></div>
+ <div class="pm-grid">
+  ${card("📡","اتصال البث",C.live?st(1,"متصل"):st(0,esc(C.text||C.state||"غير متصل")),`${cl.overlays||0} رابط OBS · ${cl.dashboards||0} لوحة`)}
+  ${card("⚡","أحداث/ثانية",pmFmt(P.rate),`أعلى: ${pmFmt(P.peak)}`)}
+  ${card("📥","المستقبلة",pmFmt(P.recv),"منذ تشغيل الخادم")}
+  ${card("✅","تمت معالجتها",pmFmt(P.done))}
+  ${card("⏳","في الانتظار",pmFmt(P.pending),`أعلى: ${pmFmt(P.maxPending)}`,P.pending>100?"bad":"")}
+  ${card("♻️","المكررة (لم تُحتسب مرتين)",pmFmt(P.dup))}
+  ${card("❌","الفاشلة",pmFmt(P.failed),P.lastErr?esc(P.lastErr):"",P.failed?"bad":"")}
+  ${card("⏱️","تأخير المعالجة",(P.lagAvg||0)+" ms",`أعلى: ${pmFmt(P.lagMax)} ms`,P.lagAvg>1000?"bad":"")}
+  ${card("🧠","ذاكرة الخادم",(G.heapMB||0)+" MB",`RSS ${G.rssMB||0} MB`)}
+  ${card("🖥️","المعالج",(G.cpu||0)+"%",G.loop?`حلقة الأحداث p99: ${G.loop.p99} ms`:"",G.loop&&G.loop.p99>250?"bad":"")}
+  ${card("🗄️","قاعدة البيانات",G.db&&G.db.err&&Date.now()-G.db.errAt<120000?st(0,"خطأ"):st(1,"تعمل"),G.db?`آخر حفظ ${G.db.lastMs} ms قبل ${pmAgo(G.db.at)} · فشل: ${G.db.fail}`:"")}
+  ${card("📦","رسائل للواجهات",pmFmt(P.sent),`في ${pmFmt(P.batches)} دفعة`)}
+ </div>
+ <div class="pm-h"><span class="pm-lb">الأحداث في آخر 60 ثانية</span><div class="pm-bars">${hist.map(v=>`<i style="height:${Math.max(2,v/hm*100)}%" title="${v}/ث"></i>`).join("")}</div></div>
+ <div class="pm-by">${by||'<span class="pm-s">لا أحداث بعد</span>'}</div>` }
+function pmHTML(){ return `<div class="card"><h2>📈 مراقبة أداء البث — Live Performance Monitor</h2><p class="muted">أرقام حقيقية من الخادم تتحدث كل ثانيتين: الاستقبال والمعالجة والتأخير والذاكرة وقاعدة البيانات. لا تُعرض نصوص المحادثات ولا بيانات المشاهدين.</p><div id="pm-body">${pmBody()}</div></div>` }
+function pmRefresh(){ if(S.page!=="perf") return; const b=document.getElementById("pm-body"); if(b) b.innerHTML=pmBody() }
+/** تنبيه إداري عند الضغط/الخلل — مرة لكل نوع (لا إزعاج متكرر) */
+function pmWarn(m){ S.pmSeen=S.pmSeen||{}; const P=m.P||{}; const key=P.explore?"explore":"";
+ if(P.explore&&!S.pmSeen.explore){ S.pmSeen.explore=Date.now(); toast("🚀 ضغط تفاعل عالٍ — تفعّل وضع الإكسبلور تلقائياً (كل الأحداث تُحتسب)") } if(!P.explore) S.pmSeen.explore=0;
+ if(P.failed>(S.pmSeen.failed||0)){ S.pmSeen.failed=P.failed; toast("⚠️ تعذر معالجة بعض الأحداث — التفاصيل في «مراقبة أداء البث»") }
+ const dbErr=m.G&&m.G.db&&m.G.db.err&&Date.now()-m.G.db.errAt<10000; if(dbErr&&!S.pmSeen.db){ S.pmSeen.db=1; toast("⚠️ تعذر الحفظ في قاعدة البيانات — التفاصيل في «مراقبة أداء البث»") } if(!dbErr) S.pmSeen.db=0; return key }
 function ccHTML(){ const l=L(), ws_=l.widgets.filter(w=>w.type==="uchat"), w=ws_.find(x=>x.id===S.ccW)||ws_[0], sts=l.widgets.filter(x=>x.type==="chatstats");
  if(!w) return head("💬 إعدادات الشات","الشات الموحد وإحصائيات البث")+`<div class="card" style="text-align:center"><p>لا يوجد شات موحد في «${esc(l.name)}».</p><button class="btn pri" data-add="uchat">＋ إضافة الشات للمشهد</button></div>`;
  const id=w.id, sel=(f,lb,opts,val)=>`<div class="fld"><label>${lb}</label><select class="inp" data-wf="${f}" data-wid="${id}">${opts.map(o=>`<option value="${o[0]}" ${String(val)===String(o[0])?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;

@@ -27,9 +27,17 @@ export function applyEvent(D,H,ev){
 /** أي القوائم تتأثر بحدث reset/shuffle */
 export const SCOPE_OF={likes:["likes","interact"],gifts:["gifts","recentGifts","interact"],comments:["comments","interact"],interact:["interact"],follows:["recentFollows"]};
 
+const lbColl=typeof Intl!=="undefined"&&Intl.Collator?new Intl.Collator():null; // نفس نتيجة localeCompare() بلا معاملات — لكن بمقارن واحد مُعاد استخدامه (أسرع بكثير)
+const lbCmp=(a,b)=>b.v-a.v||(lbColl?lbColl.compare(String(a.name),String(b.name)):String(a.name).localeCompare(String(b.name)));
+/** أفضل K عنصر بنفس ترتيب sort().slice(0,K) تماماً (نفس المقارنة، ثابت عند التساوي) — بدون فرز كل المشاهدين في كل تحديث (الإكسبلور: عشرات الآلاف) */
+function lbTopK(src,k,mk){ const out=[]; if(!(k>0)) return out; for(const r of src){ const n=out.length;
+  if(n>=k){ const last=out[n-1]; if(r.v<last.v) continue; if(r.v===last.v&&lbCmp(last,r)<=0) continue }
+  let i=n; while(i>0&&lbCmp(out[i-1],r)>0) i--; out.splice(i,0,r); if(out.length>k) out.pop() }
+ return out.map(mk) }
 export function entries(w,D,H){
  let list;
- const vals=o=>Object.values(o||{}).map(r=>({k:r.k,name:r.name,av:r.av,v:r.v}));
+ const vals=o=>Object.values(o||{});
+ const pick=r=>({k:r.k,name:r.name,av:r.av,v:r.v});
  if(w.type==="likes") list=vals(D.likes);
  else if(w.type==="comments") list=vals(D.comments);
  else if(w.type==="interact") list=vals(D.interact);
@@ -46,5 +54,6 @@ export function entries(w,D,H){
    list=Object.values(m);
   }
  } else list=[];
- return list.sort((a,b)=>b.v-a.v||a.name.localeCompare(b.name)).slice(0,w.topN);
+ if(w.type==="likes"||w.type==="comments"||w.type==="interact") return lbTopK(list,+w.topN||0,pick);
+ return lbTopK(list,+w.topN||0,r=>r);
 }

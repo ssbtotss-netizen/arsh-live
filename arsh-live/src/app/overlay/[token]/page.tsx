@@ -45,6 +45,7 @@ function Overlay({ token }: { token: string }) {
     function onMsg(m: any) {
       lastMsg = Date.now();
       if (m.t === "hb") return;
+      if (m.t === "perf") { if (typeof m.explore === "boolean") { (window as any).__arshExplore = m.explore; document.body.classList.toggle("ov-explore", m.explore); } return; } // وضع الإكسبلور: تخفيف المؤثرات الثقيلة فقط
       if (m.t === "snapshot") { st.D = m.D; st.H = m.H || []; st.C = m.C; if (m.DN) st.DN = m.DN; if (Array.isArray(m.CH)) st.CHAT = m.CH.slice(-60); st.skew = (m.now || Date.now()) - Date.now(); }
       else if (m.t === "event") {
         try { chatPush(st.CHAT, m.ev); } catch {}
@@ -71,8 +72,11 @@ function Overlay({ token }: { token: string }) {
     function connect() {
       try { ws = new WebSocket(`${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/ws`); } catch { n++; startPoll(); retry = setTimeout(connect, 5000); return; }
       const opened = ws; setTimeout(() => { if (!closed && opened.readyState !== 1) startPoll(); }, 5000); // متصفح البث لم يفتح WebSocket خلال 5 ث: نبدأ الجلب الدوري فوراً
-      ws.onopen = () => { n = 0; lastMsg = Date.now(); stopPoll(); ws!.send(JSON.stringify({ t: "join", room: token })); };
-      ws.onmessage = e => { try { onMsg(JSON.parse(e.data)); } catch {} };
+      ws.onopen = () => { n = 0; lastMsg = Date.now(); stopPoll(); ws!.send(JSON.stringify({ t: "join", room: token, b: 1 })); };
+      ws.onmessage = e => { let m: any; try { m = JSON.parse(e.data); } catch { return; }
+        // دفعة أحداث من الخادم: كل رسالة تُعالج على حدة (خطأ في واحدة لا يوقف البقية)
+        if (m && m.t === "batch" && Array.isArray(m.ms)) { lastMsg = Date.now(); for (const x of m.ms) { try { onMsg(x); } catch {} } return; }
+        try { onMsg(m); } catch {} };
       ws.onclose = () => { if (closed) return; if (++n >= 3) startPoll(); retry = setTimeout(connect, Math.min(15000, 1000 * n)); }; // يعيد الاتصال ويستلم لقطة كاملة بلا تكرار
     }
     const hb = setInterval(() => {

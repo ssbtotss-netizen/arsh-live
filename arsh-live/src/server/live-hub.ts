@@ -4,10 +4,11 @@ import type { WebSocketServer, WebSocket } from "ws";
 import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound, roomSessionConnect, roomSessionEnd, roomSessionOp, roomStats } from "../lib/core";
 import type { Layout, LiveEvent } from "../lib/core";
 import { startTikTok, type TikTokHandle, type TkInfo } from "./tiktok";
+import { perfNew, perfPrio, perfTick, perfLag, perfPublic, perfGlobal, dbTimed, type RoomPerf } from "./perf";
 /** حالة الربط للواجهة وروابط البث — ملاحظة المشرف (اسم المتغير ومكانه) لا تُرسل هنا بل تظهر في لوحة الإدارة */
 const tkPublic = (i: TkInfo) => { const { admin, ...rest } = i; return { ...rest, server: !!admin }; };
 
-type Client = WebSocket & { room?: string; canEdit?: boolean; alive?: boolean };
+type Client = WebSocket & { room?: string; canEdit?: boolean; alive?: boolean; b?: boolean };
 type Room = ReturnType<typeof newRoom> & { clients: Set<Client>; layouts: Map<string, Layout>; tiktok?: TikTokHandle; gifts?: any[]; dirty?: boolean; closeTimer?: any };
 
 export type HubOptions = {
@@ -47,7 +48,8 @@ const topN = (o: any, n = 3000) => { const a = Object.values(o || {}) as any[]; 
 const compactD = (D: any) => ({ ...D, likes: topN(D.likes), gifts: topN(D.gifts), comments: topN(D.comments), interact: topN(D.interact), giftBy: {}, feed: (D.feed || []).slice(0, 30) });
 const withCatalog = (r: any) => { const live = r.C?.live; const C: any = { ...r.C };
   if (r.gifts?.length) C.giftCatalog = { at: Date.now(), list: r.gifts };
-  if (live?.sid) C.liveD = { sid: live.sid, at: Date.now(), D: compactD(r.D) };
+  // بيانات البث (قد تكون كبيرة جداً في الإكسبلور): تُضغط مرة كل 10 ث على الأكثر ويُعاد استخدامها في الحفظات بينها
+  if (live?.sid) { const now = Date.now(), c = r.ldC; if (!c || c.sid !== live.sid || now - c.at > 10000) r.ldC = { sid: live.sid, at: now, D: compactD(r.D) }; C.liveD = r.ldC; }
   return C; };
 export function createHub(wss: WebSocketServer, opt: HubOptions) {
   const rooms = new Map<string, Room>();
@@ -76,6 +78,48 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   }
   const send = (c: Client, m: unknown) => { if (c.readyState === 1) c.send(JSON.stringify(m)); };
   const broadcast = (r: Room, m: unknown) => { const s = JSON.stringify(m); r.clients.forEach(c => c.readyState === 1 && c.send(s)); };
+  /* ---- معالجة الأحداث عالية الأداء ----
+     الاستقبال منفصل عن المعالجة والعرض: كل حدث يدخل طابوراً بثلاث أولويات ويُعالج فوراً ضمن ميزانية وقت؛
+     إذا وصلت دفعة ضخمة تُكمل المعالجة في الدورة التالية (setImmediate) فلا يتوقف اتصال TikTok ولا الـ WebSocket.
+     لا يُحذف أي حدث من الطابور، والتكرار يمنعه المحرك (room.seen)، وفشل حدث واحد لا يوقف البقية. */
+  const PUMP_MS = 12;
+  const perfOf = (r: Room): RoomPerf => ((r as any).P ||= perfNew());
+  const lanes = (r: Room): { ev: LiveEvent; at: number }[][] => ((r as any).inQ ||= [[], [], []]);
+  const pendingOf = (r: Room) => { const L = (r as any).inQ; return L ? L[0].length + L[1].length + L[2].length : 0; };
+  function ingest(id: string, r: Room, ev: LiveEvent) {
+    const P = perfOf(r); P.recv++; P.win++; const ty = String((ev as any)?.type || "?"); P.by[ty] = (P.by[ty] || 0) + 1;
+    lanes(r)[perfPrio(ty)].push({ ev, at: Date.now() }); const n = pendingOf(r); if (n > P.maxPending) P.maxPending = n;
+    // الاستقبال لا ينتظر المعالجة: دفعة TikTok كاملة تدخل الطابور أولاً ثم تُعالج حسب الأولوية في الدورة التالية
+    if (!(r as any).pumping && !(r as any).pumpS) { (r as any).pumpS = true; setImmediate(() => { (r as any).pumpS = false; if (!(r as any).pumping) pump(id, r); }); }
+  }
+  function pump(id: string, r: Room) {
+    const L = lanes(r), P = perfOf(r); (r as any).pumping = true; const t0 = performance.now();
+    while (true) {
+      // الأولوية للدعم ثم المتابعات ثم البقية — مع منع التجويع: حدث عادي ينتظر أكثر من 1.5 ث يُعالج قبل غيره
+      const now = Date.now(); const q = L[2].length && now - L[2][0].at > 1500 ? L[2] : L[0].length ? L[0] : L[1].length ? L[1] : L[2];
+      const it = q.shift(); if (!it) break;
+      try { if (dispatch(id, r, it.ev) === "dup") P.dup++; else P.done++; }
+      catch (e: any) { P.failed++; P.lastErr = `${(it.ev as any)?.type}: ${String(e?.message || e).slice(0, 160)}`; P.lastErrAt = now; if (now - ((r as any).errLogAt || 0) > 10000) { (r as any).errLogAt = now; console.error("[hub] event failed", P.lastErr); } }
+      perfLag(P, Date.now() - it.at);
+      if (performance.now() - t0 > PUMP_MS && pendingOf(r)) { setImmediate(() => pump(id, r)); return; } // إفساح المجال للشبكة ثم المتابعة
+    }
+    (r as any).pumping = false;
+  }
+  /** البث للواجهات: الروابط الحديثة تستلم دفعات (رسالة واحدة لكل 40ms، أو 100ms في وضع الإكسبلور) بنفس الترتيب — بدون دمج للبيانات.
+      الروابط القديمة (قبل التحديث) تستلم كل رسالة منفردة كما كانت */
+  function bcast(r: Room, m: any) {
+    const s = JSON.stringify(m); let anyB = false;
+    r.clients.forEach(c => { if (c.readyState !== 1) return; if (c.b) anyB = true; else c.send(s); });
+    if (!anyB) return; const Q: (string | null)[] = ((r as any).outQ ||= []);
+    if (m.t === "stats") { const i = (r as any).outStats; if (i != null && i < Q.length) Q[i] = null; (r as any).outStats = Q.length; } // الإحصائيات حالة كاملة: آخر نسخة تكفي
+    Q.push(s); if (Q.length >= 400) return flushOut(r);
+    if (!(r as any).outT) (r as any).outT = setTimeout(() => flushOut(r), perfOf(r).explore ? 100 : 40);
+  }
+  function flushOut(r: Room) {
+    clearTimeout((r as any).outT); (r as any).outT = 0; const Q: (string | null)[] = (r as any).outQ; (r as any).outStats = null; if (!Q || !Q.length) return;
+    (r as any).outQ = []; const list = Q.filter(Boolean) as string[]; if (!list.length) return; const s = '{"t":"batch","ms":[' + list.join(",") + "]}";
+    const P = perfOf(r); P.batches++; P.sent += list.length; r.clients.forEach(c => c.readyState === 1 && c.b && c.send(s));
+  }
 
   /** نشر نتائج المحرك + الحفظ */
   function commit(id: string, r: Room, res: { out: any[]; logs: any[] }) {
@@ -83,7 +127,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       // طلب أغنية يحتاج بحث YouTube: لا يُبث — يُبحث على الخادم ثم تُضاف النتيجة للقائمة ويُبث الرد
       if (m.t === "musicsearch") { const find = opt.ytFind ? opt.ytFind(m.q, m.cfg) : Promise.resolve({ ok: false, message: "البحث في YouTube غير متاح على هذا الخادم" });
         find.catch(() => ({ ok: false, message: "تعذر البحث في YouTube" })).then(yr => commit(id, r, { out: roomMusicFound(r as any, m, yr, Date.now()).out, logs: [] })); continue; }
-      broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
+      bcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
+    if (res.out.some(m => m.t === "session")) (r as any).ldC = null;
     if (res.out.some(m => m.t === "clock" || m.t === "glog" || m.t === "session")) { r.dirty = true; } else if (res.out.some(m => m.t === "stats")) (r as any).dirtyD = true; // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }
@@ -104,14 +149,15 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (g) { const e: any = ev; if (!e.gift || e.gift === "هدية") e.gift = g.name; if (!e.image && g.image) e.image = g.image; if (!(+e.diamonds > 0) && +g.diamonds > 0) { e.diamonds = +g.diamonds; e.value = e.diamonds * Math.max(1, +e.count || 1); } } }
     // كتالوج الصور الحقيقية: كل هدية تصل من TikTok (اتصال حقيقي، ليست تجربة) تُحفظ بصورتها واسمها وقيمتها كما أرسلها TikTok
     if (ev.type === "gift" && !(ev as any).sim && !(ev as any).test && (ev as any).streak && (ev as any).giftId != null && seenGift(r, ev as any)) broadcast(r, { t: "gifts", gifts: r.gifts });
+    if (ev.type === "reset" || ev.type === "shuffle") (r as any).ldC = null; // تصفير يدوي: الحفظ التالي يكتب البيانات الجديدة فوراً
     const res = roomEvent(r, ev, Date.now());
     if (cd) { if (res.out.some((m: any) => m.t === "event" && m.ev?.type === "comment")) { cd.sent++; cd.okAt = Date.now(); } else if ((res as any).dup) cd.dup++; }
     if (!(res as any).dup && !(res as any).stale && !(res as any).bad) (r as any).dirtyD = true;
-    if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return; }
+    if ((res as any).dup) { if (ev.type === "donation") opt.onDonationDispatch?.(id, ev, { dup: true, overlays: 0 }); return "dup"; }
     if (ev.type === "donation") { const ov = [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length; (r as any).lastDon = { id: ev.id, at: Date.now(), test: !!(ev as any).test, overlays: ov, acks: new Set() }; opt.onDonationDispatch?.(id, ev, { dup: false, overlays: ov }); }
     // أحداث التجربة لا تدخل سجل الهدايا الحقيقي في قاعدة البيانات
     if (ev.type === "gift" && !(ev as any).sim && r.H.length > before) opt.persistGift?.(id, r.H[r.H.length - 1]).catch(() => {});
-    commit(id, r, res);
+    commit(id, r, res); return "ok";
   }
 
   wss.on("connection", (ws: Client) => {
@@ -127,6 +173,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         clearTimeout(r.closeTimer);
         ws.room = m.room;
         ws.canEdit = await opt.authorize(m.room, m.key).catch(() => false);
+        ws.b = m.b === 1; // يدعم استلام الدفعات
+        flushOut(r); // الأحداث المعلقة تصل للآخرين قبل اللقطة — فلا تُحتسب مرتين عند العميل الجديد
         r.clients.add(ws);
         send(ws, roomSnapshot(r, Date.now())); // لقطة كاملة: لا تكرار احتساب بعد إعادة الاتصال
         r.layouts.forEach(layout => send(ws, { t: "layout", layout }));
@@ -143,14 +191,14 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "mplayer" && ["claim", "pstate", "pended", "perror"].includes(m.op)) { if (r) commit(id, r, roomClockOp(r, { target: "music", op: m.op, pid: m.pid, kind: m.kind, qid: m.qid, status: m.status, pos: m.pos, why: m.why, embed: !!m.embed, force: ws.canEdit ? !!m.force : false }, Date.now())); return; }
       if (!ws.canEdit) return send(ws, { t: "status", text: "هذا الاتصال للقراءة فقط" });
       // «مزامنة الهدف»: لقطة كاملة جديدة لكل روابط البث المتصلة (نفس القيمة في كل مكان)
-      if (m.t === "resync") { const r = rooms.get(ws.room); if (r) { const snap = roomSnapshot(r, Date.now()); r.clients.forEach(c => send(c, snap)); r.layouts.forEach(layout => r.clients.forEach(c => send(c, { t: "layout", layout }))); send(ws, { t: "status", text: `🔄 تمت المزامنة مع ${[...r.clients].filter(c => !c.canEdit).length} رابط بث` }); } return; }
+      if (m.t === "resync") { const r = rooms.get(ws.room); if (r) { flushOut(r); const snap = roomSnapshot(r, Date.now()); r.clients.forEach(c => send(c, snap)); r.layouts.forEach(layout => r.clients.forEach(c => send(c, { t: "layout", layout }))); send(ws, { t: "status", text: `🔄 تمت المزامنة مع ${[...r.clients].filter(c => !c.canEdit).length} رابط بث` }); } return; }
 
       if (m.t === "sim" && m.ev) {
         m.ev.sim = true; delete m.ev.verified; // «مؤكد» يأتي من الخادم فقط (خدمة الدونيشن) — لا من المتصفح
         // التبرعات من لوحة التجربة تُعلَّم تجريبية دائماً ولا تُحفظ في قاعدة البيانات
         if (m.ev.type === "donation") { m.ev.test = true; m.ev.provider = "test"; m.ev.id = "test:" + String(m.ev.id || Date.now()); }
         if (m.ev.type === "donation_refund" && !String(m.ev.id || "").startsWith("test:") && !String(m.ev.id || "").startsWith("sim_")) return;
-        return dispatch(id, r, m.ev);
+        return ingest(id, r, m.ev);
       }
       // عرض فوري (حساب عند الطلب...) يُبث لكل روابط الغرفة
       if (m.t === "fx" && m.fx && typeof m.fx.kind === "string") { const f = m.fx; return broadcast(r, { t: "fx", fx: { kind: String(f.kind).slice(0, 20), accountId: String(f.accountId ?? "").slice(0, 40), at: +f.at || Date.now(), until: Math.min(+f.until || 0, Date.now() + 120000) } }); }
@@ -179,7 +227,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
         r.tiktok?.stop();
         let h: TikTokHandle | undefined;
         h = r.tiktok = startTikTok(username, {
-          onEvent: ev => { if (h && r.tiktok !== h) return; dispatch(id, r, ev); }, // أحداث اتصال قديم بعد استبداله لا تصل للجلسة الحالية
+          onEvent: ev => { if (h && r.tiktok !== h) return; ingest(id, r, ev); }, // أحداث اتصال قديم بعد استبداله لا تصل للجلسة الحالية
           onGifts: gifts => { r.gifts = gifts; r.dirty = true; broadcast(r, { t: "gifts", gifts }); }, // قائمة هدايا TikTok الحقيقية: تُحفظ مع حالة الغرفة (خارج البث المرسل للروابط)
           onFollowers: n => commit(id, r, roomClockOp(r, { target: "followers", op: "official", platform: "tiktok", value: n, source: "tiktok_live" }, Date.now())),
           onStats: s => { if (h && r.tiktok !== h) return; commit(id, r, roomStats(r as any, "tiktok", s, Date.now())); },
@@ -210,20 +258,29 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (r.clients.size === 0) r.closeTimer = setTimeout(() => {
         if (r.clients.size) return;
         r.tiktok?.stop();
-        if (r.dirty) opt.saveClock?.(id, withCatalog(r)).catch(() => {});
+        if (r.dirty) dbTimed(opt.saveClock?.(id, withCatalog(r))).catch(() => {});
         rooms.delete(id);
       }, 10 * 60 * 1000);
     });
   });
 
   // ساعة الخادم: انتهاء السبثون/المؤقتات + البدء المجدول + حفظ الحالة
+  let tickN = 0;
   const tick = setInterval(() => {
-    const now = Date.now();
+    const now = Date.now(); tickN++; const G = tickN % 2 === 0 ? perfGlobal() : null;
     rooms.forEach((r, id) => {
-      commit(id, r, roomTick(r, now));
+      try { commit(id, r, roomTick(r, now)); } catch (e: any) { console.error("[hub] tick", e?.message); }
+      const P = perfOf(r);
+      if (perfTick(P, pendingOf(r), now)) { broadcast(r, { t: "perf", explore: P.explore }); console.log(`[perf] room=${id.slice(0, 6)}… explore=${P.explore} rate=${P.rate}/s pending=${P.pending}`); }
       // بيانات البث (تكبيس/دعم) تتغير كثيراً: تُحفظ كل 15 ثانية على الأكثر لتتحمل إعادة تشغيل الخادم
       if (!r.dirty && (r as any).dirtyD && now - ((r as any).savedAt || 0) > 15000) r.dirty = true;
-      if (r.dirty) { r.dirty = false; (r as any).dirtyD = false; (r as any).savedAt = now; opt.saveClock?.(id, withCatalog(r)).catch(() => {}); }
+      // حالة السبثون/المؤقتات: حفظ كل 3 ث على الأكثر (كان كل ثانية أثناء الهدايا — ضغط كبير على قاعدة البيانات في الإكسبلور)
+      if (r.dirty && now - ((r as any).savedAt || 0) >= 3000 && !(r as any).saving) { r.dirty = false; (r as any).dirtyD = false; (r as any).savedAt = now; (r as any).saving = true;
+        dbTimed(opt.saveClock?.(id, withCatalog(r))).catch(() => { r.dirty = true; }).finally(() => { (r as any).saving = false; }); }
+      // لوحة «مراقبة الأداء»: للوحات التحكم فقط (أرقام فقط)
+      if (G) { const eds = [...r.clients].filter(c => c.readyState === 1 && c.canEdit); if (eds.length) { const tk = r.tiktok?.info;
+        const s = JSON.stringify(perfPublic(P, { state: tk?.state || "stopped", live: !!r.tiktok?.connected, text: tk?.text }, { overlays: [...r.clients].filter(c => c.readyState === 1 && !c.canEdit).length, dashboards: eds.length }, G, now));
+        eds.forEach(c => c.send(s)); } }
     });
   }, 1000);
   const ping = setInterval(() => wss.clients.forEach((c: Client) => { if (!c.alive) return c.terminate(); c.alive = false; c.ping(); }), 30000);
@@ -243,5 +300,5 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   async function musicInfo(room: string) { const r = await getRoom(room); return { M: (r.C as any)?.music || null, cfg: roomMusicCfg(r as any) }; }
   /** أرقام المشاهدين من موصلات المنصات المصرح بها (YouTube/Twitch/Kick) */
   const liveStats = (room: string, platform: string, data: any) => { const r = rooms.get(room); if (r) commit(room, r, roomStats(r as any, platform, data, Date.now())); };
-  return { rooms, stats, liveStats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
+  return { rooms, stats, liveStats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) ingest(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
 }

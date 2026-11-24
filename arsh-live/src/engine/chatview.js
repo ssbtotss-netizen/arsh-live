@@ -101,24 +101,35 @@ Object.assign(View.prototype,{
   return el },
  /** حدث مباشر من الحافلة */
  chatPush(ev){ const m=ev&&ev.kind&&ev.platform?ev:chatMsgOf(ev); if(!m) return; if(m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) return; const w=this.w; this.ucBuf=this.ucBuf||[];
-  if(this.ucBuf.some(x=>x.id===m.id)) return; this.ucBuf.push(m); if(this.ucBuf.length>100) this.ucBuf.splice(0,this.ucBuf.length-100);
+  if(this.ucSeen?this.ucSeen.has(m.id):this.ucBuf.some(x=>x.id===m.id)) return; this.ucBuf.push(m); if(this.ucBuf.length>100) this.ucBuf.splice(0,this.ucBuf.length-100);
+  this.ucSeen=new Set(this.ucBuf.map(x=>x.id));
   const plat=w.mode==="rotate"?UC_ROT[this.ucRotI||0]:w.mode==="split"?m.platform:null;
   const r=(this.ucF||chatFilter(w))(m,plat||w.mode); if(!r) return;
-  const L=w.mode==="split"?this.ucRoot&&this.ucRoot.querySelector(`.uc-col[data-p="${m.platform}"] .uc-list`):this.ucRoot&&this.ucRoot.querySelector(".uc-list"); if(!L) return;
-  // أول رسالة حقيقية تستبدل رسائل المعاينة
-  if(L.querySelector('.uc-m[data-id^="s"]')&&!String(m.id).startsWith("s")) L.querySelectorAll('.uc-m[data-id^="s"]').forEach(x=>{ if(/^s\d$/.test(x.dataset.id)) x.remove() });
-  const el=this.ucEl(r); L.appendChild(el);
-  const max=Math.max(1,+w.max||8); while(L.children.length>max) L.firstElementChild.remove();
-  const spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
-  if(anim){ const en=w.enter||"right", K={right:[{opacity:0,transform:"translateX(45%)"},{opacity:1,transform:"none"}],left:[{opacity:0,transform:"translateX(-45%)"},{opacity:1,transform:"none"}],bottom:[{opacity:0,transform:"translateY(70%)"},{opacity:1,transform:"none"}],fade:[{opacity:0},{opacity:1}],pop:[{opacity:0,transform:"scale(.82)"},{opacity:1,transform:"scale(1.03)"},{opacity:1,transform:"none"}],neon:[{opacity:0,filter:"brightness(2.4) drop-shadow(0 0 .4em var(--pc))"},{opacity:1,filter:"brightness(1.3) drop-shadow(0 0 .25em var(--pc))",offset:.5},{opacity:1,filter:"none"}]}[en];
-   // بدون قفز: الرسالة الجديدة تنمو من ارتفاع 0 فتنزاح القديمة بسلاسة
-   if(en!=="none"&&w.mode!=="split"){ const h=el.offsetHeight; if(h) el.animate([{height:"0px",marginBlock:"0px",paddingBlock:"0px"},{height:h+"px"}],{duration:260/spd,easing:"ease-out"}) }
-   if(K) el.animate(K,{duration:420/spd,easing:"cubic-bezier(.2,.8,.2,1)"}); el.classList.add("uc-new"); setTimeout(()=>el.classList.remove("uc-new"),1200) }
-  if((+w.holdSec||0)>0) setTimeout(()=>{ if(!el.isConnected) return; const ex=w.ucExit||"fade";
-   if(!anim||ex==="none"){ el.remove(); return }
+  // الأداء: الرسائل تُجمع وتُرسم مرة واحدة لكل إطار (كانت كل رسالة تفرض قياس تخطيط + حركتين — يعلّق OBS في الإكسبلور)
+  (this.ucPend||(this.ucPend=[])).push({r,p:m.platform}); if(this.ucPend.length>300) this.ucPend.splice(0,this.ucPend.length-300);
+  if(this.ucFr) return; const go=()=>{ if(this.ucFrA) cancelAnimationFrame(this.ucFrA); clearTimeout(this.ucFrT); this.ucFr=0; this.ucFrA=0; this.ucFrT=0; this.ucFlush() };
+  this.ucFr=1; if(typeof requestAnimationFrame==="function") this.ucFrA=requestAnimationFrame(go); this.ucFrT=setTimeout(go,80) },
+ ucFlush(){ const P=this.ucPend||[]; this.ucPend=[]; if(!P.length||!this.ucRoot) return; const w=this.w, max=Math.max(1,+w.max||8);
+  const groups=new Map(); for(const it of P){ const L=w.mode==="split"?this.ucRoot.querySelector(`.uc-col[data-p="${it.p}"] .uc-list`):this.ucRoot.querySelector(".uc-list"); if(!L) continue; (groups.get(L)||groups.set(L,[]).get(L)).push(it.r) }
+  const explore=typeof window!=="undefined"&&!!window.__arshExplore, spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
+  const added=[];
+  for(const [L,rs] of groups){
+   // أول رسالة حقيقية تستبدل رسائل المعاينة
+   if(rs.some(r=>!String(r.id).startsWith("s"))) L.querySelectorAll('.uc-m[data-id^="s"]').forEach(x=>{ if(/^s\d$/.test(x.dataset.id)) x.remove() });
+   const show=rs.length>max?rs.slice(-max):rs; // العرض فقط: الرسائل القديمة في نفس الإطار ستُزاح على أي حال (السجل الكامل محفوظ)
+   const fr=document.createDocumentFragment(); for(const r of show){ const el=this.ucEl(r); fr.appendChild(el); added.push(el) } L.appendChild(fr);
+   while(L.children.length>max) L.firstElementChild.remove() }
+  const live=added.filter(el=>el.isConnected); const many=live.length>3||explore;
+  if(anim&&live.length){ const en=w.enter||"right", K={right:[{opacity:0,transform:"translateX(45%)"},{opacity:1,transform:"none"}],left:[{opacity:0,transform:"translateX(-45%)"},{opacity:1,transform:"none"}],bottom:[{opacity:0,transform:"translateY(70%)"},{opacity:1,transform:"none"}],fade:[{opacity:0},{opacity:1}],pop:[{opacity:0,transform:"scale(.82)"},{opacity:1,transform:"scale(1.03)"},{opacity:1,transform:"none"}],neon:[{opacity:0,filter:"brightness(2.4) drop-shadow(0 0 .4em var(--pc))"},{opacity:1,filter:"brightness(1.3) drop-shadow(0 0 .25em var(--pc))",offset:.5},{opacity:1,filter:"none"}]}[en];
+   // بدون قفز: الرسالة الجديدة تنمو من ارتفاع 0 — قياس واحد لكل الإطار (قراءة كل الارتفاعات ثم الكتابة)، وتُترك عند الضغط العالي
+   if(en!=="none"&&w.mode!=="split"&&!many){ const hs=live.map(el=>el.offsetHeight); live.forEach((el,k)=>{ if(hs[k]) el.animate([{height:"0px",marginBlock:"0px",paddingBlock:"0px"},{height:hs[k]+"px"}],{duration:260/spd,easing:"ease-out"}) }) }
+   if(K){ const kf=many?[{opacity:0},{opacity:1}]:K; live.forEach(el=>el.animate(kf,{duration:(many?220:420)/spd,easing:"cubic-bezier(.2,.8,.2,1)"})) }
+   if(!many) live.forEach(el=>{ el.classList.add("uc-new"); setTimeout(()=>el.classList.remove("uc-new"),1200) }) }
+  if((+w.holdSec||0)>0) for(const el of live) setTimeout(()=>{ if(!el.isConnected) return; const ex=w.ucExit||"fade";
+   if(!anim||ex==="none"||(typeof window!=="undefined"&&window.__arshExplore)){ el.remove(); return }
    const X={fade:[{opacity:1},{opacity:0}],slide:[{opacity:1,transform:"none"},{opacity:0,transform:"translateX(40%)"}],shrink:[{opacity:1,transform:"none",maxHeight:el.offsetHeight+"px"},{opacity:0,transform:"scale(.85)",maxHeight:"0px",marginBlock:"0px",paddingBlock:"0px"}]}[ex]||[{opacity:1},{opacity:0}];
    const a=el.animate(X,{duration:450/spd,fill:"forwards"}); a.onfinish=()=>el.remove() },(+w.holdSec)*1000) },
- chatLoad(list){ this.ucBuf=(list||[]).slice(-100); this.ucRender(false) },
+ chatLoad(list){ this.ucBuf=(list||[]).slice(-100); this.ucSeen=null; this.ucPend=[]; this.ucRender(false) },
 });
 
 const UC_CSS=`
