@@ -17,7 +17,7 @@ function Overlay({ token }: { token: string }) {
 
   useEffect(() => {
     document.documentElement.style.background = "transparent";
-    document.body.className = "ov";
+    document.body.className = "ov" + (q.get("dock") === "1" ? " ov-dock" : ""); // dock=1: لوحة OBS الجانبية (خلفية داكنة للقراءة)
     // الحالة من الخادم فقط (لا LocalStorage): الدونيشن المؤكدة + إعدادات الأهداف — نفس مصدر لوحة التحكم
     // CHAT: سجل الشات في الصفحة نفسها — طبقة الشات تعيد بناء رسائلها منه عند تغيير التصميم/التخطيط (كانت تفرغ)
     const st: any = { D: emptyData(), H: [], C: newClockState(), skew: 0, SO: null, DN: emptyDonations(), DC: null, CHAT: [] };
@@ -53,6 +53,7 @@ function Overlay({ token }: { token: string }) {
         else { if (m.ev.type === "gift" && m.ev.big === undefined) m.ev.big = m.ev.value >= big; applyEvent(st.D, st.H, m.ev); if (st.C) { st.C.tops = st.C.tops || {}; topsOnEvent(st.C.tops, m.ev, Date.now(), 180); } }
       }
       else if (m.t === "clock") { st.C = m.C; if (m.now) st.skew = m.now - Date.now(); }
+      else if (m.t === "stats") { if (st.C && m.ST) st.C.stats = m.ST; return; } // إحصائيات البث (المشاهدون/المشاهدات/الدعم)
       else if (m.t === "session") { if (st.C && m.S) st.C.live = Object.assign(st.C.live || {}, m.S); return; } // جلسة البث (مدة البث/التصفير): العناصر الدورية تقرأها في النبضة التالية
       else if (m.t === "layout") {
         if (m.layout?.socials) st.SO = m.layout.socials; // تعديل الحسابات يظهر فوراً

@@ -1,0 +1,35 @@
+// واجهة «💬 إعدادات الشات» + شريط الإحصائيات في OBS (نفس سياق المتصفح)
+const {chromium}=require('/opt/npm-tools/node_modules/playwright');
+let pass=0,fail=0; const ok=(c,m)=>{c?pass++:(fail++,console.log("FAIL "+m))};
+(async()=>{ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome'}); const ctx=await b.newContext({viewport:{width:1440,height:1000}}); const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ await p.goto('file:///home/claude/najd/demo/index.html'); await p.evaluate(()=>localStorage.clear()); await p.reload();
+ const wid=await p.evaluate(()=>{ const A=window.__arsh; const w=A.addWidget("uchat",{}); setTimeout(()=>{},0); window.__wid=w.id; A.save(); A.pushLayout(); return window.__wid });
+ const ovURL=await p.evaluate(id=>window.__arsh.overlayURL(window.__arsh.L(),id),wid); const ov=await ctx.newPage(); await ov.setViewportSize({width:1000,height:500}); ov.on('pageerror',e=>errs.push('ov:'+e.message)); await ov.goto(ovURL); await ov.waitForTimeout(800);
+ await p.evaluate(()=>{ const A=window.__arsh; A.send({t:"stats-test",platform:"tiktok",data:{viewers:1500,views:20000}});
+  A.send({t:"sim",ev:{type:"comment",id:"c1",platform:"tiktok",user:{id:"u1",name:"أحمد"},text:"هلا والله"}}); A.send({t:"sim",ev:{type:"comment",id:"c2",platform:"tiktok",user:{id:"u2",name:"فاضي"},text:""}}) }); await ov.waitForTimeout(1500);
+ const bg=await ov.evaluate(()=>[getComputedStyle(document.documentElement).backgroundColor,getComputedStyle(document.body).backgroundColor]);
+ ok(bg.every(c=>c==="rgba(0, 0, 0, 0)"||c==="transparent"),"OBS page background transparent (no white): "+bg);
+ ok(await ov.locator('.lsb-host .lsb-row').count()>=1 && /1,500/.test(await ov.locator('.lsb-host').innerText()),"stats bar on top of chat shows real-path viewers 1,500");
+ const ws=await ov.$$eval('.uc-m',a=>a.map(e=>e.getBoundingClientRect().width)); const W=await ov.evaluate(()=>innerWidth);
+ ok(ws.length>=1 && ws.every(w=>w<W*0.8),"messages sized to content, not full width: "+ws.map(Math.round));
+ ok(!(await ov.locator('.uc-m',{hasText:"فاضي"}).count()),"empty message (no text) is not shown as an empty box");
+ await p.click('.nav [data-go="chatcfg"]'); await p.waitForTimeout(600);
+ ok(await p.locator('[data-ccsb]').count()===15,"15 bar designs in the gallery");
+ const htmls=await p.$$eval('[data-ccsbpv]',a=>a.map(e=>e.innerHTML)); ok(htmls.length===15&&htmls.every(h=>/lsb-row/.test(h)),"every design has a live preview");
+ for(const d of ["neonBlue","vertical","minimalText"]){ await p.click(`[data-ccsb="${d}"]`); await p.waitForTimeout(350); ok(await ov.locator(`.lsbd-${d}`).count()>=1,"design change applies live in OBS: "+d) }
+ const viewersT=p.locator('.cc-row',{hasText:"إظهار المشاهدين الحاليين"}).locator('input'); await viewersT.click(); await p.waitForTimeout(350);
+ ok(!/1,500/.test(await ov.locator('.lsb-host').innerText()),"toggle current viewers off → hidden in OBS");
+ await viewersT.click(); await p.waitForTimeout(1300); ok(/1,500/.test(await ov.locator('.lsb-host').innerText()),"toggle back on");
+ const pos=p.locator('select[data-wf="sbPos"]'); await pos.selectOption("bottom"); await p.waitForTimeout(350); ok(await ov.locator('.lsb-host.lsb-bottom').count()===1,"position: bottom");
+ await pos.selectOption("none"); await p.waitForTimeout(350); ok(await ov.locator('.lsb-host .lsb-row').count()===0,"position: hidden");
+ await pos.selectOption("top"); await p.waitForTimeout(300);
+ const before=await p.evaluate(()=>window.__arsh.L().widgets.length); await p.click('[data-ccsplit]'); await p.waitForTimeout(1500);
+ const L=await p.evaluate(()=>window.__arsh.L()); ok(L.widgets.length===before+1 && L.widgets.some(w=>w.type==="chatstats"),"split: bar becomes its own layer");
+ ok(L.widgets.find(w=>w.type==="uchat").sbPos==="none","split: chat stops drawing its own bar");
+ const sid=L.widgets.find(w=>w.type==="chatstats").id; const sv=await ctx.newPage(); await sv.goto(await p.evaluate(id=>window.__arsh.overlayURL(window.__arsh.L(),id),sid)); await sv.waitForTimeout(1500);
+ ok(await sv.locator('.lsb-row').count()>=1 && /1,500/.test(await sv.locator('body').innerText()),"separate stats layer has its own OBS link and shows live numbers");
+ const dock=await ctx.newPage(); await dock.goto(ovURL+(ovURL.includes('?')?'&':'?')+'dock=1'); await dock.waitForTimeout(1000);
+ ok(await dock.evaluate(()=>document.body.classList.contains('ov-dock')),"dock link → compact readable dock mode");
+ await ov.reload(); await ov.waitForTimeout(1200); ok(await ov.locator('.uc-m').count()>=1 && await ov.locator('.lsb-row').count()>=1,"OBS refresh keeps chat + stats");
+ ok(!errs.length,"no page errors: "+errs.join('|'));
+ console.log(`chatcfg-ui: ${pass} passed, ${fail} failed`); await b.close(); process.exit(fail?1:0) })();

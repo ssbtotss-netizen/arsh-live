@@ -36,6 +36,7 @@ export const TYPES={
  actbox:{label:"عرض الإجراءات",icon:"⚡",title:"",listens:[],board:false,act:true},
  nowplay:{label:"الأغنية الحالية",icon:"🎵",title:"",listens:[],board:false,np:true},
  uchat:{label:"الشات الموحد",icon:"💬",title:"",listens:[],board:false,chat:true},
+ chatstats:{label:"إحصائيات البث — Live Statistics",icon:"📊",title:"",listens:[],board:false,sb:true,tick:true},
  levent:{label:"آخر التفاعلات",icon:"✨",title:"",listens:[],board:false,le:true},
  falert:{label:"تنبيهات المتابعين",icon:"🦆",title:"",listens:[],board:false,fa:true},
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
@@ -126,7 +127,8 @@ export function newWidget(type,o={}){
  if(type==="donText"){Object.assign(base,JSON.parse(JSON.stringify(DT_DEFAULTS)))}
  if(type==="actbox"){Object.assign(base,{fontScale:1,hideTests:false,w:.6,h:.4})}
  if(type==="nowplay"){Object.assign(base,{design:"glass",showBy:true,fontScale:1,accent:"",animOn:true,w:.36,h:.12})}
- if(type==="uchat"){Object.assign(base,{design:"glass",mode:"all",max:8,holdSec:0,dir:"bottom",enter:"right",showAv:true,showLogo:true,showTime:false,showEvents:true,dedupe:true,dedupeSec:30,banned:"",bannedAction:"mask",highlight:true,importantWords:"",importantGift:100,bgOpacity:.55,fontScale:1,font:"",rotateSec:8,animOn:true,w:.3,h:.5})}
+ if(type==="chatstats"){Object.assign(base,{w:.9,h:.06,sbOn:true,sbPos:"top",sbDesign:"glass",sbViewers:true,sbViews:true,sbMoney:true,sbCoins:true,sbLogo:true,sbName:false,sbMerge:false,sbBg:true,sbUnavail:"show",sbLabels:true,sbSupport:"both",sbNeon:true,sbFx:true,sbFs:1,sbIcoS:1,sbGap:1,sbH:1,sbW:100,sbGlow:.6,sbSpeed:1,sbBgA:-1})}
+ if(type==="uchat"){Object.assign(base,{sbOn:true,sbPos:"top",sbDesign:"glass",sbViewers:true,sbViews:true,sbMoney:true,sbCoins:true,sbLogo:true,sbName:false,sbMerge:false,sbBg:true,sbUnavail:"show",sbLabels:true,sbSupport:"both",sbNeon:true,sbFx:true,sbFs:1,sbIcoS:1,sbGap:1,sbH:1,sbW:100,sbGlow:.6,sbSpeed:1,sbBgA:-1,ucFit:true,ucMsgBg:true,ucFrame:true,ucFade:true,showName:true,ucExit:"fade",ucSpeed:1,design:"glass",mode:"all",max:8,holdSec:0,dir:"bottom",enter:"right",showAv:true,showLogo:true,showTime:false,showEvents:true,dedupe:true,dedupeSec:30,banned:"",bannedAction:"mask",highlight:true,importantWords:"",importantGift:100,bgOpacity:.55,fontScale:1,font:"",rotateSec:8,animOn:true,w:.3,h:.5})}
  if(type==="falert"){Object.assign(base,faDefaultsLite())}
  if(type==="abox"){Object.assign(base,{x:.1,y:.25,w:.8,h:.35,abEvents:[],abGap:600,abMax:30,abMerge:true,abHideTest:false})}
  if(type==="levent"){Object.assign(base,{design:"butterfly",kind:"follow",mode:"sticky",dur:5,layout:"",frame:"auto",card:"clear",palette:"",title:"",msg:"",showTitle:true,showMsg:true,showEmblem:true,showAv:true,w:.42,h:.3,glow:1,textScale:1,animOn:true,animSpeed:1,frameImg:"",defaultAv:""})}

@@ -86,7 +86,7 @@ export function tkTexts(err: TkErr, waitMs: number) {
 
 export function startTikTok(
   username: string,
-  cb: { onEvent(ev: LiveEvent): void; onStatus(live: boolean, text: string, info?: TkInfo): void; onFollowers?(n: number): void; onGifts?(gifts: { id: number; name: string; diamonds: number; image?: string }[]): void },
+  cb: { onEvent(ev: LiveEvent): void; onStatus(live: boolean, text: string, info?: TkInfo): void; onFollowers?(n: number): void; onStats?(s: { viewers?: number | null; views?: number | null }): void; onGifts?(gifts: { id: number; name: string; diamonds: number; image?: string }[]): void },
   deps: { mod?: any; now?: () => number; log?: (s: string) => void } = {}
 ): TikTokHandle {
   const now = deps.now ?? Date.now, log = deps.log ?? ((s: string) => console.log(s));
@@ -159,6 +159,14 @@ export function startTikTok(
       emit({ type: "gift", id, user: u, value: diamonds * total, count: total, gift: name != null && String(name).trim() ? String(name) : "هدية", giftId, diamonds, image: String(image || ""),
         streak: { cum: repeat, gc: groupCount, end, type: giftType ?? null, group: groupId != null ? String(groupId) : "" } } as any);
     });
+    // إحصائيات البث: المشاهدون الآن (total/viewerCount) وإجمالي المشاهدين في الجلسة (totalUser) من حدث roomUser — كل 5 ث على الأكثر
+    let ruShown = 0, ruAt = 0;
+    const numOf = (v: any) => { const n = typeof v === "string" ? Number(v.replace(/[,\s]/g, "")) : Number(v); return Number.isFinite(n) && n >= 0 ? n : null; };
+    c.on(ev("ROOM_USER", "roomUser"), (d: any) => { if (!live()) return;
+      const viewers = numOf(d?.viewerCount ?? d?.total ?? d?.totalUserCount), views = numOf(d?.totalUser ?? d?.total_user);
+      if (ruShown < 2) { ruShown++; log(`[tiktok] roomUser shape id=${attemptId} keys=${Object.keys(d || {}).slice(0, 20).join(",")} viewers=${viewers ?? "?"} totalUser=${views ?? "?"}`); }
+      const now = Date.now(); if (now - ruAt < 5000) return; ruAt = now; cb.onStats?.({ viewers, views });
+    });
     let chatShown = 0;
     c.on(ev("CHAT", "chat"), (d: any) => { if (!live()) return;
       const cu: any = userOf(d); if (String(cu.id).toLowerCase() === username.toLowerCase()) cu.owner = true;
@@ -193,6 +201,8 @@ export function startTikTok(
       const ri: any = state?.roomInfo ?? state?.roomInfoResponse ?? null, rd: any = ri?.data ?? ri ?? {};
       const ct = Number(rd?.create_time ?? rd?.createTime ?? rd?.start_time ?? rd?.room?.create_time ?? 0);
       const liveStartAt = ct > 1e12 ? ct : ct > 1e9 ? ct * 1000 : undefined;
+      { const uc = Number(rd?.user_count ?? rd?.userCount ?? NaN), tu = Number(rd?.stats?.total_user ?? rd?.stats?.totalUser ?? NaN);
+        if (Number.isFinite(uc) || Number.isFinite(tu)) queueMicrotask(() => cb.onStats?.({ viewers: Number.isFinite(uc) ? uc : null, views: Number.isFinite(tu) ? tu : null })); }
       log(`[tiktok] room info id=${attemptId} stateKeys=${Object.keys(state || {}).slice(0, 12).join(",")} infoKeys=${Object.keys(rd || {}).slice(0, 20).join(",")} start=${liveStartAt ? new Date(liveStartAt).toISOString() : "n/a"}`);
       set({ state: "connected", attempt: 0, maxAttempts: 0, kind: undefined, admin: undefined, liveRoomId: lr ?? undefined, liveStartAt, ended: false, text: `متصل ببث @${username}` + (state?.roomId ? ` (غرفة ${state.roomId})` : "") }, true);
       const syncFollowers = async () => { try { const inf: any = await c.fetchRoomInfo?.(); const o = inf?.owner ?? inf?.data?.owner ?? inf?.roomInfo?.owner; const n = Number(o?.follow_info?.follower_count ?? o?.followInfo?.followerCount);

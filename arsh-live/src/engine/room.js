@@ -16,6 +16,7 @@ import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { giftStreak, glogPush } from "./giftstreak.js";
 import { liveState, sessDecide, sessOpen, sessClose, sessPublic, okStart } from "./session.js";
+import { statsState, statsOnEvent, statsViewers, statsOffline } from "./livestats.js";
 import { newClockState, giftCoins, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
 
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
@@ -36,6 +37,7 @@ export function roomEvent(R,ev,now){
   R.CHAT=R.CHAT||[]; chatPush(R.CHAT,ev);
   const out=[{t:"event",ev}], logs=ev.type==="donation"?subathonOnDonation(R.C.subathon,ev,now):[]; keep(R,logs); if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomActions(R,ev,now,out); if(ev.type==="donation"){ const nm=String(ev.name||""), cur=String(ev.currency||"").toUpperCase(); ev.donorTotal=nm&&!ev.anonymous?R.DN.list.filter(d=>d.name===nm&&d.currency===cur&&!d.test).reduce((a,d)=>a+Math.max(0,d.amount-(d.refunded||0)),0):""; }
+ if((ev.type==="donation"||ev.type==="donation_refund")&&statsOnEvent(R.C,ev,now)) out.push({t:"stats",ST:R.C.stats});
  roomAlerts(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
  // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
  let gdiag=null;
@@ -54,6 +56,7 @@ export function roomEvent(R,ev,now){
  roomActions(R,ev,now,out);
  if(R.C.battle&&battleOnEvent(R.C.battle,ev,now)){ if(ev.type==="like") R.btDirty=true; else if(!logs.length) out.push({t:"clock",C:R.C,now,logs:[],bt:1}) } // تحدي الفريقين: الهدايا فوراً، التكبيس مجمّع كل ثانية
  if(ev.type==="follow"){ R.C.followers=R.C.followers||{}; if(followersOnEvent(R.C.followers,ev,now)&&!logs.length) out.push({t:"clock",C:R.C,now,logs:[],fc:"tiktok"}) }
+ if(statsOnEvent(R.C,ev,now)) out.push({t:"stats",ST:R.C.stats}); // إحصائيات البث: دعم الجلسة بوحدته الأصلية
  if(gdiag){ const mine=logs.filter(l=>l.eventId===ev.id), ms=mine.reduce((a,l)=>a+(+l.deltaMs||0),0), capped=mine.some(l=>l.requestedMs!==l.deltaMs);
   const it=glogPush(R.C,gdiag,{ms,why:ms?"":giftWhy(R.C.subathon,ev)}); if(capped) it.why="وصل السبثون للحد الأقصى — أُضيف جزء من الوقت"; out.push({t:"glog",it}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
@@ -200,6 +203,7 @@ export function roomSessionStart(R,now,o={}){ const L=liveState(R.C);
  if(!L.sid&&L.keep!==false&&R.D&&R.D.tot&&(R.D.tot.likes||0)>0){ L.sid="pre"+now.toString(36); L.roomId=null; L.startedAt=R.D.startedAt||now; L.endedAt=null } // بيانات قبل نظام الجلسات: تُحفظ كجلسة سابقة بدل أن تضيع
  sessClose(L,R.D,now,o.why||"new"); sessOpen(L,{roomId:o.roomId??null,now,source:o.source||"manual",startAt:o.startAt});
  const out=o.reset===false?[]:roomSessionReset(R,now);
+ statsState(R.C); out.push({t:"stats",ST:R.C.stats}); // إحصائيات جلسة جديدة تبدأ من الصفر
  out.push({t:"session",S:sessPublic(L),started:true,reset:o.reset!==false});
  return {out,logs:[],session:true} }
 /** اتصال بـ TikTok نجح ومعه roomId: نفس البث = استمرار، بث جديد = جلسة جديدة (مع التصفير إن كان مفعّلاً) */
@@ -226,3 +230,5 @@ export function roomSessionOp(R,m,now){ const L=liveState(R.C);
  if(m.op==="durAuto"){ L.durMan=null; return pub() }
  if(m.op==="durAccReset"){ L.durAcc=0; L.durAdded=0; return pub() }
  return {out:[],logs:[]} }
+/** أرقام المشاهدين من منصة (TikTok roomUser / YouTube / Twitch / Kick) → رسالة stats لكل الواجهات */
+export function roomStats(R,platform,data,now){ const ch=data&&data.offline?statsOffline(R.C,platform):statsViewers(R.C,platform,data||{},now); return ch?{out:[{t:"stats",ST:R.C.stats}],logs:[]}:{out:[],logs:[]} }

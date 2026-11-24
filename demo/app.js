@@ -25,7 +25,7 @@ function bootOverlay(q){
  L.widgets.forEach(migrateWidget);
  try{ const m={}; for(const a of ls("b6o6.alerts")||[]) m[a.id]={id:a.id,name:a.name,kind:a.kind,event:a.event,durationSec:a.durationSec,config:a.config,mediaUrl:a.mediaData||"",audioUrl:a.audioData||""}; for(const d of FA_DESIGNS) m["tpl:"+d.id]=alOfficialDef("tpl:"+d.id,d.name); aboxSetDefs(m) }catch(e){}
  const only=q.get("only"), room=q.get("room")||"", wsUrl=q.get("ws")||"", bigT=+q.get("big")||1000;
- const PM=q.get("pm")||(q.get("lp")==="1"?"perf":"hq"); document.body.classList.add("pm-"+PM);
+ const PM=q.get("pm")||(q.get("lp")==="1"?"perf":"hq"); document.body.classList.add("pm-"+PM); if(q.get("dock")==="1") document.body.classList.add("ov-dock");
  const R=loadRoom(); let skew=0;
  const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
@@ -42,6 +42,7 @@ function bootOverlay(q){
  }
  function onMsg(m){
   if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; if(Array.isArray(m.CH)) R.CHAT=m.CH.slice(-60); skew=(m.now||Date.now())-Date.now() }
+  else if(m.t==="stats"){ if(m.ST) R.C.stats=m.ST; return }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
   else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
@@ -105,6 +106,7 @@ function send(msg){
  else if(msg.t==="clock-op") res=roomClockOp(R,msg,now);
  else if(msg.t==="fx") res={out:[{t:"fx",fx:msg.fx}],logs:[]};
  else if(msg.t==="session-op") res=roomSessionOp(R,msg,now);
+ else if(msg.t==="stats-test") res=roomStats(R,msg.platform||"tiktok",msg.data||{},now); // نسخة العرض فقط: أرقام مشاهدين تجريبية للمعاينة والاختبار
  else return;
  for(const m of res.out){ if(m.t==="musicsearch"){ demoMusicSearch(m); continue } receive(m,true); if(bus) bus.postMessage(m) }
  saveRoom();
@@ -119,6 +121,7 @@ function receive(m,applied){
  else if(m.t==="fx"){ /* عرض فوري */ }
  else if(m.t==="status"){ if(m.text!==undefined||m.live!==undefined) liveStatus={live:!!m.live,text:m.text||liveStatus.text}; const prev=TK&&TK.state; if(m.tk) TK=m.tk; tkRefresh(); if(m.text&&!m.dup&&(!m.tk||m.tk.state!==prev||m.tk.state==="failed")) toast(m.text); return }
  else if(m.t==="bot"){ for(const it of m.items||[]){ S.botFeed.unshift(it); if(it.say) vpPush(it) } S.botFeed.length=Math.min(S.botFeed.length,120); deliver(allViews(),m,SRC()); if(S.page==="bots") softRefresh(); return }
+ else if(m.t==="stats"){ if(R.C&&m.ST) R.C.stats=m.ST; if(S.page==="chatcfg") sbLiveRefresh(); return } // إحصائيات البث: الطبقات تقرأها في النبضة التالية
  else if(m.t==="chatdiag"){ S.chatDiag=m.D||{}; ucDiagRefresh(); return }
  else if(m.t==="session"){ if(R.C&&m.S){ R.C.live=Object.assign(R.C.live||{},m.S) } if(m.started&&m.reset!==false) toast("🔄 بدأت جلسة بث جديدة — التكبيس يبدأ من الصفر"); else if(m.reset) toast("🧹 تم تصفير التكبيس"); if(S.page==="likes"||S.page==="duration") renderPage(true); return }
  else if(m.t==="glog"){ if(m.it&&R.C){ R.C.glog=R.C.glog||[]; if(!R.C.glog.some(x=>x.id===m.it.id)){ R.C.glog.unshift(m.it); R.C.glog.length=Math.min(R.C.glog.length,80); const it=m.it; if(it.counted>0&&!it.test&&!it.sim){ const T=gsTotals(R.C); T.gifts+=it.counted; T.coins+=+it.coins||0; T.events++; if(it.ms) T.ms+=it.ms; T.last=it.at } } } if(S.page==="subathon") saGlogRefresh(); return }
@@ -189,7 +192,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -348,6 +351,7 @@ function renderPage(soft){
  }
  else if(p==="subathon"){ h=subathonHTML() }
  else if(p==="duration"){ h=duHTML() }
+ else if(p==="chatcfg"){ h=ccHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -415,7 +419,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount();
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount();
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -703,6 +707,51 @@ function duMount(){ const box=document.getElementById("du-pv"); const l=L();
  const tgt=l.widgets.find(x=>x.type==="duration"&&x.id===S.duW)||l.widgets.find(x=>x.type==="duration");
  document.querySelectorAll("[data-dupv]").forEach(b=>{ const cv={w:600,h:220}; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${b.clientWidth/cv.w})`; b.appendChild(stg);
   const pw=newWidget("duration",{...(tgt?{duMode:tgt.duMode,duLang:tgt.duLang}:{}),id:"pv_du_"+b.dataset.dupv,design:b.dataset.dupv,x:.04,y:.06,w:.92,h:.88,duDemoMs:(2*86400+5*3600+30*60+45)*1000,locked:true,visible:true}); const v=new View(pw,cv,{data:SRC,globalFx:S.settings.fx,mute:true}); stg.appendChild(v.el) }) }
+/* ---- «💬 إعدادات الشات»: عرض الرسائل + إحصائيات البث (Live Statistics) + الروابط ---- */
+function ccHTML(){ const l=L(), ws_=l.widgets.filter(w=>w.type==="uchat"), w=ws_.find(x=>x.id===S.ccW)||ws_[0], sts=l.widgets.filter(x=>x.type==="chatstats");
+ if(!w) return head("💬 إعدادات الشات","الشات الموحد وإحصائيات البث")+`<div class="card" style="text-align:center"><p>لا يوجد شات موحد في «${esc(l.name)}».</p><button class="btn pri" data-add="uchat">＋ إضافة الشات للمشهد</button></div>`;
+ const id=w.id, sel=(f,lb,opts,val)=>`<div class="fld"><label>${lb}</label><select class="inp" data-wf="${f}" data-wid="${id}">${opts.map(o=>`<option value="${o[0]}" ${String(val)===String(o[0])?"selected":""}>${o[1]}</option>`).join("")}</select></div>`;
+ const tg=(f,lb,def=true)=>`<label class="cc-tg"><input type="checkbox" data-wf="${f}" data-wid="${id}" ${(w[f]??def)!==false?"checked":""}><span>${lb}</span></label>`;
+ const rng=(f,lb,min,max,step,val,fm)=>`<div class="fld"><label><span>${lb}</span><span id="v_${f}">${fm?fm(val):val}</span></label><input type="range" min="${min}" max="${max}" step="${step}" value="${val}" data-wf="${f}" data-wid="${id}"></div>`;
+ const col=(f,lb,def)=>`<div class="fld du-colf"><label>${lb}</label><div class="row" style="gap:4px;flex-wrap:nowrap"><input type="color" data-wf="${f}" data-wid="${id}" value="${esc(w[f]||def)}">${w[f]?`<button class="btn xs" data-cccol="${f}" title="الافتراضي">↺</button>`:`<span class="mut small">افتراضي</span>`}</div></div>`;
+ const pct=v=>Math.round(v*100)+"%", sum=statsSummary(R.C,Date.now()+skew), keep=!(+w.holdSec>0);
+ return head("💬 إعدادات الشات","رسائل مرتبة بحجم محتواها، خلفية شفافة، وشريط إحصائيات البث — كل التغييرات تظهر فوراً في OBS")+
+ `${ws_.length>1?`<div class="row" style="margin-bottom:10px"><span class="mut small">الشات:</span><select class="inp" data-act="ccW" style="width:auto">${ws_.map(x=>`<option value="${x.id}" ${x.id===w.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select></div>`:""}
+ <div class="grid g2" style="align-items:start"><div class="card"><div class="row" style="justify-content:space-between"><span class="mut small">معاينة حية (الخلفية الشبكية = شفاف في OBS)</span><span class="tag">${esc((UC_DESIGNS.find(d=>d.id===w.design)||{}).name||w.design)}</span></div>
+   <div class="pv cc-pv" id="cc-pv" data-wid="${w.id}"></div>
+   <div class="cc-links"><div><b>🎥 مصدر داخل المشهد (Browser Source)</b><span class="mut small">شفاف فوق البث — في OBS: المصادر ← ＋ ← Browser، وفي TikTok LIVE Studio: ＋ ← Link</span><button class="btn pri sm" data-copylink="${w.id}">🔗 نسخ رابط المصدر</button></div>
+    <div><b>🪟 لوحة جانبية للقراءة (Dock)</b><span class="mut small">لوح OBS الجانبية لا تدعم الشفافية — هذا الرابط بخلفية داكنة ورسائل مضغوطة. OBS: Docks ← Custom Browser Docks</span><button class="btn sm" data-ccdock="${w.id}">🔗 نسخ رابط اللوحة</button></div></div>
+   <div class="row" style="margin-top:8px"><button class="btn sm" data-conntest="all">🧪 رسائل تجربة</button><button class="btn sm" data-edit="${w.id}">📐 الحجم والموقع</button></div></div>
+  <div class="card"><h3>✉️ عرض الرسائل</h3>
+   <div class="grid g2" style="gap:8px">${sel("design","تصميم الشات",UC_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("ucFit","عرض الرسالة",[["1","بحجم محتواها"],["0","بعرض الشات كاملاً"]],w.ucFit!==false?"1":"0")}</div>
+   <div class="cc-tgs">${tg("showAv","صورة المستخدم")}${tg("showName","اسم المستخدم")}${tg("showLogo","شعار المنصة")}${tg("ucMsgBg","خلفية الرسالة")}${tg("ucFrame","إطار الرسالة")}${tg("ucFade","تلاشي الرسائل عند الحافة")}${tg("showEvents","أحداث (هدايا/متابعات)")}${tg("animOn","الحركات")}</div>
+   <div class="grid g2" style="gap:8px">${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,pct)}${rng("max","عدد الرسائل الظاهرة",1,30,1,+w.max||8,v=>v)}
+    ${rng("bgOpacity","شفافية خلفية الرسالة",0,1,.05,w.bgOpacity??.55,pct)}${sel("dir","اتجاه ظهور الرسائل",[["bottom","الأحدث بالأسفل"],["top","الأحدث بالأعلى"]],w.dir||"bottom")}
+    ${sel("enter","حركة الدخول",UC_ENTERS,w.enter||"right")}${sel("ucExit","حركة الخروج",UC_EXITS,w.ucExit||"fade")}
+    ${rng("ucSpeed","سرعة الحركات",.25,3,.05,+w.ucSpeed||1,v=>"×"+(+v).toFixed(2))}<div class="fld"><label>بقاء الرسائل</label><select class="inp" data-cckeep="${id}"><option value="1" ${keep?"selected":""}>إبقاء الرسائل ظاهرة دائماً</option><option value="0" ${keep?"":"selected"}>إخفاء الرسائل بعد مدة محددة</option></select></div>
+    ${keep?"":rng("holdSec","الإخفاء بعد (ثانية)",3,300,1,+w.holdSec||30,v=>v+" ث")}</div>
+   <div class="ttl" style="margin:10px 0 6px">ألوان المنصات</div><div class="grid g4" style="gap:6px">${col("ucPcTT","TikTok","#fe2c55")}${col("ucPcYT","YouTube","#ff3b3b")}${col("ucPcKC","Kick","#53fc18")}${col("ucPcTW","Twitch","#a970ff")}${col("nameColor","الأسماء","#ffffff")}${col("textColor","نص الرسائل","#ffffff")}</div></div></div>
+
+ <div class="card cc-stats" style="margin-top:14px"><h3><span>📊 إحصائيات البث – Live Statistics</span><span class="tag ${sum.rows.length?"ok":""}">${sum.rows.length?sum.rows.map(r=>r.name).join(" · "):"لا توجد منصة متصلة بعد"}</span></h3>
+  <div class="cc-tbl">${[["sbOn","إظهار شريط الإحصائيات"],["sbViewers","إظهار المشاهدين الحاليين"],["sbViews","إظهار إجمالي المشاهدات"],["sbMoney","إظهار إجمالي الدعم"],["sbCoins","إظهار عملات TikTok"],["sbLogo","إظهار شعار المنصة"],["sbName","إظهار اسم المنصة",false],["sbMerge","دمج إحصائيات المنصات",false],["sbBg","إظهار خلفية الشريط"]].map(([f,lb,d])=>`<label class="cc-row"><span>${lb}</span><span class="cc-sw"><input type="checkbox" data-wf="${f}" data-wid="${id}" ${(w[f]??(d!==false))!==false&&(w[f]??(d!==false))?"checked":""}><i></i></span></label>`).join("")}</div>
+  <div class="grid g3" style="gap:8px;margin-top:10px">${sel("sbPos","مكان الشريط",SB_POS,w.sbPos||"top")}${sel("sbSupport","طريقة عرض الدعم",[["both","المال وكوينز TikTok"],["money","الدعم المالي فقط"],["coins","كوينز TikTok فقط"]],w.sbSupport||"both")}${sel("sbUnavail","إحصائية لا توفرها المنصة",[["show","تظهر «غير متاح»"],["hide","تُخفى"]],w.sbUnavail||"show")}${sel("sbLabels","الكلمات بجانب الأرقام",[["1","ظاهرة"],["0","أرقام وأيقونات فقط"]],w.sbLabels!==false?"1":"0")}</div>
+  <p class="mut small" style="margin:6px 0 0">في الدمج: المشاهدون = مجموع أعداد المنصات (ليس عدد أشخاص فريدين). العملات المختلفة لا تُجمع، وكوينز TikTok لا تُحوَّل إلى دولار. Twitch وKick لا يوفران إجمالي المشاهدات.</p>
+  <div class="cc-src">${sum.rows.map(r=>`<span class="tag ${r.stale?"warn":"ok"}">${esc(r.name)}: ${r.at?"آخر تحديث "+ago(r.at):"لا بيانات بعد"}${r.stale?" — متوقف":""}</span>`).join("")}</div>
+  <div class="ttl" style="margin:12px 0 6px">✨ تصميم الشريط (${SB_DESIGNS.length})</div>
+  <div class="cc-gal">${SB_DESIGNS.map(d=>`<button class="cc-gc ${(w.sbDesign||"glass")===d.id?"on":""}" data-ccsb="${d.id}"><div class="cc-gpv" data-ccsbpv="${d.id}"></div><b>${d.n}. ${esc(d.name)}</b><span>${esc(d.desc)}</span></button>`).join("")}</div>
+  <div class="ttl" style="margin:12px 0 6px">🎨 الألوان والأحجام</div>
+  <div class="grid g4" style="gap:6px">${col("sbNumC","الأرقام","#ffffff")}${col("sbTxtC","النصوص","#ffffff")}${col("sbIcoC","الأيقونات","#ffffff")}${col("sbBgC","الخلفية","#000000")}</div>
+  <div class="grid g3" style="gap:8px">${rng("sbBgA","شفافية الخلفية",0,1,.05,+w.sbBgA>=0?+w.sbBgA:.55,pct)}${rng("sbFs","حجم الخط",.5,2,.05,+w.sbFs||1,pct)}${sel("sbFont","نوع الخط",[["","خط الشات"],...LE_FONTS.filter(f=>f[0])],w.sbFont||"")}
+   ${rng("sbIcoS","حجم الأيقونات",.5,2,.05,+w.sbIcoS||1,pct)}${rng("sbGap","المسافة بين الإحصائيات",.3,3,.05,w.sbGap??1,v=>"×"+(+v).toFixed(2))}${rng("sbH","ارتفاع الشريط",.5,2.5,.05,+w.sbH||1,pct)}
+   ${rng("sbW","عرض الشريط",20,100,1,+w.sbW||100,v=>v+"%")}${rng("sbGlow","التوهج",0,2,.05,w.sbGlow??.6,pct)}${rng("sbSpeed","سرعة الحركات",.25,3,.05,+w.sbSpeed||1,v=>"×"+(+v).toFixed(2))}</div>
+  <div class="cc-tgs">${tg("sbNeon","النيون")}${tg("sbFx","كل المؤثرات والحركات")}</div>
+  <div class="row" style="margin-top:12px"><button class="btn" data-ccsplit="${w.id}">🧩 فصل الإحصائيات كطبقة مستقلة</button>${sts.length?`<span class="mut small">في المشهد ${sts.length} طبقة إحصائيات مستقلة: ${sts.map(x=>`<button class="btn xs" data-copylink="${x.id}">🔗 ${esc(x.name)}</button>`).join(" ")}</span>`:""}</div></div>`+testBar() }
+function ccMount(){ const l=L(); const box=document.getElementById("cc-pv");
+ const mk=(host,w,cv,opts)=>{ host.innerHTML=""; const stg=document.createElement("div"); stg.className="stage"; stg.style.background="none"; stg.style.width=cv.w+"px"; stg.style.height=cv.h+"px"; stg.style.transform=`scale(${host.clientWidth/cv.w})`; stg.style.transformOrigin="0 0"; stg.style.position="absolute"; stg.style.left="0"; stg.style.top="0"; host.appendChild(stg); const v=new View(w,cv,{data:SRC,globalFx:S.settings.fx,mute:true,...opts}); stg.appendChild(v.el); return v };
+ if(box){ const w=l.widgets.find(x=>x.id===box.dataset.wid); if(w){ const v=mk(box,{...w,id:"pvc_"+w.id,x:0,y:0,w:1,h:1,locked:true,visible:true},{w:600,h:Math.round(600*box.clientHeight/Math.max(1,box.clientWidth))},{}); liveViews.add(v); S.ccPv=v } }
+ const tgt=l.widgets.find(x=>x.id===(S.ccW||""))||l.widgets.find(x=>x.type==="uchat")||{};
+ document.querySelectorAll("[data-ccsbpv]").forEach(h=>{ const pw=newWidget("chatstats",{...Object.fromEntries(Object.entries(tgt).filter(([k])=>/^sb/.test(k))),id:"pv_sb_"+h.dataset.ccsbpv,sbDesign:h.dataset.ccsbpv,sbMerge:false,x:0,y:0,w:1,h:1,locked:true,visible:true}); mk(h,pw,{w:520,h:200},{}) }) }
+function sbLiveRefresh(){ const b=document.querySelector(".cc-stats .cc-src"); if(!b) return; const sum=statsSummary(R.C,Date.now()+skew); b.innerHTML=sum.rows.map(r=>`<span class="tag ${r.stale?"warn":"ok"}">${esc(r.name)}: ${r.at?"آخر تحديث "+ago(r.at):"لا بيانات بعد"}${r.stale?" — متوقف":""}</span>`).join("") }
 function subathonHTML(){
  const s=R.C.subathon, now=Date.now()+skew, l=L();
  const sw=l.widgets.filter(w=>w.type==="subathon");
@@ -1433,6 +1482,11 @@ function onClick(e){
  if(d.libtab){ S.libTab=d.libtab; S.libTarget=null; if(!d.go) return renderPage() }
  if(d.go) return go(d.go);
  if(d.sim){ const sc=document.getElementById("simScope")?.value||"likes"; S.scope=sc; if(d.sim==="shuffle"){ if(sc==="all"||sc==="follows") return toast("اختر قائمة ترتيب واحدة"); return SIM.shuffle(sc) } if(d.sim==="reset") return SIM.reset(sc); return SIM[d.sim]() }
+ if(d.ccdock){ const u=overlayURL(L(),d.ccdock); return copy(u+(u.includes("?")?"&":"?")+"dock=1") }
+ if(d.ccsb){ const w=L().widgets.find(x=>x.type==="uchat"&&x.id===S.ccW)||L().widgets.find(x=>x.type==="uchat"); if(w){ w.sbDesign=d.ccsb; save(); pushLayout(); refreshView(w); renderPage(true); toast("📊 "+sbDesignOf(d.ccsb).name) } return }
+ if(d.cccol){ const w=L().widgets.find(x=>x.type==="uchat"&&x.id===S.ccW)||L().widgets.find(x=>x.type==="uchat"); if(w){ w[d.cccol]=""; save(); pushLayout(); refreshView(w); renderPage(true) } return }
+ if(d.ccsplit){ const l=L(), w=l.widgets.find(x=>x.id===d.ccsplit); if(!w) return; const sb=Object.fromEntries(Object.entries(w).filter(([k])=>/^sb/.test(k)));
+  const nw=newWidget("chatstats",{...sb,sbOn:true,sbPos:"top",x:w.x,y:Math.max(0,(+w.y||0)-.07),w:w.w,h:.06}); l.widgets.push(nw); w.sbPos="none"; save(); pushLayout(); refreshView(w); renderPage(true); toast("🧩 صارت الإحصائيات طبقة مستقلة — انقلها لأي مكان من الاستوديو، وانسخ رابطها لـ OBS"); return }
  if(d.duop) return d.duop==="durAccReset"?ask("تصفير المدة المتراكمة من البثوث السابقة؟").then(ok=>{ if(ok) send({t:"session-op",op:"durAccReset"}) }):send({t:"session-op",op:d.duop});
  if(d.dupick){ const w=L().widgets.find(x=>x.type==="duration"&&x.id===S.duW)||L().widgets.find(x=>x.type==="duration"); if(w){ w.design=d.dupick; save(); pushLayout(); renderPage(true); toast("✨ "+duDesignOf(d.dupick).name) } return }
  if(d.ducol){ const w=L().widgets.find(x=>x.type==="duration"&&x.id===S.duW)||L().widgets.find(x=>x.type==="duration"); if(w){ w[d.ducol]=""; save(); pushLayout(); renderPage(true) } return }
@@ -1560,6 +1614,8 @@ function onInput(e){
  if((d.sessauto!==undefined||d.sesskeep!==undefined)&&e.type==="change"){ send({t:"session-op",op:"config",config:d.sessauto!==undefined?{auto:t.checked}:{keep:t.checked}}); return }
  if(d.sessscope&&e.type==="change"){ send({t:"session-op",op:"config",config:{scopes:{[d.sessscope]:t.checked}}}); return }
  if(d.ducarry!==undefined&&e.type==="change"){ if(!t.checked) return ask("إيقاف الاستمرار؟ سيُصفّر المتراكم وتُحتسب مدة البث الحالي فقط.").then(ok=>{ if(ok) send({t:"session-op",op:"durCarry",on:false}); else t.checked=true }); send({t:"session-op",op:"durCarry",on:true}); return }
+ if(d.act==="ccW"&&e.type==="change"){ S.ccW=t.value; return renderPage(true) }
+ if(d.cckeep&&e.type==="change"){ const w=findW(d.cckeep); if(w){ w.holdSec=t.value==="1"?0:(+w.holdSec>0?w.holdSec:30); save(); pushLayout(); refreshView(w); renderPage(true) } return }
  if(d.act==="duW"&&e.type==="change"){ S.duW=t.value; return renderPage(true) }
  if(d.act==="saW"&&e.type==="change"){ S.saW=t.value; return renderPage(true) }
  if(d.rl&&e.type==="change"){ const id=d.rl, k=d.rk; setRules(L=>{ const r=L.find(x=>x.id===id); if(!r) return;
@@ -1592,6 +1648,7 @@ function onInput(e){
   if(/^tk[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(f==="tkAnim") v=v==="1" }
   if(f==="tkBgA"&&!w.tkBg) w.tkBg="#0b0f17";
   if(/^(lc|l5)[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")) v=v==="1" }
+  if(/^(sb|uc)[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")&&!["sbPos","sbDesign","sbUnavail","sbSupport","sbFont","ucExit"].includes(f)) v=v==="1" }
   if(/^du[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")&&!["duMode","duLang","duAlign","duIn","duOut","duSep","duTitle"].includes(f)) v=v==="1" }
   if(w.type==="duration"&&f==="effects"&&t.tagName==="SELECT") v=v==="1";
   if(f==="idle"){ v=[v,...((findW(d.wid)||{}).idle||[]).slice(1)].filter(Boolean) }
@@ -1605,6 +1662,7 @@ function onInput(e){
   const lab=document.getElementById("v_"+f); if(lab){ const cv=CV(); lab.textContent=f==="w"?Math.round(v*cv.w)+"px":f==="h"?Math.round(v*cv.h)+"px":["fontScale","avatarScale","opacity","logoScale","rowOpacity"].includes(f)?Math.round(v*100)+"%":["enterMs","exitMs","delayMs"].includes(f)?v+"ms":f==="speed"?v+" px/ث":v }
   if(lab&&/^(lc|l5)[A-Z]/.test(f)) lab.textContent=t.step==="0.01"?Math.round(v*100)+"%":v;
   save(); pushLayout();
+  if(S.page==="chatcfg"&&(w.type==="uchat"||w.type==="chatstats")){ if(lab) lab.textContent=/^(sbW)$/.test(f)?v+"%":/^(max|holdSec)$/.test(f)?(f==="holdSec"?v+" ث":v):/^(sbGap|ucSpeed|sbSpeed)$/.test(f)?"×"+(+v).toFixed(2):Math.round(v*100)+"%"; refreshView(w); const pv=S.ccPv; if(pv){ pv.apply({...pv.w,[f]:v}) } if(t.tagName==="SELECT"||t.type==="checkbox"||(e.type==="change"&&t.type==="color")) renderPage(true); return }
   if(S.page==="duration"&&w.type==="duration"){ if(lab&&/^du[A-Z]/.test(f)) lab.textContent=f==="duGap"?(+v).toFixed(2)+"em":Math.round(v*100)+"%"; const pv=S.duPvView; if(pv&&t.tagName!=="SELECT") pv.apply({...pv.w,[f]:v}); if(t.tagName==="SELECT"||(e.type==="change"&&t.type!=="range"&&t.type!=="text")) renderPage(true); return }
   if(S.page!=="studio"&&S.lsOpen===w.id){ if(t.tagName==="SELECT") renderPage(true); else lsLive(w); return }
   if(S.page==="studio"&&(w.type==="donCard"||w.type==="donLast5")){ refreshView(w); if(t.tagName==="SELECT") renderProps(); else mountDcPreview(w); return }
@@ -2275,7 +2333,7 @@ function ucPropsHTML(w,sel,rng){ const inp=(f,l,ph="")=>`<div class="fld"><label
   ${col("nameColor","لون الاسم (فارغ = لون المنصة)","#ffffff")}${col("textColor","لون النص","#ffffff")}${col("accent","لون الإبراز","#fbbf24")}</div>
   ${inp("banned","كلمات محظورة (مفصولة بفاصلة)","مثال: سبام, رابط")}${sel("bannedAction","عند وجود كلمة محظورة",[["mask","إخفاء الكلمة ***"],["hide","إخفاء الرسالة كاملة"]],w.bannedAction||"mask")}
   ${inp("importantWords","كلمات تجعل الرسالة مهمة","اسمك, سؤال")}
-  <div class="row" style="margin-bottom:10px"><button class="btn sm" data-conntest="all">🧪 رسائل تجربة</button><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>` }
+  <div class="row" style="margin-bottom:10px"><button class="btn sm" data-conntest="all">🧪 رسائل تجربة</button><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button><button class="btn sm pri" data-go="chatcfg">💬 كل إعدادات الشات والإحصائيات</button></div>` }
 // ====== آخر التفاعلات | Latest Events Studio ======
 const LE_POS={like:"tr",follow:"tl",join:"br",share:"bl",donation:"mm"};
 const LE_VOICE={follow:["follows","follow"],share:["follows","share"],subscribe:["follows","subscribe"],donation:["thanks","donation"],gift:["thanks","gift"]};

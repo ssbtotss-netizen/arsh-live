@@ -2,6 +2,7 @@
 import { View } from "./view.js";
 import { esc, avatar } from "./defs.js";
 import { CHAT_PLATFORMS, chatMsgOf, chatFilter, chatImportant } from "./chat.js";
+import { sbRender, sbSum, sbVars, sbClass, ensureSbCSS } from "./statsview.js";
 
 // رموز مبسطة أصلية تدل على المنصة (ليست نسخاً من الشعارات الرسمية)
 export const UC_ICONS={
@@ -42,7 +43,8 @@ export const UC_DESIGNS=[
  {id:"ribbon",name:"Ribbon Chat",ar:"شريط",desc:"الاسم على شريط ملون والرسالة تحته"},
  {id:"duck",name:"B6O6 Duck Chat",ar:"بطة B6O6",desc:"أبيض وبرتقالي بلون بطة B6O6 مع 🦆"},
 ];
-export const UC_ENTERS=[["right","من اليمين"],["bottom","من الأسفل"],["fade","تلاشي"],["pop","انبثاق"],["none","بدون حركة"]];
+export const UC_ENTERS=[["right","دخول من اليمين"],["left","دخول من اليسار"],["fade","ظهور تدريجي"],["bottom","انزلاق للأعلى"],["pop","تكبير خفيف"],["neon","حركة نيون"],["none","بدون حركة"]];
+export const UC_EXITS=[["fade","اختفاء تدريجي"],["slide","انزلاق للخارج"],["shrink","انكماش"],["none","بدون حركة"]];
 const UC_TAG={tiktok:"TT",youtube:"YT",kick:"KC",twitch:"TW",donation:"$$"};
 const UC_ROT=["tiktok","youtube","kick","twitch"];
 let ucCss=false;
@@ -56,18 +58,33 @@ const ucSample=()=>{ const t=Date.now(); return [
 
 Object.assign(View.prototype,{
  applyChat(w,W,Hh){ ensureUcCSS(); const e=this.el, ed=this.opts.editor;
-  e.className=`wd ucw ucd-${w.design||"glass"} uc-${w.dir==="top"?"top":"bottom"} ucm-${w.mode||"all"}${w.animOn===false?" uc-still":""}${w.showAv===false?" uc-noav":""}${w.showLogo===false?" uc-nologo":""}${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
+  e.className=`wd ucw ucd-${w.design||"glass"} uc-${w.dir==="top"?"top":"bottom"} ucm-${w.mode||"all"}${w.animOn===false?" uc-still":""}${w.showAv===false?" uc-noav":""}${w.showLogo===false?" uc-nologo":""}${w.ucFit===false?" uc-full":" uc-fit"}${w.showName===false?" uc-noname":""}${w.ucMsgBg===false?" uc-nobg":""}${w.ucFrame===false?" uc-noframe":""}${w.ucFade===false?"":" uc-fadeedge"}${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
   const st=e.style; st.setProperty("--ufs",Math.max(10,Math.min(W*.045,Hh*.05))*(w.fontScale||1)+"px"); st.setProperty("--ubg",String(w.bgOpacity??.55)); if(w.font) st.setProperty("--uff",`"${w.font}"`); else st.removeProperty("--uff");
+  for(const [k,v] of [["--pcTT",w.ucPcTT],["--pcYT",w.ucPcYT],["--pcKC",w.ucPcKC],["--pcTW",w.ucPcTW]]){ if(v) st.setProperty(k,v); else st.removeProperty(k) } // ألوان كل منصة
+  st.setProperty("--uspd",String(Math.max(.25,Math.min(3,+w.ucSpeed||1))));
   if(w.nameColor) st.setProperty("--unc",w.nameColor); else st.removeProperty("--unc"); if(w.textColor) st.setProperty("--utc",w.textColor); else st.removeProperty("--utc"); if(w.accent) st.setProperty("--uac",w.accent); else st.removeProperty("--uac");
   const sig=["uc",w.mode,w.design,w.dir,w.banned,w.dedupe,w.showEvents,w.importantWords,(w.eventKinds||[]).join()].join("|");
   if(sig!==this.sig){ this.sig=sig; this.ucF=chatFilter(w); if(!this.ucBuf){ const src=this.opts.data?this.opts.data():null; this.ucBuf=(src&&(src.CHAT||src.CH)||[]).slice(-100) }
    e.innerHTML=`<div class="uc-root"></div>`+(ed?'<div class="rh"></div><div class="lockb">🔒</div>':""); this.ucRoot=e.firstChild; clearInterval(this.ucRotT); this.ucRotT=0; this.ucRotI=0;
    if(w.mode==="rotate") this.ucRotT=setInterval(()=>{ if(!this.el.isConnected){ clearInterval(this.ucRotT); return } this.ucRotI=(this.ucRotI+1)%UC_ROT.length; this.ucRender(true) },Math.max(3,+w.rotateSec||8)*1000);
    this.ucRender(false) }
+  this.ucStats(w);
  },
+ /** شريط إحصائيات البث داخل الشات: أعلى / أسفل / عائم / مخفي — يتحدث كل ثانية بدون إعادة رسم الرسائل */
+ ucStats(w){ const R=this.ucRoot; if(!R) return; clearInterval(this.sbT); this.sbT=0;
+  const pos=w.sbOn===false?"none":(w.sbPos||"top"); let host=R.querySelector(":scope>.lsb-host");
+  if(pos==="none"){ if(host) host.remove(); return }
+  ensureSbCSS(); if(!host){ host=document.createElement("div"); host.innerHTML='<div></div>' }
+  host.className="lsb-host lsb-"+pos; if(pos==="bottom") R.appendChild(host); else R.insertBefore(host,R.firstChild);
+  const box=host.firstChild; box.className=sbClass(w); sbVars(box,w); box.style.setProperty("--sbBase",`calc(var(--ufs) * .82)`); box._sbh=null;
+  const demo=this.opts.editor||String(w.id).startsWith("pv_");
+  const tick=()=>{ if(!box.isConnected){ clearInterval(this.sbT); return } const src=this.opts.data?this.opts.data():null; let s=sbSum(src,w,false); if(!s.rows.length&&demo) s=sbSum(null,w,true); sbRender(box,s,w,Date.now()) };
+  tick(); this.sbT=setInterval(tick,1000) },
  ucList(platform){ const w=this.w; let buf=this.ucBuf||[]; if(!buf.length&&(this.opts.editor||String(w.id).startsWith("pv_"))) buf=ucSample();
-  const F=chatFilter(w,()=>0); const out=[]; for(const m of buf){ const r=F(m,platform||w.mode); if(r) out.push(r) } return out.slice(-Math.max(1,+w.max||8)) },
- ucRender(anim){ const w=this.w, R=this.ucRoot; if(!R) return;
+  const F=chatFilter(w,()=>0); const out=[]; for(const m of buf){ if(m&&m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) continue; /* رسائل قديمة بلا نص (قبل إصلاح TikTok v2) لا تظهر مستطيلات فارغة */ const r=F(m,platform||w.mode); if(r) out.push(r) } return out.slice(-Math.max(1,+w.max||8)) },
+ ucRender(anim){ const R=this.ucRoot; if(!R) return; const host=R.querySelector(":scope>.lsb-host"); this.ucRender0(anim);
+  if(host&&!host.isConnected){ if(host.classList.contains("lsb-bottom")) R.appendChild(host); else R.insertBefore(host,R.firstChild) } }, // شريط الإحصائيات يبقى عند إعادة رسم الرسائل
+ ucRender0(anim){ const w=this.w, R=this.ucRoot;
   if(w.mode==="split"){ const ps=UC_ROT.filter(p=>!(w.splitHide||[]).includes(p));
    R.innerHTML=`<div class="uc-split">${ps.map(p=>`<div class="uc-col" data-p="${p}"><div class="uc-ch">${UC_ICONS[p]}<span>${CHAT_PLATFORMS[p].name}</span></div><div class="uc-list"></div></div>`).join("")}</div>`;
    for(const p of ps){ const L=R.querySelector(`.uc-col[data-p="${p}"] .uc-list`); for(const m of this.ucList(p)) L.appendChild(this.ucEl(m)) } return }
@@ -83,7 +100,7 @@ Object.assign(View.prototype,{
   const im=el.querySelector(".uc-av"); if(im) im.onerror=()=>{ im.onerror=null; im.src=avatar(m.name) };
   return el },
  /** حدث مباشر من الحافلة */
- chatPush(ev){ const m=ev&&ev.kind&&ev.platform?ev:chatMsgOf(ev); if(!m) return; const w=this.w; this.ucBuf=this.ucBuf||[];
+ chatPush(ev){ const m=ev&&ev.kind&&ev.platform?ev:chatMsgOf(ev); if(!m) return; if(m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) return; const w=this.w; this.ucBuf=this.ucBuf||[];
   if(this.ucBuf.some(x=>x.id===m.id)) return; this.ucBuf.push(m); if(this.ucBuf.length>100) this.ucBuf.splice(0,this.ucBuf.length-100);
   const plat=w.mode==="rotate"?UC_ROT[this.ucRotI||0]:w.mode==="split"?m.platform:null;
   const r=(this.ucF||chatFilter(w))(m,plat||w.mode); if(!r) return;
@@ -92,9 +109,15 @@ Object.assign(View.prototype,{
   if(L.querySelector('.uc-m[data-id^="s"]')&&!String(m.id).startsWith("s")) L.querySelectorAll('.uc-m[data-id^="s"]').forEach(x=>{ if(/^s\d$/.test(x.dataset.id)) x.remove() });
   const el=this.ucEl(r); L.appendChild(el);
   const max=Math.max(1,+w.max||8); while(L.children.length>max) L.firstElementChild.remove();
-  if(w.animOn!==false&&!this.el.classList.contains("uc-still")){ const en=w.enter||"right", K={right:[{opacity:0,transform:"translateX(-40%)"},{opacity:1,transform:"none"}],bottom:[{opacity:0,transform:"translateY(70%)"},{opacity:1,transform:"none"}],fade:[{opacity:0},{opacity:1}],pop:[{opacity:0,transform:"scale(.6)"},{opacity:1,transform:"scale(1.04)"},{opacity:1,transform:"none"}]}[en];
-   if(K) el.animate(K,{duration:420,easing:"cubic-bezier(.2,.8,.2,1)"}); el.classList.add("uc-new"); setTimeout(()=>el.classList.remove("uc-new"),1200) }
-  if((+w.holdSec||0)>0) setTimeout(()=>{ if(!el.isConnected) return; const a=el.animate([{opacity:1},{opacity:0}],{duration:450,fill:"forwards"}); a.onfinish=()=>el.remove() },(+w.holdSec)*1000) },
+  const spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
+  if(anim){ const en=w.enter||"right", K={right:[{opacity:0,transform:"translateX(45%)"},{opacity:1,transform:"none"}],left:[{opacity:0,transform:"translateX(-45%)"},{opacity:1,transform:"none"}],bottom:[{opacity:0,transform:"translateY(70%)"},{opacity:1,transform:"none"}],fade:[{opacity:0},{opacity:1}],pop:[{opacity:0,transform:"scale(.82)"},{opacity:1,transform:"scale(1.03)"},{opacity:1,transform:"none"}],neon:[{opacity:0,filter:"brightness(2.4) drop-shadow(0 0 .4em var(--pc))"},{opacity:1,filter:"brightness(1.3) drop-shadow(0 0 .25em var(--pc))",offset:.5},{opacity:1,filter:"none"}]}[en];
+   // بدون قفز: الرسالة الجديدة تنمو من ارتفاع 0 فتنزاح القديمة بسلاسة
+   if(en!=="none"&&w.mode!=="split"){ const h=el.offsetHeight; if(h) el.animate([{height:"0px",marginBlock:"0px",paddingBlock:"0px"},{height:h+"px"}],{duration:260/spd,easing:"ease-out"}) }
+   if(K) el.animate(K,{duration:420/spd,easing:"cubic-bezier(.2,.8,.2,1)"}); el.classList.add("uc-new"); setTimeout(()=>el.classList.remove("uc-new"),1200) }
+  if((+w.holdSec||0)>0) setTimeout(()=>{ if(!el.isConnected) return; const ex=w.ucExit||"fade";
+   if(!anim||ex==="none"){ el.remove(); return }
+   const X={fade:[{opacity:1},{opacity:0}],slide:[{opacity:1,transform:"none"},{opacity:0,transform:"translateX(40%)"}],shrink:[{opacity:1,transform:"none",maxHeight:el.offsetHeight+"px"},{opacity:0,transform:"scale(.85)",maxHeight:"0px",marginBlock:"0px",paddingBlock:"0px"}]}[ex]||[{opacity:1},{opacity:0}];
+   const a=el.animate(X,{duration:450/spd,fill:"forwards"}); a.onfinish=()=>el.remove() },(+w.holdSec)*1000) },
  chatLoad(list){ this.ucBuf=(list||[]).slice(-100); this.ucRender(false) },
 });
 
@@ -104,7 +127,19 @@ const UC_CSS=`
 .ucw .uc-list{flex:1;display:flex;flex-direction:column;gap:calc(var(--ufs)*.4);overflow:hidden;justify-content:flex-end;min-height:0}
 .ucw.uc-top .uc-list{flex-direction:column-reverse;justify-content:flex-end}
 .ucw .uc-m{position:relative;display:flex;align-items:flex-start;gap:calc(var(--ufs)*.5);padding:calc(var(--ufs)*.45) calc(var(--ufs)*.7);font-size:var(--ufs);flex:none;overflow:hidden;--pc:#fff}
-.ucw .p-tiktok{--pc:#fe2c55}.ucw .p-youtube{--pc:#ff3b3b}.ucw .p-kick{--pc:#53fc18}.ucw .p-twitch{--pc:#a970ff}.ucw .p-donation{--pc:#22c55e}
+/* وضع Dock (لوحة OBS الجانبية): لوح OBS لا تدعم الشفافية فتظهر بيضاء — خلفية داكنة ورسائل مضغوطة للقراءة */
+html body.ov-dock,html body.ov-dock .stage{background:#0b0f1a!important}
+body.ov-dock .ucw .uc-m{background:#151b2c!important;border:0!important;border-inline-start:3px solid var(--pc)!important;box-shadow:none!important;backdrop-filter:none!important;clip-path:none!important;border-radius:8px!important;padding:5px 9px!important;width:auto!important;align-self:stretch!important;animation:none!important;transform:none!important}
+body.ov-dock .ucw .uc-m::before,body.ov-dock .ucw .uc-m::after{display:none!important}body.ov-dock .ucw .uc-list{-webkit-mask-image:none!important;mask-image:none!important;gap:5px!important}
+body.ov-dock .ucw .uc-t{color:#e8ecf6!important;text-shadow:none!important}body.ov-dock .ucw .uc-n{text-shadow:none!important}
+.ucw .p-tiktok{--pc:var(--pcTT,#fe2c55)}.ucw .p-youtube{--pc:var(--pcYT,#ff3b3b)}.ucw .p-kick{--pc:var(--pcKC,#53fc18)}.ucw .p-twitch{--pc:var(--pcTW,#a970ff)}.ucw .p-donation{--pc:#22c55e}
+/* كل رسالة بحجم محتواها (لا مستطيلات بعرض الإطار) — والخيار القديم «عرض كامل» متاح */
+.ucw.uc-fit .uc-n{max-width:min(18em,100%)}.ucw.uc-fit .uc-list{align-items:flex-start}.ucw.uc-fit .uc-m{width:fit-content;max-width:100%;align-self:flex-start;box-sizing:border-box}.ucw.uc-fit .uc-b{flex:0 1 auto}
+.ucw.uc-fadeedge .uc-list{-webkit-mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--ufs)*1.6));mask-image:linear-gradient(to bottom,transparent 0,#000 calc(var(--ufs)*1.6))}
+.ucw.uc-fadeedge.uc-top .uc-list{-webkit-mask-image:linear-gradient(to top,transparent 0,#000 calc(var(--ufs)*1.6));mask-image:linear-gradient(to top,transparent 0,#000 calc(var(--ufs)*1.6))}
+.ucw.uc-noname .uc-n{display:none}
+.ucw.uc-nobg .uc-m{background:none!important;backdrop-filter:none!important;-webkit-backdrop-filter:none!important;box-shadow:none!important;text-shadow:0 1px 3px #000,0 0 6px #000a}
+.ucw.uc-noframe .uc-m{border-color:transparent!important;box-shadow:none!important;outline:none!important}.ucw.uc-noframe .uc-m::before,.ucw.uc-noframe .uc-m::after{display:none!important}
 .ucw .uc-av{width:calc(var(--ufs)*2);height:calc(var(--ufs)*2);border-radius:50%;object-fit:cover;flex:none;background:#111}
 .ucw.uc-noav .uc-av{display:none}
 .ucw .uc-b{min-width:0;flex:1}.uc-em{height:1.35em;width:auto;vertical-align:middle;margin:0 .12em}

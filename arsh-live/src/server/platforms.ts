@@ -8,7 +8,7 @@ import type { PrismaClient } from "@prisma/client";
 import { encrypt, decrypt } from "../lib/secrets";
 import { OAUTH, twitchToEvent, youtubeToEvents, kickToEvent, chatSendRequest } from "../engine/platforms.js";
 
-type Hub = { dispatch(room: string, ev: any): void };
+type Hub = { dispatch(room: string, ev: any): void; liveStats?(room: string, platform: string, data: any): void };
 type Tok = { access: string; refresh?: string; exp?: number };
 const env = process.env as Record<string, string | undefined>;
 
@@ -61,7 +61,19 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
   }
 
   // ---------- Twitch: EventSub WebSocket ----------
+  /** إحصائيات البث (المشاهدون/المشاهدات) من الواجهات الرسمية بتوكن صاحب القناة */
+  async function emitStats(userId: string, platform: string, data: any) { const room = await roomOf(userId); if (room) hub.liveStats?.(room, platform, data); }
+  /** استطلاع دوري للمشاهدين (كل 60 ث — ضمن حدود الواجهات الرسمية) */
+  function statsPoller(userId: string, platform: string, read: (access: string) => Promise<any>) {
+    let stopped = false, timer: any;
+    const tick = async () => { if (stopped) return;
+      try { const t = await tokenOf(userId, platform); if (t) { const d = await read(t.access); if (d) await emitStats(userId, platform, d); } } catch {}
+      timer = setTimeout(tick, 60_000); };
+    timer = setTimeout(tick, 3000); return { stop() { stopped = true; clearTimeout(timer); } };
+  }
   function startTwitch(userId: string, accountId: string) {
+    // Twitch: viewer_count من helix/streams — Twitch لا يوفر إجمالي مشاهدات للبث (غير متاح)
+    const sp = statsPoller(userId, "twitch", async access => { const r: any = await (await fetch(`https://api.twitch.tv/helix/streams?user_id=${encodeURIComponent(accountId)}`, { headers: { authorization: `Bearer ${access}`, "client-id": env.TWITCH_CLIENT_ID! } })).json(); const s = r?.data?.[0]; return s ? { viewers: +s.viewer_count } : { offline: true }; });
     let ws: WebSocket | null = null, stopped = false, retry = 0;
     const subs = [["channel.chat.message", "1", { broadcaster_user_id: accountId, user_id: accountId }], ["channel.follow", "2", { broadcaster_user_id: accountId, moderator_user_id: accountId }], ["channel.subscribe", "1", { broadcaster_user_id: accountId }], ["channel.subscription.gift", "1", { broadcaster_user_id: accountId }], ["channel.cheer", "1", { broadcaster_user_id: accountId }], ["channel.raid", "1", { to_broadcaster_user_id: accountId }]] as const;
     const open = (url = "wss://eventsub.wss.twitch.tv/ws") => {
@@ -77,22 +89,25 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
       ws.on("close", () => { if (!stopped) setTimeout(() => open(), Math.min(30_000, 1000 * 2 ** retry++)); });
       ws.on("error", () => {});
     };
-    open(); return { stop() { stopped = true; ws?.close(); } };
+    open(); return { stop() { stopped = true; ws?.close(); sp.stop(); } };
   }
 
   // ---------- YouTube: liveChatMessages ----------
   function startYouTube(userId: string) {
-    let stopped = false, timer: any, chatId = "", page = "";
+    let stopped = false, timer: any, chatId = "", page = "", vid = "", statsAt = 0;
     const tick = async () => {
       if (stopped) return; let wait = 15_000;
       try {
         const t = await tokenOf(userId, "youtube"); if (!t) return;
-        if (!chatId) { const r: any = await (await fetch("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true", { headers: { authorization: `Bearer ${t.access}` } })).json(); chatId = r.items?.[0]?.snippet?.liveChatId || ""; page = ""; if (chatId) ytChat.set(userId, chatId); else ytChat.delete(userId); if (!chatId) wait = 30_000; }
+        if (!chatId) { const r: any = await (await fetch("https://www.googleapis.com/youtube/v3/liveBroadcasts?part=snippet&broadcastStatus=active&mine=true", { headers: { authorization: `Bearer ${t.access}` } })).json(); chatId = r.items?.[0]?.snippet?.liveChatId || ""; vid = r.items?.[0]?.id || ""; page = ""; if (!chatId) await emitStats(userId, "youtube", { offline: true }); if (chatId) ytChat.set(userId, chatId); else ytChat.delete(userId); if (!chatId) wait = 30_000; }
         if (chatId) {
           const r = await fetch(`https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet,authorDetails&liveChatId=${chatId}${page ? `&pageToken=${page}` : ""}`, { headers: { authorization: `Bearer ${t.access}` } });
           if (r.status === 403 || r.status === 404) { chatId = ""; } else { const j: any = await r.json(); const first = !page; page = j.nextPageToken || page; wait = Math.max(3000, j.pollingIntervalMillis || 5000);
             // أول قراءة: نتجاهل الرسائل القديمة حتى لا تظهر كأنها جديدة
             if (!first) for (const ev of youtubeToEvents(j.items)) await emit(userId, "youtube", ev); }
+          // YouTube: concurrentViewers (المشاهدون الآن) + statistics.viewCount (إجمالي المشاهدات) — videos.list = وحدة حصة واحدة
+          if (vid && Date.now() - statsAt > 60_000) { statsAt = Date.now(); const v: any = await (await fetch(`https://www.googleapis.com/youtube/v3/videos?part=liveStreamingDetails,statistics&id=${vid}`, { headers: { authorization: `Bearer ${t.access}` } })).json().catch(() => null); const it = v?.items?.[0];
+            if (it) await emitStats(userId, "youtube", { viewers: it.liveStreamingDetails?.concurrentViewers != null ? +it.liveStreamingDetails.concurrentViewers : null, views: it.statistics?.viewCount != null ? +it.statistics.viewCount : null }); }
           await setStatus(userId, "youtube", { status: "connected", lastError: chatId ? null : "لا يوجد بث نشط حالياً" });
         }
       } catch (e: any) { await setStatus(userId, "youtube", { lastError: String(e.message || e).slice(0, 200) }); wait = 30_000; }
@@ -102,12 +117,14 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
   }
 
   // ---------- Kick: اشتراك Webhooks (الاستقبال في /api/webhooks/kick) ----------
-  async function startKick(userId: string) {
+  async function startKick(userId: string, accountId?: string) {
     const t = await tokenOf(userId, "kick"); if (!t) return { stop() {} };
+    // Kick: viewer_count من livestreams — Kick لا يوفر إجمالي مشاهدات للبث (غير متاح)
+    const sp = accountId ? statsPoller(userId, "kick", async access => { const r: any = await (await fetch(`https://api.kick.com/public/v1/livestreams?broadcaster_user_id=${encodeURIComponent(accountId)}`, { headers: { authorization: `Bearer ${access}` } })).json(); const s = r?.data?.[0]; return s ? { viewers: +s.viewer_count } : { offline: true }; }) : null;
     const events = ["chat.message.sent", "channel.followed", "channel.subscription.new", "channel.subscription.renewal", "channel.subscription.gifts", "kicks.gifted"].map(name => ({ name, version: 1 }));
     const r = await fetch("https://api.kick.com/public/v1/events/subscriptions", { method: "POST", headers: { authorization: `Bearer ${t.access}`, "content-type": "application/json" }, body: JSON.stringify({ events, method: "webhook" }) }).catch(() => null);
     await setStatus(userId, "kick", r && r.ok ? { status: "connected", lastError: null } : { status: "error", lastError: "تعذر الاشتراك في أحداث Kick — تأكد من ضبط رابط Webhook العام في تطبيق Kick" });
-    return { stop() {} };
+    return { stop() { sp?.stop(); } };
   }
   /** استقبال Webhook من Kick (التوقيع يُتحقق منه في المسار قبل الوصول هنا) */
   async function kickWebhook(type: string, body: any, messageId: string) {
@@ -119,7 +136,7 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
   async function start(userId: string, platform: string) {
     const key = userId + ":" + platform; running.get(key)?.stop();
     const c = await prisma.platformConnection.findUnique({ where: { userId_platform: { userId, platform } } }); if (!c || c.status === "disconnected") return;
-    const h = platform === "twitch" ? startTwitch(userId, c.accountId!) : platform === "youtube" ? startYouTube(userId) : platform === "kick" ? await startKick(userId) : null;
+    const h = platform === "twitch" ? startTwitch(userId, c.accountId!) : platform === "youtube" ? startYouTube(userId) : platform === "kick" ? await startKick(userId, c.accountId || undefined) : null;
     if (h) running.set(key, h);
   }
   async function stop(userId: string, platform: string) {

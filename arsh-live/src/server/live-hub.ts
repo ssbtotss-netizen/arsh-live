@@ -1,7 +1,7 @@
 // مركز البث: غرفة لكل صانع محتوى. الخادم هو المرجع للوقت والبيانات.
 // استقبال الأحداث (tiktok.ts) ← غرفة (engine/room.js: منع التكرار → محرك القوائم + محرك السبثون/المؤقتات) ← العملاء
 import type { WebSocketServer, WebSocket } from "ws";
-import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound, roomSessionConnect, roomSessionEnd, roomSessionOp } from "../lib/core";
+import { newRoom, roomEvent, roomClockOp, roomTick, roomLive, roomSnapshot, roomBots, roomMusicSetLib, roomMusicRequest, roomMusicCfg, roomMusicFound, roomSessionConnect, roomSessionEnd, roomSessionOp, roomStats } from "../lib/core";
 import type { Layout, LiveEvent } from "../lib/core";
 import { startTikTok, type TikTokHandle, type TkInfo } from "./tiktok";
 /** حالة الربط للواجهة وروابط البث — ملاحظة المشرف (اسم المتغير ومكانه) لا تُرسل هنا بل تظهر في لوحة الإدارة */
@@ -84,7 +84,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       if (m.t === "musicsearch") { const find = opt.ytFind ? opt.ytFind(m.q, m.cfg) : Promise.resolve({ ok: false, message: "البحث في YouTube غير متاح على هذا الخادم" });
         find.catch(() => ({ ok: false, message: "تعذر البحث في YouTube" })).then(yr => commit(id, r, { out: roomMusicFound(r as any, m, yr, Date.now()).out, logs: [] })); continue; }
       broadcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
-    if (res.out.some(m => m.t === "clock" || m.t === "glog" || m.t === "session")) { r.dirty = true; } // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
+    if (res.out.some(m => m.t === "clock" || m.t === "glog" || m.t === "session")) { r.dirty = true; } else if (res.out.some(m => m.t === "stats")) (r as any).dirtyD = true; // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون
     if (res.logs.length) opt.saveLogs?.(id, res.logs).catch(() => {});
   }
   /** تشخيص الشات لكل منصة: استقبال ← الاسم ← النص ← الخادم ← البث للواجهات (أعداد وأسباب فقط — بدون نصوص المحادثات) */
@@ -182,6 +182,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
           onEvent: ev => { if (h && r.tiktok !== h) return; dispatch(id, r, ev); }, // أحداث اتصال قديم بعد استبداله لا تصل للجلسة الحالية
           onGifts: gifts => { r.gifts = gifts; r.dirty = true; broadcast(r, { t: "gifts", gifts }); }, // قائمة هدايا TikTok الحقيقية: تُحفظ مع حالة الغرفة (خارج البث المرسل للروابط)
           onFollowers: n => commit(id, r, roomClockOp(r, { target: "followers", op: "official", platform: "tiktok", value: n, source: "tiktok_live" }, Date.now())),
+          onStats: s => { if (h && r.tiktok !== h) return; commit(id, r, roomStats(r as any, "tiktok", s, Date.now())); },
           onStatus: (live, text, info) => {
             if (h && r.tiktok !== h) return; // اتصال قديم بعد الإيقاف أو الاستبدال
             const was = r.live;
@@ -189,6 +190,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
             // جلسات البث: roomId مختلف = بث جديد (تصفير بيانات الجلسة)، نفس roomId = إعادة اتصال (استمرار) — الانقطاع وحده لا يصفّر شيئاً
             if (info?.state === "connected") { const sr = roomSessionConnect(r as any, info.liveRoomId ?? null, Date.now(), { startAt: info.liveStartAt }); if ((sr as any).act !== "same") console.log(`[session] ${id.slice(0, 6)}… ${(sr as any).act} roomId=${info.liveRoomId ?? "?"}`); commit(id, r, sr); }
             if (info?.ended) commit(id, r, roomSessionEnd(r as any, Date.now(), "stream_end"));
+            if (was && !live) commit(id, r, roomStats(r as any, "tiktok", { offline: true }, Date.now()));
             if (was !== live) commit(id, r, roomLive(r, live, Date.now())); // إيقاف/استكمال السبثون تلقائياً حسب الإعداد
             opt.onLiveStatus?.(id, live, text);
           },
@@ -239,5 +241,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   function musicState(room: string) { const r = rooms.get(room); return r ? (r.C as any)?.music || null : null; }
   /** حالة القائمة + الإعدادات الفعلية للغرفة (لصفحة الطلب العامة) */
   async function musicInfo(room: string) { const r = await getRoom(room); return { M: (r.C as any)?.music || null, cfg: roomMusicCfg(r as any) }; }
-  return { rooms, stats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
+  /** أرقام المشاهدين من موصلات المنصات المصرح بها (YouTube/Twitch/Kick) */
+  const liveStats = (room: string, platform: string, data: any) => { const r = rooms.get(room); if (r) commit(room, r, roomStats(r as any, platform, data, Date.now())); };
+  return { rooms, stats, liveStats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) dispatch(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
 }
