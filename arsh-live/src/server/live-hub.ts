@@ -19,6 +19,8 @@ export type HubOptions = {
   saveLogs?(room: string, logs: any[]): Promise<void>;
   persistGift?(room: string, e: { k: string; name: string; av: string; v: number; c: number; t: number }): Promise<void>;
   persistLayout?(room: string, layout: Layout): Promise<void>;
+  /** إدارة الشات على المنصة الأصلية عبر الربط الرسمي (YouTube/Twitch/Kick). TikTok لا يدعم ذلك. */
+  moderate?(room: string, a: { act: string; platform: string; uid: string; name?: string; msgId?: string; sec?: number }): Promise<{ ok: boolean; error?: string }>;
   onLiveStatus?(room: string, live: boolean, text: string): void;
   onNotify?(room: string, m: any): void;
   onReport?(room: string, report: any): void;
@@ -127,6 +129,9 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
       // طلب أغنية يحتاج بحث YouTube: لا يُبث — يُبحث على الخادم ثم تُضاف النتيجة للقائمة ويُبث الرد
       if (m.t === "musicsearch") { const find = opt.ytFind ? opt.ytFind(m.q, m.cfg) : Promise.resolve({ ok: false, message: "البحث في YouTube غير متاح على هذا الخادم" });
         find.catch(() => ({ ok: false, message: "تعذر البحث في YouTube" })).then(yr => commit(id, r, { out: roomMusicFound(r as any, m, yr, Date.now()).out, logs: [] })); continue; }
+      // إدارة الشات على المنصة الأصلية: لا تُبث — تُنفَّذ عبر الربط الرسمي فقط (الخادم يتحقق من الربط والصلاحيات) والنتيجة الحقيقية للوحة
+      if (m.t === "modnative") { const a = m.a; const run = opt.moderate ? opt.moderate(id, a) : Promise.resolve({ ok: false, error: "الإدارة على المنصات غير متاحة على هذا الخادم" });
+        run.catch((e: any) => ({ ok: false, error: String(e?.message || e).slice(0, 160) })).then((res: any) => { const s = JSON.stringify({ t: "modres", a, ok: !!res?.ok, error: res?.error || "", local: true }); r.clients.forEach(c => c.readyState === 1 && c.canEdit && c.send(s)); }); continue; }
       bcast(r, m); if (m.t === "notify") opt.onNotify?.(id, m); if (m.t === "report") opt.onReport?.(id, m.report); if (m.t === "bot") for (const it of m.items || []) if (it.chat && it.text) opt.onChatReply?.(id, it.chat, it.text); }
     if (res.out.some(m => m.t === "session")) (r as any).ldC = null;
     if (res.out.some(m => m.t === "clock" || m.t === "glog" || m.t === "session")) { r.dirty = true; } else if (res.out.some(m => m.t === "stats")) (r as any).dirtyD = true; // glog: حالة سلاسل الهدايا + سجل الهدايا تُحفظ مع حالة السبثون

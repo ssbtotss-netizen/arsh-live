@@ -1,0 +1,17 @@
+import { modRequest } from "../arsh-live/src/engine/platforms.js";
+let pass = 0, fail = 0; const ok = (c: any, m: string) => { c ? pass++ : (fail++, process.stdout.write("FAIL " + m + "\n")); };
+const yt = modRequest("youtube", { act: "timeout", uid: "UCabc", sec: 600 }, { token: "T", liveChatId: "LC1" }) as any;
+const yb = JSON.parse(yt.init.body); ok(yt.url.endsWith("/liveChat/bans?part=snippet") && yb.snippet.type === "temporary" && yb.snippet.banDurationSeconds === 600 && yb.snippet.bannedUserDetails.channelId === "UCabc", "YouTube timeout → liveChat/bans temporary 600 s");
+ok(JSON.parse((modRequest("youtube", { act: "ban", uid: "UCa" }, { token: "T", liveChatId: "L" }) as any).init.body).snippet.type === "permanent", "YouTube ban → permanent");
+ok((modRequest("youtube", { act: "unban", uid: "UCa" }, { token: "T", liveChatId: "L" }) as any).error, "YouTube unban without ban id → clear error (no guessing)");
+ok((modRequest("youtube", { act: "delete", msgId: "M1" }, { token: "T" }) as any).init.method === "DELETE", "YouTube delete message");
+ok((modRequest("youtube", { act: "timeout", uid: "x" }, { token: "T" }) as any).error, "YouTube with no live chat → error");
+const tw = modRequest("twitch", { act: "timeout", uid: "99", sec: 60 }, { token: "T", clientId: "C", accountId: "11" }) as any; const tb = JSON.parse(tw.init.body);
+ok(tw.url.includes("helix/moderation/bans?broadcaster_id=11&moderator_id=11") && tb.data.user_id === "99" && tb.data.duration === 60 && tw.init.headers["client-id"] === "C", "Twitch timeout → helix bans with duration 60");
+ok(!("duration" in JSON.parse((modRequest("twitch", { act: "ban", uid: "99" }, { token: "T", clientId: "C", accountId: "11" }) as any).init.body).data), "Twitch ban → no duration (permanent)");
+ok((modRequest("twitch", { act: "delete", msgId: "x" }, { token: "T", clientId: "C", accountId: "11" }) as any).error.includes("moderator:manage:chat_messages"), "Twitch delete → needs extra scope (honest error)");
+ok(JSON.parse((modRequest("kick", { act: "ban", uid: "5" }, { token: "T", accountId: "7" }) as any).init.body).user_id === 5, "Kick ban");
+ok((modRequest("kick", { act: "timeout", uid: "5" }, { token: "T", accountId: "7" }) as any).error, "Kick timeout → not enabled (unverified unit), local only");
+ok((modRequest("tiktok", { act: "ban", uid: "5" }, { token: "T" }) as any).error.includes("TikTok"), "TikTok → no official API");
+ok((modRequest("youtube", { act: "ban", uid: "5" }, {} as any) as any).error, "no token → error");
+console.log(`modreq: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

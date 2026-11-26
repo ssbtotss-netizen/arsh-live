@@ -15,6 +15,8 @@ import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, mus
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { giftStreak, glogPush } from "./giftstreak.js";
+import { modState, modApply, modPin, modCheck, modAutoState, modAutoCfg, modKey } from "./chatmod.js";
+import { chatMsgOf } from "./chat.js";
 import { sndCfg, sndNewState, sndOnEvent, sndOnLogs, sndSessionReset, sndManual, SND_EVENTS } from "./sounds.js";
 import { liveState, sessDecide, sessOpen, sessClose, sessPublic, okStart } from "./session.js";
 import { statsState, statsOnEvent, statsViewers, statsOffline } from "./livestats.js";
@@ -52,6 +54,7 @@ export function roomEvent(R,ev,now){
  const logs=subathonOnEvent(R.C.subathon,ev,now,R.D.tot); keep(R,logs);
  R.C.latest=R.C.latest||{}; latestOnEvent(R.C.latest,ev,now);
  R.CHAT=R.CHAT||[]; chatPush(R.CHAT,ev);
+ roomAutoMod(R,ev,now,out);
  roomMusic(R,ev,now,out);
  sessionOnEvent(R,ev);
  faRoomTTS(R,ev,now,out);
@@ -79,6 +82,15 @@ function giftWhy(s,ev){ if(!s) return "السبثون غير مُعد";
  return "لا توجد قاعدة مطابقة لهذه الهدية (أو فترة انتظار القاعدة)" }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
+/* ===== إدارة الشات: الإشراف التلقائي (محلي افتراضياً) ===== */
+function roomAutoMod(R,ev,now,out){ if(ev.type!=="comment"||ev.test) return; const M=modState(R.C); if(!M.auto.on) return; R.AM=R.AM||modAutoState(); const m=chatMsgOf(ev); if(!m) return;
+ let v=null; try{ v=modCheck(M.auto,R.AM,M,m,now) }catch(e){ return } if(!v) return;
+ const base={platform:m.platform,uid:m.uid,name:m.name,msgId:m.id,auto:true,reason:v.reason};
+ if(v.action==="warn"){ M.log.unshift({at:now,act:"warn",platform:m.platform,uid:m.uid,name:m.name,msgId:m.id,auto:true,reason:v.reason}); if(M.log.length>100) M.log.length=100 }
+ else { modApply(M,{...base,act:"hide"},now); if(v.action==="timeout") modApply(M,{...base,act:"timeout",sec:M.auto.timeoutSec},now); if(v.action==="ban") modApply(M,{...base,act:"ban"},now);
+  // على المنصة الأصلية: فقط إذا فعّله صانع المحتوى صراحةً (معطّل افتراضياً) والخادم يتحقق من الربط والصلاحيات
+  if(M.auto.native&&v.action!=="hide") out.push({t:"modnative",a:{...base,act:v.action,sec:M.auto.timeoutSec}}) }
+ out.push({t:"clock",C:R.C,now,logs:[],cm:1}) }
 /* ===== مكتبة الأصوات: القرار هنا (مصدر واحد) — رابط OBS يشغّل فقط ===== */
 function roomSoundCfg(R){ const raw=R.botCfg&&R.botCfg.sounds; if(!raw) return null; if(R.SNDraw!==raw){ R.SNDraw=raw; R.SNDc=sndCfg(raw) } R.SND=R.SND||sndNewState(); return R.SNDc }
 function roomSoundGoals(R){ const L=R.botCtx&&R.botCtx.layout, v=R.D&&R.D.tot?R.D.tot.likes:0; return (L&&Array.isArray(L.widgets)?L.widgets:[]).filter(w=>w&&w.type==="goal"&&+w.target>0).map(w=>({id:"lk:"+w.id+":"+w.target,kind:"likes",target:+w.target,value:v})) }
@@ -147,6 +159,14 @@ export function roomClockOp(R,m,now){
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
+ if(m.target==="chatmod"){ // إدارة الشات من اللوحة / الشات العائم
+  const M=modState(R.C), a=m.a&&typeof m.a==="object"?m.a:{}, ok=s=>/^[a-z]{3,10}$/.test(String(s||""));
+  if(m.op==="act"&&ok(a.platform)&&a.uid!=null){ const e=modApply(M,{act:a.act,platform:a.platform,uid:String(a.uid).slice(0,80),name:a.name,msgId:a.msgId?String(a.msgId).slice(0,120):"",sec:+a.sec||0},now); if(!e) return {out:[],logs:[]};
+   const out=[{t:"clock",C:R.C,now,logs:[],cm:1}]; if(a.native) out.push({t:"modnative",a:{act:a.act,platform:a.platform,uid:String(a.uid),name:a.name,msgId:a.msgId||"",sec:+a.sec||0}}); return {out,logs:[]} }
+  if(m.op==="pin"){ const msg=(R.CHAT||[]).find(x=>x.id===m.msgId)||(m.msg&&typeof m.msg==="object"?m.msg:null); if(!modPin(M,msg,Math.max(0,+m.sec||0),now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],cm:1}],logs:[]} }
+  if(m.op==="unpin"){ M.pin=null; return {out:[{t:"clock",C:R.C,now,logs:[],cm:1}],logs:[]} }
+  if(m.op==="auto"){ M.auto=modAutoCfg(m.auto); R.AM=modAutoState(); return {out:[{t:"clock",C:R.C,now,logs:[],cm:1}],logs:[]} }
+  return {out:[],logs:[]} }
  if(m.target==="sounds"){ // لوحة التشغيل السريع / «تشغيل الآن» / إيقاف — من لوحة التحكم فقط
   const c=roomSoundCfg(R)||sndCfg({});
   if(m.op==="play"){ const it=sndManual(c,m.s,now,{test:!!m.test}); return {out:it?[{t:"snd",items:[it]}]:[],logs:[]} }

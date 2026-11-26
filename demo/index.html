@@ -515,6 +515,70 @@ body.sb-only .side,body.sb-only aside,body.sb-only nav,body.sb-only .nav,body.sb
 body.sb-only main,body.sb-only .main{margin:0!important;max-width:none!important}
 @media (max-width:640px){.snd-grid{grid-template-columns:1fr 1fr}.snd-card{padding:9px}.snd-act .btn{font-size:11px;padding:6px}.snd-master input[type=range]{width:90px}.snd-board{grid-template-columns:repeat(3,1fr)}}
 .snd-rh select.inp,.snd-evt select.inp,.snd-box select.inp{width:auto;min-width:0}.snd-rh .snd-num{width:72px}
+/* ================= 💬 الشات المباشر والإدارة + الشات العائم ================= */
+.flc-pagehead{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:flex-start;margin-bottom:10px}.flc-pagehead h2{margin:0}
+.flc-cap{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:99px;background:rgba(255,255,255,.06);font-size:12px}.flc-cap.on{background:rgba(52,211,153,.15);color:#34d399}.flc-cap svg{width:14px;height:14px}
+.flc-root{--fc-bg:.15;--fc-card:.45;--fc-frame:.4;--fc-avo:1;--fc-txt:1;--fc-st:.8;--fc-sup:1;--fc-fs:15px;--fc-avs:30px;position:relative;display:flex;flex-direction:column;height:72vh;min-height:360px;border-radius:16px;overflow:hidden;
+ background:rgba(8,10,20,var(--fc-bg));border:1px solid rgba(255,255,255,calc(var(--fc-frame)*.25));font-size:var(--fc-fs);color:rgba(255,255,255,var(--fc-txt))}
+body.flc-only{background:transparent!important}body.flc-only .side,body.flc-only aside,body.flc-only .nav,body.flc-only .topbar{display:none!important}body.flc-only main,body.flc-only .main{margin:0!important;padding:0!important;max-width:none!important}
+body.flc-only #pg>.card,body.flc-only .card{padding:0;background:none;border:0}body.flc-only .flc-root{height:100vh;border-radius:0}
+body.flc-pip{margin:0}body.flc-pip .flc-root{height:100vh;border-radius:0}
+.flc-bar{display:flex;align-items:center;gap:4px;padding:5px 6px;background:rgba(0,0,0,.35);flex-wrap:wrap;-webkit-app-region:drag}.flc-bar>*{-webkit-app-region:no-drag}.flc-bar.hidden{display:none}
+.flc-tb{width:30px;height:30px;border-radius:8px;border:0;background:rgba(255,255,255,.07);color:#fff;cursor:pointer;font-size:14px}.flc-tb.on{background:#8b5cf6}.flc-tb[data-dis]{opacity:.45}
+.flc-q{flex:1;min-width:70px;height:30px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:rgba(0,0,0,.3);color:#fff;padding:0 8px;font:inherit;font-size:12px}
+.flc-show{position:absolute;top:4px;inset-inline-end:4px;z-index:3;border:0;border-radius:8px;background:rgba(0,0,0,.45);color:#fff;width:28px;height:22px;cursor:pointer;opacity:.4}.flc-show:hover{opacity:1}
+.flc-panel{padding:8px 10px;background:rgba(0,0,0,.55);display:flex;flex-direction:column;gap:6px;max-height:48vh;overflow:auto;font-size:13px}.flc-panel label{display:flex;flex-direction:column;gap:2px}.flc-panel .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.flc-chk{flex-direction:row!important;align-items:center;gap:5px!important}.flc-chk.warn{color:#fbbf24}.flc-chk svg{width:14px;height:14px}.flc-presets{display:flex;gap:5px;flex-wrap:wrap}
+.flc-modes{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:5px}.flc-mode{display:flex;flex-direction:column;align-items:flex-start;padding:6px 8px;border-radius:9px;border:1px solid rgba(255,255,255,.12);background:rgba(255,255,255,.04);color:#fff;cursor:pointer;text-align:start;font:inherit}.flc-mode span{font-size:10.5px;opacity:.7}.flc-mode.on{border-color:#8b5cf6;background:rgba(139,92,246,.2)}
+.flc-dgal{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px}.flc-dg{padding:5px;border-radius:10px;border:1px solid rgba(255,255,255,.12);background:#0b0f1c;color:#fff;cursor:pointer;font:inherit;font-size:11px}.flc-dg.on{outline:2px solid #8b5cf6}
+.flc-dpv{--fc-bg:.2;--fc-card:.5;--fc-frame:.5;--fc-avo:1;--fc-txt:1;--fc-fs:10px;--fc-avs:16px;height:86px;overflow:hidden;font-size:10px;padding:3px;border-radius:7px;background:linear-gradient(135deg,#1e293b,#3b0764);margin-bottom:4px;display:flex;flex-direction:column;gap:2px;text-align:start}
+.flc-log{display:flex;flex-direction:column;gap:3px;font-size:12px}
+.flc-stats{display:flex;flex-wrap:wrap;gap:4px 10px;padding:5px 9px;font-size:.78em;opacity:var(--fc-st);background:rgba(0,0,0,calc(var(--fc-bg)*.8))}.flc-stats span{display:inline-flex;gap:3px;align-items:center}.flc-stats b{font-variant-numeric:tabular-nums}
+.flc-conns{margin-inline-start:auto}.flc-cn{display:inline-flex;opacity:.3}.flc-cn.on{opacity:1}.flc-cn svg{width:14px;height:14px}
+.flc-pin{display:flex;align-items:center;gap:7px;margin:5px 6px;padding:7px 9px;border-radius:12px;background:linear-gradient(135deg,rgba(139,92,246,.9),rgba(59,130,246,.85));color:#fff}.flc-pin img{width:28px;height:28px;border-radius:50%}.flc-pin div{display:flex;flex-direction:column;flex:1;min-width:0}.flc-pin div b{font-size:.8em;display:flex;gap:3px;align-items:center}.flc-pin em{font-size:.75em;opacity:.8}
+.flc-x{border:0;background:rgba(0,0,0,.3);color:#fff;border-radius:7px;cursor:pointer;width:24px;height:24px}
+.flc-list{flex:1;overflow-y:auto;padding:6px;display:flex;flex-direction:column;gap:4px;scrollbar-width:thin}
+.flc-m{--pc:#8b5cf6;display:flex;gap:7px;align-items:flex-start;padding:5px 8px;border-radius:11px;background:rgba(255,255,255,calc(var(--fc-card)*.14));border:1px solid rgba(255,255,255,calc(var(--fc-frame)*.18));cursor:context-menu}
+.flc-m.sup{background:linear-gradient(90deg,rgba(234,179,8,calc(var(--fc-sup)*.28)),rgba(255,255,255,calc(var(--fc-card)*.1)));border-color:rgba(234,179,8,calc(var(--fc-sup)*.5));opacity:max(var(--fc-sup),.15)}
+.flc-av{flex:none;width:var(--fc-avs);height:var(--fc-avs);border-radius:50%;overflow:hidden;background:var(--pc);display:grid;place-items:center;font-weight:800;font-size:.8em;opacity:var(--fc-avo)}.flc-av img{width:100%;height:100%;object-fit:cover}
+.flc-b{display:flex;flex-direction:column;min-width:0}.flc-n{font-weight:800;font-size:.82em;color:var(--pc);cursor:pointer;display:inline-flex;align-items:center;gap:3px}.flc-n:hover{text-decoration:underline}.flc-pl svg{width:1em;height:1em;vertical-align:-.12em}.flc-t{overflow-wrap:anywhere;line-height:1.35}
+.flc-badge{font-style:normal}.flc-in{animation:flcIn .28s ease-out}.flc-still .flc-in{animation:none}@keyframes flcIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.flc-resume{position:absolute;bottom:10px;left:50%;transform:translateX(-50%);border:0;border-radius:99px;background:#8b5cf6;color:#fff;padding:6px 14px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.flc-low *{backdrop-filter:none!important;animation:none!important;box-shadow:none!important}
+.flc-menu{position:fixed;z-index:9999;min-width:230px;max-width:290px;max-height:80vh;overflow:auto;padding:6px;border-radius:12px;background:#0f1424;border:1px solid rgba(255,255,255,.14);box-shadow:0 12px 40px rgba(0,0,0,.55);color:#fff;font-size:13px}
+.flc-menu>button,.flc-menu>a,.flc-sub>span{display:flex;align-items:center;gap:6px;width:100%;padding:7px 8px;border:0;border-radius:8px;background:none;color:inherit;cursor:pointer;font:inherit;text-align:start;text-decoration:none}
+.flc-menu>button:hover,.flc-menu>a:hover{background:rgba(255,255,255,.08)}.flc-menu .dng{color:#f87171}.flc-menu em{margin-inline-start:auto;font-style:normal;font-size:10.5px;padding:1px 6px;border-radius:99px;background:rgba(255,255,255,.08);opacity:.85}.flc-menu em.on{background:rgba(52,211,153,.2);color:#34d399}
+.flc-mh{display:flex;align-items:center;gap:6px;padding:4px 8px}.flc-mh svg{width:16px;height:16px}.flc-note{font-size:11px;opacity:.7;margin:0 8px 4px}
+.flc-sub>div{display:flex;flex-wrap:wrap;gap:4px;padding:0 8px 6px}.flc-sub>div button{border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.05);color:#fff;border-radius:7px;padding:4px 8px;cursor:pointer;font:inherit;font-size:12px}.flc-recent p{margin:2px 0;font-size:12px;opacity:.85;width:100%}
+.flc-probe{position:fixed;inset:30% 10% auto;z-index:99999;padding:20px;border-radius:16px;background:#dc2626;color:#fff;font:800 22px system-ui;text-align:center;box-shadow:0 10px 40px rgba(0,0,0,.6)}
+/* ===== 25 تصميماً للشات العائم (تغيير في البنية لا في اللون فقط) ===== */
+.flcd-basic .flc-m{background:none;border:0;padding:2px 4px}
+.flcd-hud .flc-m{border-radius:0;background:rgba(0,20,30,calc(var(--fc-card)*.6));border:0;position:relative;font-family:ui-monospace,monospace;clip-path:polygon(8px 0,100% 0,100% calc(100% - 8px),calc(100% - 8px) 100%,0 100%,0 8px)}.flcd-hud .flc-m::before{content:"";position:absolute;inset:0;border:1px solid rgba(0,255,220,calc(var(--fc-frame)*.8));clip-path:inherit;pointer-events:none}.flcd-hud .flc-n{color:#00ffd5;text-transform:uppercase}
+.flcd-minimal .flc-m{background:none;border:0;padding:1px 3px;display:block}.flcd-minimal .flc-av{display:none}.flcd-minimal .flc-b{display:inline}.flcd-minimal .flc-n{display:inline;margin-inline-end:4px}.flcd-minimal .flc-n::after{content:":"}.flcd-minimal .flc-t{display:inline}
+.flcd-glass .flc-m{backdrop-filter:blur(10px);background:rgba(255,255,255,calc(var(--fc-card)*.18));border-radius:16px}
+.flcd-neon .flc-m{background:rgba(5,10,30,calc(var(--fc-card)*.7));border:1px solid rgba(56,189,248,var(--fc-frame));box-shadow:0 0 10px rgba(56,189,248,calc(var(--fc-frame)*.6)),inset 0 0 8px rgba(56,189,248,.15)}.flcd-neon .flc-n{color:#7dd3fc;text-shadow:0 0 6px #38bdf8}
+.flcd-gold .flc-m{background:linear-gradient(180deg,rgba(40,28,5,calc(var(--fc-card)*.85)),rgba(20,14,2,calc(var(--fc-card)*.85)));border:2px double rgba(234,179,8,var(--fc-frame));font-family:Georgia,serif}.flcd-gold .flc-n{color:#fcd34d}
+.flcd-cyber .flc-m{transform:skewX(-8deg);background:rgba(250,204,21,calc(var(--fc-card)*.9));color:#111;border:0;border-inline-start:5px solid #ec4899;border-radius:0}.flcd-cyber .flc-m>*{transform:skewX(8deg)}.flcd-cyber .flc-n{color:#be185d}
+.flcd-dark .flc-m{background:rgba(10,10,12,calc(var(--fc-card)*.95));border:0;border-inline-start:2px solid #d4af37;border-radius:4px}.flcd-dark .flc-n{color:#e7d7a0;letter-spacing:.3px}
+.flcd-rgb .flc-m{border:2px solid transparent;background:linear-gradient(rgba(12,12,20,calc(var(--fc-card)*.9)),rgba(12,12,20,calc(var(--fc-card)*.9))) padding-box,linear-gradient(90deg,#f00,#ff0,#0f0,#0ff,#00f,#f0f,#f00) border-box;background-size:100%,300%;animation:flcRgb 4s linear infinite}@keyframes flcRgb{to{background-position:0 0,300% 0}}
+.flcd-holo .flc-t{background:linear-gradient(90deg,#a5f3fc,#f0abfc,#fde68a,#a5f3fc);-webkit-background-clip:text;background-clip:text;color:transparent;background-size:200%;animation:flcRgb 6s linear infinite;font-weight:700}.flcd-holo .flc-m{background:rgba(255,255,255,calc(var(--fc-card)*.06));border:1px solid rgba(240,171,252,calc(var(--fc-frame)*.5))}
+.flcd-compact .flc-list{gap:1px}.flcd-compact .flc-m{padding:1px 5px;border-radius:4px;font-size:.85em;align-items:center}.flcd-compact .flc-av{--fc-avs:16px}.flcd-compact .flc-b{flex-direction:row;gap:5px}
+.flcd-cinema .flc-list{justify-content:flex-end;align-items:center}.flcd-cinema .flc-m{flex-direction:column;align-items:center;text-align:center;background:none;border:0;border-top:1px solid rgba(255,255,255,calc(var(--fc-frame)*.2));border-radius:0;max-width:92%}.flcd-cinema .flc-t{font-size:1.25em;font-weight:300;letter-spacing:.3px}.flcd-cinema .flc-av{display:none}.flcd-cinema .flc-n{font-size:.7em;letter-spacing:2px}
+.flcd-saudi .flc-m{background:rgba(0,90,50,calc(var(--fc-card)*.75));border:0;border-bottom:4px solid transparent;border-image:repeating-linear-gradient(90deg,#b91c1c 0 6px,#f5f5f4 6px 9px,#0f172a 9px 15px,#f5f5f4 15px 18px) 4;border-radius:6px 6px 0 0}.flcd-saudi .flc-n{color:#bbf7d0}
+.flcd-frosted .flc-m{background:rgba(255,255,255,calc(var(--fc-card)*.75));color:#0f172a;backdrop-filter:blur(14px) saturate(1.4);border:1px solid rgba(255,255,255,var(--fc-frame))}.flcd-frosted .flc-n{filter:brightness(.7)}
+.flcd-esports .flc-m{border-radius:0;border:0;border-inline-start:6px solid var(--pc);background:linear-gradient(90deg,rgba(20,20,30,calc(var(--fc-card)*.95)),rgba(20,20,30,calc(var(--fc-card)*.4)))}.flcd-esports .flc-n{text-transform:uppercase;letter-spacing:1px;color:#fff;font-style:italic}
+.flcd-bubble .flc-m{border-radius:18px 18px 18px 4px;max-width:85%;background:rgba(59,130,246,calc(var(--fc-card)*.7))}.flcd-bubble .flc-m:nth-child(even){align-self:flex-end;flex-direction:row-reverse;border-radius:18px 18px 4px 18px;background:rgba(236,72,153,calc(var(--fc-card)*.7))}
+.flcd-terminal .flc-list{font-family:ui-monospace,Consolas,monospace;background:rgba(0,10,0,calc(var(--fc-bg)+.2))}.flcd-terminal .flc-m{background:none;border:0;padding:0 4px;border-radius:0}.flcd-terminal .flc-av{display:none}.flcd-terminal .flc-n{color:#4ade80}.flcd-terminal .flc-n::before{content:"> "}.flcd-terminal .flc-t{color:#bbf7d0}.flcd-terminal .flc-b{flex-direction:row;gap:6px}
+.flcd-sticky .flc-m{background:#fde68a;color:#422006;border:0;border-radius:2px;box-shadow:2px 3px 0 rgba(0,0,0,.25);transform:rotate(-1deg);opacity:max(var(--fc-card),.3)}.flcd-sticky .flc-m:nth-child(3n){transform:rotate(1.2deg);background:#fbcfe8}.flcd-sticky .flc-m:nth-child(3n+1){background:#bbf7d0}.flcd-sticky .flc-n{color:#7c2d12}
+.flcd-comic .flc-m{background:#fff;color:#111;border:3px solid #111;border-radius:14px;position:relative;font-family:"Comic Sans MS","Segoe Print",system-ui;font-weight:700;margin-bottom:6px}.flcd-comic .flc-m::after{content:"";position:absolute;bottom:-9px;inset-inline-start:18px;border:8px solid transparent;border-top-color:#111;border-bottom:0}.flcd-comic .flc-n{color:#dc2626}
+.flcd-pixel .flc-m{border-radius:0;border:0;background:rgba(30,27,75,calc(var(--fc-card)*.9));box-shadow:0 -3px 0 #a78bfa,0 3px 0 #a78bfa,-3px 0 0 #a78bfa,3px 0 0 #a78bfa;margin:3px;font-family:ui-monospace,monospace;image-rendering:pixelated}.flcd-pixel .flc-av{border-radius:0}
+.flcd-ribbon .flc-m{background:none;border:0;flex-direction:column;gap:1px}.flcd-ribbon .flc-av{display:none}.flcd-ribbon .flc-n{background:var(--pc);color:#000;padding:1px 10px 1px 14px;clip-path:polygon(0 0,100% 0,calc(100% - 7px) 50%,100% 100%,0 100%);width:max-content}.flcd-ribbon .flc-t{padding:3px 8px;background:rgba(0,0,0,calc(var(--fc-card)*.5));border-radius:0 8px 8px 8px}
+.flcd-timeline .flc-list{border-inline-start:2px solid rgba(255,255,255,calc(var(--fc-frame)*.5));margin-inline-start:14px;padding-inline-start:12px}.flcd-timeline .flc-m{background:none;border:0;position:relative}.flcd-timeline .flc-m::before{content:"";position:absolute;inset-inline-start:-19px;top:10px;width:10px;height:10px;border-radius:50%;background:var(--pc);box-shadow:0 0 0 3px rgba(0,0,0,.5)}
+.flcd-tilt .flc-list{perspective:700px}.flcd-tilt .flc-m{transform:rotateY(-12deg);background:linear-gradient(135deg,rgba(99,102,241,calc(var(--fc-card)*.8)),rgba(30,27,75,calc(var(--fc-card)*.8)));box-shadow:-6px 6px 14px rgba(0,0,0,.4);border:0}
+.flcd-outline .flc-m{background:none;border:0}.flcd-outline .flc-t,.flcd-outline .flc-n{color:#fff;-webkit-text-stroke:.6px #000;paint-order:stroke fill;text-shadow:0 0 3px #000,0 0 3px #000;font-weight:800}
+.flcd-stream .flc-list{padding:0;gap:0}.flcd-stream .flc-m{border-radius:0;border:0;border-bottom:1px solid rgba(255,255,255,calc(var(--fc-frame)*.12));background:linear-gradient(90deg,rgba(0,0,0,calc(var(--fc-card)*.8)),transparent)}.flcd-stream .flc-m:nth-child(odd){background:linear-gradient(90deg,rgba(255,255,255,calc(var(--fc-card)*.08)),transparent)}
+.flm-gaming .flc-m{padding:2px 6px}.flm-minimal .flc-av{display:none}
+.flc-pagehead a.btn{text-decoration:none;color:inherit;display:inline-flex;align-items:center}
 
 /* ============ OVERLAY WIDGETS (shared by editor, previews and OBS) ============ */
 body.ov{background:transparent!important;overflow:hidden}
@@ -1053,6 +1117,11 @@ body.ov .stage{background:transparent!important}
 body.ov-explore .fxl > *, body.ov-explore .ab-fx { display: none !important; }
 body.ov-explore .ucw .uc-m, body.ov-explore .lsb-row { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 body.ov-explore .ucw .uc-m.uc-new { animation: none !important; }
+/* رسالة مثبتة أعلى الشات (إدارة الشات) */
+.ucw .uc-pin{display:flex;align-items:center;gap:.55em;margin:.3em 0 .45em;padding:.55em .8em;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.85),rgba(59,130,246,.8));color:#fff;box-shadow:0 6px 22px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25)}
+.ucw .uc-pin-ic{font-size:1.1em}.ucw .uc-pin-av{width:2em;height:2em;border-radius:50%;object-fit:cover;flex:none}.ucw .uc-pin-ini{display:grid;place-items:center;background:rgba(0,0,0,.3);font-weight:800}
+.ucw .uc-pin-b{display:flex;flex-direction:column;min-width:0}.ucw .uc-pin-b b{display:flex;align-items:center;gap:.3em;font-size:.85em}.ucw .uc-pin-b span{font-weight:700;overflow-wrap:anywhere}
+.ucw .uc-pin-lg svg{width:1em;height:1em;vertical-align:-.15em}
 
 </style>
 </head>
@@ -2094,6 +2163,30 @@ function chatSendRequest(platform,{token,clientId,accountId,liveChatId,text}){ c
  if(platform==="kick") return accountId?{url:"https://api.kick.com/public/v1/chat",init:{method:"POST",headers:h,body:JSON.stringify({broadcaster_user_id:Number(accountId),content:msg.slice(0,500),type:"user"})}}:null;
  return null }
 
+/** إدارة الشات عبر الواجهات الرسمية — يعيد {url, init} أو {error}. لا تخمين: ما لم يُتحقق منه في التوثيق يُرفض بوضوح.
+ * YouTube: liveChat/bans (temporary + banDurationSeconds | permanent)، liveChat/messages DELETE، liveChat/moderators — صلاحية youtube.force-ssl
+ * Twitch: POST/DELETE helix/moderation/bans (duration بالثواني 1..1209600) — صلاحية moderator:manage:banned_users
+ * Kick: POST/DELETE public/v1/moderation/bans — صلاحية moderation:ban */
+function modRequest(platform,a,{token,clientId,accountId,liveChatId,banId,modId}){ if(!token) return {error:"لا يوجد رمز وصول — أعد ربط الحساب"};
+ const h={authorization:`Bearer ${token}`,"content-type":"application/json"}, act=a.act, uid=String(a.uid||"");
+ if(platform==="youtube"){ const B="https://www.googleapis.com/youtube/v3/liveChat";
+  if(!liveChatId&&["timeout","ban","mod"].includes(act)) return {error:"لا يوجد بث YouTube نشط الآن"};
+  if(act==="timeout"||act==="ban") return {url:`${B}/bans?part=snippet`,init:{method:"POST",headers:h,body:JSON.stringify({snippet:{liveChatId,type:act==="ban"?"permanent":"temporary",...(act==="timeout"?{banDurationSeconds:Math.max(1,Math.min(86400,Math.round(+a.sec||300)))}:{}),bannedUserDetails:{channelId:uid}}})}};
+  if(act==="unban") return banId?{url:`${B}/bans?id=${encodeURIComponent(banId)}`,init:{method:"DELETE",headers:h}}:{error:"YouTube يحتاج معرّف الحظر الأصلي لفكه — الحظر لم يتم من B6O6 في هذا التشغيل؛ فكّه من YouTube Studio"};
+  if(act==="delete") return a.msgId?{url:`${B}/messages?id=${encodeURIComponent(a.msgId)}`,init:{method:"DELETE",headers:h}}:{error:"لا يوجد معرّف رسالة"};
+  if(act==="mod") return {url:`${B}/moderators?part=snippet`,init:{method:"POST",headers:h,body:JSON.stringify({snippet:{liveChatId,moderatorDetails:{channelId:uid}}})}};
+  if(act==="unmod") return modId?{url:`${B}/moderators?id=${encodeURIComponent(modId)}`,init:{method:"DELETE",headers:h}}:{error:"YouTube يحتاج معرّف الإشراف الأصلي — أزل المشرف من YouTube Studio"};
+  return {error:"غير مدعوم في YouTube"} }
+ if(platform==="twitch"){ if(!accountId||!clientId) return {error:"ربط Twitch غير مكتمل"}; const q=`broadcaster_id=${encodeURIComponent(accountId)}&moderator_id=${encodeURIComponent(accountId)}`, H={...h,"client-id":clientId};
+  if(act==="timeout"||act==="ban") return {url:`https://api.twitch.tv/helix/moderation/bans?${q}`,init:{method:"POST",headers:H,body:JSON.stringify({data:{user_id:uid,...(act==="timeout"?{duration:Math.max(1,Math.min(1209600,Math.round(+a.sec||300)))}:{}),reason:String(a.reason||"B6O6").slice(0,500)}})}};
+  if(act==="unban") return {url:`https://api.twitch.tv/helix/moderation/bans?${q}&user_id=${encodeURIComponent(uid)}`,init:{method:"DELETE",headers:H}};
+  return {error:act==="delete"?"حذف الرسائل في Twitch يحتاج صلاحية إضافية (moderator:manage:chat_messages) — أعد ربط Twitch بعد تحديثها":"تعيين المشرفين في Twitch يحتاج صلاحية إضافية (channel:manage:moderators)"} }
+ if(platform==="kick"){ if(!accountId) return {error:"ربط Kick غير مكتمل"}; const body={broadcaster_user_id:Number(accountId),user_id:Number(uid)};
+  if(act==="ban") return {url:"https://api.kick.com/public/v1/moderation/bans",init:{method:"POST",headers:h,body:JSON.stringify({...body,reason:String(a.reason||"B6O6").slice(0,100)})}};
+  if(act==="unban") return {url:"https://api.kick.com/public/v1/moderation/bans",init:{method:"DELETE",headers:h,body:JSON.stringify(body)}};
+  return {error:act==="timeout"?"الكتم المؤقت في Kick غير مفعّل في B6O6 بعد (لم نتحقق من وحدة المدة في التوثيق الرسمي) — نُفِّذ محلياً":"غير مدعوم في Kick عبر الواجهة الرسمية"} }
+ return {error:"TikTok لا يوفر واجهة رسمية لإدارة الشات — الإجراء نُفِّذ محلياً داخل B6O6 فقط"} }
+
 /* ---- engine/notify.js ---- */
 // ====== إشعارات المجتمعات: القوالب ومنع التكرار (دوال نقية) ======
 const NOTIFY_EVENTS=[["live_start","بداية البث («أنا لايف»)","🔴 {name} بدأ البث الآن! تعال: {url}"],["live_end","نهاية البث","انتهى البث — شكراً لكل من حضر ❤️"],["stats","ملخص إحصائيات البث","📊 ملخص البث: مدة {duration} · {likes} لايك · {gifts} نقطة هدايا · {follows} متابع جديد"],["goal","تحقيق هدف","🎯 تحقق الهدف: {goal}!"],["big_support","دعم كبير","💎 شكراً {user} على {amount}!"],["custom","رسالة مخصصة من الإجراءات","{text}"]];
@@ -2257,6 +2350,84 @@ function glogPush(C,diag,res){
 /** مجاميع السبثون الحالي من هدايا TikTok الحقيقية (تُصفّر مع كل بدء جديد للسبثون) — التجارب لا تُحتسب */
 function gsTotals(C){ const G=gsState(C), sa=(C.subathon&&C.subathon.startedAt)||0; if(!G.tot||G.tot.sa!==sa) G.tot={sa,coins:0,gifts:0,events:0,ms:0,last:0}; return G.tot }
 const GLOG_STATUS={added:"✅ أُضيف",none:"⚪ بدون وقت",dup:"🔁 مكرر",late:"⏪ متأخر"};
+
+/* ---- engine/chatmod.js ---- */
+// إدارة الشات الموحد: إجراءات المشاهدين (محلية داخل B6O6 + أصلية على المنصة حسب الصلاحيات الفعلية) · التثبيت · الإشراف التلقائي
+// قاعدة أساسية: المشاهد يُعرَّف بالمنصة + المعرّف معاً (اسم متطابق على منصتين = شخصان مختلفان).
+// TikTok: لا توجد واجهة رسمية لإدارة الشات ← الإجراءات «محلية فقط» (تختفي من شاتك وOBS، لا من TikTok).
+
+const MOD_MUTE_PRESETS = [30, 60, 300, 600, 1800, 3600, 86400];
+/** ما تدعمه الواجهات الرسمية لكل منصة (المصدر: توثيق YouTube Data API v3 / Twitch Helix / Kick Public API) */
+const MOD_NATIVE = {
+  tiktok: { label: "TikTok", note: "لا توجد واجهة رسمية لإدارة شات TikTok — الإجراءات محلية داخل B6O6 فقط", acts: {} },
+  youtube: { label: "YouTube", note: "عبر ربط YouTube الرسمي (صلاحية youtube.force-ssl)", acts: { timeout: { max: 86400 }, ban: {}, unban: {}, delete: {}, mod: {}, unmod: {} } },
+  twitch: { label: "Twitch", note: "عبر ربط Twitch الرسمي", acts: { timeout: { max: 1209600 }, ban: {}, unban: {} }, needScope: { delete: "moderator:manage:chat_messages", mod: "channel:manage:moderators", unmod: "channel:manage:moderators" } },
+  kick: { label: "Kick", note: "عبر ربط Kick الرسمي (صلاحية moderation:ban)", acts: { ban: {}, unban: {} } },
+};
+const MOD_ACT_LABEL = { timeout: "كتم مؤقت", ban: "حظر", unban: "فك الحظر", delete: "حذف الرسالة", mod: "تعيين مشرف", unmod: "إزالة المشرف", pin: "تثبيت" };
+const modKey = (platform, uid) => String(platform || "") + ":" + String(uid || "");
+const cl = (v, a, b) => Math.max(a, Math.min(b, v));
+
+function modState(C) { C.mod = C.mod && typeof C.mod === "object" ? C.mod : {}; const M = C.mod;
+  M.u = M.u && typeof M.u === "object" ? M.u : {}; M.hid = Array.isArray(M.hid) ? M.hid : []; M.pin = M.pin || null; M.auto = modAutoCfg(M.auto); M.log = Array.isArray(M.log) ? M.log : []; return M; }
+/** إعدادات الإشراف التلقائي — الإجراءات على المنصة الأصلية معطّلة افتراضياً */
+function modAutoCfg(a) { a = a && typeof a === "object" ? a : {}; const act = v => ["warn", "hide", "delete", "timeout", "ban"].includes(v) ? v : "hide";
+  const list = v => (Array.isArray(v) ? v : String(v || "").split(/[,،\n]/)).map(s => String(s).trim()).filter(Boolean).slice(0, 500);
+  return { on: !!a.on, profanity: a.profanity !== false, words: list(a.words), dup: a.dup !== false, dupSec: cl(+a.dupSec || 30, 5, 600), spam: a.spam !== false, links: !!a.links, allowDomains: list(a.allowDomains),
+    rate: { on: !!(a.rate && a.rate.on), n: cl(+(a.rate && a.rate.n) || 5, 1, 50), sec: cl(+(a.rate && a.rate.sec) || 10, 2, 300) }, exemptMods: a.exemptMods !== false, allow: list(a.allow), block: list(a.block),
+    action: { profanity: act(a.action?.profanity || "hide"), words: act(a.action?.words || "hide"), dup: act(a.action?.dup || "hide"), spam: act(a.action?.spam || "hide"), links: act(a.action?.links || "hide"), rate: act(a.action?.rate || "hide"), block: act(a.action?.block || "hide") },
+    timeoutSec: cl(+a.timeoutSec || 300, 10, 86400), native: !!a.native /* تنفيذ تلقائي على المنصة الأصلية — اختياري، معطّل افتراضياً */ }; }
+
+/** هل يُخفى هذا المشاهد/الرسالة محلياً الآن؟ */
+function modHidden(M, m, now) { if (!M || !m) return false; if (m.id && M.hid.includes(m.id)) return true; const u = M.u[modKey(m.platform, m.uid)]; if (!u) return false; return !!(u.ban || (u.mute && u.mute > now)); }
+function modIsMod(M, platform, uid) { const u = M && M.u[modKey(platform, uid)]; return !!(u && u.mod); }
+
+/** تطبيق إجراء محلي (يعيد وصفاً للسجل). الأصلي يُنفَّذ في الخادم عبر الربط الرسمي فقط */
+function modApply(M, a, now) {
+  const k = modKey(a.platform, a.uid), u = M.u[k] || (M.u[k] = { name: String(a.name || "").slice(0, 60), platform: a.platform, uid: String(a.uid || "") });
+  if (a.name) u.name = String(a.name).slice(0, 60);
+  switch (a.act) {
+    case "timeout": { const sec = cl(Math.round(+a.sec || 300), 5, 30 * 86400); u.mute = now + sec * 1000; break; }
+    case "unmute": u.mute = 0; break;
+    case "ban": u.ban = true; break;
+    case "unban": u.ban = false; u.mute = 0; break;
+    case "mod": u.mod = true; break; case "unmod": u.mod = false; break;
+    case "delete": case "hide": if (a.msgId) { if (!M.hid.includes(a.msgId)) M.hid.push(a.msgId); if (M.hid.length > 300) M.hid.splice(0, M.hid.length - 300); } break;
+    case "unhide": M.hid = M.hid.filter(x => x !== a.msgId); break;
+    default: return null;
+  }
+  if (!u.mute && !u.ban && !u.mod) delete M.u[k];
+  const e = { at: now, act: a.act, platform: a.platform, uid: String(a.uid || ""), name: u.name || a.name || "", sec: a.sec || 0, msgId: a.msgId || "", auto: !!a.auto, reason: String(a.reason || "").slice(0, 80) };
+  M.log.unshift(e); if (M.log.length > 100) M.log.length = 100; return e;
+}
+/** التثبيت داخل B6O6: بطاقة أعلى الشات في اللوحة وOBS والشات العائم (المدة بالثواني، 0 = حتى الإلغاء) */
+function modPin(M, msg, sec, now) { if (!msg || !msg.id) return null; M.pin = { m: { id: msg.id, platform: msg.platform, uid: msg.uid, name: String(msg.name || "").slice(0, 60), av: String(msg.av || msg.avatar || "").slice(0, 400), text: String(msg.text || "").slice(0, 500), kind: msg.kind || "msg" }, at: now, until: sec > 0 ? now + sec * 1000 : 0 }; return M.pin; }
+function modPinActive(M, now) { return M && M.pin && (!M.pin.until || M.pin.until > now) ? M.pin : null; }
+
+/* ===== الإشراف التلقائي ===== */
+// قائمة أساسية للألفاظ المسيئة (عربي/إنجليزي) — تُطبَّق بعد توحيد الحروف؛ صانع المحتوى يضيف كلماته
+const MOD_BAD = ["كلب", "حمار", "حقير", "زق", "خرا", "منيوك", "شرموط", "قحب", "كس ", "زب ", "طيز", "يلعن", "لعنة الله", "ابن الكلب", "تفو", "وسخ", "متخلف", "حيوان", "fuck", "shit", "bitch", "dick", "pussy", "asshole", "nigger", "faggot", "slut", "whore", "cunt", "bastard", "retard"];
+function modNorm(s) { return " " + String(s || "").toLowerCase().replace(/[ً-ٰٟـ]/g, "").replace(/[أإآٱ]/g, "ا").replace(/ى/g, "ي").replace(/ة/g, "ه").replace(/(.)\1{2,}/g, "$1$1").replace(/[^\p{L}\p{N}\s]/gu, " ").replace(/\s+/g, " ") + " "; }
+const MOD_BADN = MOD_BAD.map(w => modNorm(w).trimEnd().replace(/^ /, w.endsWith(" ") ? " " : "")).map(w => w.endsWith(" ") ? w : w.trim());
+const MOD_LINK = /(https?:\/\/|www\.)\S+|\b[a-z0-9-]{2,}\.(com|net|org|io|gg|tv|me|ly|link|xyz|sa|app|live)\b/i;
+function modAutoState() { return { seen: new Map(), rate: new Map() } }
+/** فحص رسالة: يعيد {rule, action, reason} أو null. لا يمس المشرفين (إن اختير) ولا قائمة المسموح */
+function modCheck(A, S, M, m, now) {
+  if (!A || !A.on || !m || m.kind !== "msg") return null; const name = String(m.name || "").toLowerCase(), uid = String(m.uid || "");
+  const inList = L => L.some(x => { x = String(x).toLowerCase().replace(/^@/, ""); return x === name || x === uid || x === modKey(m.platform, uid).toLowerCase(); });
+  if (inList(A.allow)) return null; if (A.exemptMods && modIsMod(M, m.platform, m.uid)) return null;
+  if (inList(A.block)) return { rule: "block", action: A.action.block, reason: "مستخدم في قائمة المحظورين" };
+  const t = String(m.text || ""), n = modNorm(t);
+  if (A.profanity && MOD_BADN.some(w => w && n.includes(w.length < 4 ? " " + w + " " : w))) return { rule: "profanity", action: A.action.profanity, reason: "ألفاظ مسيئة" };
+  if (A.words.length && A.words.some(w => { const x = modNorm(w).trim(); return x && n.includes(x); })) return { rule: "words", action: A.action.words, reason: "كلمة ممنوعة" };
+  if (A.links && MOD_LINK.test(t)) { const doms = A.allowDomains.map(d => d.toLowerCase()); if (!doms.length || !doms.some(d => t.toLowerCase().includes(d))) return { rule: "links", action: A.action.links, reason: "رابط غير مصرح" }; }
+  if (A.spam && (t.length > 30 && /(.)\1{9,}/u.test(t) || (t.match(/\p{Extended_Pictographic}/gu) || []).length > 15 || t.length > 40 && t.replace(/[^A-Z]/g, "").length / t.replace(/[^A-Za-z]/g, "").length > .8)) return { rule: "spam", action: A.action.spam, reason: "سبام" };
+  if (A.dup) { const k = modKey(m.platform, uid) + "|" + n.trim(); const p = S.seen.get(k); S.seen.set(k, now); if (S.seen.size > 3000) S.seen.delete(S.seen.keys().next().value); if (p && now - p < A.dupSec * 1000) return { rule: "dup", action: A.action.dup, reason: "رسالة مكررة" }; }
+  if (A.rate.on) { const k = modKey(m.platform, uid), L = (S.rate.get(k) || []).filter(x => now - x < A.rate.sec * 1000); L.push(now); S.rate.set(k, L); if (S.rate.size > 3000) S.rate.delete(S.rate.keys().next().value); if (L.length > A.rate.n) return { rule: "rate", action: A.action.rate, reason: `أكثر من ${A.rate.n} رسائل خلال ${A.rate.sec} ث` }; }
+  return null;
+}
+/** قدرات كل منصة الآن: ربط رسمي مفعّل + صلاحيات ← إجراءات أصلية؛ غير ذلك محلي فقط */
+function modCaps(conn) { const out = {}; for (const [p, d] of Object.entries(MOD_NATIVE)) { const c = conn && conn[p]; const live = !!(c && c.connected); out[p] = { native: live ? Object.keys(d.acts) : [], note: live ? d.note : p === "tiktok" ? d.note : `${d.label}: الربط الرسمي غير مفعّل — الإجراءات محلية داخل B6O6 فقط حتى يُربط الحساب`, max: d.acts.timeout ? d.acts.timeout.max : 0 }; } return out; }
 
 /* ---- engine/livestats.js ---- */
 // ====== إحصائيات البث المباشر (Live Statistics Collector) ======
@@ -2464,6 +2635,8 @@ const durOpts=w=>({mode:w.duMode||"auto",lang:w.duLang==="en"?"en":"ar",daysAlwa
 
 
 
+
+
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
 const DON_TYPES=new Set(["donation","donation_refund","donation_session","donation_clear_tests"]);
 function newRoom(){ return {D:emptyData(),H:[],C:newClockState(),DN:emptyDonations(),seen:new Map(),live:false,logs:[]} }
@@ -2496,6 +2669,7 @@ function roomEvent(R,ev,now){
  const logs=subathonOnEvent(R.C.subathon,ev,now,R.D.tot); keep(R,logs);
  R.C.latest=R.C.latest||{}; latestOnEvent(R.C.latest,ev,now);
  R.CHAT=R.CHAT||[]; chatPush(R.CHAT,ev);
+ roomAutoMod(R,ev,now,out);
  roomMusic(R,ev,now,out);
  sessionOnEvent(R,ev);
  faRoomTTS(R,ev,now,out);
@@ -2523,6 +2697,15 @@ function giftWhy(s,ev){ if(!s) return "السبثون غير مُعد";
  return "لا توجد قاعدة مطابقة لهذه الهدية (أو فترة انتظار القاعدة)" }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
+/* ===== إدارة الشات: الإشراف التلقائي (محلي افتراضياً) ===== */
+function roomAutoMod(R,ev,now,out){ if(ev.type!=="comment"||ev.test) return; const M=modState(R.C); if(!M.auto.on) return; R.AM=R.AM||modAutoState(); const m=chatMsgOf(ev); if(!m) return;
+ let v=null; try{ v=modCheck(M.auto,R.AM,M,m,now) }catch(e){ return } if(!v) return;
+ const base={platform:m.platform,uid:m.uid,name:m.name,msgId:m.id,auto:true,reason:v.reason};
+ if(v.action==="warn"){ M.log.unshift({at:now,act:"warn",platform:m.platform,uid:m.uid,name:m.name,msgId:m.id,auto:true,reason:v.reason}); if(M.log.length>100) M.log.length=100 }
+ else { modApply(M,{...base,act:"hide"},now); if(v.action==="timeout") modApply(M,{...base,act:"timeout",sec:M.auto.timeoutSec},now); if(v.action==="ban") modApply(M,{...base,act:"ban"},now);
+  // على المنصة الأصلية: فقط إذا فعّله صانع المحتوى صراحةً (معطّل افتراضياً) والخادم يتحقق من الربط والصلاحيات
+  if(M.auto.native&&v.action!=="hide") out.push({t:"modnative",a:{...base,act:v.action,sec:M.auto.timeoutSec}}) }
+ out.push({t:"clock",C:R.C,now,logs:[],cm:1}) }
 /* ===== مكتبة الأصوات: القرار هنا (مصدر واحد) — رابط OBS يشغّل فقط ===== */
 function roomSoundCfg(R){ const raw=R.botCfg&&R.botCfg.sounds; if(!raw) return null; if(R.SNDraw!==raw){ R.SNDraw=raw; R.SNDc=sndCfg(raw) } R.SND=R.SND||sndNewState(); return R.SNDc }
 function roomSoundGoals(R){ const L=R.botCtx&&R.botCtx.layout, v=R.D&&R.D.tot?R.D.tot.likes:0; return (L&&Array.isArray(L.widgets)?L.widgets:[]).filter(w=>w&&w.type==="goal"&&+w.target>0).map(w=>({id:"lk:"+w.id+":"+w.target,kind:"likes",target:+w.target,value:v})) }
@@ -2591,6 +2774,14 @@ function roomClockOp(R,m,now){
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
+ if(m.target==="chatmod"){ // إدارة الشات من اللوحة / الشات العائم
+  const M=modState(R.C), a=m.a&&typeof m.a==="object"?m.a:{}, ok=s=>/^[a-z]{3,10}$/.test(String(s||""));
+  if(m.op==="act"&&ok(a.platform)&&a.uid!=null){ const e=modApply(M,{act:a.act,platform:a.platform,uid:String(a.uid).slice(0,80),name:a.name,msgId:a.msgId?String(a.msgId).slice(0,120):"",sec:+a.sec||0},now); if(!e) return {out:[],logs:[]};
+   const out=[{t:"clock",C:R.C,now,logs:[],cm:1}]; if(a.native) out.push({t:"modnative",a:{act:a.act,platform:a.platform,uid:String(a.uid),name:a.name,msgId:a.msgId||"",sec:+a.sec||0}}); return {out,logs:[]} }
+  if(m.op==="pin"){ const msg=(R.CHAT||[]).find(x=>x.id===m.msgId)||(m.msg&&typeof m.msg==="object"?m.msg:null); if(!modPin(M,msg,Math.max(0,+m.sec||0),now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],cm:1}],logs:[]} }
+  if(m.op==="unpin"){ M.pin=null; return {out:[{t:"clock",C:R.C,now,logs:[],cm:1}],logs:[]} }
+  if(m.op==="auto"){ M.auto=modAutoCfg(m.auto); R.AM=modAutoState(); return {out:[{t:"clock",C:R.C,now,logs:[],cm:1}],logs:[]} }
+  return {out:[],logs:[]} }
  if(m.target==="sounds"){ // لوحة التشغيل السريع / «تشغيل الآن» / إيقاف — من لوحة التحكم فقط
   const c=roomSoundCfg(R)||sndCfg({});
   if(m.op==="play"){ const it=sndManual(c,m.s,now,{test:!!m.test}); return {out:it?[{t:"snd",items:[it]}]:[],logs:[]} }
@@ -5488,6 +5679,7 @@ function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden)
 function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
+ else if(msg.t==="clock"&&msg.cm){ for(const v of views) if(v.ucRoot&&v.ucRender){ v.ucRender(false); v.ucPinRender&&v.ucPinRender() } return } // إدارة الشات: إخفاء فوري + بطاقة التثبيت
  else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||TYPES[v.w.type]?.bt||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
  else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ // سجل الشات: من اللقطة أو من سجل الصفحة — ولا نفرّغ الطبقة إذا لم يُرسل سجل (كان تحديث التخطيط يمسح رسائل OBS)
    const list=Array.isArray(msg.CH)?msg.CH:(src&&(src.CHAT||src.CH)); if(Array.isArray(list)) v.chatLoad(list); else v.ucRender&&v.ucRender(false); continue } v.refresh(src,true) } }
@@ -10149,6 +10341,7 @@ const DC_CSS=`
 
 
 
+
 // رموز مبسطة أصلية تدل على المنصة (ليست نسخاً من الشعارات الرسمية)
 const UC_ICONS={
  tiktok:'<svg viewBox="0 0 24 24"><path fill="#25f4ee" d="M14.5 3h2.6c.3 2.2 1.7 3.6 3.9 3.8v2.7c-1.4 0-2.8-.4-3.9-1.2v6.3a5.6 5.6 0 1 1-5.6-5.6v2.8a2.8 2.8 0 1 0 2.9 2.8z" transform="translate(-.6 .5)"/><path fill="#fe2c55" d="M14.5 3h2.6c.3 2.2 1.7 3.6 3.9 3.8v2.7c-1.4 0-2.8-.4-3.9-1.2v6.3a5.6 5.6 0 1 1-5.6-5.6v2.8a2.8 2.8 0 1 0 2.9 2.8z" transform="translate(.6 -.5)"/><path fill="#fff" d="M14.5 3h2.6c.3 2.2 1.7 3.6 3.9 3.8v2.7c-1.4 0-2.8-.4-3.9-1.2v6.3a5.6 5.6 0 1 1-5.6-5.6v2.8a2.8 2.8 0 1 0 2.9 2.8z"/></svg>',
@@ -10213,7 +10406,7 @@ Object.assign(View.prototype,{
    e.innerHTML=`<div class="uc-root"></div>`+(ed?'<div class="rh"></div><div class="lockb">🔒</div>':""); this.ucRoot=e.firstChild; clearInterval(this.ucRotT); this.ucRotT=0; this.ucRotI=0;
    if(w.mode==="rotate") this.ucRotT=setInterval(()=>{ if(!this.el.isConnected){ clearInterval(this.ucRotT); return } this.ucRotI=(this.ucRotI+1)%UC_ROT.length; this.ucRender(true) },Math.max(3,+w.rotateSec||8)*1000);
    this.ucRender(false) }
-  this.ucStats(w);
+  this.ucStats(w); this.ucPinRender(); clearInterval(this.pinT); this.pinT=setInterval(()=>this.ucRoot&&this.ucRoot.isConnected?this.ucPinRender():clearInterval(this.pinT),1000);
  },
  /** شريط إحصائيات البث داخل الشات: أعلى / أسفل / عائم / مخفي — يتحدث كل ثانية بدون إعادة رسم الرسائل */
  ucStats(w){ const R=this.ucRoot; if(!R) return; clearInterval(this.sbT); this.sbT=0;
@@ -10226,7 +10419,15 @@ Object.assign(View.prototype,{
   const tick=()=>{ if(!box.isConnected){ clearInterval(this.sbT); return } const src=this.opts.data?this.opts.data():null; let s=sbSum(src,w,false); if(!s.rows.length&&demo) s=sbSum(null,w,true); sbRender(box,s,w,Date.now()) };
   tick(); this.sbT=setInterval(tick,1000) },
  ucList(platform){ const w=this.w; let buf=this.ucBuf||[]; if(!buf.length&&(this.opts.editor||String(w.id).startsWith("pv_"))) buf=ucSample();
-  const F=chatFilter(w,()=>0); const out=[]; for(const m of buf){ if(m&&m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) continue; /* رسائل قديمة بلا نص (قبل إصلاح TikTok v2) لا تظهر مستطيلات فارغة */ const r=F(m,platform||w.mode); if(r) out.push(r) } return out.slice(-Math.max(1,+w.max||8)) },
+  const F=chatFilter(w,()=>0), M=this.ucMod(), now=Date.now(); const out=[]; for(const m of buf){ if(m&&m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) continue; if(M&&modHidden(M,m,now)) continue; /* مكتوم/محظور/محذوف (إدارة الشات) */ /* رسائل قديمة بلا نص (قبل إصلاح TikTok v2) لا تظهر مستطيلات فارغة */ const r=F(m,platform||w.mode); if(r) out.push(r) } return out.slice(-Math.max(1,+w.max||8)) },
+ /** حالة إدارة الشات من بيانات الغرفة (الكتم/الحظر/الحذف/التثبيت) */
+ ucMod(){ try{ const s=this.opts&&this.opts.data&&this.opts.data(); return s&&s.C&&s.C.mod||null }catch(e){ return null } },
+ /** بطاقة الرسالة المثبتة أعلى الشات (تثبيت داخل B6O6) — تختفي عند انتهاء المدة */
+ ucPinRender(){ const R=this.ucRoot; if(!R) return; const P=modPinActive(this.ucMod(),Date.now()); let el=R.querySelector(":scope>.uc-pin");
+  if(!P||this.w.ucPin===false){ if(el) el.remove(); return } const k=P.m.id+":"+P.at; if(el&&el.dataset.k===k) return;
+  if(!el){ el=document.createElement("div"); el.className="uc-pin"; const host=R.querySelector(":scope>.lsb-host.lsb-top"); host?host.after(el):R.insertBefore(el,R.firstChild) } el.dataset.k=k;
+  const lg=`<i class="uc-pin-lg">${UC_ICONS[P.m.platform]||""}</i>`; el.innerHTML=`<span class="uc-pin-ic">📌</span>${P.m.av?`<img class="uc-pin-av" src="${esc(P.m.av)}" alt="">`:`<span class="uc-pin-av uc-pin-ini">${esc((P.m.name||"?").slice(0,1))}</span>`}<div class="uc-pin-b"><b>${lg}${esc(P.m.name)}</b><span>${esc(P.m.text)}</span></div>`;
+  if(this.w.animOn!==false) el.animate([{opacity:0,transform:"translateY(-30%)"},{opacity:1,transform:"none"}],{duration:380,easing:"cubic-bezier(.2,.8,.2,1)"}) },
  ucRender(anim){ const R=this.ucRoot; if(!R) return; const host=R.querySelector(":scope>.lsb-host"); this.ucRender0(anim);
   if(host&&!host.isConnected){ if(host.classList.contains("lsb-bottom")) R.appendChild(host); else R.insertBefore(host,R.firstChild) } }, // شريط الإحصائيات يبقى عند إعادة رسم الرسائل
  ucRender0(anim){ const w=this.w, R=this.ucRoot;
@@ -10255,7 +10456,7 @@ Object.assign(View.prototype,{
   if(this.ucFr) return; const go=()=>{ if(this.ucFrA) cancelAnimationFrame(this.ucFrA); clearTimeout(this.ucFrT); this.ucFr=0; this.ucFrA=0; this.ucFrT=0; this.ucFlush() };
   this.ucFr=1; if(typeof requestAnimationFrame==="function") this.ucFrA=requestAnimationFrame(go); this.ucFrT=setTimeout(go,80) },
  ucFlush(){ const P=this.ucPend||[]; this.ucPend=[]; if(!P.length||!this.ucRoot) return; const w=this.w, max=Math.max(1,+w.max||8);
-  const groups=new Map(); for(const it of P){ const L=w.mode==="split"?this.ucRoot.querySelector(`.uc-col[data-p="${it.p}"] .uc-list`):this.ucRoot.querySelector(".uc-list"); if(!L) continue; (groups.get(L)||groups.set(L,[]).get(L)).push(it.r) }
+  const M0=this.ucMod(), n0=Date.now(); const groups=new Map(); for(const it of P){ if(M0&&modHidden(M0,it.r,n0)) continue; const L=w.mode==="split"?this.ucRoot.querySelector(`.uc-col[data-p="${it.p}"] .uc-list`):this.ucRoot.querySelector(".uc-list"); if(!L) continue; (groups.get(L)||groups.set(L,[]).get(L)).push(it.r) }
   const explore=typeof window!=="undefined"&&!!window.__arshExplore, spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
   const added=[];
   for(const [L,rs] of groups){
@@ -10735,6 +10936,8 @@ function send(msg){
 function demoMusicSearch(m){ const t=musicSearch(R.MLIB||[],m.q); const res=t?{ok:true,track:t}:{ok:false,message:"البحث في YouTube يعمل بعد تسجيل الدخول في المنصة — هنا (وضع التجربة) من مكتبتك فقط"};
  setTimeout(()=>{ const r=roomMusicFound(R,m,res,Date.now()); for(const x of r.out){ receive(x,true); if(bus) bus.postMessage(x) } saveRoom() },0) }
 function receive(m,applied){
+ if(m.t==="event"&&typeof flcOnEvent==="function") setTimeout(()=>flcOnEvent(m.ev),0); // الشات المباشر/العائم: إضافة صف فقط (بعد تحديث البيانات)
+ if(m.t==="clock"&&m.cm&&(S.page==="livechat"||document.body.classList.contains("flc-only"))) setTimeout(flcRefresh,0); // إجراء إدارة
  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now(); saveRoom() }
  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; { const cm=chatPush(R.CHAT,m.ev); if(cm&&cm.kind==="msg"){ S.chatShown=S.chatShown||{}; S.chatShown[cm.platform]=(S.chatShown[cm.platform]||0)+1 } }; R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
  else if(m.t==="clock"){ if(!applied){ R.C=m.C; if(m.now) skew=m.now-Date.now(); for(const l of [...(m.logs||[])].reverse()) R.logs.unshift(l); R.logs.length=Math.min(R.logs.length,300); saveRoom() } }
@@ -10750,6 +10953,7 @@ function receive(m,applied){
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
  else if(m.t==="alert"){ S.alFeed=[...(m.items||[]),...(S.alFeed||[])].slice(0,50) }
+ else if(m.t==="modres"){ toast(m.ok?"✅ نُفِّذ على "+((FLC_PLAT[m.a.platform]||[""])[0])+": "+(MOD_ACT_LABEL[m.a.act]||m.a.act):"⚠️ "+(m.error||"تعذر التنفيذ على المنصة")+" — الإجراء المحلي داخل B6O6 مطبّق"); return }
  else if(m.t==="snd"){ if(m.items) S.sndFeed=[...m.items.map(x=>({...x,at:Date.now()})),...(S.sndFeed||[])].slice(0,30); if(S.page==="sounds") sndFeedRefresh&&sndFeedRefresh(); return }
  else return;
  if(m.t==="actlog"){ S.actLog=m.log||[]; if(S.page==="actions"&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||"")) renderPage(true) }
@@ -10816,7 +11020,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["livechat","الشات المباشر والإدارة","💬"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -10978,6 +11182,7 @@ function renderPage(soft){
  else if(p==="chatcfg"){ h=ccHTML() }
  else if(p==="perf"){ h=pmHTML() }
  else if(p==="sounds"){ h=sndHTML() }
+ else if(p==="livechat"){ h=flcHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -11045,7 +11250,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount();
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount(); if(p==="livechat"){ const L=document.getElementById("flc-list"); if(L&&!FLCV().pause) L.scrollTop=L.scrollHeight; if(!S.connsAt&&CFG){ S.connsAt=Date.now(); connLoad() } }
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -12109,6 +12314,7 @@ function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
  { const sd=e.target.closest&&e.target.closest("[data-snd]"); if(sd&&!sd.closest(".snd-m")&&sndClick(sd,e)) return } // مكتبة الأصوات
+ { const fb=e.target.closest&&e.target.closest("[data-flc]"); if(fb&&!fb.closest(".flc-menu")&&flcClick(fb,e)) return } // الشات المباشر
  { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd],[data-sajump],[data-sa-end],[data-sacoinsave],[data-sacoinedit],[data-sacoincancel],[data-saedit],[data-saeditclose],[data-sapick],[data-saany],[data-sagtest],[data-sagapply]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
  { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
  { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
@@ -12239,6 +12445,7 @@ function previewOverlay(only){
 function onInput(e){
  const t=e.target, d=t.dataset;
  if(d&&d.sndf&&!(t.closest&&t.closest(".snd-m"))&&sndInput(t,e)) return; // مكتبة الأصوات
+ if(d&&d.flcf&&flcInput(t,e)) return; // الشات المباشر
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
  if(d.sagiftq!==undefined){ if(e.type!=="input") return; S.saGiftQ=t.value; clearTimeout(onInput.sq); onInput.sq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-sagiftq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
  if(d.gcoin!==undefined){ if(e.type!=="change") return; saConfig({rules:{giftCoins:{[d.gcoin]:Math.max(0,+t.value||0)}}}); return }
@@ -14533,6 +14740,179 @@ document.addEventListener("keydown",e=>{ if(e.ctrlKey||e.metaKey||e.altKey||e.re
  const el=document.querySelector(`.snd-pad[data-bid="${b.id}"]`); if(el){ el.classList.add("hit"); setTimeout(()=>el.classList.remove("hit"),300) } });
 // نافذة مستقلة / OBS Dock: لوحة التشغيل فقط
 if(location.hash==="#sb"){ document.body.classList.add("sb-only"); setTimeout(()=>{ S.page="sounds"; SU().tab="board"; renderPage() },0) }
+
+/* ================= 💬 الشات المباشر والإدارة + الشات العائم =================
+   صفحة في اللوحة (#pg) أو نافذة مستقلة (#float) أو Picture-in-Picture (فوق التطبيقات في Chrome/Edge) أو تطبيق الكمبيوتر (فوق الألعاب + وضع اللعب).
+   الإجراءات: تُرسل للخادم (clock-op chatmod). الأصلية على المنصة تُنفَّذ فقط عبر الربط الرسمي والنتيجة الحقيقية تظهر (modres). */
+const FLC_DESIGNS=[["basic","Basic Transparent","نص وأسماء على خلفية شفافة"],["hud","Gaming HUD","زوايا HUD وخط ثابت العرض"],["minimal","Minimal Text","سطر واحد: الاسم: الرسالة"],["glass","Floating Glass","بطاقات زجاجية عائمة"],["neon","Neon Blue","حواف نيون زرقاء متوهجة"],
+ ["gold","Royal Gold","إطار ذهبي مزدوج"],["cyber","Cyberpunk","بطاقات مائلة صفراء/وردية"],["dark","Dark Premium","داكن مع خط ذهبي جانبي"],["rgb","RGB Gaming","إطار ألوان متحرك"],["holo","Holographic","نص قزحي هولوغرامي"],
+ ["compact","Compact Chat","أسطر مكثفة صغيرة"],["cinema","Cinematic Chat","نص كبير في المنتصف بشريط سينمائي"],["saudi","Saudi Style","أخضر مع نقشة السدو"],["frosted","Frosted Glass","زجاج ثلجي فاتح"],["esports","Esports Chat","شريط فريق جانبي بلون المنصة"],
+ ["bubble","Chat Bubbles","فقاعات متبادلة الجهة"],["terminal","Terminal","طرفية خضراء بموجه >"],["sticky","Sticky Notes","ملاحظات لاصقة مائلة"],["comic","Comic Balloons","بالونات كوميك بحدود سميكة"],["pixel","Pixel 8-bit","حواف بكسل"],
+ ["ribbon","Name Ribbons","الاسم شريط ملون"],["timeline","Timeline","خط زمني بنقاط"],["tilt","3D Cards","بطاقات منظورية مائلة"],["outline","Outline Text","نص بحدود فقط بدون خلفية"],["stream","Side Stream","شريط جانبي ضيق متدرج"]];
+const FLC_MODES=[["full","Full Chat","الشات كامل مع أدوات الإدارة والإحصائيات"],["gaming","Gaming Mode","صغير وشفاف فوق اللعبة"],["support","Support Only","الهدايا والدونيشن والدعم فقط"],["messages","Messages Only","رسائل المشاهدين فقط"],["minimal","Minimal Mode","الاسم والرسالة بدون زخارف"],["multi","Multi-Platform","كل المنصات مع شعار كل منصة"],["focus","Focus Mode","المهم والدعم والمثبتة فقط"]];
+const FLC_PRESETS={transparent:{bg:0,card:0,frame:0,av:100,text:100,stats:70,sup:100},glass:{bg:15,card:45,frame:40,av:100,text:100,stats:80,sup:100},gaming:{bg:35,card:25,frame:20,av:80,text:100,stats:60,sup:90},full:{bg:85,card:80,frame:70,av:100,text:100,stats:100,sup:100}};
+const FLC_OP=[["bg","خلفية الشات"],["card","بطاقات الرسائل"],["frame","الإطارات"],["av","صور المشاهدين"],["text","النصوص"],["stats","شريط الإحصائيات"],["sup","إشعارات الدعم"]];
+const FLC_SUP=new Set(["gift","donation","superchat","cheer","subscribe","member","member_gift","follow","share"]);
+const FLC_MUTES=[[30,"30 ثانية"],[60,"دقيقة"],[300,"5 دقائق"],[600,"10 دقائق"],[1800,"30 دقيقة"],[3600,"ساعة"],[86400,"24 ساعة"]];
+const FLC_PLAT={tiktok:["TikTok","#25f4ee",u=>u.handle?`https://www.tiktok.com/@${u.handle}`:""],youtube:["YouTube","#ff0033",u=>u.uid?`https://www.youtube.com/channel/${u.uid}`:""],kick:["Kick","#53fc18",u=>u.name?`https://kick.com/${encodeURIComponent(u.name)}`:""],twitch:["Twitch","#9146ff",u=>u.name?`https://www.twitch.tv/${encodeURIComponent(u.name)}`:""]};
+function FLCS(){ S.settings.flc=S.settings.flc||{}; const f=S.settings.flc; f.design=f.design||"glass"; f.mode=f.mode||"full"; f.op={...FLC_PRESETS.glass,...(f.op||{})}; f.preset=f.preset||"glass"; f.font=f.font||15; f.av=f.av||30;
+ f.stats=f.stats||{viewers:true,views:true,money:true,coins:true,follows:true,taps:true,dur:true,conn:true}; f.plats=f.plats||{tiktok:true,youtube:true,kick:true,twitch:true}; f.anim=f.anim!==false; f.sounds=!!f.sounds; f.low=!!f.low; f.bar=f.bar!==false; return f }
+const FLCV=()=>(S.flcv=S.flcv||{q:"",pause:false,sup:false,pins:false,menu:null,list:[]});
+const flcIsFloat=()=>document.body.classList.contains("flc-only");
+function flcMod(){ return (R.C&&R.C.mod)||{u:{},hid:[],pin:null,auto:modAutoCfg({}),log:[]} }
+function flcCaps(){ const c=S.conns||{}, x={}; for(const p of Object.keys(FLC_PLAT)) x[p]={connected:!!(c[p]&&c[p].status==="connected")}; return modCaps(x) }
+function flcMsgs(){ const f=FLCS(), V=FLCV(), M=flcMod(), now=Date.now(), q=lc(V.q).trim(); let L=(R.CHAT||[]).slice(-200);
+ L=L.filter(m=>f.plats[m.platform]!==false&&!modHidden(M,m,now));
+ if(f.mode==="support"||V.sup) L=L.filter(m=>FLC_SUP.has(m.kind)); else if(f.mode==="messages") L=L.filter(m=>m.kind==="msg");
+ else if(f.mode==="focus") L=L.filter(m=>m.kind!=="msg"||m.mod||m.owner||chatImportant(m,{})||(M.pin&&M.pin.m.id===m.id));
+ if(q) L=L.filter(m=>lc(m.name).includes(q)||lc(m.text).includes(q));
+ return L.slice(-(f.low?60:150)) }
+function flcRow(m){ const f=FLCS(), P=FLC_PLAT[m.platform]||["","#888"], M=flcMod(), u=M.u[modKey(m.platform,m.uid)]||{}, sup=m.kind!=="msg";
+ const ic={gift:"🎁",follow:"➕",share:"🔗",subscribe:"⭐",member:"⭐",cheer:"💎",raid:"⚔️",join:"👋"}[m.kind]||"✨";
+ const txt=m.kind==="msg"?esc(m.text):m.kind==="donation"||m.kind==="superchat"?`💵 <b>${esc(m.amount!=null?fmtMoney(m.amount,m.currency||"USD"):"")}</b> ${esc(m.text||"")}`:`${ic} ${esc(m.text||m.kind)}`;
+ return `<div class="flc-m ${sup?"sup k-"+m.kind:""} ${u.mod||m.mod?"is-mod":""}" data-id="${esc(m.id)}" data-p="${m.platform}" data-uid="${esc(m.uid)}" style="--pc:${P[1]}">
+  ${f.mode==="minimal"?"":`<span class="flc-av">${m.av?`<img src="${esc(m.av)}" alt="" loading="lazy">`:esc((m.name||"?").slice(0,1))}</span>`}
+  <div class="flc-b"><span class="flc-n" data-flc="menu">${f.mode==="minimal"?"":`<i class="flc-pl">${UC_ICONS[m.platform]||""}</i>`}${esc(m.name)}${u.mod||m.mod?' <i class="flc-badge">🛡️</i>':""}${f.mode==="minimal"?":":""}</span><span class="flc-t">${txt}</span></div></div>` }
+function flcStatsHTML(){ const f=FLCS(), s=f.stats, sum=statsSummary(R.C||{},Date.now()), t=sum.total||{}, D=R.D&&R.D.tot||{}, it=[];
+ const nf=v=>v==null?"غير متاح":fmt(v);
+ if(s.viewers) it.push(["👁️","الآن",nf(t.viewers)]); if(s.views) it.push(["📊","المشاهدات",nf(t.views)]);
+ if(s.money){ const mm=Object.entries(t.money||{}).filter(([,v])=>v>0).map(([c,v])=>fmtMoney(v,c)).join(" + "); it.push(["💰","الدعم",mm||"0"]) } if(s.coins) it.push(["🪙","كوين",fmt(t.coins||0)]);
+ if(s.follows) it.push(["➕","متابعون جدد",fmt(D.follows||0)]); if(s.taps) it.push(["👆","تكبيسات",fmt(D.likes||0)]);
+ if(s.dur){ const st=R.C&&R.C.live&&R.C.live.streamStart||R.C&&R.C.live&&R.C.live.startedAt; if(st&&!(R.C.live.endedAt)){ const sec=Math.max(0,(Date.now()-st)/1000|0), d=sec/86400|0, h=(sec%86400)/3600|0, mi=(sec%3600)/60|0; it.push(["⏱️","مدة البث",(d?d+"ي ":"")+String(h).padStart(2,"0")+":"+String(mi).padStart(2,"0")]) } else it.push(["⏱️","مدة البث","—"]) }
+ const conn=s.conn?Object.entries(FLC_PLAT).map(([p,[n]])=>{ const row=(sum.rows||[]).find(r=>r.k===p); const on=p==="tiktok"?!!(S.tk&&S.tk.state==="connected")||!!(S.perf&&S.perf.conn&&S.perf.conn.live):!!(S.conns&&S.conns[p]&&S.conns[p].status==="connected")||!!(S.pub&&S.pub[p]&&S.pub[p].status==="connected"); return `<i class="flc-cn ${on?"on":""}" title="${n}: ${on?"متصل":"غير متصل"}">${UC_ICONS[p]||""}</i>` }).join(""):"";
+ return `<div class="flc-stats">${it.map(([i,l,v])=>`<span title="${l}">${i}<b>${esc(String(v))}</b></span>`).join("")}${conn?`<span class="flc-conns">${conn}</span>`:""}</div>` }
+function flcPinHTML(){ const P=modPinActive(flcMod(),Date.now()); if(!P) return ""; const m=P.m; const left=P.until?Math.max(0,Math.ceil((P.until-Date.now())/1000)):0;
+ return `<div class="flc-pin"><span>📌</span>${m.av?`<img src="${esc(m.av)}" alt="">`:""}<div><b><i class="flc-pl">${UC_ICONS[m.platform]||""}</i>${esc(m.name)}</b><span>${esc(m.text)}</span></div>${left?`<em>${left}ث</em>`:""}<button class="flc-x" data-flc="unpin" title="إلغاء التثبيت">✕</button></div>` }
+function flcVars(){ const f=FLCS(), o=f.op; return `--fc-bg:${o.bg/100};--fc-card:${o.card/100};--fc-frame:${o.frame/100};--fc-avo:${o.av/100};--fc-txt:${o.text/100};--fc-st:${o.stats/100};--fc-sup:${o.sup/100};--fc-fs:${f.font}px;--fc-avs:${f.av}px` }
+function flcToolbar(){ const f=FLCS(), V=FLCV(), D=window.b6o6Desktop;
+ const b=(k,ic,t,on,dis)=>`<button class="flc-tb ${on?"on":""}" data-flc="${k}" title="${t}" ${dis?"data-dis=1":""}>${ic}</button>`;
+ return `<div class="flc-bar ${f.bar?"":"hidden"}">
+  ${flcIsFloat()?"":b("open","🪟","فتح الشات العائم")}
+  ${b("ontop","📌","تثبيت فوق التطبيقات"+(D?"":" (يتطلب تطبيق الكمبيوتر أو نافذة PiP)"),D&&D.state&&D.state.onTop,!D)}
+  ${b("game","🎮","وضع اللعب: تمر ضغطات الماوس للعبة"+(D?"":" (يتطلب تطبيق الكمبيوتر)"),D&&D.state&&D.state.clickThrough,!D)}
+  ${b("op","🌗","الشفافية",S.flcPanel==="op")}${b("pause",V.pause?"▶":"⏸",V.pause?"استئناف التمرير التلقائي":"إيقاف التمرير التلقائي",V.pause)}
+  <input class="flc-q" type="search" placeholder="🔎 بحث" value="${esc(V.q)}" data-flcf="q">
+  ${b("plat","🌐","فلترة المنصات",S.flcPanel==="plat")}${b("sup","💰","الدعم فقط",V.sup)}${b("pins","📌","الرسائل المثبتة",V.pins)}
+  ${b("modset","🛡️","إعدادات الإشراف",S.flcPanel==="mod")}${b("design","🎨","التصميم والأوضاع",S.flcPanel==="design")}${b("min","▁","إخفاء شريط الأدوات")}</div>
+  ${f.bar?"":`<button class="flc-show" data-flc="min" title="إظهار شريط الأدوات">⋯</button>`}` }
+function flcPanelHTML(){ const f=FLCS(), M=flcMod(), A=M.auto;
+ if(S.flcPanel==="op") return `<div class="flc-panel"><div class="flc-presets">${[["transparent","الشفاف بالكامل"],["glass","الزجاجي"],["gaming","وضع الألعاب"],["full","الكامل"]].map(([k,l])=>`<button class="btn sm ${f.preset===k?"pri":""}" data-flc="preset" data-k="${k}">${l}</button>`).join("")}<button class="btn sm ${f.preset==="custom"?"pri":""}" data-flc="preset" data-k="custom">مخصص</button></div>
+  ${FLC_OP.map(([k,l])=>`<label>${l} <b>${f.op[k]}%</b><input type="range" min="0" max="100" value="${f.op[k]}" data-flcf="op.${k}"></label>`).join("")}
+  <label>حجم الخط <b>${f.font}px</b><input type="range" min="10" max="28" value="${f.font}" data-flcf="font"></label><label>حجم الصور <b>${f.av}px</b><input type="range" min="0" max="56" value="${f.av}" data-flcf="av"></label></div>`;
+ if(S.flcPanel==="plat") return `<div class="flc-panel row">${Object.entries(FLC_PLAT).map(([p,[n]])=>`<label class="flc-chk"><input type="checkbox" data-flcf="plat.${p}" ${f.plats[p]!==false?"checked":""}> ${UC_ICONS[p]||""} ${n}</label>`).join("")}</div>`;
+ if(S.flcPanel==="design") return `<div class="flc-panel"><b>الوضع</b><div class="flc-modes">${FLC_MODES.map(([k,n,d])=>`<button class="flc-mode ${f.mode===k?"on":""}" data-flc="mode" data-k="${k}" title="${d}"><b>${n}</b><span>${d}</span></button>`).join("")}</div>
+  <b>التصميم (${FLC_DESIGNS.length})</b><div class="flc-dgal">${FLC_DESIGNS.map(([k,n,d])=>`<button class="flc-dg ${f.design===k?"on":""}" data-flc="dsg" data-k="${k}" title="${d}"><div class="flc-dpv flcd-${k}">${flcSampleRows()}</div><b>${n}</b></button>`).join("")}</div>
+  <b>الإحصائيات أعلى الشات</b><div class="row">${[["viewers","المشاهدين الآن"],["views","إجمالي المشاهدات"],["money","الدعم المالي"],["coins","الهدايا والكوين"],["follows","المتابعون الجدد"],["taps","التكبيسات"],["dur","مدة البث"],["conn","حالة المنصات"]].map(([k,l])=>`<label class="flc-chk"><input type="checkbox" data-flcf="st.${k}" ${f.stats[k]?"checked":""}> ${l}</label>`).join("")}</div>
+  <div class="row"><label class="flc-chk"><input type="checkbox" data-flcf="anim" ${f.anim?"checked":""}> الحركات</label><label class="flc-chk"><input type="checkbox" data-flcf="sounds" ${f.sounds?"checked":""}> أصوات المكتبة داخل الشات العائم</label><label class="flc-chk"><input type="checkbox" data-flcf="low" ${f.low?"checked":""}> وضع أداء منخفض</label></div>
+  ${window.b6o6Desktop?`<b>⌨️ اختصارات تطبيق الكمبيوتر</b><div class="row">${[["show","إظهار/إخفاء الشات"],["game","وضع اللعب"],["lock","قفل المكان"],["onTop","فوق التطبيقات"],["opacity","شفافية كاملة/جزئية"],["display","نقل للشاشة التالية"]].map(([k,l])=>`<label>${l}<input class="inp" value="${esc((window.b6o6Desktop.state&&window.b6o6Desktop.state.keys||{})[k]||"")}" data-flcf="key.${k}" placeholder="Control+Shift+X"></label>`).join("")}</div>`:`<p class="muted">🖥️ البقاء فوق الألعاب ووضع اللعب والاختصارات العامة تعمل في <a href="https://github.com/ssbtotss-netizen/arsh-live/releases/latest/download/B6O6-Streaming-Setup.exe" target="_blank" rel="noopener">تطبيق الكمبيوتر</a>. في Chrome/Edge يمكن فتح الشات كنافذة PiP تبقى فوق التطبيقات (بدون تمرير الماوس).</p>`}
+  <p class="muted">الأصوات هنا للأحداث التي ليس لها صوت في OBS فقط (لا تكرار). الشات العائم خاص بشاشتك — للمشاهدين استخدم «الشات الموحد» في OBS.</p></div>`;
+ if(S.flcPanel==="mod") return `<div class="flc-panel"><label class="flc-chk"><input type="checkbox" data-flcf="am.on" ${A.on?"checked":""}> <b>تفعيل الإشراف التلقائي</b></label>
+  <div class="row">${[["profanity","الكلمات المسيئة والسب"],["dup","الرسائل المكررة"],["spam","السبام"],["links","الروابط غير المصرح بها"]].map(([k,l])=>`<label class="flc-chk"><input type="checkbox" data-flcf="am.${k}" ${A[k]?"checked":""}> ${l} <select data-flcf="ama.${k}">${[["warn","تنبيه"],["hide","إخفاء محلي"],["delete","حذف"],["timeout","كتم مؤقت"],["ban","حظر"]].map(([v,n])=>`<option value="${v}" ${A.action[k]===v?"selected":""}>${n}</option>`).join("")}</select></label>`).join("")}</div>
+  <label>كلمات ممنوعة (افصل بفاصلة)<textarea class="inp" rows="2" data-flcf="am.words">${esc(A.words.join("، "))}</textarea></label>
+  <label>نطاقات روابط مسموحة<input class="inp" value="${esc(A.allowDomains.join("، "))}" data-flcf="am.allowDomains"></label>
+  <div class="row"><label class="flc-chk"><input type="checkbox" data-flcf="am.rate" ${A.rate.on?"checked":""}> حد الرسائل</label><input class="inp snd-num" type="number" min="1" value="${A.rate.n}" data-flcf="am.rateN"> رسائل خلال <input class="inp snd-num" type="number" min="2" value="${A.rate.sec}" data-flcf="am.rateSec"> ث · مدة الكتم التلقائي <input class="inp snd-num" type="number" min="10" value="${A.timeoutSec}" data-flcf="am.timeoutSec"> ث</div>
+  <label>مستخدمون مسموح لهم دائماً<input class="inp" value="${esc(A.allow.join("، "))}" data-flcf="am.allow"></label><label>مستخدمون محظورون<input class="inp" value="${esc(A.block.join("، "))}" data-flcf="am.block"></label>
+  <label class="flc-chk"><input type="checkbox" data-flcf="am.exemptMods" ${A.exemptMods?"checked":""}> استثناء المشرفين</label>
+  <label class="flc-chk warn"><input type="checkbox" data-flcf="am.native" ${A.native?"checked":""}> تنفيذ الحذف/الكتم/الحظر التلقائي على المنصة الأصلية أيضاً (اختياري — يتطلب ربطاً رسمياً بصلاحيات الإدارة؛ TikTok محلي دائماً)</label>
+  <b>آخر إجراءات الإدارة</b><div class="flc-log">${(M.log||[]).slice(0,12).map(e=>`<div>${e.auto?"🤖":"👤"} ${esc(MOD_ACT_LABEL[e.act]||e.act)} — <b>${esc(e.name||e.uid)}</b> <span class="muted">${FLC_PLAT[e.platform]?FLC_PLAT[e.platform][0]:""} ${e.reason?"· "+esc(e.reason):""}</span></div>`).join("")||'<span class="muted">لا شيء بعد</span>'}</div></div>`;
+ return "" }
+function flcSampleRows(){ return [["أحمد","السلام عليكم 👋","tiktok"],["سارة","بث أسطوري","youtube"],["خالد","GG","kick"]].map(([n,t,p])=>`<div class="flc-m" style="--pc:${FLC_PLAT[p][1]}"><span class="flc-av">${n[0]}</span><div class="flc-b"><span class="flc-n">${n}</span><span class="flc-t">${t}</span></div></div>`).join("") }
+function flcHTML(){ const f=FLCS(), V=FLCV(), M=flcMod();
+ const top=flcIsFloat()?"":`<div class="flc-pagehead"><div><h2>💬 الشات المباشر والإدارة</h2><p class="muted">اضغط اسم المشاهد أو زر الماوس الأيمن على رسالته لإدارته. المنصات: ${Object.entries(flcCaps()).map(([p,c])=>`<span class="flc-cap ${c.native.length?"on":""}" title="${esc(c.note)}">${UC_ICONS[p]||""} ${c.native.length?"إدارة على المنصة":"محلي فقط"}</span>`).join(" ")}</p></div>
+  <div class="row"><button class="btn pri" data-flc="open">🪟 فتح الشات العائم</button><a class="btn" href="https://github.com/ssbtotss-netizen/arsh-live/releases/latest/download/B6O6-Streaming-Setup.exe" target="_blank" rel="noopener">⬇️ تحميل الشات العائم للكمبيوتر</a><button class="btn" data-flc="privacy">🔒 الخصوصية واختبار الظهور</button></div></div>`;
+ const list=flcMsgs(), pins=V.pins?`<div class="flc-pins">${(M.pin?[M.pin]:[]).map(()=>flcPinHTML()).join("")||'<p class="muted">لا توجد رسالة مثبتة</p>'}</div>`:"";
+ return `${top}<div class="flc-root flcd-${f.design} flm-${f.mode} ${f.anim&&!f.low&&!window.__arshExplore?"":"flc-still"} ${f.low?"flc-low":""}" style="${flcVars()}">${flcToolbar()}${flcPanelHTML()}${flcStatsHTML()}${flcPinHTML()}${pins}
+  <div class="flc-list" id="flc-list">${list.map(flcRow).join("")}</div>${V.pause?`<button class="flc-resume" data-flc="pause">⬇️ رسائل جديدة — استئناف</button>`:""}</div>` }
+/** رسالة جديدة: إضافة صف فقط (لا إعادة رسم كاملة) */
+function flcOnEvent(ev){ if(S.page!=="livechat"&&!flcIsFloat()) return; const L=document.getElementById("flc-list"); if(!L) return; const m=chatMsgOf(ev); if(!m||m.test&&!S.flcShowTest) return;
+ const f=FLCS(), V=FLCV(); if(L.querySelector(`[data-id="${CSS.escape(m.id)}"]`)) return;
+ if(!flcMsgs().some(x=>x.id===m.id)) return; // مُرشَّح (منصة/وضع/مكتوم)
+ const tmp=document.createElement("div"); tmp.innerHTML=flcRow(m); const el=tmp.firstElementChild; L.appendChild(el); if(f.anim&&!f.low&&!window.__arshExplore) el.classList.add("flc-in");
+ const cap=f.low?60:150; while(L.children.length>cap) L.firstElementChild.remove();
+ if(!V.pause) L.scrollTop=L.scrollHeight; else if(!document.querySelector(".flc-resume")) flcRefresh();
+ if(f.sounds&&FLC_SUP.has(m.kind)&&!sndHasPlayer()) flcSound(ev) }
+function flcSound(ev){ try{ const c=SC(); const items=sndOnEvent(c,(S.flcSndSt=S.flcSndSt||sndNewState()),ev,Date.now(),{totalLikes:R.D&&R.D.tot&&R.D.tot.likes}); const it=items[0]; if(!it) return; const a=new Audio(sndPrevUrl(it.s.src)); a.volume=Math.min(1,(it.s.vol/100)*(c.vol/100)); a.play().catch(()=>{}) }catch(e){} }
+function flcRefresh(){ if(S.page==="livechat"||flcIsFloat()){ const st=document.querySelector(".flc-list"); const keep=st&&FLCV().pause?st.scrollTop:null; renderPage(true); const L=document.getElementById("flc-list"); if(L){ if(keep!=null) L.scrollTop=keep; else L.scrollTop=L.scrollHeight } } }
+function flcSave(){ save(); if(window.b6o6Desktop&&window.b6o6Desktop.saveSettings) window.b6o6Desktop.saveSettings(FLCS()) }
+function flcAct(a,native){ const caps=flcCaps()[a.platform]||{native:[]}; const nat=native!==false&&caps.native.includes(a.act==="unmute"?"unban":a.act);
+ send({t:"clock-op",target:"chatmod",op:"act",a:{...a,native:nat}}); toast(nat?"⏳ جاري التنفيذ على "+FLC_PLAT[a.platform][0]+"…":"✅ "+(MOD_ACT_LABEL[a.act]||"تم")+" — داخل B6O6 فقط"+(a.platform==="tiktok"?" (TikTok لا يتيح إدارة الشات رسمياً)":"")) }
+/** قائمة إدارة المشاهد: تظهر فقط الإجراءات المتاحة فعلاً، مع توضيح «محلي» و«على المنصة» */
+function flcMenu(row,x,y){ const id=row.dataset.id, p=row.dataset.p, uid=row.dataset.uid, m=(R.CHAT||[]).find(z=>z.id===id)||{id,platform:p,uid,name:row.querySelector(".flc-n")?.textContent||""}, M=flcMod(), u=M.u[modKey(p,uid)]||{};
+ const caps=flcCaps()[p]||{native:[],note:"",max:0}, nat=k=>caps.native.includes(k), tag=k=>nat(k)?`<em class="on">على ${FLC_PLAT[p][0]}</em>`:`<em>محلي</em>`;
+ const mutes=FLC_MUTES.filter(([s])=>!nat("timeout")||s<=caps.max);
+ const recent=(R.CHAT||[]).filter(z=>z.platform===p&&z.uid===uid&&z.kind==="msg").slice(-5);
+ const url=(FLC_PLAT[p][2]||(()=>""))(m);
+ document.querySelectorAll(".flc-menu").forEach(e=>e.remove()); const el=document.createElement("div"); el.className="flc-menu";
+ el.innerHTML=`<div class="flc-mh"><i class="flc-pl">${UC_ICONS[p]||""}</i><b>${esc(m.name)}</b><span class="muted">${FLC_PLAT[p][0]}</span></div><p class="flc-note">${esc(caps.note)}</p>
+  ${u.mute>Date.now()?`<button data-fm="unmute">🔊 إلغاء الكتم ${tag("unban")}</button>`:`<div class="flc-sub"><span>🔇 كتم مؤقت ${tag("timeout")}</span><div>${mutes.map(([s,l])=>`<button data-fm="timeout" data-sec="${s}">${l}</button>`).join("")}<button data-fm="timeout" data-sec="custom">مدة مخصصة…</button></div></div>`}
+  ${u.ban?`<button data-fm="unban">✅ فك الحظر ${tag("unban")}</button>`:`<button data-fm="ban" class="dng">⛔ حظر ${tag("ban")}</button>`}
+  ${m.kind==="msg"?`<button data-fm="delete">🗑️ حذف الرسالة ${tag("delete")}</button><div class="flc-sub"><span>📌 تثبيت داخل B6O6</span><div>${[[30,"30 ث"],[60,"دقيقة"],[300,"5 د"],[0,"حتى الإلغاء"]].map(([s,l])=>`<button data-fm="pin" data-sec="${s}">${l}</button>`).join("")}</div></div><button data-fm="pinnative" class="muted">📌 تثبيت في ${FLC_PLAT[p][0]} <em>غير متاح عبر الواجهة الرسمية</em></button>`:""}
+  ${M.pin&&M.pin.m.id===id?`<button data-fm="unpin">📍 إلغاء التثبيت</button>`:""}
+  ${u.mod?`<button data-fm="unmod">🛡️ إزالة صلاحية المشرف ${tag("unmod")}</button>`:`<button data-fm="mod">🛡️ تعيين مشرفاً ${tag("mod")}</button>`}
+  ${url?`<a href="${esc(url)}" target="_blank" rel="noopener">👤 فتح حساب المشاهد</a>`:""}<button data-fm="copy">📋 نسخ اسم المستخدم</button>
+  <div class="flc-sub"><span>💬 آخر رسائله (${recent.length})</span><div class="flc-recent">${recent.map(z=>`<p>${esc(z.text)}</p>`).join("")||'<p class="muted">لا رسائل متاحة</p>'}</div></div>
+  ${url?`<a href="${esc(url)}" target="_blank" rel="noopener">🚩 الإبلاغ (من صفحة المشاهد في ${FLC_PLAT[p][0]})</a>`:""}<button data-fm="hidelocal">🙈 إخفاء رسائله محلياً فقط</button>`;
+ document.body.appendChild(el); const r=el.getBoundingClientRect(); el.style.left=Math.max(6,Math.min(x,innerWidth-r.width-6))+"px"; el.style.top=Math.max(6,Math.min(y,innerHeight-r.height-6))+"px";
+ el.onclick=e=>{ const b=e.target.closest("[data-fm]"); if(!b) return; const k=b.dataset.fm, base={platform:p,uid,name:m.name,msgId:id};
+  if(k==="timeout"){ let s=b.dataset.sec; if(s==="custom"){ const v=prompt("مدة الكتم بالدقائق",""+10); if(!v) return; s=Math.round(+v*60) } flcAct({...base,act:"timeout",sec:+s}) }
+  else if(k==="unmute") flcAct({...base,act:"unmute"}); else if(k==="ban"){ if(!confirm("حظر "+m.name+"؟")) return; flcAct({...base,act:"ban"}) } else if(k==="unban") flcAct({...base,act:"unban"});
+  else if(k==="delete") flcAct({...base,act:"delete"}); else if(k==="mod") flcAct({...base,act:"mod"}); else if(k==="unmod") flcAct({...base,act:"unmod"});
+  else if(k==="hidelocal") flcAct({...base,act:"timeout",sec:30*86400},false);
+  else if(k==="pin"){ send({t:"clock-op",target:"chatmod",op:"pin",msgId:id,msg:m,sec:+b.dataset.sec}); toast("📌 تم التثبيت داخل B6O6 (اللوحة + OBS + الشات العائم)") }
+  else if(k==="pinnative") return toast("المنصات لا تتيح تثبيت الرسائل عبر واجهاتها الرسمية المتاحة لنا حالياً — استخدم «تثبيت داخل B6O6»");
+  else if(k==="unpin"){ send({t:"clock-op",target:"chatmod",op:"unpin"}); toast("أُلغي التثبيت") }
+  else if(k==="copy"){ copy(m.name) }
+  el.remove() };
+ setTimeout(()=>document.addEventListener("click",function h(e){ if(!el.contains(e.target)){ el.remove(); document.removeEventListener("click",h) } }),0) }
+async function flcOpen(){ const D=window.b6o6Desktop; if(D&&D.openFloat) return D.openFloat();
+ // Chrome/Edge: نافذة Picture-in-Picture تبقى فوق التطبيقات الأخرى (لا تعمل فوق الألعاب بملء الشاشة الحصري ولا تمرّر الماوس)
+ if(window.documentPictureInPicture&&!S.flcPipFailed){ try{ const pw=await documentPictureInPicture.requestWindow({width:380,height:620});
+   [...document.styleSheets].forEach(ss=>{ try{ const s=document.createElement("style"); s.textContent=[...ss.cssRules].map(r=>r.cssText).join("\n"); pw.document.head.appendChild(s) }catch(e){ if(ss.href){ const l=document.createElement("link"); l.rel="stylesheet"; l.href=ss.href; pw.document.head.appendChild(l) } } });
+   pw.document.documentElement.dir="rtl"; pw.document.body.className="flc-only flc-pip"; S.flcPip=pw; flcPipRender(); pw.addEventListener("pagehide",()=>{ S.flcPip=null }); toast("🪟 الشات العائم فوق التطبيقات (نافذة PiP)"); return }catch(e){ S.flcPipFailed=true } }
+ window.open(location.href.split("#")[0]+"#float","b6o6float","width=400,height=650"); toast("🪟 فُتح الشات العائم — لإبقائه فوق الألعاب استخدم تطبيق الكمبيوتر") }
+function flcPipRender(){ const pw=S.flcPip; if(!pw) return; pw.document.body.innerHTML=flcHTML(); const L=pw.document.getElementById("flc-list"); if(L) L.scrollTop=L.scrollHeight;
+ pw.document.body.onclick=e=>{ const b=e.target.closest("[data-flc]"); if(b) flcClick(b,e) }; pw.document.body.oncontextmenu=e=>{ const r=e.target.closest(".flc-m[data-id]"); if(r){ e.preventDefault(); flcMenu(r,e.clientX,e.clientY) } } }
+function flcClick(b,e){ const d=b.dataset, k=d.flc, f=FLCS(), V=FLCV(), D=window.b6o6Desktop; if(!k) return false;
+ if(k==="menu"){ const r=b.closest(".flc-m"); if(r&&r.dataset.id) flcMenu(r,e.clientX,e.clientY); return true }
+ if(k==="open"){ flcOpen(); return true }
+ if(k==="ontop"){ if(!D) return toast("يتطلب تطبيق الكمبيوتر — أو افتح الشات العائم (PiP) في Chrome/Edge ليبقى فوق التطبيقات"), true; D.toggle("onTop").then(()=>flcRefresh()); return true }
+ if(k==="game"){ if(!D) return toast("وضع اللعب (تمرير الماوس للعبة) يعمل في تطبيق الكمبيوتر فقط"), true; D.toggle("clickThrough").then(()=>flcRefresh()); return true }
+ if(k==="pause"){ V.pause=!V.pause; flcRefresh(); return true } if(k==="sup"){ V.sup=!V.sup; flcRefresh(); return true } if(k==="pins"){ V.pins=!V.pins; flcRefresh(); return true }
+ if(["op","plat","design"].includes(k)||k==="modset"){ const pk=k==="modset"?"mod":k; S.flcPanel=S.flcPanel===pk?null:pk; flcRefresh(); return true }
+ if(k==="min"){ f.bar=!f.bar; flcSave(); flcRefresh(); return true }
+ if(k==="preset"){ f.preset=d.k; if(FLC_PRESETS[d.k]) f.op={...FLC_PRESETS[d.k]}; flcSave(); flcRefresh(); return true }
+ if(k==="mode"){ f.mode=d.k; if(d.k==="gaming"){ f.op={...FLC_PRESETS.gaming}; f.preset="gaming"; f.font=13; f.av=22 } if(d.k==="minimal") f.design="minimal"; flcSave(); flcRefresh(); return true }
+ if(k==="dsg"){ f.design=d.k; flcSave(); flcRefresh(); return true }
+ if(k==="unpin"){ send({t:"clock-op",target:"chatmod",op:"unpin"}); return true }
+ if(k==="privacy"){ modal(`<h3>🔒 خصوصية الشات</h3><p><b>شات خاص بك:</b> الشات العائم يظهر على شاشتك فقط ولا يُضاف لمشهد البث. في تطبيق الكمبيوتر نطلب من ويندوز استبعاد نافذته من التقاط الشاشة (Windows 10 2004+). هذا يعتمد على طريقة الالتقاط: «Window Capture» و«Display Capture» الحديثة في OBS وTikTok LIVE Studio تحترمه عادةً، لكن ليس كل برامج الالتقاط.</p>
+  <p><b>شات ظاهر للمشاهدين:</b> أضف «الشات الموحد» كـ Browser Source في OBS أو رابط في TikTok LIVE Studio.</p><p><b>اختبار:</b> اضغط الزر — تظهر علامة كبيرة في الشات العائم لمدة 20 ثانية. انظر لمعاينة OBS/LIVE Studio: إن ظهرت فالشات يظهر في البث.</p>
+  <div class="row"><button class="btn pri" data-close onclick="window.__flcProbe&&window.__flcProbe()">🧪 بدء الاختبار</button><button class="btn" data-close>إغلاق</button></div>`); return true }
+ return false }
+window.__flcProbe=()=>{ const show=doc=>{ const el=doc.createElement("div"); el.className="flc-probe"; el.textContent="🔒 اختبار الخصوصية — هل ترى هذه العلامة في البث؟"; doc.body.appendChild(el); setTimeout(()=>el.remove(),20000) }; show(document); if(S.flcPip) show(S.flcPip.document); if(window.b6o6Desktop&&window.b6o6Desktop.probe) window.b6o6Desktop.probe() };
+function flcInput(t,e){ const k=t.dataset&&t.dataset.flcf; if(!k) return false; const f=FLCS(), live=e.type==="input", M=flcMod();
+ if(k==="q"){ if(!live) return true; FLCV().q=t.value; clearTimeout(flcInput.qt); flcInput.qt=setTimeout(()=>{ flcRefresh(); const i=document.querySelector('[data-flcf="q"]'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },220); return true }
+ if(k.startsWith("op.")){ f.op[k.slice(3)]=+t.value; f.preset="custom"; const r=document.querySelector(".flc-root"); if(r) r.setAttribute("style",flcVars()); const lb=t.parentElement.querySelector("b"); if(lb) lb.textContent=t.value+"%"; if(!live) flcSave(); return true }
+ if(k==="font"||k==="av"){ f[k]=+t.value; const r=document.querySelector(".flc-root"); if(r) r.setAttribute("style",flcVars()); const lb=t.parentElement.querySelector("b"); if(lb) lb.textContent=t.value+"px"; if(!live) flcSave(); return true }
+ if(live&&t.type!=="checkbox") return true;
+ if(k.startsWith("key.")&&window.b6o6Desktop){ const keys={...(window.b6o6Desktop.state&&window.b6o6Desktop.state.keys||{}),[k.slice(4)]:t.value.trim()}; window.b6o6Desktop.setKeys(keys).then(r=>toast(r&&r.ok?"⌨️ حُفظ الاختصار":"⚠️ الاختصار مستخدم في برنامج آخر: "+((r&&r.failed)||[]).join("، "))); return true }
+ if(k.startsWith("plat.")){ f.plats[k.slice(5)]=t.checked; flcSave(); flcRefresh(); return true } if(k.startsWith("st.")){ f.stats[k.slice(3)]=t.checked; flcSave(); flcRefresh(); return true }
+ if(k==="anim"||k==="sounds"||k==="low"){ f[k]=t.checked; flcSave(); flcRefresh(); return true }
+ if(k.startsWith("am")){ const A=JSON.parse(JSON.stringify(M.auto||{})); const x=k.split(".")[1];
+  if(k.startsWith("ama.")) A.action[x]=t.value; else if(x==="words"||x==="allowDomains"||x==="allow"||x==="block") A[x]=t.value; else if(x==="rate") A.rate.on=t.checked; else if(x==="rateN") A.rate.n=+t.value; else if(x==="rateSec") A.rate.sec=+t.value; else if(x==="timeoutSec") A.timeoutSec=+t.value;
+  else if(x==="native"&&t.checked&&!confirm("تنفيذ الإجراءات التلقائية على المنصة الأصلية؟ (حذف/كتم/حظر حقيقي على YouTube/Twitch/Kick حسب الربط والصلاحيات)")){ t.checked=false; return true } else A[x]=t.checked;
+  send({t:"clock-op",target:"chatmod",op:"auto",auto:A}); toast("🛡️ حُفظت إعدادات الإشراف"); return true }
+ return false }
+// النافذة المستقلة: الشات فقط
+if(location.hash==="#float"){ document.body.classList.add("flc-only"); setTimeout(()=>{ S.page="livechat"; renderPage() },0) }
+// تحديث الإحصائيات والتثبيت كل ثانيتين بدون إعادة رسم الرسائل
+setInterval(()=>{ if(S.page!=="livechat"&&!flcIsFloat()&&!S.flcPip) return; const st=document.querySelector(".flc-stats"); if(st){ const t=document.createElement("div"); t.innerHTML=flcStatsHTML(); st.replaceWith(t.firstElementChild) }
+ const pin=document.querySelector(".flc-root .flc-pin"), ph=flcPinHTML(); if(pin&&!ph) pin.remove(); else if(pin&&ph){ const t=document.createElement("div"); t.innerHTML=ph; pin.replaceWith(t.firstElementChild) } else if(!pin&&ph) flcRefresh();
+ if(S.flcPip){ const L=S.flcPip.document.getElementById("flc-list"); const cur=L?L.children.length:0; if(cur!==flcMsgs().length) flcPipRender() } },2000);
+// تطبيق الكمبيوتر يرسل تغيّر الحالة (فوق التطبيقات / وضع اللعب) والاختصارات
+if(window.b6o6Desktop&&window.b6o6Desktop.onState) window.b6o6Desktop.onState(()=>flcRefresh());
+
+// اختصار «الشفافية الكاملة/الجزئية» من تطبيق الكمبيوتر
+window.addEventListener("b6o6-opacity",()=>{ const f=FLCS(); const to=f.preset==="transparent"?"glass":"transparent"; f.preset=to; f.op={...FLC_PRESETS[to]}; flcSave(); flcRefresh() });
 
 </script>
 </body>

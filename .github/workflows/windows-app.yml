@@ -19,11 +19,17 @@ jobs:
         shell: pwsh
         run: |
           if ("${{ vars.APP_URL }}") { '{ "url": "${{ vars.APP_URL }}" }' | Set-Content config.json }
+      - name: رقم الإصدار (للتحديثات التلقائية)
+        shell: pwsh
+        run: npm version "1.1.${{ github.run_number }}" --no-git-tag-version
       - run: npm install
       - run: npm run dist
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: desktop-build-${{ github.run_number }}
           name: "B6O6 Streaming — Windows ${{ github.run_number }}"
-          files: desktop/dist/B6O6-Streaming-Setup.exe
+          files: |
+            desktop/dist/B6O6-Streaming-Setup.exe
+            desktop/dist/B6O6-Streaming-Setup.exe.blockmap
+            desktop/dist/latest.yml
           make_latest: true

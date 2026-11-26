@@ -535,3 +535,8 @@ body.ov .stage{background:transparent!important}
 body.ov-explore .fxl > *, body.ov-explore .ab-fx { display: none !important; }
 body.ov-explore .ucw .uc-m, body.ov-explore .lsb-row { backdrop-filter: none !important; -webkit-backdrop-filter: none !important; }
 body.ov-explore .ucw .uc-m.uc-new { animation: none !important; }
+/* رسالة مثبتة أعلى الشات (إدارة الشات) */
+.ucw .uc-pin{display:flex;align-items:center;gap:.55em;margin:.3em 0 .45em;padding:.55em .8em;border-radius:14px;background:linear-gradient(135deg,rgba(139,92,246,.85),rgba(59,130,246,.8));color:#fff;box-shadow:0 6px 22px rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.25)}
+.ucw .uc-pin-ic{font-size:1.1em}.ucw .uc-pin-av{width:2em;height:2em;border-radius:50%;object-fit:cover;flex:none}.ucw .uc-pin-ini{display:grid;place-items:center;background:rgba(0,0,0,.3);font-weight:800}
+.ucw .uc-pin-b{display:flex;flex-direction:column;min-width:0}.ucw .uc-pin-b b{display:flex;align-items:center;gap:.3em;font-size:.85em}.ucw .uc-pin-b span{font-weight:700;overflow-wrap:anywhere}
+.ucw .uc-pin-lg svg{width:1em;height:1em;vertical-align:-.15em}

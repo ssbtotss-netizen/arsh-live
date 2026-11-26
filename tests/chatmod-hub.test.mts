@@ -1,0 +1,25 @@
+// إدارة الشات عبر الخادم: الإجراء المحلي يصل لكل الروابط، والطلب الأصلي لا يُبث — يُنفَّذ عبر الربط الرسمي والنتيجة الحقيقية للوحة فقط
+import { createHub } from "../arsh-live/src/server/live-hub.ts";
+import { EventEmitter } from "node:events";
+let pass = 0, fail = 0; const ok = (c: any, m: string) => { c ? pass++ : (fail++, process.stdout.write("FAIL " + m + "\n")); };
+const ol = console.log; console.log = () => {}; const sl = (ms: number) => new Promise(r => setTimeout(r, ms));
+const calls: any[] = [];
+const wss: any = new EventEmitter(); wss.clients = new Set();
+const hub: any = createHub(wss, { authorize: async (_r: string, k?: string) => !!k, moderate: async (_room: string, a: any) => { calls.push(a); return a.platform === "youtube" ? { ok: true } : { ok: false, error: "kick: الربط الرسمي غير مفعّل — نُفِّذ الإجراء محلياً فقط" }; } } as any);
+const cl = () => { const ws: any = new EventEmitter(); ws.readyState = 1; ws.msgs = []; ws.send = (s: string) => { const m = JSON.parse(s); if (m.t === "batch") ws.msgs.push(...m.ms); else ws.msgs.push(m); }; ws.close = () => {}; ws.ping = () => {}; ws.terminate = () => {}; wss.emit("connection", ws); return ws; };
+const send = (ws: any, m: any) => ws.emit("message", Buffer.from(JSON.stringify(m)));
+const d = cl(); send(d, { t: "join", room: "room_cm", key: "k" }); const obs = cl(); send(obs, { t: "join", room: "room_cm" }); await sl(20);
+send(obs, { t: "clock-op", room: "room_cm", target: "chatmod", op: "act", a: { act: "ban", platform: "tiktok", uid: "x" } }); await sl(20);
+ok(!hub.rooms.get("room_cm").C.mod?.u?.["tiktok:x"], "read-only OBS link cannot moderate");
+send(d, { t: "clock-op", room: "room_cm", target: "chatmod", op: "act", a: { act: "timeout", platform: "youtube", uid: "UC1", name: "سارة", sec: 300, native: true } }); await sl(30);
+ok(calls.length === 1 && calls[0].platform === "youtube" && calls[0].sec === 300, "native request sent to the official connection (YouTube timeout 300 s)");
+ok(d.msgs.some((m: any) => m.t === "modres" && m.ok && m.a.act === "timeout"), "real result (ok) reported to the dashboard");
+ok(!obs.msgs.some((m: any) => m.t === "modres" || m.t === "modnative"), "native request/result never broadcast to OBS links");
+const lastC = (ws: any) => ws.msgs.filter((m: any) => m.t === "clock").pop()?.C;
+ok(lastC(obs)?.mod?.u?.["youtube:UC1"]?.mute > Date.now(), "local mute reaches OBS (hidden there immediately)");
+send(d, { t: "clock-op", room: "room_cm", target: "chatmod", op: "act", a: { act: "ban", platform: "kick", uid: "5", native: true } }); await sl(30);
+ok(d.msgs.some((m: any) => m.t === "modres" && !m.ok && /غير مفعّل/.test(m.error)), "platform refusal / no connection → honest error, not a fake success");
+send(d, { t: "clock-op", room: "room_cm", target: "chatmod", op: "act", a: { act: "ban", platform: "tiktok", uid: "7" } }); await sl(30);
+ok(calls.length === 2, "TikTok action stays local (no native call)");
+const snap = cl(); send(snap, { t: "join", room: "room_cm" }); await sl(20); ok(snap.msgs.find((m: any) => m.t === "snapshot")?.C?.mod?.u?.["tiktok:7"]?.ban, "moderation state survives refresh (snapshot)");
+console.log = ol; console.log(`chatmod-hub: ${pass} passed, ${fail} failed`); process.exit(fail ? 1 : 0);

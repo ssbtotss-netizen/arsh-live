@@ -50,6 +50,8 @@ app.prepare().then(() => {
     // ردود بوت الأغاني في شات YouTube / Twitch / Kick (TikTok لا يسمح بالإرسال)
     // بوت الأغاني: البحث في YouTube Data API الرسمي (المفتاح على الخادم فقط)
     ytFind: (q: string, o: any) => youtube.find(q, o),
+    // إدارة الشات على المنصة الأصلية (رسمي فقط): YouTube/Twitch/Kick حسب الربط والصلاحيات — TikTok محلي فقط
+    async moderate(room: string, a: any) { const uid = await userIdOf(room); const p = (globalThis as any).__b6o6?.platforms; if (!uid || !p?.moderate) return { ok: false, error: "الخدمة غير جاهزة" }; return p.moderate(uid, a); },
     onChatReply(room: string, platform: string, text: string) { userIdOf(room).then(uid => { if (uid) (globalThis as any).__b6o6?.platforms?.sendChat(uid, platform, text); }).catch(() => {}); },
     onNotify(room: string, m: any) { (globalThis as any).__b6o6?.notify?.fromRoom(room, m).catch(() => {}); },
     // تقرير نهاية البث: حفظ الجلسة في الأرشيف + ملخص Discord/Telegram

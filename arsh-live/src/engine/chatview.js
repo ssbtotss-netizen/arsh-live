@@ -2,6 +2,7 @@
 import { View } from "./view.js";
 import { esc, avatar } from "./defs.js";
 import { CHAT_PLATFORMS, chatMsgOf, chatFilter, chatImportant } from "./chat.js";
+import { modHidden, modPinActive } from "./chatmod.js";
 import { sbRender, sbSum, sbVars, sbClass, ensureSbCSS } from "./statsview.js";
 
 // رموز مبسطة أصلية تدل على المنصة (ليست نسخاً من الشعارات الرسمية)
@@ -68,7 +69,7 @@ Object.assign(View.prototype,{
    e.innerHTML=`<div class="uc-root"></div>`+(ed?'<div class="rh"></div><div class="lockb">🔒</div>':""); this.ucRoot=e.firstChild; clearInterval(this.ucRotT); this.ucRotT=0; this.ucRotI=0;
    if(w.mode==="rotate") this.ucRotT=setInterval(()=>{ if(!this.el.isConnected){ clearInterval(this.ucRotT); return } this.ucRotI=(this.ucRotI+1)%UC_ROT.length; this.ucRender(true) },Math.max(3,+w.rotateSec||8)*1000);
    this.ucRender(false) }
-  this.ucStats(w);
+  this.ucStats(w); this.ucPinRender(); clearInterval(this.pinT); this.pinT=setInterval(()=>this.ucRoot&&this.ucRoot.isConnected?this.ucPinRender():clearInterval(this.pinT),1000);
  },
  /** شريط إحصائيات البث داخل الشات: أعلى / أسفل / عائم / مخفي — يتحدث كل ثانية بدون إعادة رسم الرسائل */
  ucStats(w){ const R=this.ucRoot; if(!R) return; clearInterval(this.sbT); this.sbT=0;
@@ -81,7 +82,15 @@ Object.assign(View.prototype,{
   const tick=()=>{ if(!box.isConnected){ clearInterval(this.sbT); return } const src=this.opts.data?this.opts.data():null; let s=sbSum(src,w,false); if(!s.rows.length&&demo) s=sbSum(null,w,true); sbRender(box,s,w,Date.now()) };
   tick(); this.sbT=setInterval(tick,1000) },
  ucList(platform){ const w=this.w; let buf=this.ucBuf||[]; if(!buf.length&&(this.opts.editor||String(w.id).startsWith("pv_"))) buf=ucSample();
-  const F=chatFilter(w,()=>0); const out=[]; for(const m of buf){ if(m&&m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) continue; /* رسائل قديمة بلا نص (قبل إصلاح TikTok v2) لا تظهر مستطيلات فارغة */ const r=F(m,platform||w.mode); if(r) out.push(r) } return out.slice(-Math.max(1,+w.max||8)) },
+  const F=chatFilter(w,()=>0), M=this.ucMod(), now=Date.now(); const out=[]; for(const m of buf){ if(m&&m.kind==="msg"&&!String(m.text||"").trim()&&!(m.emotes&&m.emotes.length)) continue; if(M&&modHidden(M,m,now)) continue; /* مكتوم/محظور/محذوف (إدارة الشات) */ /* رسائل قديمة بلا نص (قبل إصلاح TikTok v2) لا تظهر مستطيلات فارغة */ const r=F(m,platform||w.mode); if(r) out.push(r) } return out.slice(-Math.max(1,+w.max||8)) },
+ /** حالة إدارة الشات من بيانات الغرفة (الكتم/الحظر/الحذف/التثبيت) */
+ ucMod(){ try{ const s=this.opts&&this.opts.data&&this.opts.data(); return s&&s.C&&s.C.mod||null }catch(e){ return null } },
+ /** بطاقة الرسالة المثبتة أعلى الشات (تثبيت داخل B6O6) — تختفي عند انتهاء المدة */
+ ucPinRender(){ const R=this.ucRoot; if(!R) return; const P=modPinActive(this.ucMod(),Date.now()); let el=R.querySelector(":scope>.uc-pin");
+  if(!P||this.w.ucPin===false){ if(el) el.remove(); return } const k=P.m.id+":"+P.at; if(el&&el.dataset.k===k) return;
+  if(!el){ el=document.createElement("div"); el.className="uc-pin"; const host=R.querySelector(":scope>.lsb-host.lsb-top"); host?host.after(el):R.insertBefore(el,R.firstChild) } el.dataset.k=k;
+  const lg=`<i class="uc-pin-lg">${UC_ICONS[P.m.platform]||""}</i>`; el.innerHTML=`<span class="uc-pin-ic">📌</span>${P.m.av?`<img class="uc-pin-av" src="${esc(P.m.av)}" alt="">`:`<span class="uc-pin-av uc-pin-ini">${esc((P.m.name||"?").slice(0,1))}</span>`}<div class="uc-pin-b"><b>${lg}${esc(P.m.name)}</b><span>${esc(P.m.text)}</span></div>`;
+  if(this.w.animOn!==false) el.animate([{opacity:0,transform:"translateY(-30%)"},{opacity:1,transform:"none"}],{duration:380,easing:"cubic-bezier(.2,.8,.2,1)"}) },
  ucRender(anim){ const R=this.ucRoot; if(!R) return; const host=R.querySelector(":scope>.lsb-host"); this.ucRender0(anim);
   if(host&&!host.isConnected){ if(host.classList.contains("lsb-bottom")) R.appendChild(host); else R.insertBefore(host,R.firstChild) } }, // شريط الإحصائيات يبقى عند إعادة رسم الرسائل
  ucRender0(anim){ const w=this.w, R=this.ucRoot;
@@ -110,7 +119,7 @@ Object.assign(View.prototype,{
   if(this.ucFr) return; const go=()=>{ if(this.ucFrA) cancelAnimationFrame(this.ucFrA); clearTimeout(this.ucFrT); this.ucFr=0; this.ucFrA=0; this.ucFrT=0; this.ucFlush() };
   this.ucFr=1; if(typeof requestAnimationFrame==="function") this.ucFrA=requestAnimationFrame(go); this.ucFrT=setTimeout(go,80) },
  ucFlush(){ const P=this.ucPend||[]; this.ucPend=[]; if(!P.length||!this.ucRoot) return; const w=this.w, max=Math.max(1,+w.max||8);
-  const groups=new Map(); for(const it of P){ const L=w.mode==="split"?this.ucRoot.querySelector(`.uc-col[data-p="${it.p}"] .uc-list`):this.ucRoot.querySelector(".uc-list"); if(!L) continue; (groups.get(L)||groups.set(L,[]).get(L)).push(it.r) }
+  const M0=this.ucMod(), n0=Date.now(); const groups=new Map(); for(const it of P){ if(M0&&modHidden(M0,it.r,n0)) continue; const L=w.mode==="split"?this.ucRoot.querySelector(`.uc-col[data-p="${it.p}"] .uc-list`):this.ucRoot.querySelector(".uc-list"); if(!L) continue; (groups.get(L)||groups.set(L,[]).get(L)).push(it.r) }
   const explore=typeof window!=="undefined"&&!!window.__arshExplore, spd=Math.max(.25,Math.min(3,+w.ucSpeed||1)), anim=w.animOn!==false&&!this.el.classList.contains("uc-still");
   const added=[];
   for(const [L,rs] of groups){

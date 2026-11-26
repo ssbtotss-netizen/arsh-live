@@ -6,7 +6,7 @@
 import WebSocket from "ws";
 import type { PrismaClient } from "@prisma/client";
 import { encrypt, decrypt } from "../lib/secrets";
-import { OAUTH, twitchToEvent, youtubeToEvents, kickToEvent, chatSendRequest } from "../engine/platforms.js";
+import { OAUTH, twitchToEvent, youtubeToEvents, kickToEvent, chatSendRequest, modRequest } from "../engine/platforms.js";
 
 type Hub = { dispatch(room: string, ev: any): void; liveStats?(room: string, platform: string, data: any): void };
 type Tok = { access: string; refresh?: string; exp?: number };
@@ -147,6 +147,23 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
     const all = await prisma.platformConnection.findMany({ where: { status: "connected", platform: { in: ["youtube", "twitch", "kick"] } } });
     for (const c of all) await start(c.userId, c.platform).catch(() => {});
   }
+  // ---------- إدارة الشات على المنصة الأصلية (رسمي فقط) — النجاح = رد ناجح من المنصة نفسها، لا رسالة في الواجهة ----------
+  const ytBans = new Map<string, string>(), ytMods = new Map<string, string>(); // معرّفات YouTube لفك الحظر/الإشراف لاحقاً
+  async function moderate(userId: string, a: any): Promise<{ ok: boolean; error?: string }> {
+    const platform = String(a.platform || "");
+    if (platform === "tiktok") return { ok: false, error: "TikTok لا يوفر واجهة رسمية لإدارة الشات — الإجراء نُفِّذ محلياً داخل B6O6 فقط" };
+    const c = await prisma.platformConnection.findUnique({ where: { userId_platform: { userId, platform } } }).catch(() => null);
+    if (!c || c.status !== "connected") return { ok: false, error: `${platform}: الربط الرسمي غير مفعّل — نُفِّذ الإجراء محلياً فقط` };
+    const t = await tokenOf(userId, platform); if (!t) return { ok: false, error: "لا يوجد رمز وصول — أعد ربط الحساب" };
+    const k = userId + ":" + a.uid;
+    const req: any = modRequest(platform, a, { token: t.access, clientId: env.TWITCH_CLIENT_ID, accountId: c.accountId, liveChatId: ytChat.get(userId), banId: ytBans.get(k), modId: ytMods.get(k) });
+    if (req.error) return { ok: false, error: req.error };
+    const r = await fetch(req.url, req.init).catch(() => null);
+    if (!r) return { ok: false, error: "تعذر الوصول لخادم المنصة" };
+    if (!r.ok) { const j: any = await r.json().catch(() => ({})); const msg = j?.error?.message || j?.message || ""; return { ok: false, error: `${platform} رفض الإجراء (${r.status})${msg ? ": " + String(msg).slice(0, 140) : ""}` }; }
+    if (platform === "youtube") { const j: any = await r.json().catch(() => null); if (j?.id) { if (a.act === "ban" || a.act === "timeout") ytBans.set(k, j.id); if (a.act === "mod") ytMods.set(k, j.id); } if (a.act === "unban") ytBans.delete(k); if (a.act === "unmod") ytMods.delete(k); }
+    return { ok: true };
+  }
   // ---------- ردود البوت في شات المنصة (طابور لكل حساب: رسالة كل 1.5 ث، 5 رسائل كحد أقصى في الانتظار) ----------
   const outQ = new Map<string, { list: string[]; busy: boolean }>();
   async function sendNow(userId: string, platform: string, text: string) {
@@ -165,5 +182,5 @@ export function createPlatformService(prisma: PrismaClient, hub: Hub) {
     if (q.busy) return; q.busy = true;
     (async () => { while (q.list.length) { await sendNow(userId, platform, q.list.shift()!).catch(() => {}); await new Promise(r => setTimeout(r, 1500)); } q.busy = false; })();
   }
-  return { exchange, saveConnection, start, stop, startAll, kickWebhook, sendChat };
+  return { exchange, saveConnection, start, stop, startAll, kickWebhook, sendChat, moderate };
 }

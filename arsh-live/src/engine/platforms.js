@@ -80,3 +80,27 @@ export function chatSendRequest(platform,{token,clientId,accountId,liveChatId,te
  if(platform==="youtube") return liveChatId?{url:"https://www.googleapis.com/youtube/v3/liveChat/messages?part=snippet",init:{method:"POST",headers:h,body:JSON.stringify({snippet:{liveChatId,type:"textMessageEvent",textMessageDetails:{messageText:msg.slice(0,200)}}})}}:null;
  if(platform==="kick") return accountId?{url:"https://api.kick.com/public/v1/chat",init:{method:"POST",headers:h,body:JSON.stringify({broadcaster_user_id:Number(accountId),content:msg.slice(0,500),type:"user"})}}:null;
  return null }
+
+/** إدارة الشات عبر الواجهات الرسمية — يعيد {url, init} أو {error}. لا تخمين: ما لم يُتحقق منه في التوثيق يُرفض بوضوح.
+ * YouTube: liveChat/bans (temporary + banDurationSeconds | permanent)، liveChat/messages DELETE، liveChat/moderators — صلاحية youtube.force-ssl
+ * Twitch: POST/DELETE helix/moderation/bans (duration بالثواني 1..1209600) — صلاحية moderator:manage:banned_users
+ * Kick: POST/DELETE public/v1/moderation/bans — صلاحية moderation:ban */
+export function modRequest(platform,a,{token,clientId,accountId,liveChatId,banId,modId}){ if(!token) return {error:"لا يوجد رمز وصول — أعد ربط الحساب"};
+ const h={authorization:`Bearer ${token}`,"content-type":"application/json"}, act=a.act, uid=String(a.uid||"");
+ if(platform==="youtube"){ const B="https://www.googleapis.com/youtube/v3/liveChat";
+  if(!liveChatId&&["timeout","ban","mod"].includes(act)) return {error:"لا يوجد بث YouTube نشط الآن"};
+  if(act==="timeout"||act==="ban") return {url:`${B}/bans?part=snippet`,init:{method:"POST",headers:h,body:JSON.stringify({snippet:{liveChatId,type:act==="ban"?"permanent":"temporary",...(act==="timeout"?{banDurationSeconds:Math.max(1,Math.min(86400,Math.round(+a.sec||300)))}:{}),bannedUserDetails:{channelId:uid}}})}};
+  if(act==="unban") return banId?{url:`${B}/bans?id=${encodeURIComponent(banId)}`,init:{method:"DELETE",headers:h}}:{error:"YouTube يحتاج معرّف الحظر الأصلي لفكه — الحظر لم يتم من B6O6 في هذا التشغيل؛ فكّه من YouTube Studio"};
+  if(act==="delete") return a.msgId?{url:`${B}/messages?id=${encodeURIComponent(a.msgId)}`,init:{method:"DELETE",headers:h}}:{error:"لا يوجد معرّف رسالة"};
+  if(act==="mod") return {url:`${B}/moderators?part=snippet`,init:{method:"POST",headers:h,body:JSON.stringify({snippet:{liveChatId,moderatorDetails:{channelId:uid}}})}};
+  if(act==="unmod") return modId?{url:`${B}/moderators?id=${encodeURIComponent(modId)}`,init:{method:"DELETE",headers:h}}:{error:"YouTube يحتاج معرّف الإشراف الأصلي — أزل المشرف من YouTube Studio"};
+  return {error:"غير مدعوم في YouTube"} }
+ if(platform==="twitch"){ if(!accountId||!clientId) return {error:"ربط Twitch غير مكتمل"}; const q=`broadcaster_id=${encodeURIComponent(accountId)}&moderator_id=${encodeURIComponent(accountId)}`, H={...h,"client-id":clientId};
+  if(act==="timeout"||act==="ban") return {url:`https://api.twitch.tv/helix/moderation/bans?${q}`,init:{method:"POST",headers:H,body:JSON.stringify({data:{user_id:uid,...(act==="timeout"?{duration:Math.max(1,Math.min(1209600,Math.round(+a.sec||300)))}:{}),reason:String(a.reason||"B6O6").slice(0,500)}})}};
+  if(act==="unban") return {url:`https://api.twitch.tv/helix/moderation/bans?${q}&user_id=${encodeURIComponent(uid)}`,init:{method:"DELETE",headers:H}};
+  return {error:act==="delete"?"حذف الرسائل في Twitch يحتاج صلاحية إضافية (moderator:manage:chat_messages) — أعد ربط Twitch بعد تحديثها":"تعيين المشرفين في Twitch يحتاج صلاحية إضافية (channel:manage:moderators)"} }
+ if(platform==="kick"){ if(!accountId) return {error:"ربط Kick غير مكتمل"}; const body={broadcaster_user_id:Number(accountId),user_id:Number(uid)};
+  if(act==="ban") return {url:"https://api.kick.com/public/v1/moderation/bans",init:{method:"POST",headers:h,body:JSON.stringify({...body,reason:String(a.reason||"B6O6").slice(0,100)})}};
+  if(act==="unban") return {url:"https://api.kick.com/public/v1/moderation/bans",init:{method:"DELETE",headers:h,body:JSON.stringify(body)}};
+  return {error:act==="timeout"?"الكتم المؤقت في Kick غير مفعّل في B6O6 بعد (لم نتحقق من وحدة المدة في التوثيق الرسمي) — نُفِّذ محلياً":"غير مدعوم في Kick عبر الواجهة الرسمية"} }
+ return {error:"TikTok لا يوفر واجهة رسمية لإدارة الشات — الإجراء نُفِّذ محلياً داخل B6O6 فقط"} }

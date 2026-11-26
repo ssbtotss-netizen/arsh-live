@@ -121,6 +121,8 @@ function send(msg){
 function demoMusicSearch(m){ const t=musicSearch(R.MLIB||[],m.q); const res=t?{ok:true,track:t}:{ok:false,message:"البحث في YouTube يعمل بعد تسجيل الدخول في المنصة — هنا (وضع التجربة) من مكتبتك فقط"};
  setTimeout(()=>{ const r=roomMusicFound(R,m,res,Date.now()); for(const x of r.out){ receive(x,true); if(bus) bus.postMessage(x) } saveRoom() },0) }
 function receive(m,applied){
+ if(m.t==="event"&&typeof flcOnEvent==="function") setTimeout(()=>flcOnEvent(m.ev),0); // الشات المباشر/العائم: إضافة صف فقط (بعد تحديث البيانات)
+ if(m.t==="clock"&&m.cm&&(S.page==="livechat"||document.body.classList.contains("flc-only"))) setTimeout(flcRefresh,0); // إجراء إدارة
  if(m.t==="snapshot"){ if(m.BS) S.botStats=m.BS; R.D=m.D; R.H=m.H||[]; R.C=m.C; R.logs=m.logs||[]; if(m.DN) R.DN=m.DN; skew=(m.now||Date.now())-Date.now(); saveRoom() }
  else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=S.settings.bigGift; if(!applied){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.CHAT=R.CHAT||[]; { const cm=chatPush(R.CHAT,m.ev); if(cm&&cm.kind==="msg"){ S.chatShown=S.chatShown||{}; S.chatShown[cm.platform]=(S.chatShown[cm.platform]||0)+1 } }; R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180); saveRoom() } if(!m.ev.test){ S.lastEv=S.lastEv||{}; S.lastEv[m.ev.platform||"tiktok"]=Date.now() } }
  else if(m.t==="clock"){ if(!applied){ R.C=m.C; if(m.now) skew=m.now-Date.now(); for(const l of [...(m.logs||[])].reverse()) R.logs.unshift(l); R.logs.length=Math.min(R.logs.length,300); saveRoom() } }
@@ -136,6 +138,7 @@ function receive(m,applied){
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
  else if(m.t==="alert"){ S.alFeed=[...(m.items||[]),...(S.alFeed||[])].slice(0,50) }
+ else if(m.t==="modres"){ toast(m.ok?"✅ نُفِّذ على "+((FLC_PLAT[m.a.platform]||[""])[0])+": "+(MOD_ACT_LABEL[m.a.act]||m.a.act):"⚠️ "+(m.error||"تعذر التنفيذ على المنصة")+" — الإجراء المحلي داخل B6O6 مطبّق"); return }
  else if(m.t==="snd"){ if(m.items) S.sndFeed=[...m.items.map(x=>({...x,at:Date.now()})),...(S.sndFeed||[])].slice(0,30); if(S.page==="sounds") sndFeedRefresh&&sndFeedRefresh(); return }
  else return;
  if(m.t==="actlog"){ S.actLog=m.log||[]; if(S.page==="actions"&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||"")) renderPage(true) }
@@ -202,7 +205,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["livechat","الشات المباشر والإدارة","💬"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -364,6 +367,7 @@ function renderPage(soft){
  else if(p==="chatcfg"){ h=ccHTML() }
  else if(p==="perf"){ h=pmHTML() }
  else if(p==="sounds"){ h=sndHTML() }
+ else if(p==="livechat"){ h=flcHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -431,7 +435,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount();
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount(); if(p==="livechat"){ const L=document.getElementById("flc-list"); if(L&&!FLCV().pause) L.scrollTop=L.scrollHeight; if(!S.connsAt&&CFG){ S.connsAt=Date.now(); connLoad() } }
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -1495,6 +1499,7 @@ function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
  { const sd=e.target.closest&&e.target.closest("[data-snd]"); if(sd&&!sd.closest(".snd-m")&&sndClick(sd,e)) return } // مكتبة الأصوات
+ { const fb=e.target.closest&&e.target.closest("[data-flc]"); if(fb&&!fb.closest(".flc-menu")&&flcClick(fb,e)) return } // الشات المباشر
  { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd],[data-sajump],[data-sa-end],[data-sacoinsave],[data-sacoinedit],[data-sacoincancel],[data-saedit],[data-saeditclose],[data-sapick],[data-saany],[data-sagtest],[data-sagapply]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
  { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
  { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
@@ -1625,6 +1630,7 @@ function previewOverlay(only){
 function onInput(e){
  const t=e.target, d=t.dataset;
  if(d&&d.sndf&&!(t.closest&&t.closest(".snd-m"))&&sndInput(t,e)) return; // مكتبة الأصوات
+ if(d&&d.flcf&&flcInput(t,e)) return; // الشات المباشر
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
  if(d.sagiftq!==undefined){ if(e.type!=="input") return; S.saGiftQ=t.value; clearTimeout(onInput.sq); onInput.sq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-sagiftq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
  if(d.gcoin!==undefined){ if(e.type!=="change") return; saConfig({rules:{giftCoins:{[d.gcoin]:Math.max(0,+t.value||0)}}}); return }
