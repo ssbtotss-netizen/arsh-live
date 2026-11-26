@@ -41,6 +41,7 @@ const TYPES={
  nowplay:{label:"الأغنية الحالية",icon:"🎵",title:"",listens:[],board:false,np:true},
  uchat:{label:"الشات الموحد",icon:"💬",title:"",listens:[],board:false,chat:true},
  chatstats:{label:"إحصائيات البث — Live Statistics",icon:"📊",title:"",listens:[],board:false,sb:true,tick:true},
+ sndplayer:{label:"مشغل الأصوات (مكتبة الأصوات)",icon:"🔊",title:"",listens:[],board:false,snd:true},
  levent:{label:"آخر التفاعلات",icon:"✨",title:"",listens:[],board:false,le:true},
  falert:{label:"تنبيهات المتابعين",icon:"🦆",title:"",listens:[],board:false,fa:true},
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
@@ -131,6 +132,7 @@ function newWidget(type,o={}){
  if(type==="donText"){Object.assign(base,JSON.parse(JSON.stringify(DT_DEFAULTS)))}
  if(type==="actbox"){Object.assign(base,{fontScale:1,hideTests:false,w:.6,h:.4})}
  if(type==="nowplay"){Object.assign(base,{design:"glass",showBy:true,fontScale:1,accent:"",animOn:true,w:.36,h:.12})}
+ if(type==="sndplayer"){Object.assign(base,{x:.02,y:.02,w:.18,h:.05,showTitle:false})}
  if(type==="chatstats"){Object.assign(base,{w:.9,h:.06,sbOn:true,sbPos:"top",sbDesign:"glass",sbViewers:true,sbViews:true,sbMoney:true,sbCoins:true,sbLogo:true,sbName:false,sbMerge:false,sbBg:true,sbUnavail:"show",sbLabels:true,sbSupport:"both",sbNeon:true,sbFx:true,sbFs:1,sbIcoS:1,sbGap:1,sbH:1,sbW:100,sbGlow:.6,sbSpeed:1,sbBgA:-1})}
  if(type==="uchat"){Object.assign(base,{sbOn:true,sbPos:"top",sbDesign:"glass",sbViewers:true,sbViews:true,sbMoney:true,sbCoins:true,sbLogo:true,sbName:false,sbMerge:false,sbBg:true,sbUnavail:"show",sbLabels:true,sbSupport:"both",sbNeon:true,sbFx:true,sbFs:1,sbIcoS:1,sbGap:1,sbH:1,sbW:100,sbGlow:.6,sbSpeed:1,sbBgA:-1,ucFit:true,ucMsgBg:true,ucFrame:true,ucFade:true,showName:true,ucExit:"fade",ucSpeed:1,design:"glass",mode:"all",max:8,holdSec:0,dir:"bottom",enter:"right",showAv:true,showLogo:true,showTime:false,showEvents:true,dedupe:true,dedupeSec:30,banned:"",bannedAction:"mask",highlight:true,importantWords:"",importantGift:100,bgOpacity:.55,fontScale:1,font:"",rotateSec:8,animOn:true,w:.3,h:.5})}
  if(type==="falert"){Object.assign(base,faDefaultsLite())}
@@ -1398,6 +1400,7 @@ const durOpts=w=>({mode:w.duMode||"auto",lang:w.duLang==="en"?"en":"ar",daysAlwa
 
 
 
+
 const LIVE_TYPES=new Set(["like","gift","comment","superchat","cheer","raid","follow","subscribe","share","join","reset","shuffle","donation","donation_refund","donation_session","donation_clear_tests"]);
 const DON_TYPES=new Set(["donation","donation_refund","donation_session","donation_clear_tests"]);
 function newRoom(){ return {D:emptyData(),H:[],C:newClockState(),DN:emptyDonations(),seen:new Map(),live:false,logs:[]} }
@@ -1419,7 +1422,7 @@ function roomEvent(R,ev,now){
   const out=[{t:"event",ev}], logs=ev.type==="donation"?subathonOnDonation(R.C.subathon,ev,now):[]; keep(R,logs); if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomActions(R,ev,now,out); if(ev.type==="donation"){ const nm=String(ev.name||""), cur=String(ev.currency||"").toUpperCase(); ev.donorTotal=nm&&!ev.anonymous?R.DN.list.filter(d=>d.name===nm&&d.currency===cur&&!d.test).reduce((a,d)=>a+Math.max(0,d.amount-(d.refunded||0)),0):""; }
  if((ev.type==="donation"||ev.type==="donation_refund")&&statsOnEvent(R.C,ev,now)) out.push({t:"stats",ST:R.C.stats});
- roomAlerts(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
+ roomAlerts(R,ev,logs,now,out); roomSounds(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
  // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
  let gdiag=null;
  if(ev.type==="gift"){ const g=giftStreak(R.C,ev,now); gdiag=g.diag; if(!g.ev){ const it=glogPush(R.C,gdiag); return {out:[{t:"glog",it}],logs:[],gsdup:true} } ev=g.ev }
@@ -1441,7 +1444,7 @@ function roomEvent(R,ev,now){
  if(gdiag){ const mine=logs.filter(l=>l.eventId===ev.id), ms=mine.reduce((a,l)=>a+(+l.deltaMs||0),0), capped=mine.some(l=>l.requestedMs!==l.deltaMs);
   const it=glogPush(R.C,gdiag,{ms,why:ms?"":giftWhy(R.C.subathon,ev)}); if(capped) it.why="وصل السبثون للحد الأقصى — أُضيف جزء من الوقت"; out.push({t:"glog",it}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
- roomAlerts(R,ev,logs,now,out);
+ roomAlerts(R,ev,logs,now,out); roomSounds(R,ev,logs,now,out);
  botOut(R,ev,now,out);
  return {out,logs};
 }
@@ -1457,6 +1460,12 @@ function giftWhy(s,ev){ if(!s) return "السبثون غير مُعد";
  return "لا توجد قاعدة مطابقة لهذه الهدية (أو فترة انتظار القاعدة)" }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
+/* ===== مكتبة الأصوات: القرار هنا (مصدر واحد) — رابط OBS يشغّل فقط ===== */
+function roomSoundCfg(R){ const raw=R.botCfg&&R.botCfg.sounds; if(!raw) return null; if(R.SNDraw!==raw){ R.SNDraw=raw; R.SNDc=sndCfg(raw) } R.SND=R.SND||sndNewState(); return R.SNDc }
+function roomSoundGoals(R){ const L=R.botCtx&&R.botCtx.layout, v=R.D&&R.D.tot?R.D.tot.likes:0; return (L&&Array.isArray(L.widgets)?L.widgets:[]).filter(w=>w&&w.type==="goal"&&+w.target>0).map(w=>({id:"lk:"+w.id+":"+w.target,kind:"likes",target:+w.target,value:v})) }
+function roomSounds(R,ev,logs,now,out){ const c=roomSoundCfg(R); if(!c||!c.on) return; try{
+  const ac=roomAlertCfg(R), ctx={totalLikes:R.D&&R.D.tot?R.D.tot.likes:0,goals:roomSoundGoals(R),explore:!!R.explore,rates:ac&&ac.don&&ac.don.rates};
+  const items=[...(ev?sndOnEvent(c,R.SND,ev,now,ctx):[]),...sndOnLogs(c,R.SND,logs||[],now)]; if(items.length) out.push({t:"snd",items}) }catch(e){} }
 function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now,{totalLikes:R.D&&R.D.tot?R.D.tot.likes:0}):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
   // القارئ الصوتي (اختياري لكل قاعدة): يمر عبر مركز البوتات — مفتاح خدمة الصوت يبقى على الخادم
   const say=items.map(it=>{ const r=c.rules.find(x=>x.id===it.ruleId); if(!r||!r.over.tts||!r.over.ttsText) return null; const text=alFill(r.over.ttsText,it.vars).slice(0,200); return text?{id:"al_tts_"+it.id,kind:"reply",bot:"alerts",text,speech:text,show:false,say:true,user:{name:it.vars.display_name||""},at:now,test:!!it.test}:null }).filter(Boolean); if(say.length) out.push({t:"bot",items:say}) }catch(e){} }
@@ -1519,6 +1528,13 @@ function roomClockOp(R,m,now){
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
+ if(m.target==="sounds"){ // لوحة التشغيل السريع / «تشغيل الآن» / إيقاف — من لوحة التحكم فقط
+  const c=roomSoundCfg(R)||sndCfg({});
+  if(m.op==="play"){ const it=sndManual(c,m.s,now,{test:!!m.test}); return {out:it?[{t:"snd",items:[it]}]:[],logs:[]} }
+  if(m.op==="stop"||m.op==="stopall") return {out:[{t:"snd",stop:m.op==="stopall"?"all":"cur"}],logs:[]};
+  if(m.op==="test"){ const r=c.rules.find(x=>x.id===m.ruleId); if(!r||!r.sounds.length) return {out:[],logs:[]}; const s=r.sounds[Math.floor(Math.random()*r.sounds.length)];
+   return {out:[{t:"snd",items:[{id:"t"+now.toString(36),rule:r.id,ev:r.ev,s,prio:(SND_EVENTS[r.ev]||{}).prio||10,at:now,merged:0,test:true}]}],logs:[]} }
+  return {out:[],logs:[]} }
  if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
   if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
   if(m.op==="testdon"){ // تجربة دعم: تمر بنفس منطق الشرائح لكنها لا تُسجَّل في الدونيشن ولا الإحصائيات
@@ -1530,7 +1546,7 @@ function roomClockOp(R,m,now){
    return {out:items.length?[{t:"alert",items}]:[{t:"status",text:"لا يوجد مقطع مفعّل في هذا المستوى"}],logs:[]} }
   if(m.op==="fire"){ const c=roomAlertCfg(R), items=c?alertsManual(c,R.AL,m.ruleId,now):[]; return {out:items.length?[{t:"alert",items}]:[],logs:[]} }
   if(["skip","stop","replay","pause","resume"].includes(m.op)) return {out:[{t:"alertctl",op:m.op}],logs:[]}; return {out:[],logs:[]} }
- if(m.target==="subathon"){ logs=subathonOp(R.C.subathon,m,now); keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}]; roomAlerts(R,null,logs,now,out); return {out,logs} }
+ if(m.target==="subathon"){ logs=subathonOp(R.C.subathon,m,now); keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}]; roomAlerts(R,null,logs,now,out); roomSounds(R,null,logs,now,out); return {out,logs} }
  else if(m.target==="timers"){ // إضافة/حذف/ترتيب مؤقتات
   if(m.op==="create"){ if(R.C.timers.length<30) R.C.timers.push(newTimer(m.kind||"countdown",m.config||{})) }
   else if(m.op==="delete"){ if(m.id!=="stream") R.C.timers=R.C.timers.filter(t=>t.id!==m.id) }
@@ -1569,6 +1585,7 @@ function faRoomTTS(R,ev,now,out){ const c=R.botCfg&&R.botCfg.falert; if(!c||!c.t
 /* ====== جلسات البث: تصفير بيانات الجلسة فقط ====== */
 /** يصفّر بيانات البث (التكبيس دائماً + النطاقات المختارة) ويرجع رسائل التحديث لكل الطبقات — الإعدادات والتصاميم والأهداف المحددة ووقت السبثون لا تُلمس */
 function roomSessionReset(R,now,scopes){ const L=liveState(R.C), sc=scopes||L.scopes||{}, out=[];
+ if(R.SND) sndSessionReset(R.SND); // مراحل التكبيس والأهداف الصوتية تبدأ من جديد مع البث الجديد
  const list=["likes","interact",...["gifts","comments","follows"].filter(k=>sc[k])];
  for(const s of list){ const r=roomEvent(R,{type:"reset",scope:s,id:`sr:${L.sid||"m"}:${s}:${now}`,t:now},now); out.push(...r.out) }
  if(R.C.latest){ delete R.C.latest.like; if(sc.gifts) delete R.C.latest.gift; if(sc.follows) delete R.C.latest.follow; if(sc.comments) delete R.C.latest.comment } // آخر شخص كبس
@@ -4068,6 +4085,7 @@ class View{
   if(T.fc){ this.applyFc(w,W,Hh,pad,gap); return }
   if(T.du){ this.applyDur(w,W,Hh); return }
   if(T.sb){ this.applySb(w,W,Hh); return }
+  if(T.snd){ this.sndMount&&this.sndMount(); return } // مشغل الأصوات: بدون واجهة في OBS
   if(T.fa){ this.applyFa(w,W,Hh); return }
   if(T.abox){ this.applyAbox(w,W,Hh); return }
   if(T.le){ this.applyLe(w,W,Hh); return }
@@ -4133,6 +4151,7 @@ class View{
   if(t.fc) return this.refreshFc(src,silent);
   if(t.du) return this.refreshDur(src);
   if(t.sb) return this.refreshSb(src);
+  if(t.snd) return;
   if(t.le) return this.refreshLe(src,silent);
   if(t.chat) return;
   if(t.bt) return this.refreshBt(src);
@@ -8074,6 +8093,7 @@ Object.assign(View.prototype,{
 const AL_EVENTS={
  love:{label:"هدية أحبني ❤️",icon:"❤️",field:null,avail:{tiktok:true},note:"هدية Heart Me (أحبني) فقط — لا تعمل مع أي هدية أخرى أو دونيشن"},
  follow:{label:"متابعة جديدة",icon:"➕",field:null,avail:{tiktok:true}},
+ sound:{label:"صوت — مكتبة الأصوات",icon:"🔊",field:null,avail:{tiktok:true},hidden:true,note:"صوت مشارك من مكتبة الأصوات (ليس آيرتاً) — يظهر في قسم «أصوات المجتمع» بعد المراجعة البشرية"},
  like_user:{label:"تكبيس مستخدم (لايكات شخص واحد)",icon:"❤️",field:"likes",avail:{tiktok:true},note:"مجموع لايكات المستخدم نفسه في البث الحالي — منفصل عن المجموع العام"},
  like_total:{label:"مجموع لايكات البث",icon:"💗",field:"total_likes",avail:{tiktok:true},note:"مجموع كل اللايكات في البث — منفصل عن لايكات كل مستخدم"},
  gift:{label:"هدية",icon:"🎁",field:"gift_count",avail:{tiktok:true}},
@@ -8140,7 +8160,8 @@ function alVisibilityPatch(a,to,opt={}){
  if(to==="private") return {ok:true,patch:{visibility:"private",review:"none",publishedAt:null}};
  if(to!=="public") return {ok:false,error:"bad_visibility"};
  if(!(opt.rightsConfirmed||a&&a.rightsConfirmed)) return {ok:false,error:"rights_required"};
- const review=opt.autoApprove?"approved":"pending";
+ // أصوات المكتبة: مراجعة بشرية دائماً (لا اعتماد تلقائي) — لا يوجد فحص آلي للكلام المنطوق في المنصة
+ const review=opt.autoApprove&&opt.event!=="sound"&&!(a&&a.event==="sound")?"approved":"pending";
  return {ok:true,patch:{visibility:"public",rightsConfirmed:true,review,publishedAt:review==="approved"?new Date(opt.now||Date.now()):null}} }
 /** تعديل محتوى آيرت عام معتمد يعيده للمراجعة (حتى لا يُستبدل الملف بعد الاعتماد) */
 function alEditNeedsReview(a,changed){ return !!(a&&a.visibility==="public"&&a.review==="approved"&&changed&&(changed.mediaId||changed.audioId||changed.coverId||changed.name||changed.description)) }
@@ -8430,6 +8451,151 @@ function alLibFromRules(rules){ const lib=alLib({}); const R=(rules||[]).map(alR
 /** معرّفات الآيرتات المستخدمة في المكتبة (لصندوق OBS) */
 function alLibAlertIds(lib){ if(!lib) return []; const L=[lib.love,...Object.values(lib.taps.levels),...lib.don.levels,...lib.gifts.items]; return [...new Set(L.flatMap(x=>x.enabled?[...x.clips.filter(c=>c.enabled&&c.alertId).map(c=>c.alertId),...(x.sound?[x.sound]:[])]:[]))] }
 
+/* ---- engine/sounds.js ---- */
+// مكتبة الأصوات — المحرك المشترك (الخادم يقرر، رابط OBS يشغّل)
+// القرار في الخادم فقط: حدث حقيقي واحد ← قاعدة/مستوى واحد ← صوت واحد. نفس الحدث لا يشغّل الصوت مرتين (معرّف الحدث).
+// الدونيشن المالي منفصل تماماً عن هدايا TikTok (كوينز). مراحل التكبيس مرتبطة بجلسة البث الحالية فقط.
+
+const sndLc = s => String(s || "").toLowerCase();
+const sndNum = (v, d = 0) => (Number.isFinite(+v) ? +v : d);
+const sndClamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const sndStr = (v, n) => String(v == null ? "" : v).slice(0, n);
+
+/** أحداث البث التي يمكن ربط صوت بها (الترتيب = ترتيب العرض في «متى تريد تشغيل هذا الصوت؟») */
+const SND_EVENTS = {
+  follow: { label: "متابعة جديدة", icon: "➕", hint: "تشغيل عند وصول فولو", prio: 20, low: true },
+  love: { label: "هدية أحبني", icon: "❤️", hint: "تشغيل عند وصول «أحبني» (Heart Me) فقط", prio: 60 },
+  gift: { label: "هدية محددة", icon: "🎁", hint: "اختر الهدية من TikTok — أو «أي هدية أخرى»", prio: 50 },
+  donation: { label: "دونيشن", icon: "💵", hint: "حدد مبلغ الدعم (من هذا المبلغ فأكثر)", prio: 90 },
+  sub: { label: "اشتراك جديد", icon: "⭐", hint: "تشغيل عند الاشتراك / العضوية", prio: 55 },
+  share: { label: "مشاركة البث", icon: "🔗", hint: "تشغيل عند المشاركة", prio: 15, low: true },
+  join: { label: "دخول مشاهد", icon: "👋", hint: "تشغيل عند دخول مشاهد", prio: 5, low: true },
+  taps: { label: "التكبيس", icon: "👆", hint: "حدد عدد التكبيسات (مرة واحدة لكل بث)", prio: 45 },
+  goal: { label: "تحقيق هدف", icon: "🎯", hint: "تشغيل عند اكتمال هدف الإعجابات أو هدف السبثون", prio: 70 },
+  subathon: { label: "السابثون", icon: "⏱️", hint: "تشغيل عند زيادة أو نقص الوقت", prio: 30 },
+  manual: { label: "تشغيل يدوي", icon: "🎛️", hint: "يُضاف للوحة التشغيل السريع — تشغّله متى أردت", prio: 80 },
+};
+const SND_MODES = { fixed: "صوت ثابت (الأول)", random: "عشوائي", seq: "بالترتيب", norepeat: "عشوائي بدون تكرار متتالٍ" };
+const SND_DON_PRESETS = [5, 20, 50, 100, 200, 500];
+const SND_TAP_PRESETS = [1000, 2000, 5000, 10000, 50000];
+const SND_LIMITS = { rules: 200, sounds: 12, board: 48, fav: 600, user: 300 };
+
+/** مرجع صوت مع إعداداته: lib:<id> مكتبة المنصة · up:<assetId> صوت رفعه صانع المحتوى · al:<alertId> صوت مجتمع معتمد */
+function sndRef(x) {
+  x = x && typeof x === "object" ? x : { src: x };
+  const src = /^(lib:[a-z0-9-]{2,40}|up:[a-z0-9]{8,40}|al:[a-z0-9]{8,40})$/i.test(String(x.src || "")) ? String(x.src) : "";
+  const start = sndClamp(sndNum(x.start), 0, 600), end = sndClamp(sndNum(x.end), 0, 600);
+  return { src, vol: sndClamp(Math.round(sndNum(x.vol, 100)), 0, 100), start, end: end > start ? end : 0, times: sndClamp(Math.round(sndNum(x.times, 1)), 1, 20), gap: sndClamp(sndNum(x.gap), 0, 30),
+    fin: sndClamp(sndNum(x.fin), 0, 10), fout: sndClamp(sndNum(x.fout), 0, 10), rate: sndClamp(sndNum(x.rate, 1), .5, 2) };
+}
+function sndRule(r) {
+  r = r && typeof r === "object" ? r : {}; const ev = SND_EVENTS[r.ev] ? r.ev : ""; const c = r.cond && typeof r.cond === "object" ? r.cond : {};
+  const cond = {};
+  if (ev === "gift") { cond.any = !!c.any; cond.giftId = c.giftId == null || c.giftId === "" ? "" : sndStr(c.giftId, 20); cond.name = sndStr(c.name, 60).trim(); cond.image = /^https:\/\//.test(c.image || "") ? sndStr(c.image, 400) : ""; }
+  if (ev === "donation") { cond.min = Math.max(0, sndNum(c.min)); cond.cur = /^[A-Z]{3}$/.test(c.cur || "") ? c.cur : "USD"; }
+  if (ev === "taps") cond.n = Math.max(1, Math.round(sndNum(c.n, 1000)));
+  if (ev === "subathon") cond.dir = ["add", "sub", "any"].includes(c.dir) ? c.dir : "add";
+  if (ev === "goal") cond.kind = ["any", "likes", "subathon"].includes(c.kind) ? c.kind : "any";
+  const sounds = (Array.isArray(r.sounds) ? r.sounds : []).map(sndRef).filter(s => s.src).slice(0, SND_LIMITS.sounds);
+  return { id: /^[a-z0-9_-]{2,40}$/i.test(r.id || "") ? r.id : "r" + Math.random().toString(36).slice(2, 9), ev, on: r.on !== false, cond, sounds,
+    mode: SND_MODES[r.mode] ? r.mode : "random", cool: sndClamp(sndNum(r.cool, SND_EVENTS[ev]?.low ? 2 : 0), 0, 600), platform: ["", "tiktok", "youtube", "kick", "twitch"].includes(r.platform) ? r.platform : "" };
+}
+function sndBoardItem(b) {
+  b = b && typeof b === "object" ? b : {}; const s = sndRef(b.s || b);
+  return { id: /^[a-z0-9_-]{2,40}$/i.test(b.id || "") ? b.id : "b" + Math.random().toString(36).slice(2, 9), s, label: sndStr(b.label, 30).trim(), icon: sndStr(b.icon, 8),
+    color: /^#[0-9a-f]{6}$/i.test(b.color || "") ? b.color : "", key: /^[a-z0-9]$/i.test(b.key || "") ? sndLc(b.key) : "" };
+}
+function sndUserItem(u) {
+  u = u && typeof u === "object" ? u : {};
+  return { id: /^[a-z0-9]{8,40}$/i.test(u.id || "") ? u.id : "", name: sndStr(u.name, 60).trim() || "صوت خاص", cat: sndStr(u.cat, 20) || "mine", dur: sndClamp(sndNum(u.dur), 0, 900),
+    peaks: Array.isArray(u.peaks) ? u.peaks.slice(0, 48).map(v => sndClamp(Math.round(sndNum(v) * 100) / 100, 0, 1)) : [], start: sndClamp(sndNum(u.start), 0, 600), end: sndClamp(sndNum(u.end), 0, 600), vol: sndClamp(Math.round(sndNum(u.vol, 100)), 0, 100),
+    shared: ["", "pending", "approved", "rejected"].includes(u.shared) ? u.shared : "", alertId: /^[a-z0-9]{8,40}$/i.test(u.alertId || "") ? u.alertId : "" };
+}
+/** إعدادات المكتبة كاملة (تُحفظ مع إعدادات صانع المحتوى في الخادم — تبقى بعد تسجيل الخروج) */
+function sndCfg(c) {
+  c = c && typeof c === "object" ? c : {};
+  return { v: 1, on: c.on !== false, vol: sndClamp(Math.round(sndNum(c.vol, 80)), 0, 100),
+    rules: (Array.isArray(c.rules) ? c.rules : []).map(sndRule).filter(r => r.ev && r.ev !== "manual").slice(0, SND_LIMITS.rules),
+    board: (Array.isArray(c.board) ? c.board : []).map(sndBoardItem).filter(b => b.s.src).slice(0, SND_LIMITS.board),
+    fav: [...new Set((Array.isArray(c.fav) ? c.fav : []).map(x => sndStr(x, 50)).filter(x => /^(lib|up|al):/.test(x)))].slice(0, SND_LIMITS.fav),
+    user: (Array.isArray(c.user) ? c.user : []).map(sndUserItem).filter(u => u.id).slice(0, SND_LIMITS.user),
+    explore: c.explore === "all" ? "all" : "merge", maxQ: sndClamp(Math.round(sndNum(c.maxQ, 12)), 3, 50) };
+}
+function sndNewState() { return { ids: {}, nIds: 0, last: {}, seq: {}, lastPick: {}, taps: {}, goals: {}, sup: {}, tl: 0 } }
+/** بداية بث جديد: مراحل التكبيس والأهداف تبدأ من جديد (لا تعاد أصوات مراحل البث السابق) */
+function sndSessionReset(st) { st.taps = {}; st.goals = {}; st.tl = 0; st.last = {}; st.sup = {}; }
+
+function sndPick(rule, st) {
+  const L = rule.sounds; if (!L.length) return null; if (L.length === 1 || rule.mode === "fixed") return L[0];
+  if (rule.mode === "seq") { const i = (st.seq[rule.id] || 0) % L.length; st.seq[rule.id] = i + 1; return L[i]; }
+  let i = Math.floor(Math.random() * L.length);
+  if (rule.mode === "norepeat" && L.length > 1 && i === st.lastPick[rule.id]) i = (i + 1 + Math.floor(Math.random() * (L.length - 1))) % L.length;
+  st.lastPick[rule.id] = i; return L[i];
+}
+const sndIsLove = ev => ev && ev.type === "gift" && (AL_LOVE_NAMES.includes(sndLc(ev.gift).trim()) || String(ev.giftId) === "7934");
+const sndEvKind = t => ({ follow: "follow", share: "share", join: "join", subscribe: "sub", member: "sub", resub: "sub", subgift: "sub", member_gift: "sub" })[t] || "";
+
+/** الخادم: حدث ← عناصر تشغيل. ctx: {totalLikes, goals:[{id,target,value}], explore} */
+function sndOnEvent(cfg, st, ev, now, ctx = {}) {
+  if (!cfg || !cfg.on || !ev || ev.refunded) return [];
+  if (ev.id) { if (st.ids[ev.id]) return []; st.ids[ev.id] = 1; if (++st.nIds > 6000) { const ks = Object.keys(st.ids); for (const k of ks.slice(0, 2000)) delete st.ids[k]; st.nIds = ks.length - 2000; } } // نفس الحدث مرتين ← صوت واحد
+  const R = cfg.rules.filter(r => r.on && r.sounds.length && (!r.platform || !ev.platform || r.platform === ev.platform));
+  const out = [], hit = (rule, extra = {}) => { const it = sndEmit(cfg, st, rule, ev, now, ctx, extra); if (it) out.push(it); };
+  if (ev.type === "gift") {
+    if (sndIsLove(ev)) { const r = R.find(x => x.ev === "love"); if (r) hit(r); else giftRule(); } else giftRule();
+    function giftRule() { const n = sndLc(ev.gift).trim(), id = ev.giftId == null ? "" : String(ev.giftId), G = R.filter(x => x.ev === "gift");
+      const ex = G.find(x => !x.cond.any && (x.cond.giftId && x.cond.giftId === id || !x.cond.giftId && x.cond.name && sndLc(x.cond.name) === n)) || G.find(x => x.cond.any); if (ex) hit(ex, { value: +ev.value || 0 }); }
+  } else if ((ev.type === "donation" && (ev.verified || ev.test)) || ev.type === "superchat") {
+    // مستوى واحد فقط: أعلى حد يصل له المبلغ (بعملة القاعدة بعد التحويل بسعر موثوق — لا تخمين)
+    let best = null, bestMin = -1; const cur = String(ev.currency || "USD").toUpperCase();
+    for (const r of R.filter(x => x.ev === "donation")) { const amt = cur === r.cond.cur ? +ev.amount : alConvert(ev.amount, cur, r.cond.cur, ctx.rates); if (amt == null || !(amt >= r.cond.min)) continue; const mn = r.cond.min; if (mn > bestMin) { best = r; bestMin = mn; } }
+    if (best) hit(best, { amount: +ev.amount, currency: cur });
+  } else if (ev.type === "like") {
+    const n = Math.max(0, +ev.count || 0); if (!n) return out; const total = ctx.totalLikes > 0 ? +ctx.totalLikes : st.tl + n, prev = Math.max(0, total - n); st.tl = total;
+    for (const r of R.filter(x => x.ev === "taps").sort((a, b) => a.cond.n - b.cond.n)) if (prev < r.cond.n && total >= r.cond.n && !st.taps[r.id]) { st.taps[r.id] = 1; hit(r, { taps: r.cond.n }); }
+  } else { const k = sndEvKind(ev.type); if (k) { const r = R.find(x => x.ev === k); if (r) hit(r); } }
+  // الأهداف (هدف الإعجابات في طبقاتك) — مرة واحدة لكل هدف في كل بث
+  for (const g of ctx.goals || []) if (g.value >= g.target && g.target > 0 && !st.goals[g.id]) { st.goals[g.id] = 1; const r = R.find(x => x.ev === "goal" && (x.cond.kind === "any" || x.cond.kind === g.kind)); if (r) hit(r, { goal: g.id }); }
+  return out;
+}
+/** سجلات السبثون (زيادة/نقص الوقت) وأهداف السبثون */
+function sndOnLogs(cfg, st, logs, now) {
+  if (!cfg || !cfg.on || !logs || !logs.length) return []; const out = [], R = cfg.rules.filter(r => r.on && r.sounds.length);
+  for (const l of logs) {
+    const id = "log" + (l.subathonId || "") + ":" + (l.seq || now); if (st.ids[id]) continue; st.ids[id] = 1;
+    const d = +l.deltaMs || 0; if (d) { const r = R.find(x => x.ev === "subathon" && (x.cond.dir === "any" || (x.cond.dir === "add") === d > 0)); if (r) { const it = sndEmit(cfg, st, r, { id, type: "subathon", test: !!l.test }, now, {}, { deltaMs: d }); if (it) out.push(it); } }
+    if (l.kind === "goal" || l.goal || /^تحقيق الهدف/.test(String(l.reason || ""))) { const gid = "sub:" + (l.subathonId || ""); if (!st.goals[gid]) { st.goals[gid] = 1; const r = R.find(x => x.ev === "goal" && (x.cond.kind === "any" || x.cond.kind === "subathon")); if (r) { const it = sndEmit(cfg, st, r, { id: id + ":g", type: "goal" }, now, {}, {}); if (it) out.push(it); } } }
+  }
+  return out;
+}
+function sndEmit(cfg, st, rule, ev, now, ctx, extra) {
+  const meta = SND_EVENTS[rule.ev] || {}; const key = rule.id;
+  // مدة الانتظار بين أصوات نفس القاعدة (مثل الفولو) + تجميع عند الضغط العالي (وضع الإكسبلور): الأحداث كلها محتسبة، الصوت فقط يُختصر
+  const cool = Math.max(rule.cool, ctx.explore && meta.low && cfg.explore !== "all" ? 3 : 0) * 1000;
+  if (cool && now - (st.last[key] || 0) < cool) { st.sup[key] = (st.sup[key] || 0) + 1; return null; }
+  const s = sndPick(rule, st); if (!s) return null; st.last[key] = now; const merged = st.sup[key] || 0; st.sup[key] = 0;
+  const prio = meta.prio + (rule.ev === "donation" ? Math.min(9, Math.floor(Math.log10(1 + (+extra.amount || 0)) * 3)) : rule.ev === "gift" ? Math.min(9, Math.floor(Math.log10(1 + (+extra.value || 0)) * 2)) : 0);
+  return { id: String(ev.id || "e" + now) + ":" + rule.id, rule: rule.id, ev: rule.ev, s, prio, at: now, merged, test: !!ev.test, low: !!meta.low };
+}
+/** تشغيل يدوي من لوحة التشغيل السريع أو «تشغيل الآن» */
+function sndManual(cfg, ref, now, opt = {}) { const s = sndRef(ref); if (!s.src) return null; return { id: "m" + now.toString(36) + Math.random().toString(36).slice(2, 6), rule: "", ev: "manual", s, prio: 85, at: now, merged: 0, manual: true, test: !!opt.test }; }
+/** كل مراجع الأصوات المستخدمة (لروابط الملفات الموقّعة في رابط OBS + قسم «الأصوات المستخدمة») */
+function sndUsedRefs(cfg) { const set = new Set(); for (const r of cfg.rules) for (const s of r.sounds) set.add(s.src); for (const b of cfg.board) set.add(b.s.src); return [...set]; }
+
+/* ================= رابط OBS: طابور الصوت (بدون واجهة مرئية) ================= */
+/** طابور بأولويات: الدعم القوي أولاً، الأصوات الخفيفة (فولو/دخول) تُختصر عند الامتلاء — العدّ لا يتأثر (العرض الصوتي فقط) */
+function sndQueue() { return { q: [], seen: {}, nSeen: 0, played: 0, dropped: 0 } }
+function sndQueuePush(Q, it, max = 12) {
+  if (!it || !it.id || Q.seen[it.id]) return false; Q.seen[it.id] = 1; if (++Q.nSeen > 3000) { Q.seen = { [it.id]: 1 }; Q.nSeen = 1; }
+  let i = Q.q.length; while (i > 0 && Q.q[i - 1].prio < it.prio) i--; Q.q.splice(i, 0, it);
+  while (Q.q.length > max) { // يُحذف الأقل أهمية (الأقدم بين المتساوين) — لا يُحذف صوت دعم لصالح فولو
+    let k = Q.q.length - 1; for (let j = Q.q.length - 1; j >= 0; j--) if (Q.q[j].prio < Q.q[k].prio) k = j; Q.q.splice(k, 1); Q.dropped++; }
+  return true;
+}
+function sndQueueNext(Q) { const it = Q.q.shift(); if (it) Q.played++; return it || null; }
+const SND_LIB_BASE = "/sounds/lib/";
+function sndUrl(src, urls, base = SND_LIB_BASE) { src = String(src || ""); if (src.startsWith("lib:")) return base + src.slice(4) + ".mp3"; return (urls && urls[src]) || ""; }
+
 /* ---- engine/alertview.js ---- */
 // صندوق الآيرتات الشامل (Universal Alert Box): رابط OBS واحد يعرض كل آيرتات المستخدم بالترتيب وبخلفية شفافة 100%
 
@@ -8543,6 +8709,65 @@ Object.assign(View.prototype,{
  aboxFx(r,fx,dur){ const ch=AB_FX_CH[fx]; if(!ch) return; const box=document.createElement("div"); box.className="ab-fx"; let h=""; for(let i=0;i<26;i++){ const s=(Math.random()*1.4+.8)*(this.abH||300)/18; h+=`<i style="left:${Math.random()*100}%;font-size:${s}px;animation-duration:${(Math.random()*2+2).toFixed(2)}s;animation-delay:${(Math.random()*Math.min(2,dur/2000)).toFixed(2)}s">${abEsc(ch[i%ch.length])}</i>` } box.innerHTML=h; r.appendChild(box) },
 });
 const AB_FX_LIST=AL_FX;
+
+/* ---- engine/soundview.js ---- */
+// مشغل الأصوات في رابط OBS / TikTok LIVE Studio (Browser Source) — بدون واجهة مرئية
+// أصوات الأحداث: واحد تلو الآخر حسب الأولوية (لا تداخل) · التشغيل اليدوي: فوقها (حتى 3 معاً) · ملف تالف/لا يحمّل ← تخطي بعد مهلة
+
+
+const SNDV_CSS = `.sndp{position:absolute;inset:0;pointer-events:none}.sndp .sndp-card{display:none}
+body:not(.ov) .sndp .sndp-card,.sndp.sndp-show .sndp-card{display:flex;align-items:center;gap:.5em;margin:.4em;padding:.45em .8em;border-radius:12px;background:rgba(15,18,30,.75);color:#fff;font:600 14px system-ui;border:1px solid rgba(255,255,255,.15);width:max-content}
+.sndp-unlock{position:fixed;inset:auto 12px 12px auto;z-index:99;pointer-events:auto;padding:.7em 1.1em;border-radius:12px;border:0;background:#8b5cf6;color:#fff;font:700 15px system-ui;cursor:pointer;box-shadow:0 6px 24px rgba(0,0,0,.4)}`;
+function sndvCss() { if (typeof document === "undefined" || document.getElementById("sndv-css")) return; const s = document.createElement("style"); s.id = "sndv-css"; s.textContent = SNDV_CSS; document.head.appendChild(s); }
+const sndvIsOv = () => typeof window !== "undefined" && !!window.__arshOverlay; // الصوت يعمل في رابط OBS فقط — لا في معاينة لوحة التحكم
+const sndvBase = () => (typeof window !== "undefined" && window.B6O6_SND_BASE) || (typeof location !== "undefined" && location.protocol === "file:" ? "../arsh-live/public/sounds/lib/" : "/sounds/lib/");
+const sndvMaster = () => { const c = typeof window !== "undefined" && window.__arshSnd; return c && c.on === false ? 0 : Math.max(0, Math.min(100, c && c.vol != null ? +c.vol : 80)) / 100; };
+
+Object.assign(View.prototype, {
+  sndMount() { sndvCss(); if (this.sndRoot && this.sndRoot.isConnected) return; this.el.innerHTML = `<div class="sndp"><div class="sndp-card">🔊 <span>مشغل الأصوات — يعمل في رابط OBS</span></div></div>`; this.sndRoot = this.el.firstElementChild;
+    this.SQ = this.SQ || sndQueue(); this.sndManual = this.sndManual || []; this.sndStat = this.sndStat || { played: 0, failed: 0, merged: 0 }; },
+  /** رسالة من الخادم: {t:"snd", items} أو {t:"snd", stop:"cur"|"all"} */
+  sndOn(m) { if (!sndvIsOv()) return; this.sndMount();
+    if (m.stop) { this.sndStopAll(m.stop === "all"); return; }
+    const explore = !!window.__arshExplore, cfgMax = (window.__arshSnd && +window.__arshSnd.maxQ) || 12;
+    for (const it of m.items || []) {
+      if (it.manual) { this.sndPlayNow(it); continue; }
+      sndQueuePush(this.SQ, it, explore ? Math.min(6, cfgMax) : cfgMax); this.sndStat.merged += it.merged || 0; }
+    this.sndNext(); },
+  sndNext() { if (this.sndBusy) return; const it = sndQueueNext(this.SQ); if (!it) return; this.sndBusy = true;
+    this.sndPlay(it, true).then(ok => { ok ? this.sndStat.played++ : this.sndStat.failed++; this.sndBusy = false; this.sndCur = null; setTimeout(() => this.sndNext(), 60); }); },
+  sndPlayNow(it) { this.sndManual = this.sndManual.filter(a => !a.done); if (this.sndManual.length >= 3) { const old = this.sndManual.shift(); old.stop(); } this.sndPlay(it, false); },
+  /** تشغيل صوت واحد بإعداداته (البداية/النهاية/التكرار/الانتظار/التلاشي/السرعة/مستوى الصوت) — يعيد true عند النجاح */
+  sndPlay(it, main) {
+    const s = it.s || {}, url = sndUrl(s.src, window.__arshSndUrls, sndvBase()); if (!url) return Promise.resolve(false);
+    return new Promise(resolve => {
+      const a = new Audio(); a.preload = "auto"; a.src = url; a.playbackRate = s.rate || 1; let times = s.times || 1, done = false, iv = 0, endT = 0, guard = 0, useT = false;
+      const vol = () => Math.max(0, Math.min(1, ((s.vol ?? 100) / 100) * sndvMaster()));
+      const ctl = { done: false, stop: () => finish(true) }; if (main) this.sndCur = ctl; else this.sndManual.push(ctl);
+      const finish = (ok) => { if (done) return; done = ctl.done = true; clearInterval(iv); clearTimeout(endT); clearTimeout(guard); try { a.pause(); a.removeAttribute("src"); a.load(); } catch (e) {} resolve(ok !== false); };
+      const fade = (from, to, sec, then) => { clearInterval(iv); if (!(sec > 0)) { a.volume = to; then && then(); return; } const t0 = performance.now(); iv = setInterval(() => { const k = Math.min(1, (performance.now() - t0) / (sec * 1000)); a.volume = from + (to - from) * k; if (k >= 1) { clearInterval(iv); then && then(); } }, 30); };
+      const once = () => {
+        try { a.currentTime = s.start || 0; } catch (e) {}
+        a.volume = s.fin > 0 ? 0 : vol(); const p = a.play();
+        const go = () => { if (s.fin > 0) fade(0, vol(), s.fin);
+          const len = ((s.end > s.start ? s.end : (isFinite(a.duration) ? a.duration : 0)) - (s.start || 0)) / (s.rate || 1);
+          if (len > 0) { useT = true; endT = setTimeout(() => { const next = () => { times--; if (times > 0) { a.pause(); setTimeout(() => !done && once(), (s.gap || 0) * 1000); } else finish(true); };
+            if (s.fout > 0) fade(a.volume, 0, Math.min(s.fout, len), next); else next(); }, Math.max(50, len * 1000 - (s.fout > 0 ? Math.min(s.fout, len) * 1000 : 0))); }
+        };
+        if (p && p.then) p.then(go, e => { if (e && e.name === "NotAllowedError") this.sndNeedUnlock(() => once()); else finish(false); }); else go();
+      };
+      a.addEventListener("ended", () => { if (done || useT) return; times--; if (times > 0) setTimeout(() => !done && once(), (s.gap || 0) * 1000); else finish(true); });
+      a.addEventListener("error", () => finish(false)); // ملف تالف ← تخطي (لا يتعطل الطابور)
+      a.addEventListener("loadedmetadata", () => { clearTimeout(guard); const total = ((s.end > s.start ? s.end - s.start : a.duration || 10) / (s.rate || 1) + (s.gap || 0)) * (s.times || 1) + 8; guard = setTimeout(() => finish(true), total * 1000); }, { once: true });
+      guard = setTimeout(() => { if (!a.duration) finish(false); }, 8000); // لم يُحمَّل خلال 8 ث ← تخطي
+      once();
+    });
+  },
+  sndStopAll(all) { if (this.sndCur) this.sndCur.stop(); if (all) { this.SQ && (this.SQ.q.length = 0); (this.sndManual || []).forEach(c => c.stop()); this.sndManual = []; } },
+  /** المتصفح منع التشغيل التلقائي (لا يحدث في OBS عادة): زر تفعيل أولي واحد */
+  sndNeedUnlock(retry) { if (typeof document === "undefined") return; (this.sndRetry || (this.sndRetry = [])).push(retry); if (document.querySelector(".sndp-unlock")) return;
+    const b = document.createElement("button"); b.className = "sndp-unlock"; b.textContent = "🔊 اضغط لتفعيل الأصوات"; b.onclick = () => { b.remove(); const r = this.sndRetry || []; this.sndRetry = []; r.forEach(f => f()); }; document.body.appendChild(b); },
+});
 
 /* ---- engine/layoutshare.js ---- */
 // 🎬 مشاركة واستيراد تصاميم البث — محرك نقي: تصدير آمن (بدون بيانات صاحب التصميم)، تحقق، ترحيل إصدارات، استيراد بمعرفات جديدة، خطوات الإعداد، قوالب رسمية
@@ -9359,7 +9584,8 @@ function bootOverlay(q){
  const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
  const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
- const views=new Map(); let cv;
+ const views=new Map(); let cv; window.__arshOverlay=true; // مشغل الأصوات يعمل هنا فقط (لا في معاينة اللوحة)
+ try{ const b=(L&&L.bots)||{}; if(b.sounds) window.__arshSnd=b.sounds }catch(e){}
  function layout(){
   const base=L.canvas==="acc"?{w:900,h:130}:canvasOf(L); let list=L.widgets;
   if(only){ const w=L.widgets.find(x=>x.id===only); if(!w){stage.innerHTML="";return} cv={w:Math.round(w.w*base.w),h:Math.round(w.h*base.h)}; list=[{...w,x:0,y:0,w:1,h:1}] } else cv=base;
@@ -9375,7 +9601,8 @@ function bootOverlay(q){
   else if(m.t==="perf"){ if(typeof m.explore==="boolean"){ window.__arshExplore=m.explore; document.body.classList.toggle("ov-explore",m.explore) } return }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
-  else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
+  else if(m.t==="snd"){ for(const v of views.values()) if(v.w.type==="sndplayer"&&v.sndOn) v.sndOn(m); return } // مكتبة الأصوات
+  else if(m.t==="layout"){ if(m.layout&&m.layout.bots&&m.layout.bots.sounds) window.__arshSnd=m.layout.bots.sounds; if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
   if(m.t==="bot"&&q.get("voice")==="1") for(const it of m.items||[]) if(it.say) vpPush(it);
   deliver(views.values(),m,src());
  }
@@ -9460,6 +9687,7 @@ function receive(m,applied){
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
  else if(m.t==="alert"){ S.alFeed=[...(m.items||[]),...(S.alFeed||[])].slice(0,50) }
+ else if(m.t==="snd"){ if(m.items) S.sndFeed=[...m.items.map(x=>({...x,at:Date.now()})),...(S.sndFeed||[])].slice(0,30); if(S.page==="sounds") sndFeedRefresh&&sndFeedRefresh(); return }
  else return;
  if(m.t==="actlog"){ S.actLog=m.log||[]; if(S.page==="actions"&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||"")) renderPage(true) }
  if(m.t==="act"){ for(const it of m.items||[]) if(it.kind==="goal"&&it.widgetId){ const gw=L().widgets.find(w=>w.id===it.widgetId); if(gw){ gw.base=(+gw.base||0)+(+it.n||1); save(); pushLayout() } } }
@@ -9521,11 +9749,11 @@ function testBar(){return `<div class="testbar" id="testbar"><b style="color:var
 
 /* ---- الروابط ---- */
 function baseURL(){return location.href.split("#")[0]}
-function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); const p=new URLSearchParams(); p.set("d",b64e({...l,socials:S.socials,donCfg:S.donCfg})); if(acc) p.set("acc",acc); if(only)p.set("only",only); p.set("big",S.settings.bigGift); if(S.settings.perfMode&&S.settings.perfMode!=="hq") p.set("pm",S.settings.perfMode); if(S.settings.wsUrl){p.set("ws",S.settings.wsUrl);p.set("room",S.settings.room)} return baseURL()+"#/overlay?"+p.toString() }
+function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); const p=new URLSearchParams(); p.set("d",b64e({...l,socials:S.socials,donCfg:S.donCfg,...(S.bots&&S.bots.sounds?{bots:{sounds:{on:S.bots.sounds.on,vol:S.bots.sounds.vol,maxQ:S.bots.sounds.maxQ}}}:{})})); if(acc) p.set("acc",acc); if(only)p.set("only",only); p.set("big",S.settings.bigGift); if(S.settings.perfMode&&S.settings.perfMode!=="hq") p.set("pm",S.settings.perfMode); if(S.settings.wsUrl){p.set("ws",S.settings.wsUrl);p.set("room",S.settings.room)} return baseURL()+"#/overlay?"+p.toString() }
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -9686,6 +9914,7 @@ function renderPage(soft){
  else if(p==="duration"){ h=duHTML() }
  else if(p==="chatcfg"){ h=ccHTML() }
  else if(p==="perf"){ h=pmHTML() }
+ else if(p==="sounds"){ h=sndHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -9753,7 +9982,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount(); if(p==="chatcfg") ccMount();
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount();
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -10816,6 +11045,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const sd=e.target.closest&&e.target.closest("[data-snd]"); if(sd&&!sd.closest(".snd-m")&&sndClick(sd,e)) return } // مكتبة الأصوات
  { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd],[data-sajump],[data-sa-end],[data-sacoinsave],[data-sacoinedit],[data-sacoincancel],[data-saedit],[data-saeditclose],[data-sapick],[data-saany],[data-sagtest],[data-sagapply]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
  { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
  { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
@@ -10945,6 +11175,7 @@ function previewOverlay(only){
 }
 function onInput(e){
  const t=e.target, d=t.dataset;
+ if(d&&d.sndf&&!(t.closest&&t.closest(".snd-m"))&&sndInput(t,e)) return; // مكتبة الأصوات
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
  if(d.sagiftq!==undefined){ if(e.type!=="input") return; S.saGiftQ=t.value; clearTimeout(onInput.sq); onInput.sq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-sagiftq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
  if(d.gcoin!==undefined){ if(e.type!=="change") return; saConfig({rules:{giftCoins:{[d.gcoin]:Math.max(0,+t.value||0)}}}); return }
@@ -12657,7 +12888,7 @@ function alHTML(){ alHoverStop(); const A=ALS(), adm=!!(CFG&&CFG.profile&&CFG.pr
 /* ---------------- صندوق الآيرتات والقواعد ---------------- */
 function alRulesHTML(){ const C=alCfgS(), w=alBoxW(); alLoadUsable(); const us=alUsable(), off=alOfficial();
  const aopts=v=>`<option value="">— اختر آيرت —</option><optgroup label="آيرتاتي والمستخدمة">${us.map(a=>`<option value="${esc(a.id)}" ${v===a.id?"selected":""}>${esc(a.name)}${a.visibility==="private"?" 🔒":""}</option>`).join("")}</optgroup><optgroup label="القوالب الرسمية">${off.map(a=>`<option value="${esc(a.id)}" ${v===a.id?"selected":""}>${esc(a.name)}</option>`).join("")}</optgroup>`;
- const evo=v=>Object.entries(AL_EVENTS).map(([k,e])=>`<option value="${k}" ${v===k?"selected":""} ${e.avail.tiktok===false?"disabled":""}>${e.icon} ${esc(e.label)}${e.avail.tiktok===false?" (غير متوفر)":""}</option>`).join("");
+ const evo=v=>Object.entries(AL_EVENTS).filter(([k,e])=>!e.hidden||k===v).map(([k,e])=>`<option value="${k}" ${v===k?"selected":""} ${e.avail.tiktok===false?"disabled":""}>${e.icon} ${esc(e.label)}${e.avail.tiktok===false?" (غير متوفر)":""}</option>`).join("");
  const f=(r,k,l,inner)=>`<div class="fld"><label>${l}</label>${inner}</div>`;
  const rule=(r0,i)=>{ const r=alRule(r0), e=AL_EVENTS[r.event]||{}, c=r.cond, fld=e.field, miss=alMissing((r.over.title||"")+" "+(r.over.sub||"")+" "+(r.over.ttsText||""),r.event);
   const inp=(k,v,ph,type)=>`<input class="inp" ${type?`type="${type}"`:""} data-alr="${i}" data-k="${k}" value="${esc(v??"")}" placeholder="${esc(ph||"")}">`;
@@ -12961,5 +13192,284 @@ function lbPvAll(fn){ for(const v of liveViews) if(v.w&&v.w.type==="lb"&&String(
  window.__arsh={faW,S,R:()=>R,send,L,SIM,clockOp,addWidget,save,pushLayout,overlayURL,receive,psCur,psBlob,psDraw};
  window.S=S;
 })();
+
+/* ================= 🔊 مكتبة الأصوات — واجهة لوحة التحكم =================
+   البساطة: اختيار الصوت ← الاستماع ← «استخدام الصوت» ← اختيار الحدث ← «حفظ وتفعيل».
+   القرار في الخادم (sounds.js)، والتشغيل في رابط OBS (مشغل الأصوات). المعاينة هنا خاصة بك ولا تصل للبث. */
+const SND_TABS=[["all","🎧 الكل"],["top","🔥 الأكثر استخداماً"],["new","🆕 الجديدة"],["meme_sa","🇸🇦 الميمز السعودية"],["meme_ar","🌍 الميمز العربية"],["cat:alerts","🔔 أصوات التنبيهات"],["cat:comedy","😂 كوميدي"],["cat:hype","🔥 حماس وفخامة"],["cat:games","🎮 ألعاب"],["cat:support","💰 دعم ودونيشن"],["cat:arabic","🎶 لمسة عربية"],["fav","⭐ المفضلة"],["used","📌 الأصوات المستخدمة"],["mine","🎵 أصواتي الخاصة"],["community","🌐 أصوات المجتمع"],["board","🎛️ لوحة التشغيل السريع"],["settings","⚙️ الإعدادات ورابط OBS"]];
+const SND_UCATS={mine:"🎵 خاص",meme_sa:"🇸🇦 ميمز سعودية",meme_ar:"🌍 ميمز عربية",comedy:"😂 كوميدي",alerts:"🔔 تنبيهات",hype:"🔥 حماس",games:"🎮 ألعاب",support:"💰 دعم"};
+const SND_SHARE_STYLE={meme_sa:"saudi",meme_ar:"funny",comedy:"funny",alerts:"minimal",hype:"cinematic",games:"gaming",support:"money",mine:"minimal"};
+const SND_ICONS=["🔊","😂","🔥","👏","💰","🎉","👑","🎮","⚡","💥","😱","🤣","❤️","🏆","🥁","📢","🎺","🦆"];
+const SND_COLORS=["#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444","#14b8a6","#a3e635","#f97316","#64748b"];
+let SNDX=null, SNDXp=null;
+function sndBaseUrl(){ return location.protocol==="file:"?"../arsh-live/public/sounds/lib/":"/sounds/lib/" }
+function sndLoadIndex(){ if(SNDX) return Promise.resolve(SNDX); if(SNDXp) return SNDXp;
+ SNDXp=(window.B6O6_SND_INDEX?Promise.resolve(window.B6O6_SND_INDEX):fetch(sndBaseUrl()+"index.json",{cache:"force-cache"}).then(r=>r.json())).then(d=>{ const items=(d.items||[]).map((x,i)=>({...x,src:"lib:"+x.id,ord:i})); SNDX={cats:d.cats||{},items,by:Object.fromEntries(items.map(x=>[x.src,x]))}; if(S.page==="sounds") renderPage(true); return SNDX }).catch(()=>{ SNDXp=null; SNDX={cats:{},items:[],by:{},err:true}; return SNDX }); return SNDXp }
+function SC(){ S.bots=S.bots||{}; if(!S.bots.sounds||S.bots.sounds.v!==1) S.bots.sounds=sndCfg(S.bots.sounds||{}); return S.bots.sounds }
+function sndSave(msg){ S.bots.sounds=sndCfg(S.bots.sounds); save(); pushLayout(); syncBots(); if(msg) toast(msg) }
+function SU(){ S.snd=S.snd||{tab:"all",q:"",cat:"",n:60}; return S.snd }
+function sndInfo(src){ if(!src) return null; if(SNDX&&SNDX.by[src]) return SNDX.by[src]; const c=SC();
+ if(src.startsWith("up:")){ const u=c.user.find(x=>"up:"+x.id===src); return u?{src,name:u.name,cat:u.cat,dur:u.dur,peaks:u.peaks,mine:true,url:"/api/alerts/media/"+u.id,start:u.start,end:u.end,defVol:u.vol}:{src,name:"صوت خاص (محذوف؟)",cat:"mine",dur:0,peaks:[],missing:true} }
+ if(src.startsWith("al:")){ const a=(S.sndCom||[]).find(x=>"al:"+x.id===src)||(S.sndComSeen||{})[src]; return a?{src,name:a.name,cat:"community",dur:a.durationSec||0,peaks:[],url:a.audioUrl||a.mediaUrl,community:true}:{src,name:"صوت من المجتمع",cat:"community",dur:0,peaks:[]} }
+ return null }
+function sndPrevUrl(src){ const i=sndInfo(src); if(!i) return ""; if(i.url) return i.url; return src.startsWith("lib:")?sndBaseUrl()+src.slice(4)+".mp3":"" }
+const sndFmtDur=s=>!(s>0)?"—":s<10?s.toFixed(1)+" ث":Math.round(s)+" ث";
+/** أين يُستخدم الصوت (قواعد الأحداث + لوحة التشغيل) */
+function sndUses(src){ const c=SC(), out=[]; for(const r of c.rules) if(r.sounds.some(s=>s.src===src)) out.push(sndRuleLabel(r)); if(c.board.some(b=>b.s.src===src)) out.push("🎛️ لوحة التشغيل"); return out }
+function sndRuleLabel(r){ const e=SND_EVENTS[r.ev]||{}, c=r.cond||{}; let x=e.icon+" "+e.label;
+ if(r.ev==="gift") x=c.any?"🎁 أي هدية أخرى":"🎁 "+(c.name||("هدية #"+c.giftId)); if(r.ev==="donation") x="💵 دونيشن "+(c.cur==="USD"?"$":c.cur+" ")+fmt(c.min)+"+"; if(r.ev==="taps") x="👆 "+fmt(c.n)+" تكبيسة";
+ if(r.ev==="subathon") x="⏱️ السابثون — "+({add:"زيادة الوقت",sub:"نقص الوقت",any:"أي تغيير"}[c.dir]); if(r.ev==="goal") x="🎯 "+({any:"تحقيق أي هدف",likes:"هدف الإعجابات",subathon:"هدف السبثون"}[c.kind]); return x }
+function sndWave(peaks,cat,dur){ const p=(peaks&&peaks.length?peaks:new Array(32).fill(.15)); const style=({comedy:"dots",games:"steps",arabic:"mirror",hype:"mirror",support:"bars",alerts:"bars"})[cat]||"bars";
+ return `<div class="snd-wave w-${style}" dir="ltr" style="--d:${Math.max(.3,dur||1)}s">${p.map(v=>`<i style="--h:${Math.max(.06,v)}"></i>`).join("")}<b class="snd-ph"></b></div>` }
+function sndCard(i){ const c=SC(), fav=c.fav.includes(i.src), uses=sndUses(i.src), playing=S.sndPlaying===i.src;
+ return `<div class="snd-card k-${esc(i.cat||"mine")} ${playing?"playing":""} ${i.missing?"miss":""}" data-sid="${esc(i.src)}">
+  <div class="snd-top"><button class="snd-play" data-snd="prev" data-s="${esc(i.src)}" title="معاينة (لك فقط — لا تصل للبث)">${playing?"⏹":"▶"}</button>
+   <div class="snd-meta"><b title="${esc(i.name)}">${esc(i.name)}</b><span>${esc((SNDX&&SNDX.cats[i.cat])||SND_UCATS[i.cat]||(i.community?"🌐 المجتمع":""))} · ${sndFmtDur(i.dur)}</span></div>
+   <button class="snd-fav ${fav?"on":""}" data-snd="fav" data-s="${esc(i.src)}" title="${fav?"إزالة من المفضلة":"إضافة للمفضلة"}">${fav?"★":"☆"}</button></div>
+  ${sndWave(i.peaks,i.cat,i.dur)}
+  <div class="snd-act"><button class="btn sm pri" data-snd="use" data-s="${esc(i.src)}">استخدام الصوت</button><button class="btn sm" data-snd="now" data-s="${esc(i.src)}" title="يشتغل في البث الآن عبر رابط OBS">📡 تشغيل الآن</button>
+   ${i.community?`<button class="btn sm ghost" data-snd="report" data-s="${esc(i.src)}" title="إبلاغ عن صوت مخالف">🚩</button>`:""}</div>
+  ${uses.length?`<div class="snd-link on">🔗 مرتبط: ${esc(uses.slice(0,2).join(" · "))}${uses.length>2?` +${uses.length-2}`:""}</div>`:`<div class="snd-link">غير مرتبط بحدث</div>`}
+ </div>` }
+function sndList(){ const U=SU(), c=SC(), all=SNDX?SNDX.items:[], q=lc(U.q).trim();
+ let L=[]; const t=U.tab;
+ if(t==="all") L=all; else if(t==="new") L=all.filter(x=>x.ord>=all.length-125).reverse(); else if(t.startsWith("cat:")) L=all.filter(x=>x.cat===t.slice(4));
+ else if(t==="top"){ const n=sndUseCount(); L=[...all,...c.user.map(u=>sndInfo("up:"+u.id))].map(x=>({x,n:n[x.src]||0})).filter(o=>o.n>0).sort((a,b)=>b.n-a.n).map(o=>o.x); if(L.length<24) L=[...L,...all.filter(x=>x.ev&&!L.includes(x))].slice(0,60) }
+ else if(t==="fav") L=c.fav.map(sndInfo).filter(Boolean); else if(t==="mine") L=c.user.map(u=>sndInfo("up:"+u.id)); else if(t==="meme_sa"||t==="meme_ar") L=[...c.user.filter(u=>u.cat===t).map(u=>sndInfo("up:"+u.id)),...(S.sndCom||[]).filter(a=>(a.tags||[]).includes("snd:"+t)).map(a=>sndInfo("al:"+a.id))];
+ else if(t==="community") L=(S.sndCom||[]).map(a=>sndInfo("al:"+a.id));
+ if(q) L=L.filter(x=>lc(x.name).includes(q)||lc(x.tags||"").includes(q)||lc((SNDX&&SNDX.cats[x.cat])||"").includes(q));
+ return L.filter(Boolean) }
+function sndUseCount(){ const n={}; try{ Object.assign(n,JSON.parse(localStorage.getItem("b6o6.sndUse")||"{}")) }catch(e){} for(const r of SC().rules) for(const s of r.sounds) n[s.src]=(n[s.src]||0)+3; return n }
+function sndBump(src){ try{ const n=JSON.parse(localStorage.getItem("b6o6.sndUse")||"{}"); n[src]=(n[src]||0)+1; const ks=Object.keys(n); if(ks.length>400) delete n[ks[0]]; localStorage.setItem("b6o6.sndUse",JSON.stringify(n)) }catch(e){} }
+function sndHasPlayer(){ return (S.layouts||[]).some(l=>(l.widgets||[]).some(w=>w.type==="sndplayer"))||(L().widgets||[]).some(w=>w.type==="sndplayer") }
+
+function sndHTML(){ const U=SU(), c=SC(); sndLoadIndex(); if((U.tab==="community"||U.tab.startsWith("meme"))&&!S.sndComLoaded) sndLoadCommunity();
+ const tabs=`<div class="snd-tabs">${SND_TABS.map(([k,l])=>`<button class="snd-tab ${U.tab===k?"on":""}" data-snd="tab" data-k="${k}">${l}${k==="fav"&&c.fav.length?` <i>${c.fav.length}</i>`:k==="used"&&c.rules.length?` <i>${c.rules.length}</i>`:k==="mine"&&c.user.length?` <i>${c.user.length}</i>`:""}</button>`).join("")}</div>`;
+ const head=`<div class="snd-head"><div><h2>🔊 مكتبة الأصوات</h2><p class="muted">اختر الصوت ← استمع ← «استخدام الصوت» ← اختر الحدث ← «حفظ وتفعيل». ${SNDX&&!SNDX.err?`<b>${SNDX.items.length}</b> صوت أصلي من B6O6 (مولّدة بالكامل لدينا — بدون مقاطع منسوخة)`:""}</p></div>
+  <div class="snd-master"><label class="cc-sw"><input type="checkbox" data-sndf="on" ${c.on?"checked":""}><i></i></label><b>${c.on?"الأصوات مفعّلة":"الأصوات موقوفة"}</b>
+   <span class="muted">🔉</span><input type="range" min="0" max="100" value="${c.vol}" data-sndf="vol" title="مستوى صوت المكتبة كلها في البث (لا يؤثر على المايك أو اللعبة)"><b>${c.vol}%</b>
+   <button class="btn sm" data-snd="stopall" title="إيقاف كل الأصوات في البث">⏹ إيقاف الكل</button></div></div>
+  ${sndHasPlayer()?"":`<div class="snd-warn">⚠️ لم تُضف «مشغل الأصوات» لطبقاتك بعد — الأصوات لا تصل للبث بدونه. <button class="btn sm pri" data-snd="addplayer">➕ أضفه الآن</button> <button class="btn sm" data-snd="tab" data-k="settings">كيف أربطه بـ OBS؟</button></div>`}`;
+ let body="";
+ if(U.tab==="used") body=sndUsedHTML(); else if(U.tab==="board") body=sndBoardHTML(); else if(U.tab==="settings") body=sndSettingsHTML();
+ else { const L0=sndList(), Lv=L0.slice(0,U.n);
+  const search=`<div class="snd-search"><input type="search" placeholder="🔎 ابحث عن صوت… (فولو، فوز، عود، كاش)" value="${esc(U.q)}" data-sndf="q"><span class="muted">${L0.length} صوت</span>${U.tab==="mine"||U.tab.startsWith("meme")?`<button class="btn pri" data-snd="upload">⬆️ رفع صوت</button>`:""}</div>`;
+  const empty=U.tab.startsWith("meme")?`<div class="snd-empty"><b>${U.tab==="meme_sa"?"🇸🇦 الميمز السعودية":"🌍 الميمز العربية"}</b><p>لا توجد حالياً مقاطع ميمز مرخّصة لإعادة التوزيع داخل المنصة، لذلك لم نضع أصواتاً مولّدة ونسمّيها «ميمز».</p><p>ارفع مقاطع الميمز التي تملك حق استخدامها (تبقى خاصة لبثك)، ويمكنك مشاركتها مع الجميع بعد المراجعة البشرية. أصوات المجتمع المعتمدة في هذا القسم تظهر هنا.</p><button class="btn pri" data-snd="upload" data-cat="${U.tab}">⬆️ رفع ميم</button></div>`
+   :U.tab==="mine"?`<div class="snd-empty"><b>🎵 أصواتي الخاصة</b><p>ارفع ملفاتك (MP3 · WAV · OGG · M4A) — تبقى خاصة بك وتعمل في بثك فوراً.</p><button class="btn pri" data-snd="upload">⬆️ رفع صوت</button></div>`
+   :U.tab==="fav"?`<div class="snd-empty"><b>⭐ المفضلة فارغة</b><p>اضغط ☆ على أي صوت لإضافته هنا.</p></div>`:U.tab==="community"?`<div class="snd-empty">${S.sndComLoaded?"لا توجد أصوات مجتمع معتمدة بعد.":"⏳ جاري التحميل…"}</div>`
+   :!SNDX?`<div class="snd-empty">⏳ جاري تحميل المكتبة…</div>`:SNDX.err?`<div class="snd-empty">تعذر تحميل المكتبة — تحقق من الاتصال وأعد المحاولة.</div>`:`<div class="snd-empty">لا نتائج.</div>`;
+  body=search+(Lv.length?`<div class="snd-grid">${Lv.map(sndCard).join("")}</div>${L0.length>Lv.length?`<div class="row" style="justify-content:center;margin:12px"><button class="btn" data-snd="more">عرض المزيد (${L0.length-Lv.length})</button></div>`:""}`:empty) }
+ return `<div class="card snd-page">${head}${tabs}<div id="snd-body">${body}</div></div>` }
+
+/* ---------- 📌 الأصوات المستخدمة: كل الأحداث المرتبطة وتعديلها ---------- */
+function sndUsedHTML(){ const c=SC();
+ const quick=`<div class="snd-quick"><b>⚡ إعداد سريع بضغطة</b><span class="muted">ينشئ الربط بأصوات مقترحة من المكتبة — غيّرها متى شئت</span>
+  <button class="btn sm" data-snd="preset" data-k="don">💵 مستويات الدونيشن (5$ ← 500$)</button><button class="btn sm" data-snd="preset" data-k="taps">👆 مراحل التكبيس (1K ← 50K)</button><button class="btn sm" data-snd="preset" data-k="gifts">🎁 هدايا TikTok (وردة/أحبني/أسد/يونيفرس)</button><button class="btn sm" data-snd="preset" data-k="basic">🔔 فولو + مشاركة + اشتراك</button></div>`;
+ if(!c.rules.length) return quick+`<div class="snd-empty"><b>لا توجد أصوات مرتبطة بأحداث البث بعد</b><p>اختر أي صوت من المكتبة واضغط «استخدام الصوت»، أو استخدم الإعداد السريع.</p></div>`;
+ const order=Object.keys(SND_EVENTS); const rules=[...c.rules].sort((a,b)=>order.indexOf(a.ev)-order.indexOf(b.ev)||((a.cond.min||a.cond.n||0)-(b.cond.min||b.cond.n||0)));
+ return quick+`<div class="snd-rules">${rules.map(r=>`<div class="snd-rule ${r.on?"":"off"}" data-rid="${r.id}">
+  <div class="snd-rh"><label class="cc-sw"><input type="checkbox" data-sndf="ron" data-rid="${r.id}" ${r.on?"checked":""}><i></i></label><b>${esc(sndRuleLabel(r))}</b>
+   ${r.ev==="donation"?`<span class="muted">من</span><input type="number" min="0" step="1" value="${r.cond.min}" data-sndf="rmin" data-rid="${r.id}" class="inp snd-num"><select class="inp" data-sndf="rcur" data-rid="${r.id}">${["USD","SAR","AED","KWD","EUR","GBP"].map(x=>`<option ${x===r.cond.cur?"selected":""}>${x}</option>`).join("")}</select>`:""}
+   ${r.ev==="taps"?`<input type="number" min="1" step="100" value="${r.cond.n}" data-sndf="rn" data-rid="${r.id}" class="inp snd-num"><span class="muted">تكبيسة</span>`:""}
+   <select class="inp" data-sndf="rmode" data-rid="${r.id}" title="طريقة الاختيار عند وجود أكثر من صوت">${Object.entries(SND_MODES).map(([k,l])=>`<option value="${k}" ${r.mode===k?"selected":""}>${l}</option>`).join("")}</select>
+   <span class="muted" title="أقل مدة بين صوتين لهذا الحدث (مفيد للفولو في الإكسبلور)">⏳</span><input type="number" min="0" max="600" value="${r.cool}" data-sndf="rcool" data-rid="${r.id}" class="inp snd-num" title="ثوانٍ"><span class="muted">ث</span>
+   <span class="sp"></span><button class="btn sm" data-snd="rtest" data-rid="${r.id}" title="يشغّل في البث (تجربة)">📡 تجربة</button><button class="btn sm" data-snd="radd" data-rid="${r.id}">➕ صوت آخر</button><button class="btn sm ghost" data-snd="rdel" data-rid="${r.id}" title="إزالة الربط">🗑️</button></div>
+  <div class="snd-rs">${r.sounds.map((s,i)=>sndRefRow(r,s,i)).join("")}</div></div>`).join("")}</div>` }
+function sndRefRow(r,s,i){ const inf=sndInfo(s.src)||{name:s.src}, open=S.sndOpen===r.id+":"+i, k=`data-rid="${r.id}" data-i="${i}"`;
+ return `<div class="snd-ref ${open?"open":""}"><div class="snd-refh"><button class="snd-play sm" data-snd="prev" data-s="${esc(s.src)}">${S.sndPlaying===s.src?"⏹":"▶"}</button><b>${esc(inf.name)}</b><span class="muted">${sndFmtDur(inf.dur)} · ${s.vol}%</span>
+  <span class="sp"></span><button class="btn sm ghost" data-snd="ropen" ${k}>⚙️ إعدادات</button><button class="btn sm ghost" data-snd="rrep" ${k} title="استبدال الصوت">🔁</button><button class="btn sm ghost" data-snd="rrm" ${k} title="إزالة من الحدث">✕</button></div>
+  ${open?`<div class="snd-set">
+   <label>مستوى الصوت <b>${s.vol}%</b><input type="range" min="0" max="100" value="${s.vol}" data-sndf="s.vol" ${k}></label>
+   <label>بداية المقطع (ث)<input type="number" min="0" step=".1" value="${s.start}" data-sndf="s.start" ${k}></label><label>نهاية المقطع (ث، 0 = حتى النهاية)<input type="number" min="0" step=".1" value="${s.end}" data-sndf="s.end" ${k}></label>
+   <label>عدد مرات التشغيل<input type="number" min="1" max="20" value="${s.times}" data-sndf="s.times" ${k}></label><label>الانتظار بين المرات (ث)<input type="number" min="0" max="30" step=".5" value="${s.gap}" data-sndf="s.gap" ${k}></label>
+   <label>Fade In (ث)<input type="number" min="0" max="10" step=".1" value="${s.fin}" data-sndf="s.fin" ${k}></label><label>Fade Out (ث)<input type="number" min="0" max="10" step=".1" value="${s.fout}" data-sndf="s.fout" ${k}></label>
+   <label>السرعة <b>${s.rate}×</b><input type="range" min=".5" max="2" step=".05" value="${s.rate}" data-sndf="s.rate" ${k}></label>
+   <div class="row"><button class="btn sm" data-snd="rnow" ${k}>📡 تجربة بهذه الإعدادات</button></div></div>`:""}</div>` }
+
+/* ---------- 🎛️ لوحة التشغيل السريع ---------- */
+function sndBoardHTML(){ const c=SC(), solo=document.body.classList.contains("sb-only");
+ return `<div class="snd-board-bar"><b>🎛️ لوحة التشغيل السريع</b><span class="muted">اضغط المربع ← يشتغل الصوت في البث مباشرة · اسحب لإعادة الترتيب</span><span class="sp"></span>
+  <button class="btn sm" data-snd="stop">⏹ إيقاف الحالي</button><button class="btn sm" data-snd="stopall">⏹⏹ إيقاف الكل</button>${solo?"":`<button class="btn sm" data-snd="popout" title="نافذة مستقلة / Custom Browser Dock في OBS">🪟 نافذة مستقلة</button>`}</div>
+ ${c.board.length?`<div class="snd-board">${c.board.map((b,i)=>{ const inf=sndInfo(b.s.src)||{name:"؟"}; return `<div class="snd-pad" draggable="true" data-snd="pad" data-bid="${b.id}" data-i="${i}" style="--pc:${b.color||SND_COLORS[i%SND_COLORS.length]}">
+   <span class="snd-pi">${esc(b.icon||"🔊")}</span><b>${esc(b.label||inf.name)}</b>${b.key?`<kbd>${esc(b.key.toUpperCase())}</kbd>`:""}<button class="snd-pe" data-snd="padedit" data-bid="${b.id}" title="تعديل">✎</button></div>` }).join("")}</div>`
+  :`<div class="snd-empty"><b>اللوحة فارغة</b><p>اختر صوتاً من المكتبة ← «استخدام الصوت» ← «تشغيل يدوي» ليظهر هنا كزر.</p></div>`}
+ ${S.sndPadEdit?sndPadEditHTML():""}
+ <p class="muted" style="margin-top:10px">⌨️ الاختصارات تعمل عندما تكون هذه الصفحة أو النافذة المستقلة مفتوحة. Stream Deck: لا يوجد تكامل مباشر حالياً — يمكنك ربط زر Stream Deck بنفس اختصار الكيبورد (Hotkey) والنافذة مفتوحة.</p>` }
+function sndPadEditHTML(){ const c=SC(), b=c.board.find(x=>x.id===S.sndPadEdit); if(!b) return ""; const k=`data-bid="${b.id}"`;
+ return `<div class="snd-padedit"><b>تعديل الزر</b><label>الاسم<input value="${esc(b.label)}" maxlength="30" data-sndf="b.label" ${k}></label>
+  <label>الأيقونة<div class="snd-icons">${SND_ICONS.map(ic=>`<button class="${b.icon===ic?"on":""}" data-snd="padicon" data-ic="${ic}" ${k}>${ic}</button>`).join("")}</div></label>
+  <label>اللون<div class="snd-icons">${SND_COLORS.map(co=>`<button class="sw ${b.color===co?"on":""}" style="background:${co}" data-snd="padcolor" data-co="${co}" ${k}></button>`).join("")}</div></label>
+  <label>اختصار الكيبورد (حرف أو رقم)<input value="${esc(b.key)}" maxlength="1" data-sndf="b.key" ${k} style="width:60px;text-align:center"></label>
+  <label>مستوى الصوت <b>${b.s.vol}%</b><input type="range" min="0" max="100" value="${b.s.vol}" data-sndf="b.vol" ${k}></label>
+  <div class="row"><button class="btn sm" data-snd="padrep" ${k}>🔁 استبدال الصوت</button><button class="btn sm ghost" data-snd="paddel" ${k}>🗑️ حذف الزر</button><span class="sp"></span><button class="btn sm pri" data-snd="padclose">تم</button></div></div>` }
+
+/* ---------- ⚙️ الإعدادات ورابط OBS ---------- */
+function sndSettingsHTML(){ const c=SC(), pl=(L().widgets||[]).find(w=>w.type==="sndplayer");
+ const link=pl?overlayURL(L(),pl.id):""; const feed=(S.sndFeed||[]).slice(0,8);
+ return `<div class="snd-cols"><div class="snd-box"><h3>📡 وصول الصوت للبث (OBS و TikTok LIVE Studio)</h3>
+  ${pl?`<p>✅ «مشغل الأصوات» موجود في طبقة «${esc(L().name||"")}». إذا كنت تضيف رابط الطبقة كاملة في OBS فالأصوات تعمل فيه تلقائياً.</p>
+   <p>أو أضف <b>رابط الأصوات المستقل</b> كمصدر منفصل (للتحكم بمستواه في مكسر OBS):</p><div class="row"><input readonly value="${esc(link)}" style="flex:1;direction:ltr"><button class="btn pri" data-copylink="${esc(link)}">نسخ</button></div>`
+   :`<p>لم يُضف «مشغل الأصوات» بعد.</p><button class="btn pri" data-snd="addplayer">➕ إضافة مشغل الأصوات لطبقتي</button>`}
+  <ol class="snd-steps"><li><b>OBS:</b> Sources ➕ ← <b>Browser</b> ← ألصق الرابط ← العرض 1080 والارتفاع 1920 ← فعّل <b>Control audio via OBS</b> (التحكم بالصوت عبر OBS) ليظهر في المكسر.</li>
+   <li><b>TikTok LIVE Studio:</b> إضافة مصدر ← <b>Link</b> (رابط) ← ألصق نفس الرابط. الصوت يخرج مع البث.</li>
+   <li>أضف الرابط <b>مرة واحدة فقط</b> في المشهد — رابطان فيهما مشغل الأصوات = تشغيل مضاعف.</li>
+   <li>في المتصفح العادي قد يظهر زر «🔊 اضغط لتفعيل الأصوات» (قيد التشغيل التلقائي)؛ في OBS لا يظهر.</li></ol></div>
+ <div class="snd-box"><h3>🎚️ التحكم العام</h3>
+  <label>مستوى صوت المكتبة كلها <b>${c.vol}%</b><input type="range" min="0" max="100" value="${c.vol}" data-sndf="vol"></label>
+  <label>أقصى عدد أصوات في الانتظار<input type="number" min="3" max="50" value="${c.maxQ}" data-sndf="maxQ" class="inp snd-num"></label>
+  <label>عند الضغط العالي (وضع الإكسبلور)<select class="inp" data-sndf="explore"><option value="merge" ${c.explore==="merge"?"selected":""}>تجميع الأصوات الخفيفة (فولو/دخول/مشاركة) — موصى به</option><option value="all" ${c.explore==="all"?"selected":""}>تشغيل كل صوت (قد يكون مزعجاً)</option></select></label>
+  <p class="muted">كل الأحداث تُحتسب دائماً — التجميع يختصر الصوت فقط. أصوات الدعم لا تُختصر أبداً، والأولوية لها في الطابور.</p>
+  <h3>🕘 آخر الأصوات المُرسلة للبث</h3><div id="snd-feed">${sndFeedHTML(feed)}</div></div></div>` }
+function sndFeedHTML(feed){ return feed.length?feed.map(x=>{ const i=sndInfo(x.s&&x.s.src)||{name:"؟"}; return `<div class="snd-fd">${(SND_EVENTS[x.ev]||{}).icon||"🔊"} <b>${esc(i.name)}</b>${x.merged?` <span class="muted">(+${x.merged} مجمّعة)</span>`:""}${x.test?` <span class="muted">تجربة</span>`:""}<span class="muted">${new Date(x.at).toLocaleTimeString("ar")}</span></div>` }).join(""):`<p class="muted">لا شيء بعد.</p>` }
+function sndFeedRefresh(){ const f=document.getElementById("snd-feed"); if(f) f.innerHTML=sndFeedHTML((S.sndFeed||[]).slice(0,8)) }
+
+/* ---------- «متى تريد تشغيل هذا الصوت؟» ---------- */
+function sndUseModal(src,replace){ const inf=sndInfo(src)||{name:src}; S.sndUse={src,ev:"",cond:{},replace};
+ const m=modal(`<div class="snd-modal"><h3>متى تريد تشغيل هذا الصوت؟</h3><p class="muted">🔊 ${esc(inf.name)}</p><div id="snd-evs"></div><div class="row" style="margin-top:12px"><span class="sp"></span><button class="btn" data-close>إلغاء</button><button class="btn pri" data-snd="usesave">✅ حفظ وتفعيل</button></div></div>`);
+ m.classList.add("snd-m"); m.addEventListener("click",e=>{ const b=e.target.closest("[data-snd]"); if(b&&sndClick(b,e)) e.stopPropagation() }); m.addEventListener("input",e=>sndInput(e.target,e)); m.addEventListener("change",e=>sndInput(e.target,e)); sndUseRender(); return m }
+function sndUseRender(){ const box=document.getElementById("snd-evs"), U=S.sndUse; if(!box||!U) return; const c=U.cond;
+ const gifts=saCatalog().slice(0,80);
+ const field=k=>{ if(U.ev!==k) return "";
+  if(k==="gift") return `<div class="snd-gifts"><button class="snd-gift ${c.any?"on":""}" data-snd="ugift" data-any="1">🎁<b>أي هدية أخرى</b></button>${gifts.map(g=>`<button class="snd-gift ${!c.any&&String(c.giftId)===String(g.id)?"on":""}" data-snd="ugift" data-gid="${esc(g.id)}" data-gname="${esc(g.name)}" data-gimg="${esc(g.img||"")}">${g.img?`<img src="${esc(g.img)}" alt="">`:giftIcon(g,"snd-gi")}<b>${esc(g.name)}</b><span>${g.coins}🪙</span></button>`).join("")}</div>${(S.catalog||[]).length?"":`<p class="muted">القائمة الكاملة لهدايا بثك تظهر بعد الاتصال بـ TikTok.</p>`}`;
+  if(k==="donation") return `<div class="row"><span>عند دونيشن من</span><input type="number" min="0" value="${c.min??5}" data-sndf="u.min" class="inp snd-num"><select class="inp" data-sndf="u.cur">${["USD","SAR","AED","KWD","EUR","GBP"].map(x=>`<option ${x===(c.cur||"USD")?"selected":""}>${x}</option>`).join("")}</select><span class="muted">فأكثر</span></div><div class="row">${SND_DON_PRESETS.map(n=>`<button class="btn sm ${+c.min===n?"pri":""}" data-snd="umin" data-n="${n}">$${n}</button>`).join("")}</div><p class="muted">الدونيشن المالي فقط — هدايا TikTok (كوينز) لها قسم «هدية محددة». لكل مبلغ صوت مختلف: يُختار أعلى مستوى يصل له المبلغ.</p>`;
+  if(k==="taps") return `<div class="row"><span>عند الوصول إلى</span><input type="number" min="1" step="100" value="${c.n??1000}" data-sndf="u.n" class="inp snd-num"><span>تكبيسة</span></div><div class="row">${SND_TAP_PRESETS.map(n=>`<button class="btn sm ${+c.n===n?"pri":""}" data-snd="un" data-n="${n}">${fmt(n)}</button>`).join("")}</div><p class="muted">مرة واحدة لكل بث — لا تُعاد أصوات مراحل البث السابق.</p>`;
+  if(k==="subathon") return `<div class="row">${[["add","زيادة الوقت"],["sub","نقص الوقت"],["any","أي تغيير"]].map(([v,l])=>`<button class="btn sm ${(c.dir||"add")===v?"pri":""}" data-snd="udir" data-v="${v}">${l}</button>`).join("")}</div>`;
+  if(k==="goal") return `<div class="row">${[["any","أي هدف"],["likes","هدف الإعجابات"],["subathon","هدف السبثون"]].map(([v,l])=>`<button class="btn sm ${(c.kind||"any")===v?"pri":""}" data-snd="ugoal" data-v="${v}">${l}</button>`).join("")}</div>`;
+  return "" };
+ box.innerHTML=`<table class="snd-evt"><tbody>${Object.entries(SND_EVENTS).map(([k,e])=>`<tr class="${U.ev===k?"on":""}" data-snd="uev" data-k="${k}"><td>${e.icon} <b>${esc(e.label)}</b></td><td class="muted">${esc(e.hint)}</td></tr>${U.ev===k&&field(k)?`<tr class="sub"><td colspan="2">${field(k)}</td></tr>`:""}`).join("")}</tbody></table>` }
+function sndUseSave(){ const U=S.sndUse, c=SC(); if(!U||!U.ev) return toast("اختر الحدث أولاً"), false; const inf=sndInfo(U.src)||{};
+ const ref={src:U.src,vol:inf.defVol||100,start:inf.start||0,end:inf.end||0};
+ if(U.ev==="manual"){ c.board.push(sndBoardItem({s:ref,label:(inf.name||"").split("—")[0].trim().slice(0,30),icon:"🔊",color:SND_COLORS[c.board.length%SND_COLORS.length]})); sndBump(U.src); sndEnsurePlayer(); sndSave("✅ أُضيف للوحة التشغيل السريع"); return true }
+ const cond={...U.cond}; if(U.ev==="gift"&&!cond.any&&!cond.giftId&&!cond.name) return toast("اختر الهدية"), false; if(U.ev==="donation"){ cond.min=+cond.min||5; cond.cur=cond.cur||"USD" } if(U.ev==="taps") cond.n=+cond.n||1000;
+ const same=r=>r.ev===U.ev&&(U.ev==="gift"?(!!r.cond.any===!!cond.any&&(cond.any||(r.cond.giftId?String(r.cond.giftId)===String(cond.giftId):lc(r.cond.name)===lc(cond.name)))):U.ev==="donation"?r.cond.min===cond.min&&r.cond.cur===cond.cur:U.ev==="taps"?r.cond.n===cond.n:U.ev==="subathon"?r.cond.dir===(cond.dir||"add"):U.ev==="goal"?r.cond.kind===(cond.kind||"any"):true);
+ let r=c.rules.find(same);
+ if(U.replace){ const [rid,i]=U.replace.split(":"), rr=c.rules.find(x=>x.id===rid); if(rr&&rr.sounds[+i]){ rr.sounds[+i]={...rr.sounds[+i],src:U.src}; sndSave("🔁 تم استبدال الصوت"); return true } }
+ if(r){ if(r.sounds.some(s=>s.src===U.src)) return toast("هذا الصوت مرتبط بهذا الحدث مسبقاً"), true; if(r.sounds.length>=SND_LIMITS.sounds) return toast(`الحد ${SND_LIMITS.sounds} أصوات للحدث الواحد`), false; r.sounds.push(sndRef(ref)); r.on=true }
+ else c.rules.push(sndRule({ev:U.ev,cond,sounds:[ref],mode:"random"}));
+ sndBump(U.src); sndEnsurePlayer(); sndSave("✅ تم الحفظ والتفعيل — "+(SND_EVENTS[U.ev]||{}).label); return true }
+function sndEnsurePlayer(){ if(sndHasPlayer()) return; try{ window.__arsh.addWidget("sndplayer",{}); save(); pushLayout(); toast("➕ أضفنا «مشغل الأصوات» لطبقتك — الصوت يصل لرابط OBS الحالي") }catch(e){} }
+const SND_PRESETS={
+ don:()=>[[5,"tier-5"],[20,"coin-drop-01"],[50,"tier-50"],[100,"tier-100"],[200,"tier-200"],[500,"tier-500"]].map(([n,id])=>({ev:"donation",cond:{min:n,cur:"USD"},sounds:[{src:"lib:"+id}]})),
+ taps:()=>[1000,2000,5000,10000,50000].map(n=>({ev:"taps",cond:{n},sounds:[{src:"lib:taps-"+n}]})),
+ gifts:()=>[{ev:"gift",cond:{name:"Rose",giftId:"5655"},sounds:[{src:"lib:gift-01"}]},{ev:"love",sounds:[{src:"lib:arab-alert-02"}]},{ev:"gift",cond:{name:"Lion",giftId:"6369"},sounds:[{src:"lib:crown-01"}]},{ev:"gift",cond:{name:"TikTok Universe",giftId:"7312"},sounds:[{src:"lib:tier-500"}]}],
+ basic:()=>[{ev:"follow",sounds:[{src:"lib:follow-01"},{src:"lib:follow-02"},{src:"lib:follow-03"}],mode:"norepeat",cool:2},{ev:"share",sounds:[{src:"lib:share-11"}]},{ev:"sub",sounds:[{src:"lib:sub-11"}]}] };
+function sndPreset(k){ const c=SC(); let n=0; for(const x of SND_PRESETS[k]()){ const ok=x.sounds.filter(s=>!SNDX||SNDX.by[s.src]); if(!ok.length) continue; const r=sndRule({...x,sounds:ok});
+  const dup=c.rules.find(y=>y.ev===r.ev&&JSON.stringify(y.cond)===JSON.stringify(r.cond)); if(dup) continue; c.rules.push(r); n++ }
+ sndEnsurePlayer(); sndSave(n?`✅ أُضيف ${n} ربط — جرّبها من «📡 تجربة»`:"موجودة مسبقاً") }
+
+/* ---------- المعاينة (لك فقط) ---------- */
+function sndPreview(src,ref){ const a=S.sndAudio||(S.sndAudio=new Audio()); if(S.sndPlaying===src&&!a.paused){ a.pause(); S.sndPlaying=null; sndMarkPlaying(); return }
+ const url=sndPrevUrl(src); if(!url) return toast("تعذر تشغيل هذا الصوت"); a.pause(); a.src=url; a.currentTime=0; a.volume=Math.min(1,((ref&&ref.vol)||100)/100); a.playbackRate=(ref&&ref.rate)||1; if(ref&&ref.start) try{ a.currentTime=ref.start }catch(e){}
+ S.sndPlaying=src; sndMarkPlaying(); a.onended=()=>{ S.sndPlaying=null; sndMarkPlaying() }; a.onerror=()=>{ S.sndPlaying=null; sndMarkPlaying(); toast("⚠️ الملف لا يعمل") }; a.play().catch(()=>{ S.sndPlaying=null; sndMarkPlaying() }) }
+function sndMarkPlaying(){ document.querySelectorAll(".snd-card").forEach(el=>{ const on=el.dataset.sid===S.sndPlaying; el.classList.toggle("playing",on); const b=el.querySelector(".snd-play"); if(b) b.textContent=on?"⏹":"▶" });
+ document.querySelectorAll(".snd-ref .snd-play").forEach(b=>{ b.textContent=b.dataset.s===S.sndPlaying?"⏹":"▶" }) }
+function sndNow(ref){ clockOp("sounds","play",{s:sndRef(ref)}); sndBump(ref.src||ref); if(!sndHasPlayer()) toast("⚠️ أضف «مشغل الأصوات» لطبقتك ليصل الصوت للبث"); else toast("📡 يشتغل في البث") }
+
+/* ---------- الرفع: ملفاتك الخاصة (MP3 · WAV · OGG · M4A) ---------- */
+function sndUploadModal(cat){ const m=modal(`<div class="snd-modal"><h3>⬆️ رفع صوت خاص</h3>
+  <label>الملف<input type="file" accept="audio/mpeg,audio/wav,audio/x-wav,audio/ogg,audio/mp4,audio/x-m4a,audio/aac,.mp3,.wav,.ogg,.m4a" id="snd-file"></label>
+  <label>اسم الصوت<input id="snd-name" maxlength="60" placeholder="مثال: ضحكة أبو فهد"></label>
+  <label>التصنيف<select id="snd-cat">${Object.entries(SND_UCATS).map(([k,l])=>`<option value="${k}" ${k===(cat||"mine")?"selected":""}>${l}</option>`).join("")}</select></label>
+  <div id="snd-trim" class="snd-trim"></div><div id="snd-up-st" class="muted"></div>
+  <p class="muted">يبقى الصوت <b>خاصاً</b> لبثك. يُفحص الملف من محتواه الفعلي (لا من اسمه) قبل الحفظ.</p>
+  <div class="row"><span class="sp"></span><button class="btn" data-close>إلغاء</button><button class="btn pri" id="snd-up-go">⬆️ رفع وحفظ</button></div></div>`);
+ const inp=m.querySelector("#snd-file"), st=m.querySelector("#snd-up-st"); let peaks=[], dur=0, ab=null;
+ inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; if(!m.querySelector("#snd-name").value) m.querySelector("#snd-name").value=f.name.replace(/\.[a-z0-9]+$/i,"").slice(0,60);
+  st.textContent="⏳ قراءة الملف…"; try{ const AC=window.AudioContext||window.webkitAudioContext; const ctx=new AC(); ab=await ctx.decodeAudioData(await f.arrayBuffer()); dur=ab.duration; const ch=ab.getChannelData(0), seg=Math.floor(ch.length/48)||1; let mx=0; peaks=[];
+   for(let i=0;i<48;i++){ let p=0; for(let j=i*seg;j<Math.min(ch.length,(i+1)*seg);j+=8) p=Math.max(p,Math.abs(ch[j])); peaks.push(p); mx=Math.max(mx,p) } peaks=peaks.map(p=>mx?Math.round(p/mx*100)/100:0); ctx.close();
+   m.querySelector("#snd-trim").innerHTML=`${sndWave(peaks,"mine",dur)}<div class="row"><label>قص — البداية (ث)<input type="number" id="snd-ts" min="0" step=".1" value="0" class="inp snd-num"></label><label>النهاية (ث)<input type="number" id="snd-te" min="0" step=".1" value="${dur.toFixed(1)}" class="inp snd-num"></label><label>المستوى %<input type="number" id="snd-tv" min="0" max="100" value="100" class="inp snd-num"></label><button class="btn sm" id="snd-tp">▶ معاينة</button></div>`;
+   m.querySelector("#snd-tp").onclick=()=>{ const a=S.sndAudio||(S.sndAudio=new Audio()); a.src=URL.createObjectURL(f); a.currentTime=+m.querySelector("#snd-ts").value||0; a.volume=(+m.querySelector("#snd-tv").value||100)/100; a.play(); const e=+m.querySelector("#snd-te").value; if(e>0) setTimeout(()=>a.pause(),Math.max(100,(e-a.currentTime)*1000)) };
+   st.textContent=`المدة ${sndFmtDur(dur)}` }catch(e){ st.textContent="⚠️ تعذرت قراءة الملف — تأكد أنه ملف صوتي سليم (MP3 · WAV · OGG · M4A)"; ab=null } };
+ m.querySelector("#snd-up-go").onclick=async()=>{ const f=inp.files[0]; if(!f) return toast("اختر ملفاً"); if(!ab) return toast("الملف غير صالح");
+  if(!CFG){ return toast("رفع الملفات يعمل داخل المنصة (بعد تسجيل الدخول)") }
+  st.textContent="⏳ جاري الرفع… 0%"; const j=await alXhr(f,"audio",p=>st.textContent=`⏳ جاري الرفع… ${p}%`);
+  if(!j||!j.ok){ st.textContent="⚠️ "+((j&&j.message)||"تعذر رفع الملف"); return }
+  const c=SC(); const ts=+m.querySelector("#snd-ts").value||0, te=+m.querySelector("#snd-te").value||0;
+  c.user.unshift(sndUserItem({id:j.id,name:m.querySelector("#snd-name").value,cat:m.querySelector("#snd-cat").value,dur:(j.meta&&j.meta.duration)||dur,peaks,start:ts,end:te>=dur-.05?0:te,vol:+m.querySelector("#snd-tv").value||100}));
+  sndSave("✅ تم حفظ الصوت في «أصواتي الخاصة»"); m.remove(); SU().tab=m.querySelector("#snd-cat").value.startsWith("meme")?m.querySelector("#snd-cat").value:"mine"; renderPage(true) } }
+/** مشاركة صوت خاص في المكتبة العامة: تأكيد الحقوق ← مراجعة بشرية (لا اعتماد تلقائي) */
+async function sndShare(id){ const c=SC(), u=c.user.find(x=>x.id===id); if(!u) return;
+ if(!confirm("مشاركة «"+u.name+"» مع جميع صناع المحتوى؟\n\n• أؤكد أنني أملك حق استخدام هذا الصوت وإعادة توزيعه.\n• الصوت خالٍ من الألفاظ البذيئة والسب والإيحاءات والإساءة والعنصرية والتنمر.\n\nسيُراجع بشرياً قبل ظهوره (لا يُنشر تلقائياً).")) return;
+ const r=await fetch("/api/alerts",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({name:u.name,description:"صوت من مكتبة الأصوات",kind:"audio",event:"sound",durationSec:Math.max(1,Math.min(60,Math.round(u.dur||3))),category:SND_SHARE_STYLE[u.cat]||"minimal",tags:["snd:"+u.cat,"صوت"],visibility:"public",rightsConfirmed:true,audioId:id,meta:{duration:u.dur}})}).then(r=>r.json()).catch(()=>null);
+ if(!r||r.error){ toast("⚠️ "+((r&&(r.message||(r.errors||[]).join("، ")))||"تعذرت المشاركة")); return } u.shared="pending"; u.alertId=(r.alert&&r.alert.id)||r.id||""; sndSave("📨 أُرسل للمراجعة — يظهر للجميع بعد الموافقة") }
+function sndLoadCommunity(){ if(S.sndComBusy) return; S.sndComBusy=true; if(!CFG){ S.sndCom=[]; S.sndComLoaded=true; S.sndComBusy=false; return }
+ fetch("/api/alerts?section=all&kind=audio&event=sound",{cache:"no-store"}).then(r=>r.json()).then(d=>{ S.sndCom=(d.items||[]).filter(a=>a.event==="sound"); S.sndComSeen=S.sndComSeen||{}; for(const a of S.sndCom) S.sndComSeen["al:"+a.id]=a; S.sndComLoaded=true; S.sndComBusy=false; if(S.page==="sounds") renderPage(true) }).catch(()=>{ S.sndComLoaded=true; S.sndComBusy=false }) }
+
+/* ---------- الأحداث ---------- */
+function sndClick(b,e){ const d=b.dataset, a=d.snd, c=SC(), U=SU(); if(!a) return false;
+ if(a==="tab"){ U.tab=d.k; U.n=60; S.sndPadEdit=null; renderPage(true); return true }
+ if(a==="more"){ U.n+=60; renderPage(true); return true }
+ if(a==="prev"){ sndPreview(d.s,null); return true }
+ if(a==="fav"){ const i=c.fav.indexOf(d.s); if(i>=0) c.fav.splice(i,1); else c.fav.unshift(d.s); sndSave(i>=0?"أُزيل من المفضلة":"⭐ أُضيف للمفضلة"); renderPage(true); return true }
+ if(a==="use"){ sndUseModal(d.s); return true }
+ if(a==="now"){ const i=sndInfo(d.s)||{}; sndNow({src:d.s,start:i.start||0,end:i.end||0,vol:i.defVol||100}); return true }
+ if(a==="stop"||a==="stopall"){ clockOp("sounds",a); if(S.sndAudio) S.sndAudio.pause(); S.sndPlaying=null; sndMarkPlaying(); toast(a==="stopall"?"⏹ أُوقفت كل الأصوات":"⏹ أُوقف الصوت الحالي"); return true }
+ if(a==="addplayer"){ sndEnsurePlayer(); renderPage(true); return true }
+ if(a==="upload"){ sndUploadModal(d.cat||(U.tab.startsWith("meme")?U.tab:"mine")); return true }
+ if(a==="share"){ sndShare(d.id); return true }
+ if(a==="udel"){ const u=c.user.find(x=>x.id===d.id); if(u&&confirm("حذف «"+u.name+"» من أصواتك؟ (يُزال من الأحداث المرتبطة)")){ c.user=c.user.filter(x=>x.id!==d.id); for(const r of c.rules) r.sounds=r.sounds.filter(s=>s.src!=="up:"+d.id); c.rules=c.rules.filter(r=>r.sounds.length); c.board=c.board.filter(x=>x.s.src!=="up:"+d.id); sndSave("🗑️ حُذف"); renderPage(true) } return true }
+ if(a==="report"){ const id=d.s.slice(3), why=prompt("سبب الإبلاغ (ألفاظ بذيئة، إساءة، محتوى غير لائق…)"); if(why==null) return true;
+  fetch(`/api/alerts/${id}/act`,{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({act:"report",reason:String(why).slice(0,300)})}).then(r=>r.json()).then(j=>toast(j&&!j.error?"🚩 وصل البلاغ للإدارة — شكراً":"⚠️ "+((j&&j.message)||"تعذر الإبلاغ"))).catch(()=>toast("تعذر الإبلاغ")); return true }
+ // نافذة «متى تريد تشغيل هذا الصوت؟»
+ const UU=S.sndUse; if(UU){
+  if(a==="uev"){ UU.ev=d.k; UU.cond=d.k==="donation"?{min:5,cur:"USD"}:d.k==="taps"?{n:1000}:d.k==="subathon"?{dir:"add"}:d.k==="goal"?{kind:"any"}:{}; sndUseRender(); return true }
+  if(a==="ugift"){ UU.cond=d.any?{any:true}:{giftId:d.gid,name:d.gname,image:d.gimg}; sndUseRender(); return true }
+  if(a==="umin"){ UU.cond.min=+d.n; sndUseRender(); return true } if(a==="un"){ UU.cond.n=+d.n; sndUseRender(); return true }
+  if(a==="udir"){ UU.cond.dir=d.v; sndUseRender(); return true } if(a==="ugoal"){ UU.cond.kind=d.v; sndUseRender(); return true }
+  if(a==="usesave"){ if(sndUseSave()){ const m=b.closest(".modal"); if(m) m.remove(); S.sndUse=null; renderPage(true) } return true } }
+ // الأصوات المستخدمة
+ const r=d.rid&&c.rules.find(x=>x.id===d.rid);
+ if(a==="rtest"&&r){ clockOp("sounds","test",{ruleId:r.id}); toast("📡 تجربة في البث"); return true }
+ if(a==="radd"&&r){ U.tab="all"; S.sndAddTo=r.id; toast("اختر صوتاً واضغط «استخدام الصوت» ثم نفس الحدث"); renderPage(true); return true }
+ if(a==="rdel"&&r){ if(confirm("إزالة ربط «"+sndRuleLabel(r)+"»؟")){ c.rules=c.rules.filter(x=>x!==r); sndSave("🗑️ أُزيل الربط"); renderPage(true) } return true }
+ if(a==="ropen"){ const k=d.rid+":"+d.i; S.sndOpen=S.sndOpen===k?null:k; renderPage(true); return true }
+ if(a==="rrm"&&r){ r.sounds.splice(+d.i,1); if(!r.sounds.length) c.rules=c.rules.filter(x=>x!==r); sndSave("✕ أُزيل الصوت من الحدث"); renderPage(true); return true }
+ if(a==="rrep"&&r){ const s=r.sounds[+d.i]; S.sndReplace=d.rid+":"+d.i; U.tab="all"; toast("اختر الصوت البديل ← «استخدام الصوت» ← نفس الحدث"); renderPage(true); return true }
+ if(a==="rnow"&&r){ sndNow(r.sounds[+d.i]); return true }
+ if(a==="preset"){ sndPreset(d.k); renderPage(true); return true }
+ // لوحة التشغيل
+ if(a==="pad"){ if(e&&e.target.closest(".snd-pe")) return false; const bb=c.board.find(x=>x.id===d.bid); if(bb){ sndNow(bb.s); b.classList.add("hit"); setTimeout(()=>b.classList.remove("hit"),300) } return true }
+ if(a==="padedit"){ S.sndPadEdit=d.bid; renderPage(true); return true } if(a==="padclose"){ S.sndPadEdit=null; renderPage(true); return true }
+ const bb=d.bid&&c.board.find(x=>x.id===d.bid);
+ if(a==="padicon"&&bb){ bb.icon=d.ic; sndSave(); renderPage(true); return true } if(a==="padcolor"&&bb){ bb.color=d.co; sndSave(); renderPage(true); return true }
+ if(a==="paddel"&&bb){ c.board=c.board.filter(x=>x!==bb); S.sndPadEdit=null; sndSave("🗑️ حُذف الزر"); renderPage(true); return true }
+ if(a==="padrep"&&bb){ S.sndPadRep=bb.id; U.tab="all"; S.sndPadEdit=null; toast("اختر الصوت البديل ← «استخدام الصوت» ← «تشغيل يدوي»"); renderPage(true); return true }
+ if(a==="popout"){ const u=location.href.split("#")[0]+"#sb"; window.open(u,"b6o6sb","width=760,height=620"); toast("للـ OBS Dock: انسخ رابط النافذة إلى Docks ← Custom Browser Docks"); return true }
+ return false }
+function sndInput(t,e){ const f=t.dataset&&t.dataset.sndf; if(!f) return false; const c=SC(), U=SU(), live=e.type==="input";
+ if(f==="q"){ if(!live) return true; U.q=t.value; U.n=60; clearTimeout(sndInput.qt); sndInput.qt=setTimeout(()=>{ renderPage(true); const i=document.querySelector('[data-sndf="q"]'); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },200); return true }
+ if(f==="on"){ c.on=t.checked; sndSave(c.on?"🔊 الأصوات مفعّلة":"🔇 الأصوات موقوفة"); renderPage(true); return true }
+ if(f==="vol"){ c.vol=+t.value; const lb=t.nextElementSibling; if(lb&&lb.tagName==="B") lb.textContent=c.vol+"%"; if(!live) sndSave(); return true }
+ if(f==="maxQ"||f==="explore"){ if(live&&f==="maxQ") return true; c[f]=f==="maxQ"?+t.value:t.value; sndSave(); return true }
+ if(f.startsWith("u.")){ const U2=S.sndUse; if(!U2) return true; const k=f.slice(2); U2.cond[k]=k==="cur"?t.value:+t.value; return true }
+ const r=t.dataset.rid&&c.rules.find(x=>x.id===t.dataset.rid);
+ if(r&&f==="ron"){ r.on=t.checked; sndSave(); renderPage(true); return true }
+ if(r&&(f==="rmin"||f==="rn"||f==="rcool"||f==="rcur"||f==="rmode")){ if(live&&t.tagName==="INPUT") return true; if(f==="rmin") r.cond.min=Math.max(0,+t.value||0); if(f==="rn") r.cond.n=Math.max(1,+t.value||1); if(f==="rcool") r.cool=Math.max(0,+t.value||0); if(f==="rcur") r.cond.cur=t.value; if(f==="rmode") r.mode=t.value; sndSave(); return true }
+ if(r&&f.startsWith("s.")){ const s=r.sounds[+t.dataset.i]; if(!s) return true; const k=f.slice(2); s[k]=+t.value; if(t.type==="range"){ const lb=t.parentElement.querySelector("b"); if(lb) lb.textContent=k==="rate"?s[k]+"×":s[k]+"%" } if(!live||t.type!=="range") { r.sounds[+t.dataset.i]=sndRef(s); sndSave() } return true }
+ const b=t.dataset.bid&&c.board.find(x=>x.id===t.dataset.bid);
+ if(b){ if(f==="b.label"){ b.label=t.value.slice(0,30); if(!live) sndSave() } if(f==="b.key"){ b.key=lc(t.value).replace(/[^a-z0-9]/g,"").slice(0,1); t.value=b.key; if(b.key&&c.board.some(x=>x!==b&&x.key===b.key)) toast("⚠️ هذا الاختصار مستخدم لزر آخر"); sndSave() } if(f==="b.vol"){ b.s.vol=+t.value; if(!live) sndSave() } return true }
+ return false }
+function sndMount(){ // سحب وإفلات أزرار لوحة التشغيل + «أصواتي»: أزرار المشاركة والحذف
+ const box=document.querySelector(".snd-board"); if(box){ let from=null; box.querySelectorAll(".snd-pad").forEach(p=>{ p.ondragstart=()=>{ from=+p.dataset.i; p.classList.add("drag") }; p.ondragend=()=>p.classList.remove("drag"); p.ondragover=e=>e.preventDefault();
+  p.ondrop=e=>{ e.preventDefault(); const to=+p.dataset.i; if(from==null||from===to) return; const c=SC(), [x]=c.board.splice(from,1); c.board.splice(to,0,x); sndSave(); renderPage(true) } }) }
+ if(SU().tab==="mine") document.querySelectorAll('.snd-card[data-sid^="up:"]').forEach(el=>{ const id=el.dataset.sid.slice(3), u=SC().user.find(x=>x.id===id); if(!u) return; const row=document.createElement("div"); row.className="snd-own";
+  row.innerHTML=u.shared==="pending"?`<span class="muted">⏳ قيد المراجعة للمكتبة العامة</span>`:u.shared==="approved"?`<span class="muted">✅ منشور في المكتبة العامة</span>`:u.shared==="rejected"?`<span class="muted">❌ رُفض للنشر العام</span>`:`<button class="btn sm" data-snd="share" data-id="${id}">🌐 مشاركة للعامة</button>`;
+  row.innerHTML+=` <button class="btn sm ghost" data-snd="udel" data-id="${id}">🗑️</button>`; el.appendChild(row) })
+ // اختيار بديل أو صوت إضافي لحدث: «استخدام الصوت» يفتح النافذة على الحدث مباشرة
+ if(S.sndReplace||S.sndAddTo||S.sndPadRep) document.querySelectorAll('.snd-card [data-snd="use"]').forEach(btn=>btn.textContent=S.sndPadRep?"🔁 اختيار للزر":S.sndReplace?"🔁 اختيار كبديل":"➕ إضافة للحدث") }
+// اختيار سريع للبديل/الإضافة/زر اللوحة بدون المرور على النافذة
+const sndUseModal0=sndUseModal;
+sndUseModal=function(src){ const c=SC();
+ if(S.sndPadRep){ const b=c.board.find(x=>x.id===S.sndPadRep); S.sndPadRep=null; if(b){ b.s={...b.s,src}; sndSave("🔁 تم استبدال صوت الزر"); SU().tab="board"; renderPage(true) } return }
+ if(S.sndReplace){ const [rid,i]=S.sndReplace.split(":"); S.sndReplace=null; const r=c.rules.find(x=>x.id===rid); if(r&&r.sounds[+i]){ r.sounds[+i]=sndRef({...r.sounds[+i],src}); sndSave("🔁 تم استبدال الصوت"); SU().tab="used"; renderPage(true) } return }
+ if(S.sndAddTo){ const r=c.rules.find(x=>x.id===S.sndAddTo); S.sndAddTo=null; if(r){ if(!r.sounds.some(s=>s.src===src)&&r.sounds.length<SND_LIMITS.sounds) { const i=sndInfo(src)||{}; r.sounds.push(sndRef({src,start:i.start||0,end:i.end||0,vol:i.defVol||100})) } sndSave("➕ أُضيف الصوت — "+sndRuleLabel(r)); SU().tab="used"; renderPage(true) } return }
+ return sndUseModal0(src) };
+// اختصارات الكيبورد للوحة التشغيل (لا تعمل أثناء الكتابة في حقل)
+document.addEventListener("keydown",e=>{ if(e.ctrlKey||e.metaKey||e.altKey||e.repeat) return; const t=e.target; if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable)) return;
+ if(S.page!=="sounds"&&!document.body.classList.contains("sb-only")) return; const k=lc(e.key); if(!/^[a-z0-9]$/.test(k)) return; const b=SC().board.find(x=>x.key===k); if(!b) return; e.preventDefault(); sndNow(b.s);
+ const el=document.querySelector(`.snd-pad[data-bid="${b.id}"]`); if(el){ el.classList.add("hit"); setTimeout(()=>el.classList.remove("hit"),300) } });
+// نافذة مستقلة / OBS Dock: لوحة التشغيل فقط
+if(location.hash==="#sb"){ document.body.classList.add("sb-only"); setTimeout(()=>{ S.page="sounds"; SU().tab="board"; renderPage() },0) }
+
 
 })();

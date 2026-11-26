@@ -271,7 +271,8 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
     rooms.forEach((r, id) => {
       try { commit(id, r, roomTick(r, now)); } catch (e: any) { console.error("[hub] tick", e?.message); }
       const P = perfOf(r);
-      if (perfTick(P, pendingOf(r), now)) { broadcast(r, { t: "perf", explore: P.explore }); console.log(`[perf] room=${id.slice(0, 6)}… explore=${P.explore} rate=${P.rate}/s pending=${P.pending}`); }
+      const chg = perfTick(P, pendingOf(r), now); (r as any).explore = P.explore; // مكتبة الأصوات: تجميع الأصوات الخفيفة عند الضغط
+      if (chg) { broadcast(r, { t: "perf", explore: P.explore }); console.log(`[perf] room=${id.slice(0, 6)}… explore=${P.explore} rate=${P.rate}/s pending=${P.pending}`); }
       // بيانات البث (تكبيس/دعم) تتغير كثيراً: تُحفظ كل 15 ثانية على الأكثر لتتحمل إعادة تشغيل الخادم
       if (!r.dirty && (r as any).dirtyD && now - ((r as any).savedAt || 0) > 15000) r.dirty = true;
       // حالة السبثون/المؤقتات: حفظ كل 3 ث على الأكثر (كان كل ثانية أثناء الهدايا — ضغط كبير على قاعدة البيانات في الإكسبلور)

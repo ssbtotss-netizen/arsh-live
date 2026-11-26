@@ -28,6 +28,7 @@ const http = createServer((req, res) => {
       else if (r < 19) { c.emit("member", { user, common: { msgId: "m" + uid } }); sent.member++; }
       else { c.emit("gift", { user, giftId: 5655, repeatCount: 1, repeatEnd: 1, groupId: "g" + uid, gift: { name: "Rose", diamondCount: 1, type: 1 }, common: { msgId: "g" + uid } }); sent.gift++; } } }, 20);
     res.writeHead(200); return res.end("ok"); }
+  if (p.startsWith("/sounds/lib/") && /^[a-z0-9.-]+$/.test(p.slice(12))) { try { const f = readFileSync("/home/claude/najd/arsh-live/public/sounds/lib/" + p.slice(12)); res.writeHead(200, { "content-type": p.endsWith(".json") ? "application/json" : "audio/mpeg" }); return res.end(f); } catch { res.writeHead(404); return res.end(); } }
   if (p === "/test/state") { const r = hub.rooms.get(ROOM); res.writeHead(200, { "content-type": "application/json" }); return res.end(JSON.stringify({ sent, tot: r?.D?.tot, coins: r?.C?.stats?.p?.tiktok?.coins, P: r?.P && { recv: r.P.recv, done: r.P.done, dup: r.P.dup, failed: r.P.failed, explore: r.P.explore, lagMax: r.P.lagMax, maxPending: r.P.maxPending, batches: r.P.batches, sent: r.P.sent } })); }
   res.writeHead(404); res.end();
 });

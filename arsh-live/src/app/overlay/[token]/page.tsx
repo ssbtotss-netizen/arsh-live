@@ -61,10 +61,12 @@ function Overlay({ token }: { token: string }) {
         if (m.layout?.donCfg) st.DC = m.layout.donCfg; // تعديل الهدف (المبلغ/العملة/التصميم) يظهر فوراً
         if (L && L.canvas !== "acc" && m.layout?.id === L.id) { L = m.layout; L.widgets.forEach(migrateWidget); layout(); }
         if (m.layout?.bots?.alerts) loadBox();
+        if (m.layout?.bots?.sounds) { (window as any).__arshSnd = m.layout.bots.sounds; loadSnd(); } // مكتبة الأصوات: الإعدادات فوراً + روابط الملفات
         deliver(views.values(), { t: "snapshot" }, src()); return;
       }
       else if (m.t === "fx") { /* عرض حساب عند الطلب */ }
       else if (m.t === "layout-alerts") { loadBox(); return; }
+      else if (m.t === "snd") { for (const v of views.values()) if (v.w.type === "sndplayer" && v.sndOn) v.sndOn(m); return; } // مكتبة الأصوات: التشغيل في هذا الرابط فقط إن كان فيه مشغل الأصوات
       else if (!["bot", "act", "alert", "alertctl"].includes(m.t)) return; // ردود البوت، الإجراءات، وصندوق الآيرتات
       deliver(views.values(), m, src());
     }
@@ -89,6 +91,9 @@ function Overlay({ token }: { token: string }) {
     let boxT: any = null;
     function loadBox() { clearTimeout(boxT); boxT = setTimeout(() => fetch(`/api/alerts/box/${token}`).then(r => r.json()).then(d => { if (d?.defs) aboxSetDefs(d.defs); }).catch(() => {}), 400); }
     loadBox(); const boxRe = setInterval(loadBox, 6 * 3600e3);
+    (window as any).__arshOverlay = true; let sndT: any;
+    function loadSnd() { clearTimeout(sndT); sndT = setTimeout(() => fetch(`/api/sounds/box/${token}`).then(r => r.json()).then(d => { if (d?.cfg) { (window as any).__arshSnd = { ...((window as any).__arshSnd || {}), ...d.cfg }; (window as any).__arshSndUrls = d.urls || {}; } }).catch(() => {}), 300); }
+    loadSnd(); const sndRe = setInterval(loadSnd, 6 * 3600e3);
     fetch(`/api/overlay/${token}?layout=${layoutId}`).then(r => r.json()).then(d => {
       if (!d.layout) return;
       L = d.layout; L.widgets.forEach(migrateWidget); big = d.settings.bigGift; fx = d.settings.fx; st.SO = d.socials; if (d.donCfg && Object.keys(d.donCfg).length) st.DC = d.donCfg;
@@ -99,7 +104,7 @@ function Overlay({ token }: { token: string }) {
     const recon = setInterval(() => { if (!pollT) poll(); }, 60_000);
     const tick = setInterval(() => { for (const v of views.values()) if (TYPES[v.w.type]?.tick) v.refresh(src()); }, 250);
     addEventListener("resize", layout);
-    return () => { closed = true; clearTimeout(retry); clearInterval(tick); clearInterval(boxRe); clearInterval(hb); clearInterval(recon); stopPoll(); ws?.close(); removeEventListener("resize", layout); };
+    return () => { closed = true; clearTimeout(retry); clearInterval(tick); clearInterval(boxRe); clearInterval(sndRe); clearInterval(hb); clearInterval(recon); stopPoll(); ws?.close(); removeEventListener("resize", layout); };
   }, [token, layoutId, only, acc, ds]);
 
   return <div ref={stageRef} className="stage" style={{ background: "transparent" }} />;

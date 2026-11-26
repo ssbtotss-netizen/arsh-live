@@ -2,7 +2,7 @@
 import re, pathlib
 root=pathlib.Path(__file__).resolve().parent; src=root.parent/'arsh-live'/'src'
 eng=''
-for f in ['defs','leaderboard','clock','donations','latest','tops','poststats','events','chatnorm','platforms','notify','plans','battle','giftstreak','livestats','session','duration','room','bio','socials','lb','lb_bars','lb_art','lb_ref','lb_top3','bots','chat','music','actions','followers','view','lbview','rboard','vgoal','vgoal80','vgoal_ref','botview','fcview','durview','statsview','fc_designs','leview','le5','le_nature','le_royal','le_space','le_fire','le_kit','le_crystal','le_gaming','le_saudi','le_b6o6','le_x','qr','fachars','faview','alerts','alertview','layoutshare','dtext','dcard','chatview','musicview','battleview','actview']:
+for f in ['defs','leaderboard','clock','donations','latest','tops','poststats','events','chatnorm','platforms','notify','plans','battle','giftstreak','livestats','session','duration','room','bio','socials','lb','lb_bars','lb_art','lb_ref','lb_top3','bots','chat','music','actions','followers','view','lbview','rboard','vgoal','vgoal80','vgoal_ref','botview','fcview','durview','statsview','fc_designs','leview','le5','le_nature','le_royal','le_space','le_fire','le_kit','le_crystal','le_gaming','le_saudi','le_b6o6','le_x','qr','fachars','faview','alerts','sounds','alertview','soundview','layoutshare','dtext','dcard','chatview','musicview','battleview','actview']:
     t=(src/'engine'/f'{f}.js').read_text(encoding='utf-8')
     t=re.sub(r'^import .*?;\s*$','',t,flags=re.M)
     t=re.sub(r'^export (?=const|function|class|let)','',t,flags=re.M)
@@ -10,11 +10,13 @@ for f in ['defs','leaderboard','clock','donations','latest','tops','poststats','
 tpl=(root/'template.html').read_text(encoding='utf-8')
 head=tpl.split('/*@@ENGINE@@*/')[0]
 out=head.replace('/*@@APP_CSS@@*/',(src/'styles'/'app.css').read_text(encoding='utf-8')).replace('/*@@OVERLAY_CSS@@*/',(src/'styles'/'overlay.css').read_text(encoding='utf-8'))
-out+=eng+'\n'+(root/'app.js').read_text(encoding='utf-8')
+appsrc=(root/'app.js').read_text(encoding='utf-8').replace('</script>','\n'+(root/'sounds-ui.js').read_text(encoding='utf-8')+'\n</script>',1)  # مكتبة الأصوات
+_sx=root.parent/'arsh-live'/'public'/'sounds'/'lib'/'index.json'
+out+=('window.B6O6_SND_INDEX='+_sx.read_text(encoding='utf-8')+';\n' if _sx.exists() else '')+eng+'\n'+appsrc
 (root/'index.html').write_text(out,encoding='utf-8'); print('built',len(out))
 
 # حزمة لوحة التحكم داخل منصة Next.js (نفس الكود المختبر)
-app=(root/'app.js').read_text(encoding='utf-8').split('</script>')[0]
+app=appsrc.split('</script>')[0]
 bundle='"use strict";\n(function(){\n'+eng+'\n'+app+'\n})();\n'
 pub=root.parent/'arsh-live'/'public'; pub.mkdir(exist_ok=True)
 (pub/'b6o6-dashboard.js').write_text(bundle,encoding='utf-8'); print('bundle',len(bundle))

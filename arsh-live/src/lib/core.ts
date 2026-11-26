@@ -24,6 +24,8 @@ export * from "../engine/fcview.js";
 export * from "../engine/duration.js";
 export * from "../engine/durview.js";
 export * from "../engine/statsview.js";
+export * from "../engine/sounds.js";
+export * from "../engine/soundview.js";
 export * from "../engine/latest.js";
 export * from "../engine/tops.js";
 export * from "../engine/events.js";

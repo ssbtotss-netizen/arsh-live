@@ -59,6 +59,7 @@ export class View{
   if(T.fc){ this.applyFc(w,W,Hh,pad,gap); return }
   if(T.du){ this.applyDur(w,W,Hh); return }
   if(T.sb){ this.applySb(w,W,Hh); return }
+  if(T.snd){ this.sndMount&&this.sndMount(); return } // مشغل الأصوات: بدون واجهة في OBS
   if(T.fa){ this.applyFa(w,W,Hh); return }
   if(T.abox){ this.applyAbox(w,W,Hh); return }
   if(T.le){ this.applyLe(w,W,Hh); return }
@@ -124,6 +125,7 @@ export class View{
   if(t.fc) return this.refreshFc(src,silent);
   if(t.du) return this.refreshDur(src);
   if(t.sb) return this.refreshSb(src);
+  if(t.snd) return;
   if(t.le) return this.refreshLe(src,silent);
   if(t.chat) return;
   if(t.bt) return this.refreshBt(src);

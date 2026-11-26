@@ -5,6 +5,7 @@
 export const AL_EVENTS={
  love:{label:"هدية أحبني ❤️",icon:"❤️",field:null,avail:{tiktok:true},note:"هدية Heart Me (أحبني) فقط — لا تعمل مع أي هدية أخرى أو دونيشن"},
  follow:{label:"متابعة جديدة",icon:"➕",field:null,avail:{tiktok:true}},
+ sound:{label:"صوت — مكتبة الأصوات",icon:"🔊",field:null,avail:{tiktok:true},hidden:true,note:"صوت مشارك من مكتبة الأصوات (ليس آيرتاً) — يظهر في قسم «أصوات المجتمع» بعد المراجعة البشرية"},
  like_user:{label:"تكبيس مستخدم (لايكات شخص واحد)",icon:"❤️",field:"likes",avail:{tiktok:true},note:"مجموع لايكات المستخدم نفسه في البث الحالي — منفصل عن المجموع العام"},
  like_total:{label:"مجموع لايكات البث",icon:"💗",field:"total_likes",avail:{tiktok:true},note:"مجموع كل اللايكات في البث — منفصل عن لايكات كل مستخدم"},
  gift:{label:"هدية",icon:"🎁",field:"gift_count",avail:{tiktok:true}},
@@ -71,7 +72,8 @@ export function alVisibilityPatch(a,to,opt={}){
  if(to==="private") return {ok:true,patch:{visibility:"private",review:"none",publishedAt:null}};
  if(to!=="public") return {ok:false,error:"bad_visibility"};
  if(!(opt.rightsConfirmed||a&&a.rightsConfirmed)) return {ok:false,error:"rights_required"};
- const review=opt.autoApprove?"approved":"pending";
+ // أصوات المكتبة: مراجعة بشرية دائماً (لا اعتماد تلقائي) — لا يوجد فحص آلي للكلام المنطوق في المنصة
+ const review=opt.autoApprove&&opt.event!=="sound"&&!(a&&a.event==="sound")?"approved":"pending";
  return {ok:true,patch:{visibility:"public",rightsConfirmed:true,review,publishedAt:review==="approved"?new Date(opt.now||Date.now()):null}} }
 /** تعديل محتوى آيرت عام معتمد يعيده للمراجعة (حتى لا يُستبدل الملف بعد الاعتماد) */
 export function alEditNeedsReview(a,changed){ return !!(a&&a.visibility==="public"&&a.review==="approved"&&changed&&(changed.mediaId||changed.audioId||changed.coverId||changed.name||changed.description)) }

@@ -60,7 +60,7 @@ export async function POST(req: Request) {
   // خصائص الوسائط تُؤخذ من الملف المحفوظ في الخادم (لا من المتصفح)
   const src = x.mediaId || x.audioId; if (src) { const a = await prisma.alertAsset.findUnique({ where: { id: src }, select: { meta: true } }); x.meta = alMeta(a?.meta); }
   const data: any = { ...x, ownerId: user.id, visibility: "private", review: "none", designerName: x.designerName || user.name };
-  if (x.visibility === "public") { const p = alVisibilityPatch(null, "public", { rightsConfirmed: x.rightsConfirmed, autoApprove: (await alertsCfg()).autoApprove }); if (!p.ok) return NextResponse.json({ error: p.error }, { status: 400 }); Object.assign(data, p.patch); }
+  if (x.visibility === "public") { const p = alVisibilityPatch(null, "public", { rightsConfirmed: x.rightsConfirmed, autoApprove: (await alertsCfg()).autoApprove, event: x.event }); if (!p.ok) return NextResponse.json({ error: p.error }, { status: 400 }); Object.assign(data, p.patch); }
   const a = await prisma.alert.create({ data, include: { owner: ownerSel } });
   await prisma.alertUse.upsert({ where: { userId_alertId: { userId: user.id, alertId: a.id } }, update: {}, create: { userId: user.id, alertId: a.id } });
   return NextResponse.json({ ok: true, alert: toClient(a, { id: user.id }) });

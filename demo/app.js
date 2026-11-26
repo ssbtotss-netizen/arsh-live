@@ -33,7 +33,8 @@ function bootOverlay(q){
  const src=()=>({D:R.D,H:R.H,C:R.C,skew,SO:L.socials,DN:R.DN,DC:L.donCfg,CHAT:R.CHAT,LG:R.logs||[]});
  const root=document.getElementById("root");
  const stage=document.createElement("div"); stage.className="stage"; root.appendChild(stage);
- const views=new Map(); let cv;
+ const views=new Map(); let cv; window.__arshOverlay=true; // مشغل الأصوات يعمل هنا فقط (لا في معاينة اللوحة)
+ try{ const b=(L&&L.bots)||{}; if(b.sounds) window.__arshSnd=b.sounds }catch(e){}
  function layout(){
   const base=L.canvas==="acc"?{w:900,h:130}:canvasOf(L); let list=L.widgets;
   if(only){ const w=L.widgets.find(x=>x.id===only); if(!w){stage.innerHTML="";return} cv={w:Math.round(w.w*base.w),h:Math.round(w.h*base.h)}; list=[{...w,x:0,y:0,w:1,h:1}] } else cv=base;
@@ -49,7 +50,8 @@ function bootOverlay(q){
   else if(m.t==="perf"){ if(typeof m.explore==="boolean"){ window.__arshExplore=m.explore; document.body.classList.toggle("ov-explore",m.explore) } return }
   else if(m.t==="event"){ if(m.ev.type==="gift"&&m.ev.big===undefined) m.ev.big=m.ev.value>=bigT; R.CHAT=R.CHAT||[]; if(!R.CHAT.some(x=>x.id===String(m.ev.id))) chatPush(R.CHAT,m.ev); /* سجل الشات لرابط OBS: الطبقة تعيد بناء رسائلها منه عند تغيير التصميم */ if(m.applied!==true){ applyEvent(R.D,R.H,m.ev); applyDonation(R.DN,m.ev); R.C.tops=R.C.tops||{}; topsOnEvent(R.C.tops,m.ev,Date.now(),180) } }
   else if(m.t==="clock"){ R.C=m.C; if(m.logs&&m.logs.length){ R.logs=[...m.logs.slice().reverse(),...(R.logs||[])].slice(0,300) } if(m.now) skew=m.now-Date.now() }
-  else if(m.t==="layout"){ if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
+  else if(m.t==="snd"){ for(const v of views.values()) if(v.w.type==="sndplayer"&&v.sndOn) v.sndOn(m); return } // مكتبة الأصوات
+  else if(m.t==="layout"){ if(m.layout&&m.layout.bots&&m.layout.bots.sounds) window.__arshSnd=m.layout.bots.sounds; if(m.layout&&L.canvas==="acc"){ L.socials=m.layout.socials||L.socials; L.donCfg=m.layout.donCfg||L.donCfg; deliver(views.values(),{t:"snapshot"},src()); return } if(m.layout&&m.layout.id===L.id){ L=m.layout; L.widgets.forEach(migrateWidget); layout(); deliver(views.values(),{t:"snapshot"},src()) } return }
   if(m.t==="bot"&&q.get("voice")==="1") for(const it of m.items||[]) if(it.say) vpPush(it);
   deliver(views.values(),m,src());
  }
@@ -134,6 +136,7 @@ function receive(m,applied){
  else if(m.t==="report"){ if(m.report&&!m.report.test) psDone(m.report); return }
  else if(m.t==="actlog"||m.t==="act"||m.t==="notify"||m.t==="alertctl"){ /* تُعالج أدناه */ }
  else if(m.t==="alert"){ S.alFeed=[...(m.items||[]),...(S.alFeed||[])].slice(0,50) }
+ else if(m.t==="snd"){ if(m.items) S.sndFeed=[...m.items.map(x=>({...x,at:Date.now()})),...(S.sndFeed||[])].slice(0,30); if(S.page==="sounds") sndFeedRefresh&&sndFeedRefresh(); return }
  else return;
  if(m.t==="actlog"){ S.actLog=m.log||[]; if(S.page==="actions"&&!/INPUT|SELECT|TEXTAREA/.test(document.activeElement?.tagName||"")) renderPage(true) }
  if(m.t==="act"){ for(const it of m.items||[]) if(it.kind==="goal"&&it.widgetId){ const gw=L().widgets.find(w=>w.id===it.widgetId); if(gw){ gw.base=(+gw.base||0)+(+it.n||1); save(); pushLayout() } } }
@@ -195,11 +198,11 @@ function testBar(){return `<div class="testbar" id="testbar"><b style="color:var
 
 /* ---- الروابط ---- */
 function baseURL(){return location.href.split("#")[0]}
-function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); const p=new URLSearchParams(); p.set("d",b64e({...l,socials:S.socials,donCfg:S.donCfg})); if(acc) p.set("acc",acc); if(only)p.set("only",only); p.set("big",S.settings.bigGift); if(S.settings.perfMode&&S.settings.perfMode!=="hq") p.set("pm",S.settings.perfMode); if(S.settings.wsUrl){p.set("ws",S.settings.wsUrl);p.set("room",S.settings.room)} return baseURL()+"#/overlay?"+p.toString() }
+function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); const p=new URLSearchParams(); p.set("d",b64e({...l,socials:S.socials,donCfg:S.donCfg,...(S.bots&&S.bots.sounds?{bots:{sounds:{on:S.bots.sounds.on,vol:S.bots.sounds.vol,maxQ:S.bots.sounds.maxQ}}}:{})})); if(acc) p.set("acc",acc); if(only)p.set("only",only); p.set("big",S.settings.bigGift); if(S.settings.perfMode&&S.settings.perfMode!=="hq") p.set("pm",S.settings.perfMode); if(S.settings.wsUrl){p.set("ws",S.settings.wsUrl);p.set("room",S.settings.room)} return baseURL()+"#/overlay?"+p.toString() }
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","🦆"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -360,6 +363,7 @@ function renderPage(soft){
  else if(p==="duration"){ h=duHTML() }
  else if(p==="chatcfg"){ h=ccHTML() }
  else if(p==="perf"){ h=pmHTML() }
+ else if(p==="sounds"){ h=sndHTML() }
  else if(p==="bots"){ h=botsHTML() }
  else if(p==="followers"){ h=fcHTML() }
  else if(p==="latest"){ h=leHTML() }
@@ -427,7 +431,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount(); if(p==="chatcfg") ccMount();
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount();
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -1490,6 +1494,7 @@ function addWidget(type,extra={}){ const cv=CV(); const w=newWidget(type,{z:Math
 function setPath(obj,path,v){ const k=path.split("."); let o=obj; for(let i=0;i<k.length-1;i++) o=o[k[i]]=o[k[i]]||{}; o[k[k.length-1]]=v }
 function saConfig(cfg){ clockOp("subathon","config",{config:cfg}) }
 function onClick(e){
+ { const sd=e.target.closest&&e.target.closest("[data-snd]"); if(sd&&!sd.closest(".snd-m")&&sndClick(sd,e)) return } // مكتبة الأصوات
  { const sb=e.target.closest&&e.target.closest("[data-coinadd],[data-giftadd],[data-rdel],[data-sagiftmore],[data-sapv],[data-sapvapply],[data-gcoinadd],[data-sajump],[data-sa-end],[data-sacoinsave],[data-sacoinedit],[data-sacoincancel],[data-saedit],[data-saeditclose],[data-sapick],[data-saany],[data-sagtest],[data-sagapply]"); if(sb&&S.page==="subathon"&&saClick(sb)) return }
  { const nv=e.target.closest&&e.target.closest('.nav [data-go="library"]'); if(nv) S.libTab="gallery" }
  { const g=e.target.closest&&e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore],.gal-card"); if(g&&galClick(e.target.closest("[data-galset],[data-galfav],[data-galbig],[data-galuse],[data-galmore]")||g)) return }
@@ -1619,6 +1624,7 @@ function previewOverlay(only){
 }
 function onInput(e){
  const t=e.target, d=t.dataset;
+ if(d&&d.sndf&&!(t.closest&&t.closest(".snd-m"))&&sndInput(t,e)) return; // مكتبة الأصوات
  if((d.lsq!==undefined||d.lstopn!==undefined||d.lsf)&&lsInput(t,e)) return;
  if(d.sagiftq!==undefined){ if(e.type!=="input") return; S.saGiftQ=t.value; clearTimeout(onInput.sq); onInput.sq=setTimeout(()=>{ renderPage(true); const i=document.querySelector("[data-sagiftq]"); if(i){ i.focus(); i.setSelectionRange(i.value.length,i.value.length) } },250); return }
  if(d.gcoin!==undefined){ if(e.type!=="change") return; saConfig({rules:{giftCoins:{[d.gcoin]:Math.max(0,+t.value||0)}}}); return }
@@ -3331,7 +3337,7 @@ function alHTML(){ alHoverStop(); const A=ALS(), adm=!!(CFG&&CFG.profile&&CFG.pr
 /* ---------------- صندوق الآيرتات والقواعد ---------------- */
 function alRulesHTML(){ const C=alCfgS(), w=alBoxW(); alLoadUsable(); const us=alUsable(), off=alOfficial();
  const aopts=v=>`<option value="">— اختر آيرت —</option><optgroup label="آيرتاتي والمستخدمة">${us.map(a=>`<option value="${esc(a.id)}" ${v===a.id?"selected":""}>${esc(a.name)}${a.visibility==="private"?" 🔒":""}</option>`).join("")}</optgroup><optgroup label="القوالب الرسمية">${off.map(a=>`<option value="${esc(a.id)}" ${v===a.id?"selected":""}>${esc(a.name)}</option>`).join("")}</optgroup>`;
- const evo=v=>Object.entries(AL_EVENTS).map(([k,e])=>`<option value="${k}" ${v===k?"selected":""} ${e.avail.tiktok===false?"disabled":""}>${e.icon} ${esc(e.label)}${e.avail.tiktok===false?" (غير متوفر)":""}</option>`).join("");
+ const evo=v=>Object.entries(AL_EVENTS).filter(([k,e])=>!e.hidden||k===v).map(([k,e])=>`<option value="${k}" ${v===k?"selected":""} ${e.avail.tiktok===false?"disabled":""}>${e.icon} ${esc(e.label)}${e.avail.tiktok===false?" (غير متوفر)":""}</option>`).join("");
  const f=(r,k,l,inner)=>`<div class="fld"><label>${l}</label>${inner}</div>`;
  const rule=(r0,i)=>{ const r=alRule(r0), e=AL_EVENTS[r.event]||{}, c=r.cond, fld=e.field, miss=alMissing((r.over.title||"")+" "+(r.over.sub||"")+" "+(r.over.ttsText||""),r.event);
   const inp=(k,v,ph,type)=>`<input class="inp" ${type?`type="${type}"`:""} data-alr="${i}" data-k="${k}" value="${esc(v??"")}" placeholder="${esc(ph||"")}">`;

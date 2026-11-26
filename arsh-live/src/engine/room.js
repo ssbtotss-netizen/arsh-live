@@ -15,6 +15,7 @@ import { musicOnEvent, musicOp, newMusicState, defaultMusicCfg, musicSearch, mus
 import { botsOnEvent, botsTick, newBotState } from "./bots.js";
 import { alCfg, alFill, alNewState, alertsOnEvent, alertsOnLogs, alertsOnLive, alertsOnEnd, alertsManual, alLibTest } from "./alerts.js";
 import { giftStreak, glogPush } from "./giftstreak.js";
+import { sndCfg, sndNewState, sndOnEvent, sndOnLogs, sndSessionReset, sndManual, SND_EVENTS } from "./sounds.js";
 import { liveState, sessDecide, sessOpen, sessClose, sessPublic, okStart } from "./session.js";
 import { statsState, statsOnEvent, statsViewers, statsOffline } from "./livestats.js";
 import { newClockState, giftCoins, subathonOp, subathonOnEvent, subathonOnDonation, migrateRules, subathonTick, timerOp, timerTick, newTimer } from "./clock.js";
@@ -40,7 +41,7 @@ export function roomEvent(R,ev,now){
   const out=[{t:"event",ev}], logs=ev.type==="donation"?subathonOnDonation(R.C.subathon,ev,now):[]; keep(R,logs); if(logs.length) out.push({t:"clock",C:R.C,now,logs});
  roomActions(R,ev,now,out); if(ev.type==="donation"){ const nm=String(ev.name||""), cur=String(ev.currency||"").toUpperCase(); ev.donorTotal=nm&&!ev.anonymous?R.DN.list.filter(d=>d.name===nm&&d.currency===cur&&!d.test).reduce((a,d)=>a+Math.max(0,d.amount-(d.refunded||0)),0):""; }
  if((ev.type==="donation"||ev.type==="donation_refund")&&statsOnEvent(R.C,ev,now)) out.push({t:"stats",ST:R.C.stats});
- roomAlerts(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
+ roomAlerts(R,ev,logs,now,out); roomSounds(R,ev,logs,now,out); botOut(R,ev,now,out); return {out,logs} }
  // هدايا TikTok: السلاسل ترسل عدداً تراكمياً — نحتسب الزيادة الجديدة فقط (وسجل الهدايا يوضح كل حدث)
  let gdiag=null;
  if(ev.type==="gift"){ const g=giftStreak(R.C,ev,now); gdiag=g.diag; if(!g.ev){ const it=glogPush(R.C,gdiag); return {out:[{t:"glog",it}],logs:[],gsdup:true} } ev=g.ev }
@@ -62,7 +63,7 @@ export function roomEvent(R,ev,now){
  if(gdiag){ const mine=logs.filter(l=>l.eventId===ev.id), ms=mine.reduce((a,l)=>a+(+l.deltaMs||0),0), capped=mine.some(l=>l.requestedMs!==l.deltaMs);
   const it=glogPush(R.C,gdiag,{ms,why:ms?"":giftWhy(R.C.subathon,ev)}); if(capped) it.why="وصل السبثون للحد الأقصى — أُضيف جزء من الوقت"; out.push({t:"glog",it}) }
  if(logs.length) out.push({t:"clock",C:R.C,now,logs});
- roomAlerts(R,ev,logs,now,out);
+ roomAlerts(R,ev,logs,now,out); roomSounds(R,ev,logs,now,out);
  botOut(R,ev,now,out);
  return {out,logs};
 }
@@ -78,6 +79,12 @@ function giftWhy(s,ev){ if(!s) return "السبثون غير مُعد";
  return "لا توجد قاعدة مطابقة لهذه الهدية (أو فترة انتظار القاعدة)" }
 /** صندوق الآيرتات: القواعد تأتي من إعدادات المستخدم (botCfg.alerts) — الغرفة مصدر واحد فلا يتكرر الآيرت بين روابط OBS */
 function roomAlertCfg(R){ const raw=R.botCfg&&R.botCfg.alerts; if(!raw) return null; if(R.ALraw!==raw){ R.ALraw=raw; R.ALc=alCfg(raw) } R.AL=R.AL||alNewState(); return R.ALc }
+/* ===== مكتبة الأصوات: القرار هنا (مصدر واحد) — رابط OBS يشغّل فقط ===== */
+function roomSoundCfg(R){ const raw=R.botCfg&&R.botCfg.sounds; if(!raw) return null; if(R.SNDraw!==raw){ R.SNDraw=raw; R.SNDc=sndCfg(raw) } R.SND=R.SND||sndNewState(); return R.SNDc }
+function roomSoundGoals(R){ const L=R.botCtx&&R.botCtx.layout, v=R.D&&R.D.tot?R.D.tot.likes:0; return (L&&Array.isArray(L.widgets)?L.widgets:[]).filter(w=>w&&w.type==="goal"&&+w.target>0).map(w=>({id:"lk:"+w.id+":"+w.target,kind:"likes",target:+w.target,value:v})) }
+function roomSounds(R,ev,logs,now,out){ const c=roomSoundCfg(R); if(!c||!c.on) return; try{
+  const ac=roomAlertCfg(R), ctx={totalLikes:R.D&&R.D.tot?R.D.tot.likes:0,goals:roomSoundGoals(R),explore:!!R.explore,rates:ac&&ac.don&&ac.don.rates};
+  const items=[...(ev?sndOnEvent(c,R.SND,ev,now,ctx):[]),...sndOnLogs(c,R.SND,logs||[],now)]; if(items.length) out.push({t:"snd",items}) }catch(e){} }
 function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now,{totalLikes:R.D&&R.D.tot?R.D.tot.likes:0}):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
   // القارئ الصوتي (اختياري لكل قاعدة): يمر عبر مركز البوتات — مفتاح خدمة الصوت يبقى على الخادم
   const say=items.map(it=>{ const r=c.rules.find(x=>x.id===it.ruleId); if(!r||!r.over.tts||!r.over.ttsText) return null; const text=alFill(r.over.ttsText,it.vars).slice(0,200); return text?{id:"al_tts_"+it.id,kind:"reply",bot:"alerts",text,speech:text,show:false,say:true,user:{name:it.vars.display_name||""},at:now,test:!!it.test}:null }).filter(Boolean); if(say.length) out.push({t:"bot",items:say}) }catch(e){} }
@@ -140,6 +147,13 @@ export function roomClockOp(R,m,now){
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
  if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
+ if(m.target==="sounds"){ // لوحة التشغيل السريع / «تشغيل الآن» / إيقاف — من لوحة التحكم فقط
+  const c=roomSoundCfg(R)||sndCfg({});
+  if(m.op==="play"){ const it=sndManual(c,m.s,now,{test:!!m.test}); return {out:it?[{t:"snd",items:[it]}]:[],logs:[]} }
+  if(m.op==="stop"||m.op==="stopall") return {out:[{t:"snd",stop:m.op==="stopall"?"all":"cur"}],logs:[]};
+  if(m.op==="test"){ const r=c.rules.find(x=>x.id===m.ruleId); if(!r||!r.sounds.length) return {out:[],logs:[]}; const s=r.sounds[Math.floor(Math.random()*r.sounds.length)];
+   return {out:[{t:"snd",items:[{id:"t"+now.toString(36),rule:r.id,ev:r.ev,s,prio:(SND_EVENTS[r.ev]||{}).prio||10,at:now,merged:0,test:true}]}],logs:[]} }
+  return {out:[],logs:[]} }
  if(m.target==="alerts"){ // تحكم صندوق الآيرتات من اللوحة: تجربة قاعدة / تخطي / إيقاف / إعادة
   if(m.op==="test"){ const c=roomAlertCfg(R), r=c&&c.rules.find(x=>x.id===m.ruleId); if(!r) return {out:[],logs:[]}; const cu=m.vars&&typeof m.vars==="object"?Object.fromEntries(Object.entries(m.vars).filter(([k,v])=>typeof v==="string"&&v.length<300).slice(0,20)):{}; const v=Object.assign({username:"test_user",display_name:"مشاهد تجريبي",platform:"TikTok",likes:"100",total_likes:"1000",gift_name:"وردة",gift_count:"1",diamonds:"1",amount:"5",currency:"USD",message:"رسالة تجريبية",time_added:"0:30",time_removed:"0:30",goal:"1000",progress:"100%"},r.level?{level:r.level}:{},cu); /* بيانات تجربة مخصصة من اللوحة */ return {out:[{t:"alert",items:[{id:"test:"+now+":"+r.id,ruleId:r.id,alertId:r.alertId,event:r.event,vars:v,priority:r.priority,at:now,test:true}]}],logs:[]} }
   if(m.op==="testdon"){ // تجربة دعم: تمر بنفس منطق الشرائح لكنها لا تُسجَّل في الدونيشن ولا الإحصائيات
@@ -151,7 +165,7 @@ export function roomClockOp(R,m,now){
    return {out:items.length?[{t:"alert",items}]:[{t:"status",text:"لا يوجد مقطع مفعّل في هذا المستوى"}],logs:[]} }
   if(m.op==="fire"){ const c=roomAlertCfg(R), items=c?alertsManual(c,R.AL,m.ruleId,now):[]; return {out:items.length?[{t:"alert",items}]:[],logs:[]} }
   if(["skip","stop","replay","pause","resume"].includes(m.op)) return {out:[{t:"alertctl",op:m.op}],logs:[]}; return {out:[],logs:[]} }
- if(m.target==="subathon"){ logs=subathonOp(R.C.subathon,m,now); keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}]; roomAlerts(R,null,logs,now,out); return {out,logs} }
+ if(m.target==="subathon"){ logs=subathonOp(R.C.subathon,m,now); keep(R,logs); const out=[{t:"clock",C:R.C,now,logs}]; roomAlerts(R,null,logs,now,out); roomSounds(R,null,logs,now,out); return {out,logs} }
  else if(m.target==="timers"){ // إضافة/حذف/ترتيب مؤقتات
   if(m.op==="create"){ if(R.C.timers.length<30) R.C.timers.push(newTimer(m.kind||"countdown",m.config||{})) }
   else if(m.op==="delete"){ if(m.id!=="stream") R.C.timers=R.C.timers.filter(t=>t.id!==m.id) }
@@ -190,6 +204,7 @@ function faRoomTTS(R,ev,now,out){ const c=R.botCfg&&R.botCfg.falert; if(!c||!c.t
 /* ====== جلسات البث: تصفير بيانات الجلسة فقط ====== */
 /** يصفّر بيانات البث (التكبيس دائماً + النطاقات المختارة) ويرجع رسائل التحديث لكل الطبقات — الإعدادات والتصاميم والأهداف المحددة ووقت السبثون لا تُلمس */
 export function roomSessionReset(R,now,scopes){ const L=liveState(R.C), sc=scopes||L.scopes||{}, out=[];
+ if(R.SND) sndSessionReset(R.SND); // مراحل التكبيس والأهداف الصوتية تبدأ من جديد مع البث الجديد
  const list=["likes","interact",...["gifts","comments","follows"].filter(k=>sc[k])];
  for(const s of list){ const r=roomEvent(R,{type:"reset",scope:s,id:`sr:${L.sid||"m"}:${s}:${now}`,t:now},now); out.push(...r.out) }
  if(R.C.latest){ delete R.C.latest.like; if(sc.gifts) delete R.C.latest.gift; if(sc.follows) delete R.C.latest.follow; if(sc.comments) delete R.C.latest.comment } // آخر شخص كبس
