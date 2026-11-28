@@ -99,6 +99,7 @@ function rotHTML(){ const G=rotGroups(), g=rotCur(); rotSyncAll();
  <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3>🗂 قوائم المجموعة <span class="tag">${items.length}</span></h3>
    <div class="row" style="gap:6px"><input class="inp" data-rotf="name" value="${esc(g.name||"")}" style="max-width:220px" title="اسم المجموعة"><button class="btn sm dng" data-rotx="delg">حذف المجموعة</button></div></div>
   <div class="rot-list">${items.length?items.map(row).join(""):`<div class="sa2-empty">أضف قوائم من الأسفل.</div>`}</div>
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="small mut">↔ تطبيق الاتجاه على جميع قوائم المجموعة:</span><button class="btn xs" data-rotx="mirall" data-m="right">الصورة يمين</button><button class="btn xs" data-rotx="mirall" data-m="left">الصورة يسار</button><button class="btn xs" data-rotx="mirall" data-m="default">الافتراضي</button></div>
   <div class="row rot-add"><select class="inp" data-rotf="addnew"><option value="">＋ إضافة قائمة جديدة…</option>${ROT_CAT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select>
    <select class="inp" data-rotf="addref"><option value="">＋ إضافة عنصر موجود في التخطيط…</option>${others.map(w=>`<option value="${w.id}">${(TYPES[w.type]||{}).icon||""} ${esc(rotLabel(w))}</option>`).join("")}</select></div></div>
  <div class="grid g2">
@@ -172,6 +173,7 @@ document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closes
  if(a==="dup"){ const i=g.items.findIndex(x=>x.id===d.i); if(i>=0){ g.items.splice(i+1,0,{...JSON.parse(JSON.stringify(g.items[i])),id:rotUid()}); rotSave("كُررت القائمة داخل الدورة"); renderPage(true) } return }
  if(a==="rm"){ g.items=g.items.filter(x=>x.id!==d.i); if(g.smart) g.smart.rules=(g.smart.rules||[]).filter(r=>r.item!==d.i); rotSave("أُزيلت من المجموعة — العنصر باقٍ في المنصة"); return renderPage(true) }
  if(a==="edit"){ S.sel=d.ref; return go("studio") }
+ if(a==="mirall"){ rotMirAll(g,d.m); return renderPage(true) }
  if(a==="sradd"){ g.smart=g.smart||{on:true,cooldown:8,rules:[]}; g.smart.rules.push({id:rotUid(),ev:"bigGift",item:g.items[0].id,dur:10,prio:1,min:1000}); rotSave(); return renderPage(true) }
  if(a==="srdel"){ g.smart.rules=(g.smart.rules||[]).filter(r=>r.id!==d.r); rotSave(); return renderPage(true) }
 });

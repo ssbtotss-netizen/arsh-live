@@ -4610,6 +4610,7 @@ function deliver(views,msg,src){
 
 
 
+
 const CROWN_SVG='<svg viewBox="0 0 64 44"><path fill="currentColor" d="M3 38 7 9l14 15L32 2l11 22L57 9l4 29z"/><rect x="5" y="38" width="54" height="6" rx="2" fill="currentColor"/></svg>';
 let lbCss=false;
 function ensureLbCSS(){ if(lbCss||typeof document==="undefined") return; lbCss=true; const st=document.createElement("style"); st.id="b6o6-lb-designs"; st.textContent=lbDesignCSS()+LB_BAR_CSS+LB_ART_CSS; document.head.appendChild(st) }
@@ -4673,7 +4674,7 @@ Object.assign(View.prototype,{
  lbSlotsOf(N,P){ if(this.lbArt) return lbArtSlots(this.lbArt.arr==="crown3"&&this.w.podFlip?"crown3r":this.lbArt.arr,N,P.W,P.H,P.g); if(!this.lbBars) return lbSlots(N,P.W,P.H,P.g); const sl=lbBarSlots(N,P.W,P.H,P.g); if(sl[0]) this.el.style.setProperty("--rh0",sl[0].h+"px"); return sl },
  place(el,s,i){
   const w=this.w, as=(w.avatarScale||1)*(this.lbAvs||1), fsx=w.fontScale||1;
-  el.style.transform=`translate(${s.x}px,${s.y}px)`; el.style.width=s.w+"px"; el.style.height=s.h+"px";
+  el.style.transform=`translate(${mirX(this,s.x,s.w,this.pg?this.pg.W:0)}px,${s.y}px)${mirFlipT(this)}`; el.style.width=s.w+"px"; el.style.height=s.h+"px";
   if(this.lbArt&&this.lbArt.arr==="crown3"&&i<3&&this.pg) el.style.setProperty("--ped",Math.max(8,this.pg.H*(this.w.topN>3?.8:.985)-(s.y+s.h))+"px"); // منصات التتويج تنتهي على أرضية واحدة
   let av,fs; if(s.k==="tok"){ av=s.w*.74*as*(i===0?(+w.firstScale||1):1); fs=Math.min(s.w*.14,s.h*.1)*fsx } else if(this.lbBars){ av=s.h*.74*as; fs=s.h*.42*fsx } else if(s.k==="row"){ av=s.h*.84*as; fs=Math.min(s.h*.36,s.w*.06)*fsx } else if(s.k==="hero"){ av=Math.min(s.w*.4,s.h*.48)*as; fs=Math.min(s.w*.075,s.h*.08)*fsx } else { av=Math.min(s.w*.66,s.h*.46)*as; fs=Math.min(s.w*.12,s.h*.08)*fsx }
   el.style.setProperty("--av",av+"px"); el.style.setProperty("--fs",fs+"px"); el.style.setProperty("--rh",(s.k==="row"?s.h:fs*2.6)+"px");
@@ -4932,7 +4933,7 @@ function rbAE(w,rule){ return Object.assign({},RB_AE_DEF,(w&&w.ae)||{},rule&&rul
 function rbmCtx(ae,o={}){ const sp=Math.max(.25,+ae.speed||1), du=Math.max(.3,+ae.dur||1); return {d:Math.round(900*du/sp),p:Math.max(.2,Math.min(1.8,+ae.power||1)),dir:ae.dir==="ltr"?-1:1,hit:!!o.hit,lite:!!o.lite} }
 
 /** تشغيل الحركة الرئيسية + المكوّنات المختارة على صف قانون */
-function rbmRun(row,motionId,ae,o={}){ if(!row||ae.off) return; const c=rbmCtx(ae,o), m=RBM_BY_ID[motionId];
+function rbmRun(row,motionId,ae,o={}){ if(!row||ae.off) return; const c=rbmCtx(ae,o), m=RBM_BY_ID[motionId]; if(row.closest&&row.closest(".mir-m")) c.dir*=-1; /* عكس اتجاه الحركة مع الاتجاه */
  if(m){ try{ m.run(row,c) }catch(e){} }
  const sub=(id,cat)=>{ const x=RBM_BY_ID[id]; if(x&&x.cat===cat&&x.id!==motionId) try{ x.run(row,c) }catch(e){} };
  if(ae.line) sub(ae.line,"line"); if(ae.text) sub(ae.text,"text");
@@ -10400,7 +10401,7 @@ Object.assign(View.prototype,{
   const still=rotReduced()||this.opts.editor&&this.opts.still;
   if(!prev||still){ if(prev) prev.box.classList.remove("on"); return }
   const tr=this.rotTrans(prev.it,it), ex=typeof window!=="undefined"&&!!window.__arshExplore, T=RT_BY_ID[ex&&tr!=="instant"?"crossfade":tr]||RT_BY_ID.smoothFade;
-  const tw=it.trDur||w.trDur||900, c={d:Math.max(150,Math.min(4000,+tw/(+w.trSpeed||1))),p:Math.max(.3,Math.min(1.6,+w.trPower||1)),dir:w.trDir==="ltr"?-1:1,lite:!!(ex||w.lowPerf||this.opts.lowPerf)};
+  const tw=it.trDur||w.trDur||900, c={d:Math.max(150,Math.min(4000,+tw/(+w.trSpeed||1))),p:Math.max(.3,Math.min(1.6,+w.trPower||1)),dir:(w.trDir==="ltr"?-1:1)*(this.el.classList.contains("mir-m")?-1:1),lite:!!(ex||w.lowPerf||this.opts.lowPerf)};
   prev.box.getAnimations&&prev.box.getAnimations().forEach(a=>a.cancel()); next.box.getAnimations&&next.box.getAnimations().forEach(a=>a.cancel());
   prev.box.classList.add("on","leaving"); rs.lastTr=T.id;
   try{ T.run(prev.box,next.box,this.rotFxL,c) }catch(_){}
@@ -10488,6 +10489,77 @@ const ROT_CSS=`
 .rcw .rc-t{font:800 var(--rcfs)/1.25 "Alexandria","IBM Plex Sans Arabic",sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.7)}.rcw .rc-s{font:500 calc(var(--rcfs)*.5)/1.3 "IBM Plex Sans Arabic",sans-serif;opacity:.85;text-shadow:0 1px 6px rgba(0,0,0,.7)}
 .rcw .rc-m{position:absolute;inset:0;width:100%;height:100%}
 .rcw .rc-empty{opacity:.5;font-size:14px}
+`;
+
+/* ---- engine/mirror.js ---- */
+// ====== اتجاه وترتيب العناصر — B6O6 Fantastic Mirror Layout ======
+// يعمل على كل القوائم والطبقات الحالية والمستقبلية بدون تصميم جديد لكل اتجاه:
+// - إعادة ترتيب فعلية: عكس اتجاه التخطيط (direction) فتنعكس صفوف flex/grid ومواقع العناصر،
+//   بينما النصوص العربية والإنجليزية والأرقام والصور تبقى سليمة (لا يوجد scaleX(-1) على المحتوى).
+// - القوائم ذات المواقع المحسوبة (قوائم Pro والتتويج) تُعكس مواقع خاناتها برمجياً مع بقاء ترتيب المراكز.
+// - «الصورة يمين/يسار» يقيس موقع صورة المستخدم الفعلي في التصميم ثم يقرر العكس — يصلح لأي تصميم.
+// - الحجم والموقع والشفافية لا تتغير.
+
+const MIR_MODES=[["default","الاتجاه الافتراضي للتصميم"],["right","صورة المستخدم على اليمين"],["left","صورة المستخدم على اليسار"],["reverse","عكس ترتيب القائمة بالكامل"]];
+const MIR_PARTS=[["rank","رقم الترتيب",".rk,.lr-rk,.d5-rank"],["av","صورة المستخدم",".av,.lr-av,.le-av,.rb-ic,.d5-av"],["name","الاسم",".nm,.lr-nm,.d5-name,.rb-what,.le-name"],["val","العداد / القيمة",".vl,.lr-vl,.d5-amt,.rb-val"]];
+const MIR_AV=".lr-av,.av,.le-av,.rb-ic,.d5-av,.fc-av,.uc-av";
+/** الأنواع التي لا معنى للاتجاه فيها (بدون واجهة) */
+const MIR_SKIP=new Set(["sndplayer","abox","rotator"]);
+let mirCss=false;
+function ensureMirCSS(){ if(mirCss||typeof document==="undefined") return; mirCss=true; const st=document.createElement("style"); st.id="b6o6-mir"; st.textContent=MIR_CSS; document.head.appendChild(st) }
+
+Object.assign(View.prototype,{
+ /** يطبّق الاتجاه بعد كل رسم — مستقل عن نوع العنصر */
+ mirSync(){ const w=this.w; if(!w||MIR_SKIP.has(w.type)) return; ensureMirCSS(); const el=this.el, m=w.mir||"default";
+  this.mirExtras();
+  const key=[w.type,w.design,w.layout||"",w.kind||"",w.mode||""].join("|");
+  if(this.mirKey!==key){ this.mirKey=key; this.mirBase=null; if(this.mirOn) this.mirSet(false) }
+  if(m==="default"){ this.mirSet(false); return }
+  if(m==="reverse"){ this.mirSet(true); return }
+  if(!this.mirBase){ if(this.mirOn) this.mirSet(false); const s=this.mirSide(); if(!s){ this.mirRetry(); return } this.mirBase=s }
+  this.mirSet(this.mirBase!=="center"&&this.mirBase!==m) },
+ mirSet(on){ const el=this.el; on=!!on;
+  if(!on||!this.mirDir0){ el.style.direction=""; this.mirDir0=getComputedStyle(el).direction||"rtl" }
+  // قوائم Pro عناصرها بمواقع مطلقة: يُعكس الصف في مكانه ثم يُعاد النص والأرقام والصور لوضعها الطبيعي (المحصلة: مواقع معكوسة ومحتوى سليم)
+  const abs=this.w.type==="lb"; el.classList.toggle("mir-s",on&&abs); el.classList.toggle("mir-x",on&&!abs); el.style.direction=on&&!abs?(this.mirDir0==="rtl"?"ltr":"rtl"):""; const nd=on&&!abs?(this.mirDir0==="rtl"?"ltr":"rtl"):""; el.classList.toggle("mir-ltr",nd==="ltr"); el.classList.toggle("mir-rtl",nd==="rtl");
+  const motion=on!==!!this.w.mirMotion; el.classList.toggle("mir-m",motion); el.style.setProperty("--mdir",motion?"-1":"1");
+  if(this.mirOn!==on){ this.mirOn=on; if(this.layoutRows) try{ this.layoutRows() }catch(e){} } },
+ /** موقع صورة المستخدم الحالي بالنسبة لمنتصف العنصر */
+ mirSide(){ const el=this.el; const r=el.getBoundingClientRect(); if(!r.width) return null;
+  const avs=[...el.querySelectorAll(MIR_AV)].filter(a=>{ const b=a.getBoundingClientRect(); return b.width>0&&b.height>0 }); if(!avs.length) return null;
+  // صف عادي (ليس منصة تتويج): نقارن الصورة بالاسم في نفس الصف
+  let stacked=0;
+  for(const a of avs){ const row=a.parentElement; const nm=row&&row.querySelector(".nm,.lr-nm,.d5-name,.rb-what,.le-name"); if(nm){ const ab=a.getBoundingClientRect(), nb=nm.getBoundingClientRect(); if(Math.abs((ab.left+ab.width/2)-(nb.left+nb.width/2))>4&&Math.abs((ab.top+ab.height/2)-(nb.top+nb.height/2))<ab.height) return ab.left>nb.left?"right":"left"; stacked++ } }
+  if(stacked) return "center"; // الصورة فوق الاسم (منصات/بطاقات عمودية): لا يمين ولا يسار — «عكس الكل» يعكس مواقع الخانات
+  const a=avs[0].getBoundingClientRect(), cx=a.left+a.width/2, rc=r.left+r.width/2; if(Math.abs(cx-rc)<r.width*.06) return "center"; return cx>rc?"right":"left" },
+ mirRetry(){ if(this.mirT) return; let n=0; const run=()=>{ this.mirT=0; if(!this.el.isConnected&&n>0) return; if(this.mirBase) return; n++; this.mirSync(); if(!this.mirBase&&n<12&&!this.mirT) this.mirT=setTimeout(run,Math.min(2000,120*n)) }; this.mirT=setTimeout(run,60) },
+ /** المحاذاة والمسافات والترتيب المخصص لكل عنصر */
+ mirExtras(){ const w=this.w, S=this.el.style, set=(k,v)=>v!=null&&v!==""?S.setProperty(k,v):S.removeProperty(k);
+  set("--mir-al",w.mirAlign||""); this.el.classList.toggle("mir-al",!!w.mirAlign);
+  set("--mir-gap",w.mirGap>0?(+w.mirGap)+"em":""); this.el.classList.toggle("mir-g",w.mirGap>0);
+  set("--mir-rgap",w.mirRowGap>0?(+w.mirRowGap)+"px":""); this.el.classList.toggle("mir-rg",w.mirRowGap>0);
+  const O=w.mirOrder&&typeof w.mirOrder==="object"?w.mirOrder:null; this.el.classList.toggle("mir-o",!!O);
+  for(const [k] of MIR_PARTS) set("--o-"+k,O&&O[k]!=null?String(+O[k]):"") },
+});
+// كل رسم/تحديث لأي عنصر يمر بالاتجاه المختار
+const mirAp=View.prototype.apply; View.prototype.apply=function(w,a){ const r=mirAp.call(this,w,a); try{ this.mirSync() }catch(e){} return r };
+const mirRf=View.prototype.refresh; View.prototype.refresh=function(src,s){ const r=mirRf.call(this,src,s); if(this.w&&(this.w.mir==="right"||this.w.mir==="left")&&!this.mirBase) try{ this.mirSync() }catch(e){} return r };
+
+/** نسخة الاتجاه للعناصر ذات المواقع المحسوبة (قوائم Pro): عكس أفقي للخانة داخل المساحة */
+function mirX(view,x,w,W){ return view&&view.mirOn?Math.max(0,W-x-w):x }
+/** قلب الصف في مكانه (يُضاف بعد الإزاحة حتى لا ينعكس موقع الخانة نفسه) */
+const mirFlipT=view=>view&&view.mirOn&&view.w&&view.w.type==="lb"?" scaleX(-1)":"";
+
+const MIR_CSS=`
+.wd.mir-ltr :is(.nm,.d5-name,.rb-what,.le-name){text-align:left}.wd.mir-rtl :is(.nm,.d5-name,.rb-what,.le-name){text-align:right}
+.wd.mir-s .lr{transform-origin:50% 50%!important}
+.wd.mir-s .lr :is(.lr-nm,.lr-vl,.lr-rk,.ped>b),.wd.mir-s .lr .lr-av>img{scale:-1 1!important}
+.wd.mir-s .lr.k-row .lr-nm{text-align:left!important}
+.wd.mir-x .lr-nm,.wd.mir-x .nm,.wd.mir-x .d5-name,.wd.mir-x .rb-what,.wd.mir-x .le-name,.wd.mir-x .le-title,.wd.mir-x .le-msg,.wd.mir-x .vl,.wd.mir-x .lr-vl,.wd.mir-x .d5-amt,.wd.mir-x .rb-val,.wd.mir-x .wt,.wd.mir-x .rb-t{unicode-bidi:plaintext}
+.wd.mir-al .nm,.wd.mir-al .lr-nm,.wd.mir-al .d5-name,.wd.mir-al .rb-what,.wd.mir-al .le-name{text-align:var(--mir-al)!important;justify-content:var(--mir-al)}
+.wd.mir-g :is(.r,.lr,.d5-row,.rb-row){column-gap:var(--mir-gap)!important}
+.wd.mir-rg :is(.rows,.d5-rows,.rb-list){row-gap:var(--mir-rgap)!important}
+.wd.mir-o :is(.rk,.lr-rk,.d5-rank){order:var(--o-rank,0)}.wd.mir-o :is(.av,.lr-av,.le-av,.rb-ic,.d5-av){order:var(--o-av,0)}.wd.mir-o :is(.nm,.lr-nm,.d5-name,.rb-what,.le-name){order:var(--o-name,0)}.wd.mir-o :is(.vl,.lr-vl,.d5-amt,.rb-val){order:var(--o-val,0)}
 `;
 
 const LOGO="data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iYjYtZW1ibGVtIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBhcmlhLWxhYmVsPSJCNk82Ij48ZGVmcz4KIDxsaW5lYXJHcmFkaWVudCBpZD0iZW1iMWciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM5ZmQwZmYiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iIzRkOGRmZiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE1NDZjOSIvPjwvbGluZWFyR3JhZGllbnQ+CiA8bGluZWFyR3JhZGllbnQgaWQ9ImVtYjFmIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMGExMjI2Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDUwOTE0Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+CiAKIDxwYXRoIGQ9Ik02MCA4IDEwMyAzM3Y1NEw2MCAxMTIgMTcgODdWMzNaIiBmaWxsPSJ1cmwoI2VtYjFmKSIgc3Ryb2tlPSJ1cmwoI2VtYjFnKSIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiA8cGF0aCBkPSJNNjAgMTkgOTQgMzl2NDJMNjAgMTAxIDI2IDgxVjM5WiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGQ4ZGZmIiBzdHJva2Utb3BhY2l0eT0iLjIyIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogPHBhdGggZD0iTTUwIDQydjM2bDI5LTE4WiIgZmlsbD0idXJsKCNlbWIxZykiIHN0cm9rZT0idXJsKCNlbWIxZykiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogPHBhdGggY2xhc3M9ImVtYi13MSIgZD0iTTg0IDQ0YTIyIDIyIDAgMCAxIDAgMzIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzlmZDBmZiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KIDxwYXRoIGNsYXNzPSJlbWItdzIiIGQ9Ik0zNiA0NGEyMiAyMiAwIDAgMCAwIDMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5ZmQwZmYiIHN0cm9rZS1vcGFjaXR5PSIuNTUiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiA8L3N2Zz4=";
@@ -11882,6 +11954,7 @@ function renderProps(){
  ${w.type==="gifts"?sel("sortBy","ترتيب الداعمين حسب",SORTS,w.sortBy):""}
  ${t.bt?btPropsHTML(w,sel,rng):""}${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
+ ${mirPropsHTML(w)}
  ${t.rules?rbPropsHTML2(w,sel,rng):""}
  ${t.fc?fcPropsHTML(w,sel,rng):""}${t.du?`${sel("design","التصميم",DU_DESIGNS.map(d=>[d.id,d.n+". "+d.name]),w.design)}<button class="btn sm" data-go="duration" style="margin:6px 0">⏲️ كل إعدادات مدة البث</button>`:""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
  ${t.soc?`${w.type==="social"?sel("mode","طريقة العرض",[["rotation","تدوير تلقائي"],["single","حساب واحد"],["ondemand","عند الطلب فقط"]],w.mode):sel("filter","الحسابات",[["all","التواصل + الألعاب"],["social","التواصل فقط"],["game","الألعاب فقط"]],w.filter)}
@@ -14969,6 +15042,7 @@ function rotHTML(){ const G=rotGroups(), g=rotCur(); rotSyncAll();
  <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3>🗂 قوائم المجموعة <span class="tag">${items.length}</span></h3>
    <div class="row" style="gap:6px"><input class="inp" data-rotf="name" value="${esc(g.name||"")}" style="max-width:220px" title="اسم المجموعة"><button class="btn sm dng" data-rotx="delg">حذف المجموعة</button></div></div>
   <div class="rot-list">${items.length?items.map(row).join(""):`<div class="sa2-empty">أضف قوائم من الأسفل.</div>`}</div>
+  <div class="row" style="gap:6px;flex-wrap:wrap;margin-bottom:8px"><span class="small mut">↔ تطبيق الاتجاه على جميع قوائم المجموعة:</span><button class="btn xs" data-rotx="mirall" data-m="right">الصورة يمين</button><button class="btn xs" data-rotx="mirall" data-m="left">الصورة يسار</button><button class="btn xs" data-rotx="mirall" data-m="default">الافتراضي</button></div>
   <div class="row rot-add"><select class="inp" data-rotf="addnew"><option value="">＋ إضافة قائمة جديدة…</option>${ROT_CAT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select>
    <select class="inp" data-rotf="addref"><option value="">＋ إضافة عنصر موجود في التخطيط…</option>${others.map(w=>`<option value="${w.id}">${(TYPES[w.type]||{}).icon||""} ${esc(rotLabel(w))}</option>`).join("")}</select></div></div>
  <div class="grid g2">
@@ -15042,6 +15116,7 @@ document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closes
  if(a==="dup"){ const i=g.items.findIndex(x=>x.id===d.i); if(i>=0){ g.items.splice(i+1,0,{...JSON.parse(JSON.stringify(g.items[i])),id:rotUid()}); rotSave("كُررت القائمة داخل الدورة"); renderPage(true) } return }
  if(a==="rm"){ g.items=g.items.filter(x=>x.id!==d.i); if(g.smart) g.smart.rules=(g.smart.rules||[]).filter(r=>r.item!==d.i); rotSave("أُزيلت من المجموعة — العنصر باقٍ في المنصة"); return renderPage(true) }
  if(a==="edit"){ S.sel=d.ref; return go("studio") }
+ if(a==="mirall"){ rotMirAll(g,d.m); return renderPage(true) }
  if(a==="sradd"){ g.smart=g.smart||{on:true,cooldown:8,rules:[]}; g.smart.rules.push({id:rotUid(),ev:"bigGift",item:g.items[0].id,dur:10,prio:1,min:1000}); rotSave(); return renderPage(true) }
  if(a==="srdel"){ g.smart.rules=(g.smart.rules||[]).filter(r=>r.id!==d.r); rotSave(); return renderPage(true) }
 });
@@ -15066,6 +15141,38 @@ document.addEventListener("dragstart",e=>{ const r=e.target.closest&&e.target.cl
 document.addEventListener("dragover",e=>{ const r=e.target.closest&&e.target.closest("[data-rotdrag]"); if(r&&S.rotDrag) e.preventDefault() });
 document.addEventListener("drop",e=>{ const r=e.target.closest&&e.target.closest("[data-rotdrag]"); if(!r||!S.rotDrag) return; e.preventDefault(); const g=rotCur(), from=S.rotDrag, to=r.dataset.rotdrag; S.rotDrag=null; if(!g||from===to) return;
  const i=g.items.findIndex(x=>x.id===from), j=g.items.findIndex(x=>x.id===to); if(i<0||j<0) return; const [x]=g.items.splice(i,1); g.items.splice(j,0,x); rotSave("تم تغيير الترتيب"); renderPage(true) });
+
+/* ===================== ↔ اتجاه وترتيب العناصر — B6O6 Fantastic Mirror Layout ===================== */
+function mirPropsHTML(w){ if(!w||MIR_SKIP.has(w.type)) return w&&w.type==="rotator"?`<div class="card" style="margin:8px 0"><button class="btn sm pri" data-go="rotations">🔁 إعدادات المجموعة المتناوبة</button></div>`:"";
+ const m=w.mir||"default", O=w.mirOrder||null, hist=(w.mirHist||[]).length;
+ return `<div class="mir-box"><h4>↔ اتجاه وترتيب العناصر</h4>
+  <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn sm ${m==="right"?"on":""}" data-mir="right" data-wid="${w.id}">الصورة يمين</button><button class="btn sm ${m==="left"?"on":""}" data-mir="left" data-wid="${w.id}">الصورة يسار</button>
+   <button class="btn sm pri" data-mir="flip" data-wid="${w.id}" title="عكس الاتجاه بضغطة">⇆ Flip Layout</button>${hist?`<button class="btn sm" data-mir="undo" data-wid="${w.id}">↶ تراجع</button>`:""}<button class="btn sm ${m==="default"?"on":""}" data-mir="default" data-wid="${w.id}">الافتراضي</button></div>
+  <div class="grid g2" style="gap:8px;margin-top:8px"><div class="fld" style="margin:0"><label>الاتجاه</label><select class="inp" data-mirf="mir" data-wid="${w.id}">${MIR_MODES.map(([k,t])=>`<option value="${k}" ${m===k?"selected":""}>${t}</option>`).join("")}</select></div>
+   <label class="row small" style="gap:6px;align-self:end"><input type="checkbox" data-mirf="mirMotion" data-wid="${w.id}" ${w.mirMotion?"checked":""}> عكس اتجاه الحركة فقط</label></div>
+  <details class="mir-adv" ${O||w.mirAlign||w.mirGap||w.mirRowGap?"open":""}><summary class="small">ترتيب مخصص ومسافات</summary>
+   <div class="grid g2" style="gap:8px;margin-top:6px">${MIR_PARTS.map(([k,t])=>`<div class="fld" style="margin:0"><label>موقع ${t}</label><select class="inp" data-mirord="${k}" data-wid="${w.id}"><option value="">حسب التصميم</option>${[1,2,3,4].map(n=>`<option value="${n}" ${O&&+O[k]===n?"selected":""}>${n===1?"الأول (بداية الصف)":n===4?"الأخير (نهاية الصف)":"الموضع "+n}</option>`).join("")}</select></div>`).join("")}
+    <div class="fld" style="margin:0"><label>محاذاة النص</label><select class="inp" data-mirf="mirAlign" data-wid="${w.id}">${[["","حسب التصميم"],["start","بداية"],["center","المنتصف"],["end","نهاية"]].map(([k,t])=>`<option value="${k}" ${(w.mirAlign||"")===k?"selected":""}>${t}</option>`).join("")}</select></div>
+    <div class="fld" style="margin:0"><label>المسافة بين العناصر <b class="mut">${(+w.mirGap||0).toFixed(1)}</b></label><input type="range" min="0" max="2" step=".1" value="${+w.mirGap||0}" data-mirf="mirGap" data-wid="${w.id}"></div>
+    <div class="fld" style="margin:0"><label>المسافة بين الصفوف <b class="mut">${+w.mirRowGap||0}px</b></label><input type="range" min="0" max="40" step="1" value="${+w.mirRowGap||0}" data-mirf="mirRowGap" data-wid="${w.id}"></div></div>
+   ${O?`<button class="btn xs" data-mir="resetord" data-wid="${w.id}" style="margin-top:6px">↺ ترتيب التصميم</button>`:""}</details>
+  <p class="mut small" style="margin:6px 0 0">إعادة ترتيب فعلية: النصوص والأرقام والصور لا تنعكس، والحجم والموقع لا يتغيران. يصل للبث فوراً.</p></div>` }
+function mirUpd(w,fn){ fn(w); save(); pushLayout(); if(typeof refreshView==="function") refreshView(w); renderPage(true) }
+function mirSetMode(w,m){ const h=w.mirHist||(w.mirHist=[]); h.push(w.mir||"default"); if(h.length>20) h.shift(); w.mir=m }
+/** الاتجاه الحالي للعنصر في المعاينة (لزر Flip): هل الصورة يمين أم يسار؟ */
+function mirCurSide(w){ const v=(typeof views!=="undefined"&&views.get(w.id))||null; if(!v||!v.mirSide) return null; const on=v.mirOn; const s=v.mirSide(); return s }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-mir]"); if(!b) return; const w=findW(b.dataset.wid); if(!w) return; const a=b.dataset.mir;
+ if(a==="undo") return mirUpd(w,w=>{ const h=w.mirHist||[]; if(h.length) w.mir=h.pop() });
+ if(a==="resetord") return mirUpd(w,w=>{ delete w.mirOrder });
+ if(a==="flip") return mirUpd(w,w=>{ const cur=w.mir||"default", s=mirCurSide(w); let nx;
+  if(cur==="right") nx="left"; else if(cur==="left") nx="right"; else if(s==="right") nx="left"; else if(s==="left") nx="right"; else nx=cur==="reverse"?"default":"reverse"; mirSetMode(w,nx); toast("⇆ تم عكس الاتجاه") });
+ mirUpd(w,w=>mirSetMode(w,a)) });
+document.addEventListener("change",e=>{ const t=e.target, d=t.dataset||{};
+ if(d.mirf){ const w=findW(d.wid); if(!w) return; const f=d.mirf, v=t.type==="checkbox"?t.checked:t.value; return mirUpd(w,w=>{ if(f==="mir") mirSetMode(w,v); else if(f==="mirGap"||f==="mirRowGap") w[f]=+v; else w[f]=v }) }
+ if(d.mirord){ const w=findW(d.wid); if(!w) return; return mirUpd(w,w=>{ const O={...(w.mirOrder||{})}; if(t.value) O[d.mirord]=+t.value; else delete O[d.mirord]; w.mirOrder=Object.keys(O).length?O:undefined; if(!w.mirOrder) delete w.mirOrder }) }
+});
+/** القوائم المتناوبة: تطبيق اتجاه واحد على جميع قوائم المجموعة */
+function rotMirAll(g,m){ const l=L(); for(const it of g.items||[]){ const w=l.widgets.find(x=>x.id===it.ref); if(w&&!MIR_SKIP.has(w.type)) mirSetMode(w,m) } save(); pushLayout(); toast("↔ طُبّق الاتجاه على جميع قوائم المجموعة") }
 
 
 })();

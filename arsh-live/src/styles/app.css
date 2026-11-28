@@ -635,3 +635,4 @@ body.flc-pip{margin:0}body.flc-pip .flc-root{height:100vh;border-radius:0}
 .rot-smart{display:flex;flex-direction:column;gap:6px;margin:10px 0}.rot-sr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.rot-sr select.inp{width:auto}
 .rot-code{font-size:11px;direction:ltr;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
 .rot-key{direction:ltr;text-align:center;cursor:pointer}
+.mir-box{border:1px solid var(--line,#1f2a44);border-radius:12px;padding:10px;margin:8px 0}.mir-box h4{margin:0 0 8px}

@@ -1,4 +1,5 @@
 // ====== رسم قوائم Pro وأهداف الدعم المصغّرة (امتداد لـ View) ======
+import { mirX, mirFlipT } from "./mirror.js";
 import { View } from "./view.js";
 import { esc, avatar, clamp } from "./defs.js";
 import { lbEntries, lbIcon, lbFmt, lbDesignOf, haloHTML, lbDesignCSS, RANK_COLORS, sgProgress, sgFmt, SG_ICONS, SG_DESIGNS, lbSlots } from "./lb.js";
@@ -68,7 +69,7 @@ Object.assign(View.prototype,{
  lbSlotsOf(N,P){ if(this.lbArt) return lbArtSlots(this.lbArt.arr==="crown3"&&this.w.podFlip?"crown3r":this.lbArt.arr,N,P.W,P.H,P.g); if(!this.lbBars) return lbSlots(N,P.W,P.H,P.g); const sl=lbBarSlots(N,P.W,P.H,P.g); if(sl[0]) this.el.style.setProperty("--rh0",sl[0].h+"px"); return sl },
  place(el,s,i){
   const w=this.w, as=(w.avatarScale||1)*(this.lbAvs||1), fsx=w.fontScale||1;
-  el.style.transform=`translate(${s.x}px,${s.y}px)`; el.style.width=s.w+"px"; el.style.height=s.h+"px";
+  el.style.transform=`translate(${mirX(this,s.x,s.w,this.pg?this.pg.W:0)}px,${s.y}px)${mirFlipT(this)}`; el.style.width=s.w+"px"; el.style.height=s.h+"px";
   if(this.lbArt&&this.lbArt.arr==="crown3"&&i<3&&this.pg) el.style.setProperty("--ped",Math.max(8,this.pg.H*(this.w.topN>3?.8:.985)-(s.y+s.h))+"px"); // منصات التتويج تنتهي على أرضية واحدة
   let av,fs; if(s.k==="tok"){ av=s.w*.74*as*(i===0?(+w.firstScale||1):1); fs=Math.min(s.w*.14,s.h*.1)*fsx } else if(this.lbBars){ av=s.h*.74*as; fs=s.h*.42*fsx } else if(s.k==="row"){ av=s.h*.84*as; fs=Math.min(s.h*.36,s.w*.06)*fsx } else if(s.k==="hero"){ av=Math.min(s.w*.4,s.h*.48)*as; fs=Math.min(s.w*.075,s.h*.08)*fsx } else { av=Math.min(s.w*.66,s.h*.46)*as; fs=Math.min(s.w*.12,s.h*.08)*fsx }
   el.style.setProperty("--av",av+"px"); el.style.setProperty("--fs",fs+"px"); el.style.setProperty("--rh",(s.k==="row"?s.h:fs*2.6)+"px");

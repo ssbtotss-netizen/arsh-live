@@ -194,7 +194,7 @@ export function rbAE(w,rule){ return Object.assign({},RB_AE_DEF,(w&&w.ae)||{},ru
 function rbmCtx(ae,o={}){ const sp=Math.max(.25,+ae.speed||1), du=Math.max(.3,+ae.dur||1); return {d:Math.round(900*du/sp),p:Math.max(.2,Math.min(1.8,+ae.power||1)),dir:ae.dir==="ltr"?-1:1,hit:!!o.hit,lite:!!o.lite} }
 
 /** تشغيل الحركة الرئيسية + المكوّنات المختارة على صف قانون */
-export function rbmRun(row,motionId,ae,o={}){ if(!row||ae.off) return; const c=rbmCtx(ae,o), m=RBM_BY_ID[motionId];
+export function rbmRun(row,motionId,ae,o={}){ if(!row||ae.off) return; const c=rbmCtx(ae,o), m=RBM_BY_ID[motionId]; if(row.closest&&row.closest(".mir-m")) c.dir*=-1; /* عكس اتجاه الحركة مع الاتجاه */
  if(m){ try{ m.run(row,c) }catch(e){} }
  const sub=(id,cat)=>{ const x=RBM_BY_ID[id]; if(x&&x.cat===cat&&x.id!==motionId) try{ x.run(row,c) }catch(e){} };
  if(ae.line) sub(ae.line,"line"); if(ae.text) sub(ae.text,"text");

@@ -1390,6 +1390,7 @@ function renderProps(){
  ${w.type==="gifts"?sel("sortBy","ترتيب الداعمين حسب",SORTS,w.sortBy):""}
  ${t.bt?btPropsHTML(w,sel,rng):""}${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
+ ${mirPropsHTML(w)}
  ${t.rules?rbPropsHTML2(w,sel,rng):""}
  ${t.fc?fcPropsHTML(w,sel,rng):""}${t.du?`${sel("design","التصميم",DU_DESIGNS.map(d=>[d.id,d.n+". "+d.name]),w.design)}<button class="btn sm" data-go="duration" style="margin:6px 0">⏲️ كل إعدادات مدة البث</button>`:""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
  ${t.soc?`${w.type==="social"?sel("mode","طريقة العرض",[["rotation","تدوير تلقائي"],["single","حساب واحد"],["ondemand","عند الطلب فقط"]],w.mode):sel("filter","الحسابات",[["all","التواصل + الألعاب"],["social","التواصل فقط"],["game","الألعاب فقط"]],w.filter)}

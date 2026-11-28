@@ -182,7 +182,7 @@ Object.assign(View.prototype,{
   const still=rotReduced()||this.opts.editor&&this.opts.still;
   if(!prev||still){ if(prev) prev.box.classList.remove("on"); return }
   const tr=this.rotTrans(prev.it,it), ex=typeof window!=="undefined"&&!!window.__arshExplore, T=RT_BY_ID[ex&&tr!=="instant"?"crossfade":tr]||RT_BY_ID.smoothFade;
-  const tw=it.trDur||w.trDur||900, c={d:Math.max(150,Math.min(4000,+tw/(+w.trSpeed||1))),p:Math.max(.3,Math.min(1.6,+w.trPower||1)),dir:w.trDir==="ltr"?-1:1,lite:!!(ex||w.lowPerf||this.opts.lowPerf)};
+  const tw=it.trDur||w.trDur||900, c={d:Math.max(150,Math.min(4000,+tw/(+w.trSpeed||1))),p:Math.max(.3,Math.min(1.6,+w.trPower||1)),dir:(w.trDir==="ltr"?-1:1)*(this.el.classList.contains("mir-m")?-1:1),lite:!!(ex||w.lowPerf||this.opts.lowPerf)};
   prev.box.getAnimations&&prev.box.getAnimations().forEach(a=>a.cancel()); next.box.getAnimations&&next.box.getAnimations().forEach(a=>a.cancel());
   prev.box.classList.add("on","leaving"); rs.lastTr=T.id;
   try{ T.run(prev.box,next.box,this.rotFxL,c) }catch(_){}
