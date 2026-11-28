@@ -1,0 +1,20 @@
+// «آخر متابع» في OBS: تغيير التصميم يعيد رسم نفس المتابع بالشكل الجديد + معاينة مؤقتة إذا لا يوجد متابع بعد
+const { chromium } = require('/opt/npm-tools/node_modules/playwright');
+(async()=>{ const b=await chromium.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});
+ const ctx=await b.newContext({viewport:{width:1440,height:900}}); const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
+ const ok=(c,m)=>console.log((c?'PASS ':'FAIL ')+m);
+ const url='file:///home/claude/najd/demo/index.html'; await p.goto(url); await p.evaluate(()=>localStorage.clear()); await p.goto(url);
+ await p.evaluate(()=>go('falerts')); await p.waitForTimeout(400); await p.evaluate(()=>{ const b=document.querySelector('[data-faadd]'); if(b) b.click() }); await p.waitForTimeout(300);
+ await p.evaluate(()=>document.querySelector('[data-falast]').click()); await p.waitForTimeout(400);
+ const id=await p.evaluate(()=>window.__arsh.L().widgets.find(w=>w.type==='levent').id);
+ const href=await p.evaluate(id=>overlayURL(window.__arsh.L(),id),id); const o=await ctx.newPage(); o.on('pageerror',e=>errs.push('o '+e.message)); await o.setViewportSize({width:800,height:300}); await o.goto(href); await o.waitForTimeout(900);
+ const ov=()=>o.evaluate(()=>{ const e=document.querySelector('.wd'); const c=e&&e.querySelector('.le-card:not(.le-exit)'); return {cls:e?[...e.classList].find(x=>x.startsWith('led-')):'', name:c?c.querySelector('.le-nm')?.textContent:''} });
+ const setD=async d=>{ await p.evaluate(([id,d])=>{ const w=window.__arsh.L().widgets.find(x=>x.id===id); w.design=d; save(); pushLayout() },[id,d]); await o.waitForTimeout(700) };
+ await setD('goldenRose'); let r=await ov(); ok(r.cls==='led-goldenRose'&&r.name==='معاينة التصميم','no follower yet: new design previewed in OBS ('+JSON.stringify(r)+')');
+ await o.waitForTimeout(6600); r=await ov(); ok(!r.name,'preview disappears after a few seconds (no fake data kept)');
+ await p.evaluate(()=>document.querySelector('[data-fatest]')?document.querySelector('[data-fatest]').click():window.__arsh.SIM.follow()); await p.evaluate(()=>go('falerts')); await p.waitForTimeout(300); await p.evaluate(()=>document.querySelector('[data-fatest]').click()); await o.waitForTimeout(900);
+ r=await ov(); const nm=r.name; ok(!!nm&&nm!=='معاينة التصميم','test follow shown: '+nm);
+ await setD('neonHexagon'); r=await ov(); ok(r.cls==='led-neonHexagon'&&r.name===nm,'design change keeps the follower and redraws in new shape ('+JSON.stringify(r)+')');
+ await p.evaluate(()=>window.__arsh.SIM.follow()); await o.waitForTimeout(900); const real=(await ov()).name;
+ await setD('sakura'); r=await ov(); ok(r.cls==='led-sakura'&&r.name===real,'real follower + design change ('+JSON.stringify(r)+')');
+ console.log('errs',errs); await b.close() })();

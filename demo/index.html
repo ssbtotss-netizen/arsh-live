@@ -8335,7 +8335,12 @@ Object.assign(View.prototype,{
   const P={...LE_PALETTES[d.pal]||LE_PALETTES.gold,...(w.palette&&LE_PALETTES[w.palette]||{})};
   for(const k of ["c1","c2","cn","ct","cp","csh","cbg"]) st.setProperty("--"+k,w[k]||P[k]);
   const sig=["le",d.id,w.kind,fr,w.frameImg||"",w.showTitle,w.showMsg,w.showEmblem,w.showAv,lay,w.ptN,w.fxHalo,w.fxKind].join("|");
-  if(sig!==this.sig){ this.sig=sig; this.le={cur:null,timer:0}; e.innerHTML=(ed?'<div class="rh"></div><div class="lockb">🔒</div>':""); this.leShow(this.leCurrent(),true) }
+  if(sig!==this.sig){ const keep=this.le&&this.le.cur, prevD=this.leLastD; this.leLastD=d.id; this.sig=sig; this.le={cur:null,timer:0}; e.innerHTML=(ed?'<div class="rh"></div><div class="lockb">🔒</div>':"");
+   // تغيير التصميم: نفس المتابع المعروض يُعاد رسمه بالشكل الجديد (كان يختفي فتبدو الطبقة كأنها لم تتغير)
+   let cur=this.leCurrent()||(keep&&!keep.designPv?keep:null);
+   // لا يوجد متابع بعد في هذا البث: معاينة واضحة للشكل الجديد لثوانٍ (ليست بيانات بث حقيقية) ثم تختفي
+   if(!cur&&!ed&&prevD&&prevD!==d.id){ cur={...leSample(w.kind),id:"design_pv_"+Date.now(),name:"معاينة التصميم",designPv:true}; clearTimeout(this.lePvT); this.lePvT=setTimeout(()=>{ if(this.le&&this.le.cur&&this.le.cur.designPv) this.leHide() },6000) }
+   this.leShow(cur,!cur||!cur.designPv) }
   else if(this.le&&this.le.cur) this.leFill(this.el.querySelector(".le-card:not(.le-exit)"),this.le.cur);
  },
  leCurrent(){ const w=this.w, src=this.opts.data?this.opts.data():null; const L=src&&src.C&&src.C.latest||{}; const e=LE_KINDS[w.kind]?.derived?leDerive(w.kind,src,lbEntries,topsList):L[w.kind];
