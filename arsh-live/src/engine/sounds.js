@@ -28,6 +28,11 @@ export const SND_EVENTS = {
   sa_near: { label: "السابثون: اقتراب النهاية", icon: "⏳", hint: "عند بقاء أقل من الحد المحدد (افتراضياً 5 دقائق)", prio: 78, grp: "sa" },
   sa_end: { label: "السابثون: النهاية", icon: "🏁", hint: "عند انتهاء السابثون", prio: 95, grp: "sa" },
   sa_milestone: { label: "السابثون: إنجاز", icon: "🏆", hint: "كل ساعة مضافة (قابل للتعديل)", prio: 72, grp: "sa" },
+  sa_left60: { label: "السابثون: بقيت ساعة", icon: "🕐", hint: "عند بقاء ساعة واحدة", prio: 76, grp: "sa" },
+  sa_left10: { label: "السابثون: بقيت 10 دقائق", icon: "🔟", hint: "عند بقاء 10 دقائق", prio: 77, grp: "sa" },
+  sa_left1: { label: "السابثون: بقيت دقيقة", icon: "⏱️", hint: "عند بقاء دقيقة واحدة", prio: 79, grp: "sa" },
+  sa_reach1: { label: "السابثون: الوصول لساعة", icon: "⬆️", hint: "عندما يرتفع المتبقي إلى ساعة", prio: 71, grp: "sa" },
+  sa_reach24: { label: "السابثون: الوصول لـ24 ساعة", icon: "🌟", hint: "عندما يرتفع المتبقي إلى 24 ساعة", prio: 73, grp: "sa" },
   manual: { label: "تشغيل يدوي", icon: "🎛️", hint: "يُضاف للوحة التشغيل السريع — تشغّله متى أردت", prio: 80 },
 };
 export const SND_MODES = { fixed: "صوت ثابت (الأول)", random: "عشوائي", seq: "بالترتيب", norepeat: "عشوائي بدون تكرار متتالٍ" };

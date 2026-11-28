@@ -636,3 +636,12 @@ body.flc-pip{margin:0}body.flc-pip .flc-root{height:100vh;border-radius:0}
 .rot-code{font-size:11px;direction:ltr;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
 .rot-key{direction:ltr;text-align:center;cursor:pointer}
 .mir-box{border:1px solid var(--line,#1f2a44);border-radius:12px;padding:10px;margin:8px 0}.mir-box h4{margin:0 0 8px}
+/* مكتبة تصاميم مؤقت السابثون */
+.st-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-top:12px}
+.st-card{background:var(--card,#121826);border:1px solid rgba(255,255,255,.08);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;transition:transform .2s,border-color .2s}
+.st-card:hover{transform:translateY(-2px);border-color:rgba(77,141,255,.55)}.st-card.used{border-color:rgba(34,197,94,.6)}
+.st-pv{height:150px;background:repeating-conic-gradient(#1b2232 0 25%,#141a27 0 50%) 0 0/20px 20px;overflow:hidden;position:relative}
+.st-meta{display:flex;flex-wrap:wrap;gap:4px 8px;align-items:center;padding:8px 10px 4px}.st-meta .mut{flex-basis:100%}
+.st-acts{display:flex;flex-wrap:wrap;gap:4px;padding:6px 10px 10px}
+.st-props details{border-top:1px solid rgba(255,255,255,.07);padding:6px 0}.st-props summary{cursor:pointer;font-weight:600;margin-bottom:6px}
+.st-tiers .inp{width:33%}

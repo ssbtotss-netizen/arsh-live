@@ -205,7 +205,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["academy","أكاديمية بطوط ستريم","🎓"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["livechat","الشات المباشر والإدارة","💬"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","✦"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["rotations","القوائم المتناوبة","🔁"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["academy","أكاديمية بطوط ستريم","🎓"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["livechat","الشات المباشر والإدارة","💬"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","✦"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["rotations","القوائم المتناوبة","🔁"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["stlib","تصاميم مؤقت السابثون","⏱️"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -224,14 +224,14 @@ function userTable(rows,cols){ if(!rows.length) return '<div class="empty">لا 
  return `<table><thead><tr><th>#</th><th>المستخدم</th>${cols.map(c=>`<th>${c[0]}</th>`).join("")}</tr></thead><tbody>${rows.map((r,i)=>`<tr><td>${i+1}</td><td><img class="tav" src="${r.av||avatar(r.name)}">${esc(r.name)}</td>${cols.map(c=>`<td>${c[1](r)}</td>`).join("")}</tr>`).join("")}</tbody></table>` }
 const sorted=(o,f="v")=>Object.values(o||{}).sort((a,b)=>b[f]-a[f]);
 const proName=w=>w.type==="lb"?lbDesignOf(w.design).name:(SG_DESIGNS.find(x=>x.id===w.design)||SG_DESIGNS[0]).name;
-const dname=(id,clock)=>((clock===true?CLOCK_DESIGNS:clock==="soc"?SOCIAL_DESIGNS:DESIGNS).find(d=>d.id===id)||{}).name||id;
+const dname=(id,clock)=>(ST_BY_ID[id]&&{name:ST_BY_ID[id].name})?.name||((clock===true?CLOCK_DESIGNS:clock==="soc"?SOCIAL_DESIGNS:DESIGNS).find(d=>d.id===id)||{}).name||id;
 const wdname=w=>w.type==="donCard"?"Basic — آخر دعم":w.type==="donLast5"?"آخر داعمين — "+((D5_ANIMS.find(a=>a[0]===(w.l5Anim||"zigzag"))||[])[1]||"").split(" — ")[0]:w.type==="donText"?"Minimal — نص فقط":w.type==="levent"?leDesignOf(w.design).name+" — "+(LE_KINDS[w.kind]||{}).label:w.type==="fcount"?fcDesignOf(w.design).name:w.type==="srules"?rbDesignOf(w.design).name:TYPES[w.type]?.pro?proName(w):dname(w.design,dKind(w)==="clock"?true:dKind(w)==="soc"?"soc":false);
 const isClock=w=>!!TYPES[w.type].clock;
 const isSoc=w=>!!TYPES[w.type].soc;
 const isChip=w=>["donTicker","donLatest","donAlert"].includes(w.type);
 const dKind=w=>w.type==="battle"?"bt":w.type==="donText"?"dt":w.type==="levent"?"le":w.type==="fcount"?"fc":w.type==="srules"?"rb":w.type==="lb"?"lb":w.type==="sgoal"?"sg":isClock(w)||w.type==="donGoal"?"clock":isSoc(w)||isChip(w)?"soc":"board";
 const libPool=(w,tab)=>tab==="nowplay"?w.type==="nowplay":tab==="uchat"?w.type==="uchat":tab==="levent"?w.type==="levent":tab==="fcount"?w.type==="fcount":tab==="rules"?w.type==="srules":tab==="pro"?w.type==="lb":tab==="goals"?w.type==="sgoal":tab==="clocks"?dKind(w)==="clock":tab==="socials"?dKind(w)==="soc":dKind(w)==="board"&&TYPES[w.type].board;
-const designsOf=w=>({bt:BT_DESIGNS.map(d=>({...d,name:d.name+" (PRO)"})),clock:CLOCK_DESIGNS,soc:SOCIAL_DESIGNS,board:DESIGNS,lb:LB_DESIGNS,sg:SG_DESIGNS,rb:RB_DESIGNS,fc:FC_DESIGNS,le:LE_DESIGNS,dt:[{id:w.design,name:"Minimal Last Donation — نص فقط"}]})[dKind(w)];
+const designsOf=w=>({bt:BT_DESIGNS.map(d=>({...d,name:d.name+" (PRO)"})),clock:w.type==="subathon"?[...ST_DESIGNS.map(d=>({id:d.id,name:d.n+". "+d.name+" ★"})),...CLOCK_DESIGNS]:CLOCK_DESIGNS,soc:SOCIAL_DESIGNS,board:DESIGNS,lb:LB_DESIGNS,sg:SG_DESIGNS,rb:RB_DESIGNS,fc:FC_DESIGNS,le:LE_DESIGNS,dt:[{id:w.design,name:"Minimal Last Donation — نص فقط"}]})[dKind(w)];
 const LB_N=[[1,"الأول فقط (بطل)"],[3,"أفضل 3 (منصة تتويج)"],[5,"أفضل 5 (منصة + صفوف)"],[10,"أفضل 10 (مضغوط)"],[20,"أفضل 20 (عمودين)"]];
 const LB_SIZE={1:[.4,.22],3:[.5,.28],5:[.46,.38],10:[.46,.5],20:[.7,.55]};
 const giftOpts=()=>(S.catalog&&S.catalog.length?S.catalog.map(g=>[g.id,`${g.name} (${g.diamonds}💎)`]):GIFTS.map(g=>[g[2],`${g[0]} (${g[1]}💎)`]));
@@ -370,6 +370,7 @@ function renderPage(soft){
  else if(p==="academy"){ h=acHTML() }
  else if(p==="rlib"){ h=rlibHTML() }
  else if(p==="rotations"){ h=rotHTML() }
+ else if(p==="stlib"){ h=stLibHTML() }
  else if(p==="rblab"){ h=rblabHTML() }
  else if(p==="livechat"){ h=flcHTML() }
  else if(p==="bots"){ h=botsHTML() }
@@ -439,7 +440,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount(); if(p==="academy") acMount(); if(p==="rlib") rlibMount(); if(p==="rotations") rotMount(); if(p==="rblab") rblabMount(); if(p==="subathon") setTimeout(rbFillImgs,300); acInject(p); if(p==="livechat"){ const L=document.getElementById("flc-list"); if(L&&!FLCV().pause) L.scrollTop=L.scrollHeight; if(!S.connsAt&&CFG){ S.connsAt=Date.now(); connLoad() } }
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount(); if(p==="academy") acMount(); if(p==="rlib") rlibMount(); if(p==="rotations") rotMount(); if(p==="stlib") stLibMount(); if(p==="rblab") rblabMount(); if(p==="subathon") setTimeout(rbFillImgs,300); acInject(p); if(p==="livechat"){ const L=document.getElementById("flc-list"); if(L&&!FLCV().pause) L.scrollTop=L.scrollHeight; if(!S.connsAt&&CFG){ S.connsAt=Date.now(); connLoad() } }
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -1385,11 +1386,12 @@ function renderProps(){
  ${w.type==="timer"?sel("timerId","المؤقت المعروض",R.C.timers.map(x=>[x.id,x.name]),w.timerId):""}
  ${t.dc||t.d5?"":sel("design","التصميم",designsOf(w).map(d=>[d.id,d.name]),w.design)}
  ${t.board?`<div class="grid g2" style="gap:8px">${sel("topN","المراكز",TOPNS.map(n=>[n,n===1?"الأول فقط":"أفضل "+n]),w.topN)}${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}</div>`:""}
- ${ck?`<div class="grid g2" style="gap:8px">${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}${sel("showSub","سطر الحالة",[["1","ظاهر"],["0","مخفي"]],w.showSub?"1":"0")}</div>${sel("font","شكل الأرقام والخط",FONTS,w.font)}`:""}
+ ${ck&&!ST_BY_ID[w.design]?`<div class="grid g2" style="gap:8px">${sel("showTitle","العنوان",[["1","ظاهر"],["0","مخفي"]],w.showTitle?"1":"0")}${sel("showSub","سطر الحالة",[["1","ظاهر"],["0","مخفي"]],w.showSub?"1":"0")}</div>${sel("font","شكل الأرقام والخط",FONTS,w.font)}`:""}
  ${w.type==="subathon"?sel("sound","صوت عند إضافة الوقت",[["1","مفعّل"],["0","متوقف"]],w.sound?"1":"0"):""}
  ${w.type==="gifts"?sel("sortBy","ترتيب الداعمين حسب",SORTS,w.sortBy):""}
  ${t.bt?btPropsHTML(w,sel,rng):""}${t.don?donPropsHTML(w,sel,rng):""}${t.dc?dcPropsHTML(w,sel,rng):""}${t.d5?d5PropsHTML(w,sel,rng):""}
  ${t.pro?proPropsHTML(w,sel,rng):""}
+ ${w.type==="subathon"&&ST_BY_ID[w.design]?stPropsHTML(w,sel,rng):""}
  ${mirPropsHTML(w)}
  ${t.rules?rbPropsHTML2(w,sel,rng):""}
  ${t.fc?fcPropsHTML(w,sel,rng):""}${t.du?`${sel("design","التصميم",DU_DESIGNS.map(d=>[d.id,d.n+". "+d.name]),w.design)}<button class="btn sm" data-go="duration" style="margin:6px 0">⏲️ كل إعدادات مدة البث</button>`:""}${t.le?lePropsHTML(w,sel,rng):""}${t.chat?ucPropsHTML(w,sel,rng):""}${t.np?`<div class="grid g2" style="gap:8px">${sel("design","التصميم",NP_DESIGNS.map(d=>[d.id,d.name+" — "+d.ar]),w.design)}${sel("showBy","اسم طالب الأغنية",[["1","ظاهر"],["0","مخفي"]],w.showBy!==false?"1":"0")}${rng("fontScale","حجم النص",.6,2,.05,w.fontScale||1,v=>Math.round(v*100)+"%")}<div class="fld"><label>اللون</label><input type="color" data-wf="accent" data-wid="${w.id}" value="${w.accent||"#7cc4ff"}"></div></div><div class="row" style="margin-bottom:10px"><button class="btn sm" data-lecopy="${w.id}">🔗 نسخ رابط OBS</button><button class="btn sm" data-lib="${w.id}">🎨 التصاميم</button></div>`:""}${t.dt?dtPropsHTML(w,sel,rng):""}
@@ -1716,6 +1718,7 @@ function onInput(e){
   if(/^(sb|uc)[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")&&!["sbPos","sbDesign","sbUnavail","sbSupport","sbFont","ucExit"].includes(f)) v=v==="1" }
   if(/^du[A-Z]/.test(f)){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")&&!["duMode","duLang","duAlign","duIn","duOut","duSep","duTitle"].includes(f)) v=v==="1" }
   if(w.type==="duration"&&f==="effects"&&t.tagName==="SELECT") v=v==="1";
+  if(/^st[A-Z]/.test(f)&&f!=="stStages"&&f!=="stTiers"){ if(t.type==="range"||t.type==="number") v=+v; else if(t.tagName==="SELECT"&&(v==="1"||v==="0")) v=v==="1" }
   if(f==="idle"){ v=[v,...((findW(d.wid)||{}).idle||[]).slice(1)].filter(Boolean) }
   if(t.type==="range"&&e.type==="change") return;
   if((t.tagName==="SELECT"||t.type==="number"||t.type==="checkbox")&&e.type==="input") return;

@@ -55,7 +55,7 @@ let pass=0,fail=0; const ok=(c,m)=>{ c?pass++:(fail++,console.log('FAIL',m)) };
  if(!(await p.$('#sa-s4 #sa-pv'))||await p.$('#sa-s4 [data-add="subathon"]')){ await p.click('#sa-s4 [data-add="subathon"]'); await p.waitForTimeout(400); await p.click('.nav [data-go="subathon"]'); await p.waitForTimeout(400) }
  const wid=await p.$eval('#sa-s4 #sa-pv',e=>e.dataset.wid);
  ok(!!(await p.$(`#sa-s4 [data-copylink="${wid}"]`))&&/نسخ رابط OBS/.test(await p.textContent('#sa-s4')),'copy OBS link button');
- const ds=await p.$$eval('#sa-s4 select[data-wf="design"] option',o=>o.map(x=>x.value)); await p.selectOption('#sa-s4 select[data-wf="design"]',ds[3]); await p.waitForTimeout(400);
+ const ds=await p.$$eval('#sa-s4 select[data-wf="design"] option',o=>o.map(x=>x.value).filter(v=>!v.startsWith('st_'))); await p.selectOption('#sa-s4 select[data-wf="design"]',ds[3]); await p.waitForTimeout(400);
  await p.selectOption('#sa-s4 select[data-wf="font"]','changa'); await p.waitForTimeout(300);
  await p.evaluate(()=>{ const c=document.querySelector('#sa-s4 input[data-wf="acc"]'); c.value="#ff3366"; c.dispatchEvent(new Event('change',{bubbles:true})); const r=document.querySelector('#sa-s4 input[data-wf="opacity"]'); r.value="0.7"; r.dispatchEvent(new Event('input',{bubbles:true})); r.dispatchEvent(new Event('change',{bubbles:true})); const f=document.querySelector('#sa-s4 input[data-wf="effects"]'); f.checked=false; f.dispatchEvent(new Event('change',{bubbles:true})) }); await p.waitForTimeout(400);
  const w=await p.evaluate(id=>{ const w=window.__arsh.L().widgets.find(x=>x.id===id); return {d:w.design,f:w.font,a:w.acc,o:w.opacity,e:w.effects} },wid);

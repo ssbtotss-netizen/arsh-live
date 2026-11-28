@@ -43,7 +43,7 @@ function saRulesMgrHTML(s){ const L=s.rules.list, dup=new Set(duplicateRules(L))
   <div class="rmg-list" data-rbmlist>${L.length?L.map(row).join(""):`<div class="sa2-empty">لا توجد قوانين. أضف قانوناً من «＋ قانون جديد».</div>`}</div></section>` }
 
 /* ---------------- 🎵 أصوات السابثون (من مكتبة المنصة — الرفع اختياري) ---------------- */
-const SA_SND_EVS=[["sa_start","","▶️ بدء السابثون"],["sa_pause","","⏸️ الإيقاف المؤقت"],["sa_resume","","⏯️ الاستكمال"],["subathon","add","➕ زيادة الوقت"],["subathon","sub","➖ نقص الوقت"],["sa_gift","","🎁 هدية محددة"],["sa_donation","","💵 دونيشن"],["sa_near","","⏳ اقتراب النهاية"],["sa_end","","🏁 النهاية"],["sa_milestone","","🏆 إنجاز"]];
+const SA_SND_EVS=[["sa_start","","▶️ بدء السابثون"],["sa_pause","","⏸️ الإيقاف المؤقت"],["sa_resume","","⏯️ الاستكمال"],["subathon","add","➕ زيادة الوقت"],["subathon","sub","➖ نقص الوقت"],["sa_gift","","🎁 هدية محددة"],["sa_donation","","💵 دونيشن"],["sa_near","","⏳ اقتراب النهاية"],["sa_end","","🏁 النهاية"],["sa_milestone","","🏆 إنجاز"],["sa_reach1","","⬆️ الوصول لساعة"],["sa_reach24","","🌟 الوصول لـ24 ساعة"],["sa_left60","","🕐 بقيت ساعة"],["sa_left10","","🔟 بقيت 10 دقائق"],["sa_left1","","⏱️ بقيت دقيقة"]];
 const saSndRule=(ev,dir)=>SC().rules.find(r=>r.ev===ev&&(!dir||r.cond.dir===dir));
 function saSoundsHTML(s){ const c=SC(); sndLoadIndex();
  const evRow=([ev,dir,label])=>{ const r=saSndRule(ev,dir), k=`data-ev="${ev}" data-dir="${dir}"`;

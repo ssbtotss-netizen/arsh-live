@@ -290,6 +290,10 @@ export function subathonTick(s,now){
  const out=[];
  if(s.status==="idle"&&s.scheduledAt&&now>=s.scheduledAt){ s.scheduledAt=null; out.push(...subathonOp(s,{op:"start"},now)) }
  if(s.status==="running"&&!s.nearFired&&s.endsAt-now<=(+s.nearEndMs||5*MIN)&&s.endsAt>now){ s.nearFired=true; out.push(log(s,now,0,0,"اقترب انتهاء السبثون","system",null,{sa:"near"})) }
+ if(s.status==="running"&&s.endsAt>now){ const r=s.endsAt-now; s.leftF=s.leftF||{};
+  for(const [k,T,txt] of [["left60",HOUR,"بقيت ساعة"],["left10",10*MIN,"بقيت 10 دقائق"],["left1",MIN,"بقيت دقيقة"]]){ if(r>T+2000) s.leftF[k]=false; else if(!s.leftF[k]&&r<=T&&r>T-15000){ s.leftF[k]=true; out.push(log(s,now,0,0,txt,"system",null,{sa:k})) } }
+  if(s.prevR!=null) for(const [k,T,txt] of [["reach1",HOUR,"وصل الوقت إلى ساعة"],["reach24",24*HOUR,"وصل الوقت إلى 24 ساعة"]]) if(s.prevR<T&&r>=T) out.push(log(s,now,0,0,txt,"system",null,{sa:k}));
+  s.prevR=r } else s.prevR=null;
  if(s.status==="running"&&s.endsAt<=now){ s.status="ended"; s.endedAt=s.endsAt; s.remainingMs=0; s.endsAt=null; out.push(log(s,now,0,0,"انتهى السبثون","system",null,{sa:"end"})) }
  return out;
 }

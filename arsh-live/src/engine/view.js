@@ -44,6 +44,8 @@ export class View{
   Object.assign(e.style,{left:w.x*cv.w+"px",top:w.y*cv.h+"px",width:W+"px",height:Hh+"px",zIndex:w.z,opacity:w.opacity});
   e.style.rotate=w.rot?(+w.rot)+"deg":"";
   e.dataset.id=w.id;
+  if(w.type==="subathon"&&View.ST_BY_ID&&View.ST_BY_ID[w.design]){ this.q=null; this.applySt(w,W,Hh); return } // مؤقت السابثون V3
+  this.st=null;
   const fx=w.effects&&(this.opts.globalFx!==false);
   const shape=ckLike?"ck-"+d.shape+(w.type==="donGoal"?" dgoal":""):chipLike?"so-"+(w.type==="donTicker"?"socialBar":w.type==="donLatest"||w.type==="donAlert"?"social "+w.type:w.type):T.board?"sh-"+d.shape:"sh-single";
   e.className=`wd ${ckLike?"ck":chipLike?"sw":"ds"}-${d.id} ${shape} t-${w.type} an-${w.anim} f-${w.font||"default"}${fx?"":" no-fx"}${this.opts.editor?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
@@ -138,6 +140,7 @@ export class View{
   if(t.dt) return this.refreshDt(src,silent);
   if(t.dc) return this.refreshDc(src,silent);
   if(t.d5) return this.refreshD5(src,silent);
+  if(t.clock&&this.st) return this.refreshSt(src);
   if(t.clock) return this.refreshClock(src);
   if(w.type==="donGoal") return this.refreshGoal(src,silent);
   if(CHIP_TYPES.has(w.type)) return this.refreshDonChip(src);
@@ -372,6 +375,7 @@ export class View{
   q.rs.querySelector(".rs-nm").textContent=top.n; q.rs.querySelector(".rs-v").textContent=fmtDelta(top.ms);
   const av=q.rs.querySelector(".rs-av"); av.style.backgroundImage=top.av?`url("${String(top.av).replace(/"/g,"")}")`:""; av.textContent=top.av?"":(top.n||"?").slice(0,1) }
  timeFx(log){
+  if(this.st){ if(this.w.sound&&log.deltaMs>0&&!this.opts.editor&&!this.opts.mute&&!this.opts.stPreview) chime(); return this.stDeltaFx(log) }
   if(!this.q||!log.deltaMs) return;
   const fx=!this.el.classList.contains("no-fx");
   if(fx){ const b=document.createElement("div"); b.className="tfx"+(log.deltaMs<0?" neg":""); b.textContent=fmtDelta(log.deltaMs);
@@ -407,7 +411,7 @@ export function deliver(views,msg,src){
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
  else if(msg.t==="clock"&&msg.cm){ for(const v of views) if(v.ucRoot&&v.ucRender){ v.ucRender(false); v.ucPinRender&&v.ucPinRender() } return } // إدارة الشات: إخفاء فوري + بطاقة التثبيت
- else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||TYPES[v.w.type]?.bt||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]) if(l.deltaMs) v.timeFx(l) } }
+ else if(msg.t==="clock"){ for(const v of views){ if(TYPES[v.w.type]?.fc||TYPES[v.w.type]?.np||TYPES[v.w.type]?.bt||(TYPES[v.w.type]?.le&&LE_KINDS[v.w.kind]?.derived)){ v.refresh(src); continue } if(TYPES[v.w.type]?.rules){ v.refresh(src); for(const l of msg.logs||[]) v.ruleHit(l); continue } if(!TYPES[v.w.type]?.clock) continue; v.refresh(src); if(v.w.type==="subathon") for(const l of msg.logs||[]){ if(l.deltaMs) v.timeFx(l); else if(v.st&&l.sa) v.stLog(l) } } }
  else if(msg.t==="snapshot"){ for(const v of views){ if(TYPES[v.w.type]?.chat){ // سجل الشات: من اللقطة أو من سجل الصفحة — ولا نفرّغ الطبقة إذا لم يُرسل سجل (كان تحديث التخطيط يمسح رسائل OBS)
    const list=Array.isArray(msg.CH)?msg.CH:(src&&(src.CHAT||src.CH)); if(Array.isArray(list)) v.chatLoad(list); else v.ucRender&&v.ucRender(false); continue } v.refresh(src,true) } }
  else if(msg.t==="alert"&&Array.isArray(msg.items)){ for(const v of views) if(TYPES[v.w.type]?.abox) v.aboxPush(msg.items) }
