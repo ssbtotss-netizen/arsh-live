@@ -121,7 +121,7 @@ export function newWidget(type,o={}){
  if(type==="goal"){Object.assign(base,{w:.6,h:.09,design:"neon"})}
  if(type==="lb"){Object.assign(base,{design:"pinkCloud",source:"gifts",giftKey:"",giftEmoji:"",topN:5,w:.46,h:.36,title:"أفضل الداعمين",rankColors:null,rowOpacity:1,avShape:"circle",sweepOn:true,lowPerf:false,period:"session",currency:"",hideAnon:false,icon:""})}
  if(type==="sgoal"){Object.assign(base,{design:"miniPill",source:"gift",giftKey:"6369",giftEmoji:"🦁",title:"هدف الأسد",target:1,base:0,offset:0,since:0,currency:"",showPct:true,w:.52,h:.06,icon:"",stages:"25,50,75,90",fx:"",showLast:true,showTop:true,showCount:true})}
- if(type==="srules"){Object.assign(base,{design:"royalRules",mode:"list",w:.5,h:.34,interval:4,speed:70,tickerDir:"h",anim:"slideUp",animSpeed:1,animOn:true,order:"custom",maxRules:0,hideKinds:[],showWhat:true,showTime:true,showImg:true,iconScale:1,rowOpacity:1,posColor:"#22c55e",negColor:"#ef4444",lowPerf:false})}
+ if(type==="srules"){Object.assign(base,{design:"royalGold",mode:"list",w:.5,h:.34,interval:4,speed:70,tickerDir:"h",anim:"slideUp",animSpeed:1,animOn:true,order:"custom",maxRules:0,hideKinds:[],showWhat:true,showTime:true,showImg:true,iconScale:1,rowOpacity:1,posColor:"#22c55e",negColor:"#ef4444",lowPerf:false})}
  if(type==="botbox"){Object.assign(base,{design:"b6o6Bot",w:.6,h:.26,max:4,holdSec:10,stack:"up",showAvatar:true,showBot:true,botName:"بوت بطوط",kinds:[]})}
  if(type==="donCard"){Object.assign(base,JSON.parse(JSON.stringify(DC_DEFAULTS)))}
  if(type==="donLast5"){Object.assign(base,JSON.parse(JSON.stringify(D5_DEFAULTS)))}

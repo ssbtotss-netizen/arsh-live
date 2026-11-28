@@ -81,7 +81,7 @@ function rbSndPick(title,onPick){ const st={q:"",cat:"",tab:"lib"}; sndLoadIndex
  draw(); return m }
 
 /* ---------------- ⚙️ خصائص لوحة القوانين (التصميم + الإخفاء + الخط السفلي + محرك المؤثرات) ---------------- */
-function rbPropsHTML2(w,sel,rng){ const d=rbDesignOf(w.design), L=R.C.subathon.rules.list.filter(r=>r.enabled&&r.show!==false), hid=new Set(w.hideKinds||[]), ae=rbAE(w);
+function rbPropsHTML2(w,sel,rng){ if(RB_ALIASES[w.design]) w.design=RB_ALIASES[w.design]; const d=rbDesignOf(w.design), L=R.C.subathon.rules.list.filter(r=>r.enabled&&r.show!==false), hid=new Set(w.hideKinds||[]), ae=rbAE(w);
  const ck=(f,label,on)=>`<label class="row small" style="gap:6px"><input type="checkbox" data-rbf="${f}" data-wid="${w.id}" ${on?"checked":""}> ${label}</label>`;
  const col=(f,label,def)=>`<div class="fld" style="margin:0"><label>${label}</label><input type="color" data-rbf="${f}" data-wid="${w.id}" value="${w[f]||def}"></div>`;
  const rs=(f,label,a,b,st,v,fmt)=>`<div class="fld" style="margin:0"><label>${label} <b class="mut">${fmt(v)}</b></label><input type="range" min="${a}" max="${b}" step="${st}" value="${v}" data-rbf="${f}" data-wid="${w.id}"></div>`;
