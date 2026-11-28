@@ -1,0 +1,429 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })();(()=>{const l={id:'l_acad',name:'نتيجة الأكاديمية',canvas:L().canvas,widgets:[]};let z=1;l.widgets.push(newWidget(\"lb\",Object.assign({z:z++},{\"topN\": 3, \"x\": 0.06, \"y\": 0.2, \"w\": 0.88, \"h\": 0.4, \"source\": \"gifts\", \"design\": \"royalCrown\", \"title\": \"أفضل الداعمين\"})));l.widgets.push(newWidget(\"recentGifts\",Object.assign({z:z++},{\"x\": 0.12, \"y\": 0.64, \"w\": 0.76, \"h\": 0.2, \"title\": \"آخر الداعمين\"})));S.layouts.push(l);save()})()",
+ "intro": {
+  "end": 4.0,
+  "style": "rise",
+  "hook": "خلّ داعمينك *يتصدّرون*",
+  "sub": "قوائم الداعمين"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 8.0,
+   "f": [
+    640,
+    330
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 9.8,
+   "f": [
+    640,
+    330
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 10.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 12.0,
+   "f": "[data-add-lb=\"3\"]",
+   "z": 1.7
+  },
+  {
+   "t": 15.4,
+   "f": "[data-add-vg=\"goldCup\"]",
+   "z": 1.8
+  },
+  {
+   "t": 19.6,
+   "f": "[data-add-vg=\"ringGoal\"]",
+   "z": 1.7
+  },
+  {
+   "t": 20.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 22.2,
+   "f": "[data-lsadd=\"gifts\"]",
+   "z": 1.9
+  },
+  {
+   "t": 25.0,
+   "f": "[data-lsadd=\"gifts\"]",
+   "z": 1.9
+  },
+  {
+   "t": 27.2,
+   "f": [
+    300,
+    260
+   ],
+   "z": 1.5
+  },
+  {
+   "t": 31.4,
+   "f": "[data-lssec=\"gallery\"]",
+   "z": 1.8
+  },
+  {
+   "t": 33.2,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 34.8,
+   "f": "[data-galuse]",
+   "z": 1.6
+  },
+  {
+   "t": 36.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 38.8,
+   "f": "[data-lscopy]",
+   "z": 2.0
+  },
+  {
+   "t": 41.2,
+   "f": "[data-lscopy]",
+   "z": 1.9
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"gifts\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 10.0,
+   "move": ".nav [data-go=\"boards\"]",
+   "d": 0.8
+  },
+  {
+   "t": 10.9,
+   "click": 1
+  },
+  {
+   "t": 11.4,
+   "move": "[data-add-lb=\"3\"]",
+   "d": 0.9
+  },
+  {
+   "t": 12.2,
+   "ring": "[data-add-lb=\"20\"]",
+   "d": 2.0
+  },
+  {
+   "t": 15.0,
+   "move": "[data-add-vg=\"goldCup\"]",
+   "d": 0.9
+  },
+  {
+   "t": 20.2,
+   "move": ".nav [data-go=\"gifts\"]",
+   "d": 0.8
+  },
+  {
+   "t": 21.1,
+   "click": 1
+  },
+  {
+   "t": 21.8,
+   "move": "[data-lsadd=\"gifts\"]",
+   "d": 0.9
+  },
+  {
+   "t": 25.8,
+   "click": 1
+  },
+  {
+   "t": 27.0,
+   "move": "[data-lssec=\"settings\"]",
+   "d": 1.0
+  },
+  {
+   "t": 31.0,
+   "move": "[data-lssec=\"gallery\"]",
+   "d": 0.9
+  },
+  {
+   "t": 32.0,
+   "click": 1
+  },
+  {
+   "t": 33.6,
+   "move": "[data-galuse]",
+   "d": 1.0
+  },
+  {
+   "t": 34.6,
+   "move": "[data-galuse]",
+   "d": 0.2
+  },
+  {
+   "t": 34.900000000000006,
+   "click": 1
+  },
+  {
+   "t": 36.6,
+   "move": ".nav [data-go=\"gifts\"]",
+   "d": 0.8
+  },
+  {
+   "t": 37.5,
+   "click": 1
+  },
+  {
+   "t": 38.4,
+   "move": "[data-lscopy]",
+   "d": 0.9
+  },
+  {
+   "t": 39.4,
+   "click": 1
+  },
+  {
+   "t": 38.6,
+   "ring": "[data-lscopy]",
+   "d": 2.2
+  },
+  {
+   "t": 42.8,
+   "sim": {
+    "type": "gift",
+    "id": "G5_42.8",
+    "platform": "tiktok",
+    "user": {
+     "id": "r5",
+     "name": "سارة"
+    },
+    "gift": "Rose",
+    "giftId": 5655,
+    "diamonds": 1,
+    "value": 99,
+    "count": 1
+   },
+   "snd": "gift-01"
+  },
+  {
+   "t": 44.6,
+   "sim": {
+    "type": "gift",
+    "id": "G5_44.6",
+    "platform": "tiktok",
+    "user": {
+     "id": "r8",
+     "name": "تركي"
+    },
+    "gift": "Lion",
+    "giftId": 6369,
+    "diamonds": 29999,
+    "value": 299,
+    "count": 1
+   },
+   "snd": "tier-50"
+  },
+  {
+   "t": 46.6,
+   "sim": {
+    "type": "gift",
+    "id": "G5_46.6",
+    "platform": "tiktok",
+    "user": {
+     "id": "r7",
+     "name": "لمى"
+    },
+    "gift": "Rose",
+    "giftId": 5655,
+    "diamonds": 1,
+    "value": 30,
+    "count": 30
+   },
+   "snd": "gift-04"
+  },
+  {
+   "t": 48.6,
+   "sim": {
+    "type": "gift",
+    "id": "G5_48.6",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "gift": "Universe",
+    "giftId": 7934,
+    "diamonds": 34999,
+    "value": 500,
+    "count": 1
+   },
+   "snd": "tier-100"
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "كل هدية *لها قيمة*"
+  ],
+  [
+   7.1,
+   9.8,
+   "والداعم الأول *يتتوّج*"
+  ],
+  [
+   10.4,
+   14.6,
+   "أفضل *3* · *5* · *10* · *20*"
+  ],
+  [
+   15.0,
+   19.8,
+   "كؤوس *وأهداف* مصغّرة"
+  ],
+  [
+   20.4,
+   25.3,
+   "افتح *الدعم والهدايا*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "أضف *قائمة الدعم*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "خصّص *التصميم*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "انسخ *رابط البث*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "الصدارة *تتغيّر لحظياً*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · قوائم الترتيب"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "ovl": "overlayURL(S.layouts.find(l=>l.id==='l_acad'))"
+}

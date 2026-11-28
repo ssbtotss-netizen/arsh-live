@@ -1,0 +1,34 @@
+// أكاديمية بطوط ستريم — اختبار طرفي: الصفحة، البحث، المشغّل، تتبع المشاهدة، زر «تعلّم الميزة» في الصفحات المرتبطة، ملفات الفيديو والأغلفة
+const { chromium } = require('/opt/npm-tools/node_modules/playwright'); const fs = require('fs'), path = require('path');
+let pass = 0, fail = 0; const ok = (c, m) => { c ? pass++ : fail++; console.log((c ? 'PASS ' : 'FAIL ') + m) };
+(async () => {
+  const PUB = '/home/claude/najd/arsh-live/public/academy', IX = JSON.parse(fs.readFileSync(PUB + '/index.json', 'utf8'));
+  ok(IX.eps.length >= 1, `index.json lists ${IX.eps.length} episode(s)`);
+  ok(IX.eps.every(e => fs.existsSync(path.join(PUB, e.video)) && fs.existsSync(path.join(PUB, e.poster))), 'every listed episode has its video and cover file');
+  ok(IX.eps.every(e => fs.statSync(path.join(PUB, e.video)).size < 12e6), 'web videos stay light (< 12MB each)');
+  const b = await chromium.launch({ executablePath: '/usr/bin/google-chrome', args: ['--autoplay-policy=no-user-gesture-required', '--allow-file-access-from-files'] });
+  const p = await (await b.newContext({ viewport: { width: 1400, height: 900 } })).newPage(); const errs = []; p.on('pageerror', e => errs.push(e.message));
+  await p.goto('file:///home/claude/najd/demo/index.html'); await p.evaluate(() => localStorage.clear()); await p.reload(); await p.waitForTimeout(500);
+  ok(await p.locator('.nav [data-go="academy"]').count() === 1, 'sidebar has «أكاديمية بطوط ستريم»');
+  const ep = IX.eps[0], pg = ep.pages[0];
+  await p.evaluate(g => go(g), pg); await p.waitForTimeout(300);
+  ok(await p.locator(`.ac-learn[data-k="${ep.slug}"]`).count() === 1, `«تعلّم الميزة في 59 ثانية» appears on page "${pg}"`);
+  await p.evaluate(() => go('obs')); await p.waitForTimeout(200);
+  const obsHas = IX.eps.some(e => e.pages.includes('obs')); ok((await p.locator('.ac-learn').count() > 0) === obsHas, 'button only on pages that have an episode');
+  await p.click('.nav [data-go="academy"]'); await p.waitForTimeout(400);
+  ok(await p.locator('.ac-card').count() === IX.eps.length, 'academy grid shows every episode');
+  await p.fill('[data-acq]', 'كلمةغيرموجودة'); await p.waitForTimeout(100); ok(await p.locator('.ac-card').count() === 0 && await p.locator('#ac-grid .empty').count() === 1, 'search with no match → friendly empty state');
+  await p.fill('[data-acq]', ep.title.split(' ')[0]); await p.waitForTimeout(100); ok(await p.locator('.ac-card').count() >= 1, 'search finds by title');
+  await p.fill('[data-acq]', ''); await p.waitForTimeout(100);
+  await p.locator(`.ac-card[data-k="${ep.slug}"]`).click(); await p.waitForTimeout(1500);
+  const v = await p.evaluate(() => { const v = document.querySelector('.ac-modal video'); return v && { src: v.currentSrc, dur: v.duration, err: v.error && v.error.code, ctl: v.controls } });
+  ok(v && !v.err && Math.abs(v.dur - 59) < 1 && v.ctl, `player loads the real video (${v && v.dur && v.dur.toFixed(1)}s, native controls)`);
+  ok(await p.locator('.ac-modal [data-ac="go"]').count() === 1 && await p.locator('.ac-modal [data-ac="share"]').count() === 1, 'player has «افتح الميزة» and «مشاركة»');
+  await p.evaluate(() => { const v = document.querySelector('.ac-modal video'); v.currentTime = 55; }); await p.waitForTimeout(800);
+  ok(await p.evaluate(s => !!(S.acad && S.acad.w[s]), ep.slug), 'watching past 85% marks the episode as watched (saved)');
+  await p.click('.ac-modal [data-ac="go"]'); await p.waitForTimeout(300);
+  ok(await p.evaluate(g => S.page === g, ep.page) && await p.locator('.ac-modal').count() === 0, '«افتح الميزة» closes the player and opens the feature page');
+  ok(/✓/.test(await p.locator('.ac-learn').first().innerText()), 'page button shows «✓ شاهدتها» after watching');
+  ok(!errs.length, 'no page errors ' + errs.slice(0, 3).join(' | '));
+  console.log(`academy-ui: ${pass} passed, ${fail} failed`); await b.close(); process.exit(fail ? 1 : 0);
+})();

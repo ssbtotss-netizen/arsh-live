@@ -1,0 +1,908 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\",\"نورة\",\"سلطان\",\"ريم\",\"خالد\",\"سارة\",\"فيصل\",\"لمى\",\"تركي\",\"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })()",
+ "intro": {
+  "style": "reveal",
+  "end": 4.0,
+  "title": "تعرّف على *بطوط ستريم*"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.5,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": 0,
+   "rx": 0
+  },
+  {
+   "t": 8.4,
+   "f": [
+    760,
+    330
+   ],
+   "z": 1.32
+  },
+  {
+   "t": 9.8,
+   "f": [
+    760,
+    330
+   ],
+   "z": 1.32
+  },
+  {
+   "t": 10.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 13.4,
+   "f": [
+    560,
+    450
+   ],
+   "z": 1.12,
+   "ry": 4
+  },
+  {
+   "t": 14.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 16.6,
+   "f": [
+    520,
+    430
+   ],
+   "z": 1.15,
+   "ry": -4
+  },
+  {
+   "t": 17.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 19.6,
+   "f": [
+    600,
+    300
+   ],
+   "z": 1.2
+  },
+  {
+   "t": 20.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 21.4,
+   "f": "[data-set=\"tiktok\"]",
+   "z": 2.0
+  },
+  {
+   "t": 24.8,
+   "f": "[data-tiktok]",
+   "z": 2.1
+  },
+  {
+   "t": 25.8,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 27.4,
+   "f": "[data-galuse]",
+   "z": 1.9
+  },
+  {
+   "t": 30.4,
+   "f": "[data-galuse]",
+   "z": 1.75
+  },
+  {
+   "t": 31.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 32.8,
+   "f": "[data-canvas=\"vertical\"]",
+   "z": 1.8
+  },
+  {
+   "t": 34.4,
+   "f": [
+    560,
+    500
+   ],
+   "z": 1.3
+  },
+  {
+   "t": 36.0,
+   "f": [
+    600,
+    460
+   ],
+   "z": 1.1
+  },
+  {
+   "t": 37.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 38.6,
+   "f": "[data-copyall]",
+   "z": 2.2
+  },
+  {
+   "t": 40.4,
+   "f": "[data-copyall]",
+   "z": 2.0
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 6.2,
+   "move": ".nav [data-go=\"home\"]",
+   "d": 1.1
+  },
+  {
+   "t": 9.9,
+   "move": ".nav [data-go=\"library\"]",
+   "d": 0.8
+  },
+  {
+   "t": 10.8,
+   "click": 1
+  },
+  {
+   "t": 11.6,
+   "move": [
+    560,
+    520
+   ],
+   "d": 0.9
+  },
+  {
+   "t": 11.9,
+   "scroll": 900,
+   "d": 2.0
+  },
+  {
+   "t": 13.7,
+   "move": ".nav [data-go=\"sounds\"]",
+   "d": 0.8
+  },
+  {
+   "t": 14.6,
+   "click": 1
+  },
+  {
+   "t": 15.3,
+   "move": [
+    520,
+    480
+   ],
+   "d": 1.0
+  },
+  {
+   "t": 15.6,
+   "scroll": 520,
+   "d": 1.6
+  },
+  {
+   "t": 17.0,
+   "move": ".nav [data-go=\"subathon\"]",
+   "d": 0.8
+  },
+  {
+   "t": 17.9,
+   "click": 1
+  },
+  {
+   "t": 18.6,
+   "move": [
+    600,
+    420
+   ],
+   "d": 1.0
+  },
+  {
+   "t": 20.1,
+   "move": ".nav [data-go=\"live\"]",
+   "d": 0.8
+  },
+  {
+   "t": 21.0,
+   "click": 1
+  },
+  {
+   "t": 21.5,
+   "move": "[data-set=\"tiktok\"]",
+   "d": 0.8
+  },
+  {
+   "t": 22.4,
+   "click": 1
+  },
+  {
+   "t": 22.7,
+   "type": "b6o6_demo",
+   "cps": 11,
+   "sel": "[data-set=\"tiktok\"]"
+  },
+  {
+   "t": 23.9,
+   "move": "[data-tiktok]",
+   "d": 0.7
+  },
+  {
+   "t": 24.0,
+   "ring": "[data-tiktok]",
+   "d": 1.5
+  },
+  {
+   "t": 25.6,
+   "move": ".nav [data-go=\"library\"]",
+   "d": 0.8
+  },
+  {
+   "t": 26.5,
+   "click": 1
+  },
+  {
+   "t": 27.2,
+   "move": "[data-galuse]",
+   "d": 1.0
+  },
+  {
+   "t": 27.4,
+   "ring": "[data-galuse]",
+   "d": 1.7
+  },
+  {
+   "t": 28.7,
+   "click": 1
+  },
+  {
+   "t": 31.0,
+   "move": ".nav [data-go=\"studio\"]",
+   "d": 0.8
+  },
+  {
+   "t": 31.9,
+   "click": 1
+  },
+  {
+   "t": 32.6,
+   "move": "[data-canvas=\"vertical\"]",
+   "d": 0.9
+  },
+  {
+   "t": 33.6,
+   "click": 1
+  },
+  {
+   "t": 34.3,
+   "move": "[data-sim=\"like1000\"]",
+   "d": 0.8
+  },
+  {
+   "t": 35.2,
+   "click": 1,
+   "snd": "like"
+  },
+  {
+   "t": 35.8,
+   "click": 1
+  },
+  {
+   "t": 36.6,
+   "move": ".nav [data-go=\"obs\"]",
+   "d": 0.8
+  },
+  {
+   "t": 37.5,
+   "click": 1
+  },
+  {
+   "t": 38.2,
+   "move": "[data-copyall]",
+   "d": 1.0
+  },
+  {
+   "t": 38.5,
+   "ring": "[data-copyall]",
+   "d": 2.0
+  },
+  {
+   "t": 39.6,
+   "click": 1
+  },
+  {
+   "t": 40.6,
+   "move": [
+    640,
+    600
+   ],
+   "d": 1.2
+  },
+  {
+   "t": 42.4,
+   "sim": {
+    "type": "like",
+    "id": "rl0",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 30
+   }
+  },
+  {
+   "t": 42.82,
+   "sim": {
+    "type": "like",
+    "id": "rl1",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 43
+   }
+  },
+  {
+   "t": 43.24,
+   "sim": {
+    "type": "like",
+    "id": "rl2",
+    "platform": "tiktok",
+    "user": {
+     "id": "r2",
+     "name": "سلطان"
+    },
+    "count": 56
+   }
+  },
+  {
+   "t": 43.66,
+   "sim": {
+    "type": "like",
+    "id": "rl3",
+    "platform": "tiktok",
+    "user": {
+     "id": "r3",
+     "name": "ريم"
+    },
+    "count": 69
+   }
+  },
+  {
+   "t": 44.08,
+   "sim": {
+    "type": "like",
+    "id": "rl4",
+    "platform": "tiktok",
+    "user": {
+     "id": "r4",
+     "name": "خالد"
+    },
+    "count": 82
+   }
+  },
+  {
+   "t": 44.5,
+   "sim": {
+    "type": "like",
+    "id": "rl5",
+    "platform": "tiktok",
+    "user": {
+     "id": "r5",
+     "name": "سارة"
+    },
+    "count": 95
+   }
+  },
+  {
+   "t": 44.92,
+   "sim": {
+    "type": "like",
+    "id": "rl6",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 38
+   }
+  },
+  {
+   "t": 45.339999999999996,
+   "sim": {
+    "type": "like",
+    "id": "rl7",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 51
+   }
+  },
+  {
+   "t": 45.76,
+   "sim": {
+    "type": "like",
+    "id": "rl8",
+    "platform": "tiktok",
+    "user": {
+     "id": "r2",
+     "name": "سلطان"
+    },
+    "count": 64
+   }
+  },
+  {
+   "t": 46.18,
+   "sim": {
+    "type": "like",
+    "id": "rl9",
+    "platform": "tiktok",
+    "user": {
+     "id": "r3",
+     "name": "ريم"
+    },
+    "count": 77
+   }
+  },
+  {
+   "t": 46.6,
+   "sim": {
+    "type": "like",
+    "id": "rl10",
+    "platform": "tiktok",
+    "user": {
+     "id": "r4",
+     "name": "خالد"
+    },
+    "count": 90
+   }
+  },
+  {
+   "t": 47.019999999999996,
+   "sim": {
+    "type": "like",
+    "id": "rl11",
+    "platform": "tiktok",
+    "user": {
+     "id": "r5",
+     "name": "سارة"
+    },
+    "count": 33
+   }
+  },
+  {
+   "t": 47.44,
+   "sim": {
+    "type": "like",
+    "id": "rl12",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 46
+   }
+  },
+  {
+   "t": 47.86,
+   "sim": {
+    "type": "like",
+    "id": "rl13",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 59
+   }
+  },
+  {
+   "t": 48.28,
+   "sim": {
+    "type": "like",
+    "id": "rl14",
+    "platform": "tiktok",
+    "user": {
+     "id": "r2",
+     "name": "سلطان"
+    },
+    "count": 72
+   }
+  },
+  {
+   "t": 48.699999999999996,
+   "sim": {
+    "type": "like",
+    "id": "rl15",
+    "platform": "tiktok",
+    "user": {
+     "id": "r3",
+     "name": "ريم"
+    },
+    "count": 85
+   }
+  },
+  {
+   "t": 49.12,
+   "sim": {
+    "type": "like",
+    "id": "rl16",
+    "platform": "tiktok",
+    "user": {
+     "id": "r4",
+     "name": "خالد"
+    },
+    "count": 98
+   }
+  },
+  {
+   "t": 49.54,
+   "sim": {
+    "type": "like",
+    "id": "rl17",
+    "platform": "tiktok",
+    "user": {
+     "id": "r5",
+     "name": "سارة"
+    },
+    "count": 41
+   }
+  },
+  {
+   "t": 49.96,
+   "sim": {
+    "type": "like",
+    "id": "rl18",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 54
+   }
+  },
+  {
+   "t": 50.379999999999995,
+   "sim": {
+    "type": "like",
+    "id": "rl19",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 67
+   }
+  },
+  {
+   "t": 50.8,
+   "sim": {
+    "type": "like",
+    "id": "rl20",
+    "platform": "tiktok",
+    "user": {
+     "id": "r2",
+     "name": "سلطان"
+    },
+    "count": 80
+   }
+  },
+  {
+   "t": 51.22,
+   "sim": {
+    "type": "like",
+    "id": "rl21",
+    "platform": "tiktok",
+    "user": {
+     "id": "r3",
+     "name": "ريم"
+    },
+    "count": 93
+   }
+  },
+  {
+   "t": 43.2,
+   "sim": {
+    "type": "comment",
+    "id": "rc0",
+    "platform": "tiktok",
+    "user": {
+     "id": "q0",
+     "name": "ريم"
+    },
+    "text": "يا هلا والله 👋"
+   }
+  },
+  {
+   "t": 44.6,
+   "sim": {
+    "type": "comment",
+    "id": "rc1",
+    "platform": "youtube",
+    "user": {
+     "id": "q1",
+     "name": "خالد"
+    },
+    "text": "بث أسطوري 🔥"
+   }
+  },
+  {
+   "t": 46.1,
+   "sim": {
+    "type": "comment",
+    "id": "rc2",
+    "platform": "kick",
+    "user": {
+     "id": "q2",
+     "name": "سارة"
+    },
+    "text": "كمل كمل 💪"
+   }
+  },
+  {
+   "t": 47.6,
+   "sim": {
+    "type": "comment",
+    "id": "rc3",
+    "platform": "twitch",
+    "user": {
+     "id": "q3",
+     "name": "فيصل"
+    },
+    "text": "الله يعطيك العافية"
+   }
+  },
+  {
+   "t": 49.0,
+   "sim": {
+    "type": "comment",
+    "id": "rc4",
+    "platform": "tiktok",
+    "user": {
+     "id": "q4",
+     "name": "لمى"
+    },
+    "text": "👏👏👏"
+   }
+  },
+  {
+   "t": 50.2,
+   "sim": {
+    "type": "comment",
+    "id": "rc5",
+    "platform": "youtube",
+    "user": {
+     "id": "q5",
+     "name": "تركي"
+    },
+    "text": "أقوى ستريمر"
+   }
+  },
+  {
+   "t": 44.0,
+   "sim": {
+    "type": "follow",
+    "id": "rf1",
+    "platform": "tiktok",
+    "user": {
+     "id": "nf1",
+     "name": "ريم"
+    }
+   },
+   "snd": "follow-07"
+  },
+  {
+   "t": 45.4,
+   "sim": {
+    "type": "gift",
+    "id": "rg1",
+    "platform": "tiktok",
+    "user": {
+     "id": "r3",
+     "name": "ريم"
+    },
+    "gift": "Rose",
+    "giftId": 5655,
+    "diamonds": 1,
+    "value": 30,
+    "count": 30
+   },
+   "snd": "gift-03"
+  },
+  {
+   "t": 48.3,
+   "sim": {
+    "type": "gift",
+    "id": "rg2",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "gift": "Lion",
+    "giftId": 6369,
+    "diamonds": 29999,
+    "value": 299,
+    "count": 1
+   },
+   "snd": "tier-50"
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "كل أدوات *بثك*"
+  ],
+  [
+   7.1,
+   9.8,
+   "في *مكان واحد*"
+  ],
+  [
+   10.6,
+   13.6,
+   "*+500* تصميم جاهز"
+  ],
+  [
+   14.0,
+   16.8,
+   "مكتبة *أصوات* أصلية"
+  ],
+  [
+   17.4,
+   19.9,
+   "*سبثون* ومؤقتات"
+  ],
+  [
+   20.5,
+   25.3,
+   "اكتب *يوزرك* في تيك توك",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.9,
+   30.8,
+   "اختر *التصميم* اللي يعجبك",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.3,
+   36.3,
+   "رتّبه على *شاشتك*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.9,
+   41.6,
+   "انسخ الرابط لـ *OBS*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "بثك يتفاعل *لحظياً*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.6,
+   19.9,
+   "<b>B6O6</b> · كل اللي تحتاجه"
+  ],
+  [
+   20.5,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.9,
+   30.8,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.3,
+   36.3,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.9,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "appCss": ".code{filter:blur(5px);user-select:none}"
+}

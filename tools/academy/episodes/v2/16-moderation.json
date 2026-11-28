@@ -1,0 +1,478 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })();(()=>{const l={id:'l_acad',name:'نتيجة الأكاديمية',canvas:L().canvas,widgets:[]};let z=1;l.widgets.push(newWidget(\"uchat\",Object.assign({z:z++},{\"x\": 0.06, \"y\": 0.22, \"w\": 0.88, \"h\": 0.56})));S.layouts.push(l);save()})()",
+ "intro": {
+  "end": 4.0,
+  "style": "mask",
+  "hook": "شاتك تحت *سيطرتك*",
+  "sub": "إدارة الشات"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 7.6,
+   "f": [
+    640,
+    300
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 9.8,
+   "f": [
+    640,
+    300
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 10.8,
+   "f": "[data-flcf=\"q\"]",
+   "z": 1.7
+  },
+  {
+   "t": 14.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.1
+  },
+  {
+   "t": 15.4,
+   "f": [
+    300,
+    330
+   ],
+   "z": 1.4
+  },
+  {
+   "t": 19.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.05
+  },
+  {
+   "t": 21.2,
+   "f": ".flc-m[data-id]:last-child .flc-n",
+   "z": 1.9
+  },
+  {
+   "t": 23.2,
+   "f": [
+    1060,
+    470
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 25.8,
+   "f": "[data-fm=\"timeout\"][data-sec=\"300\"]",
+   "z": 2.1
+  },
+  {
+   "t": 28.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.05
+  },
+  {
+   "t": 31.6,
+   "f": [
+    1060,
+    470
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 33.0,
+   "f": "[data-fm=\"pin\"][data-sec=\"60\"]",
+   "z": 2.0
+  },
+  {
+   "t": 35.6,
+   "f": [
+    600,
+    330
+   ],
+   "z": 1.3
+  },
+  {
+   "t": 37.2,
+   "f": [
+    1060,
+    470
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 38.6,
+   "f": "[data-fm=\"delete\"]",
+   "z": 2.0
+  },
+  {
+   "t": 41.4,
+   "f": "[data-fm=\"ban\"]",
+   "z": 1.9
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"livechat\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 10.4,
+   "move": "[data-flcf=\"q\"]",
+   "d": 0.8
+  },
+  {
+   "t": 11.3,
+   "click": 1
+  },
+  {
+   "t": 11.4,
+   "type": "هلا",
+   "sel": "[data-flcf=\"q\"]",
+   "cps": 6
+  },
+  {
+   "t": 13.8,
+   "js": "(q=>{q.value='';q.dispatchEvent(new Event('input',{bubbles:true}))})(document.querySelector('[data-flcf=\"q\"]'))"
+  },
+  {
+   "t": 15.0,
+   "move": "[data-flc=\"design\"]",
+   "d": 0.8
+  },
+  {
+   "t": 15.9,
+   "click": 1
+  },
+  {
+   "t": 17.0,
+   "move": [
+    480,
+    460
+   ],
+   "d": 1.0
+  },
+  {
+   "t": 18.4,
+   "move": "[data-flc=\"design\"]",
+   "d": 0.6
+  },
+  {
+   "t": 19.1,
+   "click": 1
+  },
+  {
+   "t": 20.6,
+   "move": ".flc-m[data-id]:last-child .flc-n",
+   "d": 1.0
+  },
+  {
+   "t": 21.700000000000003,
+   "click": 1
+  },
+  {
+   "t": 23.6,
+   "move": "[data-fm=\"timeout\"][data-sec=\"300\"]",
+   "d": 1.0
+  },
+  {
+   "t": 25.6,
+   "ring": "[data-fm=\"timeout\"][data-sec=\"300\"]",
+   "d": 1.6
+  },
+  {
+   "t": 26.8,
+   "click": 1
+  },
+  {
+   "t": 28.6,
+   "move": [
+    600,
+    420
+   ],
+   "d": 1.0
+  },
+  {
+   "t": 31.0,
+   "move": ".flc-m[data-id]:nth-last-child(3) .flc-n",
+   "d": 0.9
+  },
+  {
+   "t": 32.0,
+   "click": 1
+  },
+  {
+   "t": 32.6,
+   "move": "[data-fm=\"pin\"][data-sec=\"60\"]",
+   "d": 0.9
+  },
+  {
+   "t": 32.8,
+   "ring": "[data-fm=\"pin\"][data-sec=\"60\"]",
+   "d": 1.6
+  },
+  {
+   "t": 33.8,
+   "click": 1
+  },
+  {
+   "t": 36.6,
+   "move": ".flc-m[data-id]:nth-last-child(5) .flc-n",
+   "d": 0.9
+  },
+  {
+   "t": 37.6,
+   "click": 1
+  },
+  {
+   "t": 38.2,
+   "move": "[data-fm=\"delete\"]",
+   "d": 0.8
+  },
+  {
+   "t": 38.4,
+   "ring": "[data-fm=\"delete\"]",
+   "d": 1.4
+  },
+  {
+   "t": 39.8,
+   "ring": "[data-fm=\"ban\"]",
+   "d": 1.6
+  },
+  {
+   "t": 41.7,
+   "js": "document.dispatchEvent(new KeyboardEvent('keydown',{key:'Escape'}));document.body.click()"
+  },
+  {
+   "t": 42.6,
+   "sim": {
+    "type": "comment",
+    "id": "C16_0",
+    "platform": "tiktok",
+    "user": {
+     "id": "q0",
+     "name": "ريم"
+    },
+    "text": "يا هلا والله 👋"
+   }
+  },
+  {
+   "t": 44.0,
+   "sim": {
+    "type": "comment",
+    "id": "C16_1",
+    "platform": "tiktok",
+    "user": {
+     "id": "q1",
+     "name": "خالد"
+    },
+    "text": "بث أسطوري 🔥"
+   }
+  },
+  {
+   "t": 45.4,
+   "sim": {
+    "type": "comment",
+    "id": "C16_2",
+    "platform": "tiktok",
+    "user": {
+     "id": "q2",
+     "name": "سارة"
+    },
+    "text": "كمل كمل 💪"
+   }
+  },
+  {
+   "t": 46.8,
+   "sim": {
+    "type": "comment",
+    "id": "C16_3",
+    "platform": "tiktok",
+    "user": {
+     "id": "q3",
+     "name": "فيصل"
+    },
+    "text": "الله يعطيك العافية"
+   }
+  },
+  {
+   "t": 48.2,
+   "sim": {
+    "type": "comment",
+    "id": "C16_4",
+    "platform": "tiktok",
+    "user": {
+     "id": "q4",
+     "name": "لمى"
+    },
+    "text": "👏👏👏"
+   }
+  },
+  {
+   "t": 49.6,
+   "sim": {
+    "type": "comment",
+    "id": "C16_5",
+    "platform": "tiktok",
+    "user": {
+     "id": "q5",
+     "name": "تركي"
+    },
+    "text": "أقوى ستريمر"
+   }
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "كتم · حظر · *تثبيت*"
+  ],
+  [
+   7.1,
+   9.8,
+   "*بضغطة* على الاسم"
+  ],
+  [
+   10.4,
+   14.6,
+   "*بحث* وفلترة سريعة"
+  ],
+  [
+   15.0,
+   19.8,
+   "تصاميم *وأوضاع* للعرض"
+  ],
+  [
+   20.4,
+   25.3,
+   "اضغط *اسم المشاهد*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "*كتم مؤقت* بالمدة اللي تبيها",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "*ثبّت* رسالة مهمة",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "احذف أو *احظر*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "شات *نظيف ومرتّب*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · الشات المباشر والإدارة"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "ovl": "overlayURL(S.layouts.find(l=>l.id==='l_acad'))"
+}

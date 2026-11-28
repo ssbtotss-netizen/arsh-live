@@ -10,8 +10,10 @@ for f in ['defs','leaderboard','clock','donations','latest','tops','poststats','
 tpl=(root/'template.html').read_text(encoding='utf-8')
 head=tpl.split('/*@@ENGINE@@*/')[0]
 out=head.replace('/*@@APP_CSS@@*/',(src/'styles'/'app.css').read_text(encoding='utf-8')).replace('/*@@OVERLAY_CSS@@*/',(src/'styles'/'overlay.css').read_text(encoding='utf-8'))
-appsrc=(root/'app.js').read_text(encoding='utf-8').replace('</script>','\n'+(root/'sounds-ui.js').read_text(encoding='utf-8')+'\n'+(root/'float-ui.js').read_text(encoding='utf-8')+'\n</script>',1)  # مكتبة الأصوات
+appsrc=(root/'app.js').read_text(encoding='utf-8').replace('</script>','\n'+(root/'sounds-ui.js').read_text(encoding='utf-8')+'\n'+(root/'float-ui.js').read_text(encoding='utf-8')+'\n'+(root/'academy-ui.js').read_text(encoding='utf-8')+'\n</script>',1)  # مكتبة الأصوات
 _sx=root.parent/'arsh-live'/'public'/'sounds'/'lib'/'index.json'
+_ax=root.parent/'arsh-live'/'public'/'academy'/'index.json'
+out+=('window.B6O6_ACADEMY='+_ax.read_text(encoding='utf-8')+';\n' if _ax.exists() else '')
 out+=('window.B6O6_SND_INDEX='+_sx.read_text(encoding='utf-8')+';\n' if _sx.exists() else '')+eng+'\n'+appsrc
 (root/'index.html').write_text(out,encoding='utf-8'); print('built',len(out))
 
