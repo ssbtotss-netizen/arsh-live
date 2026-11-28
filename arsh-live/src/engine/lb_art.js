@@ -2,7 +2,7 @@
 // كل تصميم = طريقة ترتيب مختلفة (15) + إطار صورة + شكل رقم المركز + شكل الاسم + زخرفة المركز الأول + مؤثرات محيطة + احتفال الصدارة.
 // الخلفية شفافة 100% (لا مستطيل خلف القائمة)، والمؤثرات أجزاء مستقلة تتحرك وحدها.
 import { LB_DESIGNS, LB_CATS } from "./lb.js";
-import { duckSVG } from "./fachars.js";
+import { emblemTone } from "./brand.js";
 
 Object.assign(LB_CATS,{legRoyal:"أسطورية: ملكية",legFlower:"أسطورية: فراشات وورد",legGaming:"أسطورية: ألعاب",legGalaxy:"أسطورية: فضاء",legMinimal:"أسطورية: بسيطة وشفافة",legSaudi:"أسطورية: سعودية وB6O6"});
 export const LB_ARRS={column:"عمودي نحيف",row:"أفقي",podium:"منصة تتويج",hero:"الأول كبير",ring:"دائري حول الأول",stairs:"درجات",triangle:"مثلث",crescent:"هلال",float:"طافٍ بدون خلفيات",zigzag:"متعرج",wings:"أجنحة",medals:"ميداليات",planets:"كواكب",text:"نصي بسيط",rotate:"متناوب (داعم كل عدة ثوانٍ)",race:"سباق (مسارات)",crown3:"منصة تتويج TOP 3"};
@@ -10,7 +10,7 @@ export const LB_FRAMES={ring:"حلقة",shield:"درع",medal:"ميدالية",h
 export const LB_RKS={circle:"دائرة",diamond:"ألماسة",shield:"درع",ribbon:"شريطة",big:"رقم كبير",hex:"سداسي",none:"مخفي"};
 export const LB_NMS={none:"نص فقط",capsule:"كبسولة",ribbon:"شريطة نحيفة",line:"خط ذهبي",glass:"زجاجي",plate:"لوحة داكنة",carbon:"كربون"};
 export const LB_AMBS={none:"بدون",butterflies:"فراشات",petals:"بتلات ورد",stars:"نجوم",sparks:"شرارات ذهبية",hearts:"قلوب",clouds:"غيوم",bolts:"برق",flames:"لهب",shards:"شظايا ثلج",meteors:"شهب",coins:"عملات ذهبية",steam:"بخار",dust:"غبار سحري",circuit:"دوائر إلكترونية",diamonds:"ألماس",nebula:"سديم"};
-export const LB_D1S={none:"بدون",crown:"تاج",throne:"عرش",lion:"أسد",swords:"سيفان",wings:"أجنحة",rosecrown:"تاج ورد",dragon:"تنين",palm:"نخلة",falcon:"صقر",duck:"بطة بطوط الملك",blackhole:"ثقب أسود",eclipse:"كسوف",firering:"حلقة نار",cosmic:"تاج نجوم",storm:"برق",moonbf:"هلال وفراشة",horse:"حصان عربي",dallah:"دلة",bow:"فيونكة لؤلؤ",gate:"بوابة إمبراطورية"};
+export const LB_D1S={none:"بدون",crown:"تاج",throne:"عرش",lion:"أسد",swords:"سيفان",wings:"أجنحة",rosecrown:"تاج ورد",dragon:"تنين",palm:"نخلة",falcon:"صقر",duck:"شعار B6O6 الذهبي",blackhole:"ثقب أسود",eclipse:"كسوف",firering:"حلقة نار",cosmic:"تاج نجوم",storm:"برق",moonbf:"هلال وفراشة",horse:"حصان عربي",dallah:"دلة",bow:"فيونكة لؤلؤ",gate:"بوابة إمبراطورية"};
 export const LB_CELS={crown:"نزول التاج",wings:"فتح الأجنحة",stars:"انفجار نجوم",butterflies:"ظهور فراشات",diamonds:"تجمع الألماس",falcon:"ظهور صقر",lion:"ظهور أسد",coins:"عملات ذهبية",firering:"حلقة نار",halo:"هالة ملكية",hearts:"قلوب",petals:"بتلات",lightning:"برق",planets:"كواكب",confetti:"قصاصات احتفال"};
 
 // ---------- رموز SVG صغيرة (أصلية) ----------
@@ -65,7 +65,7 @@ const D1={
 };
 D1.bow=`<svg viewBox="0 0 100 100" class="d1-top"><path d="M50 50C34 30 10 28 12 48C14 64 34 62 50 50Z" fill="#fbcfe8" stroke="#fff" stroke-width="2"/><path d="M50 50C66 30 90 28 88 48C86 64 66 62 50 50Z" fill="#fbcfe8" stroke="#fff" stroke-width="2"/><path d="M46 52L36 84L46 78L50 88L54 78L64 84L54 52Z" fill="#f9a8d4" stroke="#fff" stroke-width="1.5"/>${[18,26,34,74,82].map((x,i)=>`<circle cx="${x}" cy="${i<3?44+i*2:44+(i-3)*2}" r="2.6" fill="#fff" class="tw" style="animation-delay:${i*.3}s"/>`).join("")}<circle cx="50" cy="50" r="7" fill="#fff" stroke="#f9a8d4" stroke-width="2"/></svg>`;
 D1.gate=`<svg viewBox="0 0 100 100" class="d1-back"><path d="M10 98V44C10 18 28 4 50 4C72 4 90 18 90 44V98H80V46C80 26 66 14 50 14C34 14 20 26 20 46V98Z" fill="#d4a017" stroke="#fff3c4" stroke-width="1.5"/><path d="M4 98H96" stroke="#f6c94a" stroke-width="5"/>${[[10,40],[90,40],[50,6]].map(([x,y])=>`<circle cx="${x}" cy="${y}" r="4" fill="#fde68a" class="tw"/>`).join("")}<path d="M38 8L44 0L50 6L56 0L62 8Z" fill="#fde68a"/></svg>`;
-export function lbD1HTML(k){ if(k==="duck") return `<span class="d1-side d1-duck">${duckSVG({acc:["crown"],aura:"#f6c94a"})}</span>`; return D1[k]||"" }
+export function lbD1HTML(k){ if(k==="duck") return `<span class="d1-side d1-duck">${emblemTone("gold",{glow:"#f6c94a"})}</span>`; return D1[k]||"" }
 
 // ---------- طرق الترتيب (15) ----------
 const T=(x,y,s)=>({x,y,w:s,h:s*1.45,k:"tok"});
@@ -161,7 +161,7 @@ const LBA_L=[
  ["arabianHorseLb","Arabian Horse","legSaudi","حصان عربي بجانب ترتيب الداعمين","column","ring","circle","line","none","horse","halo",C("#e9e4dc,#c9a227,#d6c4a0,#fde68a,#a8a29e"),"Amiri"],
  ["goldenDallahLb","Golden Dallah","legSaudi","دلّة ذهبية مع بخار متحرك","row","ring","circle","glass","steam","dallah","coins",C("#d4a017,#fde68a,#b45309,#fff3c4,#ca8a04"),"Changa"],
  ["saudiEmeraldLb","Saudi Emerald","legSaudi","إطارات زمردية وزخارف ذهبية","medals","hex","hex","plate","sparks","crown","diamonds",C("#11c47a,#f6c94a,#059669,#fde68a,#34d399"),"Changa"],
- ["duckKing","B6O6 Duck King","legSaudi","بطة بطوط بتاج ملكي بجانب المتصدر","hero","ring","circle","capsule","sparks","duck","crown",C("#f6c94a,#2f7bff,#fde68a,#e0f2fe,#ff9f1a"),"Changa"],
+ ["duckKing","B6O6 Emblem King","legSaudi","شعار B6O6 الذهبي بجانب المتصدر","hero","ring","circle","capsule","sparks","duck","crown",C("#f6c94a,#2f7bff,#fde68a,#e0f2fe,#ff9f1a"),"Changa"],
  ["b6o6DiamondLb","B6O6 Diamond","legSaudi","ألماس أزرق وفضي دوّار بترتيب أجنحة","wings","crystal","hex","glass","diamonds","cosmic","diamonds",C("#2f7bff,#c0c7d4,#7cc4ff,#e0f2fe,#3d8bff"),"Orbitron"],
  ["b6o6LegendWings","B6O6 Legendary Wings","legSaudi","أجنحة حصرية بألوان المنصة على شكل هلال","crescent","soft","shield","plate","dust","wings","wings",C("#2f7bff,#ff2d6f,#7c5cff,#e0f2fe,#fde68a"),"Orbitron"],
  ["b6o6UltimateSup","B6O6 Ultimate Supporters","legSaudi","تصميم سينمائي: أشعة وتاج وهالة دوّارة","ring","ring","big","glass","dust","eclipse","confetti",C("#fde68a,#2f7bff,#ff2d6f,#e0f2fe,#7c5cff"),"Orbitron"],

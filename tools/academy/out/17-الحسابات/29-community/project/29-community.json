@@ -1,0 +1,344 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })()",
+ "intro": {
+  "end": 4.0,
+  "style": "split",
+  "hook": "جمهورك يعرف|*إنك لايف*",
+  "sub": "Discord وTelegram"
+ },
+ "app": [
+  4.0,
+  52.0
+ ],
+ "live": null,
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 7.6,
+   "f": [
+    700,
+    160
+   ],
+   "z": 1.7
+  },
+  {
+   "t": 9.8,
+   "f": [
+    700,
+    160
+   ],
+   "z": 1.7
+  },
+  {
+   "t": 10.6,
+   "f": [
+    760,
+    420
+   ],
+   "z": 1.5,
+   "ry": 3
+  },
+  {
+   "t": 15.2,
+   "f": [
+    760,
+    640
+   ],
+   "z": 1.5,
+   "ry": -3
+  },
+  {
+   "t": 19.6,
+   "f": [
+    760,
+    620
+   ],
+   "z": 1.45
+  },
+  {
+   "t": 20.6,
+   "f": "[data-nf=\"discord.secret\"]",
+   "z": 2.0
+  },
+  {
+   "t": 25.2,
+   "f": "[data-nf=\"discord.secret\"]",
+   "z": 1.9
+  },
+  {
+   "t": 25.8,
+   "f": [
+    760,
+    470
+   ],
+   "z": 1.5
+  },
+  {
+   "t": 27.0,
+   "f": "[data-nf=\"discord.events.goal.on\"]",
+   "z": 2.0
+  },
+  {
+   "t": 30.4,
+   "f": [
+    760,
+    520
+   ],
+   "z": 1.5
+  },
+  {
+   "t": 31.6,
+   "f": "[data-nf=\"discord.events.live_start.tpl\"]",
+   "z": 1.9
+  },
+  {
+   "t": 36.0,
+   "f": "[data-nf=\"discord.events.live_start.tpl\"]",
+   "z": 1.8
+  },
+  {
+   "t": 37.2,
+   "f": "[data-nsave=\"discord\"]",
+   "z": 2.0
+  },
+  {
+   "t": 41.4,
+   "f": "[data-ntest=\"discord\"]",
+   "z": 1.9
+  },
+  {
+   "t": 42.4,
+   "f": [
+    760,
+    420
+   ],
+   "z": 1.1
+  },
+  {
+   "t": 44.6,
+   "f": "[data-nf=\"discord.events.live_start.tpl\"]",
+   "z": 1.9,
+   "ry": 3
+  },
+  {
+   "t": 47.6,
+   "f": "[data-nf=\"discord.events.stats.tpl\"]",
+   "z": 1.9,
+   "ry": -3
+  },
+  {
+   "t": 51.6,
+   "f": "[data-nf=\"discord.events.goal.tpl\"]",
+   "z": 1.8
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"community\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 11.0,
+   "move": "[data-nf=\"discord.events.live_start.on\"]",
+   "d": 0.9
+  },
+  {
+   "t": 11.4,
+   "ring": "[data-nf=\"discord.events.live_start.tpl\"]",
+   "d": 3.0
+  },
+  {
+   "t": 15.4,
+   "move": "[data-nf=\"discord.events.big_support.tpl\"]",
+   "d": 1.0
+  },
+  {
+   "t": 15.8,
+   "ring": "[data-nf=\"discord.events.big_support.tpl\"]",
+   "d": 3.4
+  },
+  {
+   "t": 20.8,
+   "move": "[data-nf=\"discord.secret\"]",
+   "d": 0.9
+  },
+  {
+   "t": 21.4,
+   "ring": "[data-nf=\"discord.secret\"]",
+   "d": 3.6
+  },
+  {
+   "t": 26.6,
+   "move": "[data-nf=\"discord.events.goal.on\"]",
+   "d": 0.9
+  },
+  {
+   "t": 27.6,
+   "click": 1
+  },
+  {
+   "t": 31.2,
+   "move": "[data-nf=\"discord.events.live_start.tpl\"]",
+   "d": 0.9
+  },
+  {
+   "t": 32.2,
+   "click": 1
+  },
+  {
+   "t": 32.4,
+   "ring": "[data-nf=\"discord.events.live_start.tpl\"]",
+   "d": 3.2
+  },
+  {
+   "t": 36.8,
+   "move": "[data-nsave=\"discord\"]",
+   "d": 0.9
+  },
+  {
+   "t": 37.8,
+   "click": 1
+  },
+  {
+   "t": 38.6,
+   "move": "[data-ntest=\"discord\"]",
+   "d": 0.7
+  },
+  {
+   "t": 38.8,
+   "ring": "[data-ntest=\"discord\"]",
+   "d": 2.4
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "*Discord* و*Telegram*"
+  ],
+  [
+   7.1,
+   9.8,
+   "إشعار *تلقائي* لمجتمعك"
+  ],
+  [
+   10.4,
+   14.6,
+   "بداية البث · *نهايته*"
+  ],
+  [
+   15.0,
+   19.8,
+   "ملخص · أهداف · *دعم كبير*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   20.4,
+   25.3,
+   "الصق *رابط Webhook*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "اختر *متى ينرسل*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "*خصّص* نص الرسالة",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "احفظ *وجرّب*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "رسائلك *جاهزة للإرسال*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · المجتمعات والإشعارات"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "قوالب الإشعارات داخل المنصة"
+  ]
+ ]
+}

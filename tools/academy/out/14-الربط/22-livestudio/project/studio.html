@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ar" dir="ltr"><head><meta charset="utf-8">
+<!-- B6O6 Academy Studio v2 — يصوّر واجهة المنصة الحقيقية (النسخة التجريبية) داخل نافذة متحركة، بكاميرا وماوس ونصوص متزامنة. كل الحركة دالة في الزمن t (حتمية). -->
+<style>
+@font-face{font-family:Alx;src:url(fonts/Alexandria.ttf);font-weight:100 900}
+@font-face{font-family:Plex;src:url(fonts/IBMPlexSansArabic-Medium.ttf);font-weight:500}
+@font-face{font-family:Plex;src:url(fonts/IBMPlexSansArabic-SemiBold.ttf);font-weight:600}
+@font-face{font-family:Plex;src:url(fonts/IBMPlexSansArabic-Bold.ttf);font-weight:700}
+*{box-sizing:border-box}
+html,body{margin:0;width:1080px;height:1920px;overflow:hidden;background:#04060c;color:#eef3ff;font-family:Plex,sans-serif}
+#bg{position:absolute;inset:0;overflow:hidden}
+.blob{position:absolute;border-radius:50%;will-change:transform}
+#vig{position:absolute;inset:0;background:radial-gradient(ellipse 80% 70% at 50% 50%,transparent 55%,rgba(0,0,0,.55) 100%);pointer-events:none}
+#grain{position:absolute;inset:-64px;opacity:.022;pointer-events:none;z-index:50}
+.layer{position:absolute;inset:0;overflow:hidden;contain:paint;direction:rtl}
+/* النافذة */
+#persp{position:absolute;inset:0;overflow:hidden;contain:paint;perspective:2600px;perspective-origin:50% 55%}
+#win{position:absolute;left:0;top:0;width:1280px;height:840px;border-radius:22px;background:#0b1120;overflow:hidden;
+ box-shadow:0 80px 160px rgba(0,0,0,.65),0 20px 50px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.07)}
+#bar{height:40px;background:#0d1426;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:center;position:relative;direction:ltr}
+#bar .dots{position:absolute;left:16px;display:flex;gap:8px}#bar .dots i{width:12px;height:12px;border-radius:50%;background:#2a3350;display:block}
+#bar .url{font:500 15px Plex;color:#8794b4;background:#080c18;border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:4px 18px;display:flex;gap:8px;align-items:center}
+#app{width:1280px;height:800px;border:0;display:block;background:#04060c}
+#sheen{position:absolute;inset:0;pointer-events:none;background:linear-gradient(115deg,transparent 30%,rgba(255,255,255,.045) 45%,transparent 60%)}
+#cur{position:absolute;left:0;top:0;width:26px;height:38px;pointer-events:none;z-index:9;filter:drop-shadow(0 3px 5px rgba(0,0,0,.5));transform-origin:3px 3px}
+#rip{position:absolute;left:0;top:0;border-radius:50%;border:2.5px solid rgba(255,255,255,.9);pointer-events:none;z-index:8}
+#ring{position:absolute;border-radius:12px;box-shadow:0 0 0 2px #2f7bff,0 0 24px 2px rgba(47,123,255,.45);pointer-events:none;z-index:7}
+/* النصوص */
+#scrim{position:absolute;left:0;right:0;top:0;height:760px;background:linear-gradient(#04060c 0%,rgba(4,6,12,.94) 42%,rgba(4,6,12,0) 100%);pointer-events:none}
+#cap{direction:rtl;position:absolute;left:80px;right:80px;top:250px;height:420px;text-align:center}
+.ln{position:absolute;left:0;right:0;top:56px;font:700 76px/1.28 Alx;letter-spacing:0;word-spacing:.06em;color:#fff}
+.ln .w{display:inline-block;white-space:pre}
+.ln .em{color:#4d8dff}
+.ln.sm{font-size:64px}.ln.xs{font-size:50px}
+#o2 .ln,#o3 .ln,#o4 .ln,#iT .ln{top:0}
+.kk{position:absolute;left:0;right:0;top:0;font:600 30px Plex;color:#8794b4;letter-spacing:.01em}
+.kk b{color:#4d8dff;font-weight:700}
+/* المقدمة والخاتمة */
+.ctr{position:absolute;left:0;right:0;text-align:center}
+#logoWrap{position:absolute;left:50%;width:420px;height:420px;margin-left:-210px}
+#logoWrap img{width:100%;height:100%;display:block}
+#logoSweep{position:absolute;inset:0;-webkit-mask:url(assets/logo.png) center/100% 100% no-repeat;background:linear-gradient(110deg,transparent 35%,rgba(255,255,255,.85) 50%,transparent 65%);background-size:300% 100%;mix-blend-mode:screen}
+#hair{position:absolute;left:50%;height:2px;background:linear-gradient(90deg,transparent,#4d8dff,#fff,#4d8dff,transparent)}
+.wm{font:700 40px Alx;letter-spacing:.34em;color:#eef3ff;direction:ltr}
+.pill{display:inline-flex;align-items:center;gap:12px;font:600 34px Plex;direction:ltr;color:#fff;background:rgba(47,123,255,.14);border:1px solid rgba(77,141,255,.45);border-radius:999px;padding:14px 34px}
+.fine{font:500 28px Plex;color:#8794b4}
+.cta{display:inline-block;font:700 44px Alx;color:#fff;background:linear-gradient(180deg,#3d86ff,#1f5fe0);border-radius:999px;padding:18px 64px;box-shadow:0 18px 50px rgba(47,123,255,.35),inset 0 1px 0 rgba(255,255,255,.25)}
+.url{font:600 34px Plex;color:#cfe0ff;direction:ltr;letter-spacing:.01em}
+/* المقدمات */
+#iMark{position:absolute;left:50%;top:300px;width:150px;height:150px;margin-left:-75px}#iMark img{width:100%}
+#iBox{position:absolute;left:70px;right:70px;top:700px;height:520px;direction:rtl}
+#iBox .hk{position:absolute;left:0;right:0;padding:26px 0 44px;font:800 92px/1.22 Alx;text-align:center;color:#fff}
+#iBox .hk .em{color:#4d8dff}
+#iBox .ft{position:absolute;left:0;right:0;font:600 36px Plex;color:#8794b4;text-align:center}
+#iBar{position:absolute;width:3px;background:linear-gradient(#fff0,#9cc2ff,#fff,#9cc2ff,#fff0);box-shadow:0 0 18px 4px rgba(77,141,255,.55)}
+#iNum{position:absolute;left:0;right:0;top:-40px;text-align:center;font:800 230px/1 Alx;color:#fff;direction:ltr;letter-spacing:-.02em}
+#iChip{position:absolute;left:50%;top:-30px;width:640px;margin-left:-320px;display:flex;align-items:center;gap:22px;padding:22px 28px;border-radius:28px;background:rgba(20,28,52,.72);border:1px solid rgba(255,255,255,.1);box-shadow:0 30px 80px rgba(0,0,0,.5);backdrop-filter:blur(20px)}
+#iChip .av{width:84px;height:84px;border-radius:50%;display:grid;place-items:center;font:700 40px Alx;color:#fff;background:linear-gradient(135deg,#ff7aa8,#7c5cff);flex:none}
+#iChip b{display:block;font:700 38px Alx;color:#fff}#iChip span{font:500 28px Plex;color:#9aa6c4}
+.pnl{position:absolute;left:0;right:0;height:50%;background:#04060c;z-index:4;display:none}
+#baL{position:absolute;bottom:250px;left:50%;transform:translateX(-50%);z-index:4;font:700 26px Alx;color:#fff;background:rgba(0,0,0,.55);border:1px solid rgba(255,255,255,.15);border-radius:999px;padding:8px 26px}
+#baBar{position:absolute;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 16px 3px rgba(77,141,255,.7);z-index:4}
+/* البث التجريبي */
+#phone{position:absolute;left:225px;top:560px;width:630px;height:1120px;border-radius:64px;overflow:hidden;background:#000;
+ box-shadow:0 0 0 10px #0d1220,0 0 0 11px rgba(255,255,255,.08),0 90px 160px rgba(0,0,0,.7)}
+#cam{position:absolute;inset:0}
+#ovl{position:absolute;left:0;top:0;width:540px;height:960px;border:0;transform-origin:0 0;transform:scale(1.16667);background:transparent}
+#desk{position:absolute;left:40px;top:640px;width:1000px;height:563px;border-radius:18px;overflow:hidden;background:#000;box-shadow:0 0 0 12px #0d1220,0 0 0 13px rgba(255,255,255,.08),0 90px 160px rgba(0,0,0,.7);display:none;transform-origin:740px 270px}
+#game{position:absolute;inset:0}#flt{position:absolute;left:600px;top:40px;width:380px;height:620px;border:0;transform-origin:0 0;transform:scale(.74);background:transparent;border-radius:16px}
+#gtag{position:absolute;left:16px;bottom:14px;font:600 18px Plex;color:#fff;background:rgba(0,0,0,.5);border-radius:8px;padding:4px 12px;direction:rtl}
+#ltag{position:absolute;left:28px;bottom:150px;display:flex;gap:10px;align-items:center;direction:ltr;z-index:3}
+#ltag .lv{background:#ef4444;color:#fff;font:700 20px Plex;border-radius:8px;padding:3px 12px}
+#ltag .dm{background:rgba(0,0,0,.45);color:#fff;font:600 20px Plex;border-radius:8px;padding:3px 12px;direction:rtl}
+</style></head><body>
+<div id="bg"><div class="blob" id="b1"></div><div class="blob" id="b2"></div><div class="blob" id="b3"></div></div>
+<!-- المقدمة -->
+<div class="layer" id="Lintro"><div id="hair"></div><div id="logoWrap"><img src="assets/logo.png"><div id="logoSweep"></div></div>
+ <div class="ctr" id="iK" style="top:1130px"><span class="wm" style="font-size:30px;color:#8794b4">B6O6 STREAMING</span></div>
+ <div class="ctr ln" id="iT" style="top:1190px"></div></div>
+<div class="layer" id="Lin2"><div id="iMark"><img src="assets/logo.png"></div><div id="iBox"></div><div id="iBar"></div><div class="pnl" id="pT" style="top:0"></div><div class="pnl" id="pB" style="bottom:0"></div></div>
+<!-- التطبيق -->
+<div class="layer" id="Lapp"><div id="persp"><div id="win"><div id="bar"><div class="dots"><i></i><i></i><i></i></div><div class="url">🔒 b6o6-streaming.onrender.com</div></div>
+ <iframe id="app"></iframe><div id="ring"></div><div id="rip"></div>
+ <svg id="cur" viewBox="0 0 26 38"><path d="M3 3 L3 30 L10 23.5 L14.6 34 L19 32 L14.5 21.8 L23.5 21.8 Z" fill="#fff" stroke="#0b0d14" stroke-width="2" stroke-linejoin="round"/></svg>
+ <div id="sheen"></div></div></div></div>
+<!-- النتيجة داخل بث تجريبي -->
+<div class="layer" id="Llive"><div id="desk"><canvas id="game" width="1000" height="563"></canvas><iframe id="flt"></iframe><div id="gtag">مشهد لعبة توضيحي</div></div><div id="phone"><canvas id="cam" width="630" height="1120"></canvas><iframe id="ovl"></iframe>
+ <div id="baL"></div><div id="baBar"></div><div id="ltag"><span class="lv">LIVE</span><span class="dm">بث تجريبي</span><span class="dm" id="vw">👁 0</span></div></div></div>
+<div id="scrim"></div>
+<div id="cap"></div>
+<!-- الخاتمة -->
+<div class="layer" id="Lout"><div id="oLogo" style="position:absolute;left:50%;top:430px;width:340px;height:340px;margin-left:-170px"><img src="assets/logo.png" style="width:100%"></div>
+ <div class="ctr" id="o1" style="top:810px"><span class="wm">B6O6 STREAMING</span></div>
+ <div class="ctr" id="o2" style="top:890px"></div>
+ <div class="ctr" id="o3" style="top:990px"></div>
+ <div class="ctr" id="o4" style="top:1120px"></div>
+ <div class="ctr" id="o5" style="top:1260px"><span class="cta">سجّل الآن</span></div>
+ <div class="ctr" id="o7" style="top:1380px"><span class="url">b6o6-streaming.onrender.com</span></div>
+ <div class="ctr fine" id="o6" style="top:1450px">تبدأ التجربة المجانية بعد أول بث مؤهل لحسابك</div></div>
+<canvas id="grain" width="1208" height="2048"></canvas>
+<script>
+"use strict";
+const $=id=>document.getElementById(id);
+const cl=(x,a=0,b=1)=>Math.max(a,Math.min(b,x)), lerp=(a,b,u)=>a+(b-a)*u;
+const io=u=>u<.5?4*u*u*u:1-Math.pow(-2*u+2,3)/2;          // easeInOutCubic
+const ox=u=>u>=1?1:1-Math.pow(2,-10*u);                    // easeOutExpo
+const oc=u=>1-Math.pow(1-u,3);
+const seg=(t,a,b)=>cl((t-a)/(b-a));
+let EP=null, AF=null, AD=null, OF=null, LOG=[], done=new Set(), CUR={x:640,y:520,p:0}, TXT=new Map();
+const log=(t,k,v)=>LOG.push({t:+t.toFixed(3),k,v});
+// ---------- خلفية + حبيبات (حتمية) ----------
+function rnd(s){return ()=>{s|=0;s=s+0x6D2B79F5|0;let t=Math.imul(s^s>>>15,1|s);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+const G=$("grain").getContext("2d"), GT=[];
+for(let k=0;k<6;k++){const r=rnd(77+k),c=document.createElement("canvas");c.width=c.height=256;const x=c.getContext("2d"),d=x.createImageData(256,256);for(let i=0;i<d.data.length;i+=4){const v=r()*255;d.data[i]=d.data[i+1]=d.data[i+2]=v;d.data[i+3]=255}x.putImageData(d,0,0);GT.push(c)}
+function bg(t,f){
+ const B=[[$("b1"),900,"#1546c9",.42,320,520,.07],[$("b2"),760,"#2f7bff",.22,820,1380,.05],[$("b3"),620,"#3b2a8f",.22,200,1500,.06]];
+ for(const [e,s,c,o,x,y,w] of B){e.style.cssText=`width:${s*1.7}px;height:${s*1.7}px;margin:${-s*.35}px 0 0 ${-s*.35}px;background:radial-gradient(closest-side,${c} 0%,${c}cc 22%,${c}55 52%,${c}00 100%);opacity:${o};left:${x-s/2+Math.sin(t*w*6.28)*60}px;top:${y-s/2+Math.cos(t*w*5)*50}px`}
+ const p=G.createPattern(GT[f%6],"repeat");G.fillStyle=p;G.fillRect(0,0,1208,2048);$("grain").style.transform=`translate(${(f*37)%64-32}px,${(f*53)%64-32}px)`}
+// ---------- النصوص: عبارات قصيرة تظهر كلمة كلمة ----------
+// يقسم النص لكلمات؛ النجمة *…* تبرز جزءاً حتى لو كانت داخل الكلمة (مثل: و*أهداف*)
+function words(src){ let em=false; return src.split(" ").map(w=>{ const parts=[]; let cur=""; for(const ch of w){ if(ch==="*"){ if(cur) parts.push({t:cur,em}); cur=""; em=!em } else cur+=ch } if(cur) parts.push({t:cur,em});
+  const allEm=parts.length&&parts.every(p=>p.em), anyEm=parts.some(p=>p.em); return {s:anyEm&&!allEm?parts.map(p=>p.em?`<span class="em">${p.t}</span>`:p.t).join(""):parts.map(p=>p.t).join(""),em:allEm} })
+ .reduce((o,w)=>{ const lat=/^[\u200e]?[A-Za-z0-9$#@.+&:'\-]+[!?.,]?$/.test(w.s), L=o[o.length-1]; if(lat&&L&&L.lat&&L.em===w.em){ L.s+=" "+w.s } else o.push({...w,lat}); return o },[]) }
+function lineEl(host,key,src,cls){ let e=TXT.get(key); if(!e){ e=document.createElement("div"); e.className="ln "+(cls||""); e.innerHTML=words(src).map(w=>`<span class="w${w.em?" em":""}"${w.lat?' dir="ltr"':""}>${w.s}</span>`).join(" "); host.appendChild(e); TXT.set(key,e) } return e }
+function animLine(e,t,t0,t1,stag=.07){ // دخول: صعود + وضوح، خروج: تلاشٍ ناعم للأعلى
+ const W=e.querySelectorAll(".w"), out=t1?seg(t,t1-.38,t1):0;
+ if(t<t0-.01||(t1&&t>t1)){e.style.visibility="hidden";return} e.style.visibility="visible";
+ W.forEach((w,i)=>{const u=ox(seg(t,t0+i*stag,t0+i*stag+.62)); w.style.opacity=u*(1-out); w.style.transform=`translateY(${(1-u)*34-out*18}px)`; w.style.filter=`blur(${(1-u)*9+out*6}px)`}) }
+function caps(t){
+ for(const [i,[t0,t1,s,o]] of (EP.texts||[]).entries()){ const e=lineEl($("cap"),"x"+i,s,o&&o.sm?"sm":""); if(o&&o.y!=null) e.style.top=o.y+"px"; animLine(e,t,t0,t1); if(t>=t0&&!done.has("tx"+i)){done.add("tx"+i);log(t0,"text",i)} }
+ for(const [i,[t0,t1,s]] of (EP.kicks||[]).entries()){ let e=TXT.get("k"+i); if(!e){e=document.createElement("div");e.className="kk";e.innerHTML=s;$("cap").appendChild(e);TXT.set("k"+i,e)}
+  const u=oc(seg(t,t0,t0+.5)),o=seg(t,t1-.35,t1); e.style.visibility=t>=t0&&t<=t1?"visible":"hidden"; e.style.opacity=u*(1-o); e.style.transform=`translateY(${(1-u)*14}px)` } }
+// ---------- نافذة التطبيق: الكاميرا ----------
+const S0=980/1280, CX=540, CY=1080;
+function rectOf(sel){ try{ const d=AD; const el=typeof sel==="string"?d.querySelector(sel):null; if(!el) return null; const r=el.getBoundingClientRect(); return {x:r.left+r.width/2,y:r.top+r.height/2,w:r.width,h:r.height,el} }catch(e){return null} }
+const camMem={};
+function camPt(k,i){ if(Array.isArray(k.f)) return {x:k.f[0],y:k.f[1]}; const r=rectOf(k.f); if(r) camMem[i]={x:r.x,y:r.y}; return camMem[i]||{x:640,y:400} }
+function camAt(t){ const K=EP.cam; let i=0; while(i<K.length-1&&K[i+1].t<=t) i++; const a=K[i], b=K[Math.min(i+1,K.length-1)];
+ const u=b===a?0:io(seg(t,a.t,b.t)), A=camPt(a,i), B=camPt(b,i+1); const g=k=>k==null?0:k;
+ return {x:lerp(A.x,B.x,u),y:lerp(A.y,B.y,u),z:lerp(a.z||1,b.z||1,u),ry:lerp(g(a.ry),g(b.ry),u),rx:lerp(g(a.rx),g(b.rx),u),cy:lerp(a.cy||CY,b.cy||CY,u)} }
+function appLayer(t){ const L=EP.app; const on=seg(t,L[0],L[0]+1.1), off=seg(t,L[1]-.55,L[1]);
+ $("Lapp").style.visibility=t>=L[0]&&t<L[1]?"visible":"hidden"; if(t<L[0]||t>=L[1]) return;
+ const c=camAt(t), S=S0*c.z, e=io(on);
+ const fx=c.x, fy=c.y+40, enter=1-e;
+ $("win").style.transformOrigin=`${fx}px ${fy}px`;
+ $("win").style.transform=`translate(${CX-fx}px,${c.cy-fy+enter*520+off*-60}px) scale(${S*(1-enter*.14)*(1-off*.06)}) rotateX(${c.rx+enter*24}deg) rotateY(${c.ry}deg)`;
+ $("win").style.opacity=Math.min(e*1.4,1)*(1-off); $("win").style.filter=`blur(${off*14+enter*6}px)`;
+ $("sheen").style.backgroundPosition=`${(c.ry*14)+(1-e)*400}px 0`; $("sheen").style.opacity=.6+e*.4;
+ $("scrim").style.opacity=cl((c.z-1.05)/.5)*(1-off) }
+// ---------- الماوس والإجراءات الحقيقية داخل المنصة ----------
+function bez(p0,p1,u){ const dx=p1.x-p0.x,dy=p1.y-p0.y,d=Math.hypot(dx,dy)||1, k=Math.min(90,d*.18); const c1={x:p0.x+dx*.3-dy/d*k,y:p0.y+dy*.3+dx/d*k},c2={x:p0.x+dx*.75-dy/d*k*.4,y:p0.y+dy*.75+dx/d*k*.4};
+ const v=1-u; return {x:v*v*v*p0.x+3*v*v*u*c1.x+3*v*u*u*c2.x+u*u*u*p1.x,y:v*v*v*p0.y+3*v*v*u*c1.y+3*v*u*u*c2.y+u*u*u*p1.y} }
+let MOV=null, TYPE=null, SCR=null, CLK=null, RING=null;
+function act(t){ const A=EP.acts||[];
+ for(const [i,a] of A.entries()){ if(t<a.t||done.has(i)) continue; done.add(i);
+  if(a.move){ const sel=typeof a.move==="string"?a.move:null, r=sel?rectOf(sel):{x:a.move[0],y:a.move[1]}; const to=r?{x:r.x+(a.dx||0),y:r.y+(a.dy||0)}:{x:CUR.x,y:CUR.y};
+   let sc=null; if(r&&r.el){ const box=r.el.closest(".side"); if(box){ const er=r.el.getBoundingClientRect(), br=box.getBoundingClientRect(); if(er.top<br.top+60||er.bottom>br.bottom-60){ const y1=cl(box.scrollTop+er.top-br.top-br.height*.45,0,box.scrollHeight-box.clientHeight); sc={box,y0:box.scrollTop,y1} } } }
+   MOV={t0:a.t,d:a.d||.9,p0:{x:CUR.x,y:CUR.y},p1:to,sel,dx:a.dx||0,dy:a.dy||0,sc}; log(a.t,"move",a.d||.9) }
+  if(a.click){ CLK=a.t; log(a.t,"click",1); setTimeout(()=>{},0); try{ const el=AD.elementFromPoint(CUR.x,CUR.y); const b=el&&el.closest("button,a,input,select,label,[data-go]")||el; if(b){ if(b.tagName==="INPUT"||b.tagName==="TEXTAREA"){ b.focus({preventScroll:true}); b.click() }
+   else { const o={bubbles:true,cancelable:true,clientX:CUR.x,clientY:CUR.y,view:AF,button:0}; el.dispatchEvent(new AF.MouseEvent("mousedown",o)); el.dispatchEvent(new AF.MouseEvent("mouseup",o)); el.dispatchEvent(new AF.MouseEvent("click",o)) } } }catch(e){} }
+  if(a.type!=null){ const el=a.sel?AD.querySelector(a.sel):AD.activeElement; if(el&&el.focus) el.focus({preventScroll:true}); TYPE={t0:a.t,s:a.type,cps:a.cps||12,el,n:0} }
+  if(a.scroll!=null){ SCR={t0:a.t,d:a.d||1.2,y0:AF.scrollY,y1:a.scroll}; log(a.t,"scroll",a.d||1.2) }
+  if(a.ring!==undefined) RING=a.ring?{sel:a.ring,t0:a.t,t1:a.t+(a.d||1.6)}:null;
+  if(a.sim){ const W=a.fl?$("flt").contentWindow:AF; (Array.isArray(a.sim)?a.sim:[a.sim]).forEach(ev=>W.__arsh.send({t:"sim",ev})); if(a.snd) log(a.t,"snd",a.snd) }
+  if(a.snd&&!a.sim) log(a.t,"snd",a.snd);
+  if(a.js) AF.eval(a.js);
+  if(a.select){ const el=AD.querySelector(a.select); if(el){ if(a.idx!=null) el.selectedIndex=a.idx; else el.value=a.value; el.dispatchEvent(new AF.Event("change",{bubbles:true})); log(a.t,"click",1) } }
+  if(a.check){ const el=AD.querySelector(a.check); if(el){ el.click() } }
+ }
+ if(MOV){ const u=seg(t,MOV.t0,MOV.t0+MOV.d); if(MOV.sc) MOV.sc.box.scrollTop=lerp(MOV.sc.y0,MOV.sc.y1,io(seg(t,MOV.t0,MOV.t0+MOV.d*.7)));
+  if(MOV.sel){ const r=rectOf(MOV.sel); if(r) MOV.p1={x:r.x+MOV.dx,y:r.y+MOV.dy} } const p=bez(MOV.p0,MOV.p1,io(u)); CUR.x=p.x; CUR.y=p.y; if(u>=1) MOV=null }
+ if(TYPE){ const n=Math.min(TYPE.s.length,Math.floor((t-TYPE.t0)*TYPE.cps)); if(n>TYPE.n&&TYPE.el){ for(let k=TYPE.n;k<n;k++) log(TYPE.t0+(k+1)/TYPE.cps,"key",k); TYPE.n=n; TYPE.el.value=TYPE.s.slice(0,n); TYPE.el.dispatchEvent(new AF.Event("input",{bubbles:true})) } if(n>=TYPE.s.length) TYPE=null }
+ if(SCR){ const u=io(seg(t,SCR.t0,SCR.t0+SCR.d)); AF.scrollTo(0,lerp(SCR.y0,SCR.y1,u)); if(u>=1) SCR=null }
+ const pr=CLK==null?0:seg(t,CLK,CLK+.09)*(1-seg(t,CLK+.09,CLK+.22));
+ $("cur").style.transform=`translate(${CUR.x-3}px,${CUR.y+40-3}px) scale(${1-pr*.16})`;
+ const rp=CLK==null?1:seg(t,CLK,CLK+.5); $("rip").style.cssText=`opacity:${rp<1?(1-rp)*.9:0};width:${8+rp*60}px;height:${8+rp*60}px;transform:translate(${CUR.x-4-rp*30}px,${CUR.y+40-4-rp*30}px)`;
+ if(RING&&t<RING.t1){ const r=rectOf(RING.sel); const u=oc(seg(t,RING.t0,RING.t0+.35))*(1-seg(t,RING.t1-.3,RING.t1)); if(r) $("ring").style.cssText=`opacity:${u};left:${r.x-r.w/2-6}px;top:${r.y-r.h/2+40-6}px;width:${r.w+12}px;height:${r.h+12}px` } else $("ring").style.opacity=0 }
+// ---------- المقدمة (حسب الحلقة) ----------
+const INTROS={
+ reveal(t){ const I=EP.intro; const hair=oc(seg(t,0,.55))*(1-seg(t,.9,1.3));
+  $("hair").style.cssText=`top:860px;width:${hair*760}px;margin-left:${-hair*380}px;opacity:${hair}`;
+  const lu=ox(seg(t,.3,1.5)), up=io(seg(t,1.65,2.35)), out=seg(t,3.45,4);
+  const lw=$("logoWrap"); lw.style.top=(860-210-up*190)+"px"; lw.style.transform=`scale(${(1.14-lu*.14)*(1-up*.22)*(1+out*.06)})`; lw.style.opacity=lu*(1-out); lw.style.filter=`blur(${(1-lu)*22+out*12}px)`;
+  $("logoSweep").style.backgroundPosition=`${100-seg(t,.9,1.9)*130}% 0`;
+  const k=oc(seg(t,1.9,2.4)); $("iK").style.opacity=k*(1-out); $("iK").style.transform=`translateY(${(1-k)*12-up*80}px)`; $("iK").style.letterSpacing=(.1-k*.1)+"em";
+  const e=lineEl($("iT"),"intro",I.title,""); e.style.top="0"; $("iT").style.transform=`translateY(${-up*80}px)`; $("iT").style.opacity=1-out; $("iT").style.filter=`blur(${out*10}px)`; animLine(e,t,2.05,0,.09);
+  if(!done.has("ilogo")&&t>=.3){done.add("ilogo");log(.3,"logo",1)} }
+};
+function hookEl(I){ let e=TXT.get("hook"); if(!e){ e=document.createElement("div"); e.className="hk"; e.innerHTML=(I.hook||"").split("|").map((ln,j)=>`<div class="hl" style="display:block">${words(ln).map(w=>`<span class="w${w.em?" em":""}"${w.lat?' dir="ltr"':""} style="display:inline-block;white-space:pre">${w.s}</span>`).join(" ")}</div>`).join(""); $("iBox").appendChild(e); TXT.set("hook",e);
+  if(I.sub){ const f=document.createElement("div"); f.className="ft"; f.textContent=I.sub; $("iBox").appendChild(f); TXT.set("hsub",f) } } return e }
+function introCommon(t,I,hkTop){ const out=seg(t,3.45,4.0), m=oc(seg(t,.05,.7));
+ $("iMark").style.opacity=m*(1-out); $("iMark").style.transform=`translateY(${(1-m)*-20}px) scale(${.9+m*.1})`;
+ const e=hookEl(I); e.style.top=hkTop+"px"; $("iBox").style.opacity=1-out; $("iBox").style.filter=`blur(${out*12}px)`; $("iBox").style.transform=`scale(${1+out*.05})`;
+ const f=TXT.get("hsub"); if(f){ const u=oc(seg(t,I.subAt||2.2,(I.subAt||2.2)+.5)); f.style.opacity=u; f.style.top=(hkTop+e.offsetHeight+34)+"px"; f.style.transform=`translateY(${(1-u)*12}px)` } return e }
+const wordsIn=(e,t,t0,st=.08)=>e.querySelectorAll(".w").forEach((w,i)=>{const u=ox(seg(t,t0+i*st,t0+i*st+.6)); w.style.opacity=u; w.style.transform=`translateY(${(1-u)*36}px)`; w.style.filter=`blur(${(1-u)*10}px)`});
+Object.assign(INTROS,{
+ mask(t){ const I=EP.intro, e=introCommon(t,I,120), u=io(seg(t,.35,1.55)); const W=940; e.style.clipPath=`inset(0 0 0 ${(1-u)*100}%)`; e.querySelectorAll(".w").forEach(w=>{w.style.opacity=1;w.style.transform="none";w.style.filter="none"});
+  const bx=$("iBox").getBoundingClientRect(); $("iBar").style.cssText=`left:${70+W-u*W}px;top:${700+100}px;height:${e.offsetHeight+40}px;opacity:${u>0&&u<1?1:0}`; if(t>=.35&&!done.has("imask")){done.add("imask");log(.35,"swipe",1.2)} },
+ focus(t){ const I=EP.intro, e=introCommon(t,I,140), u=ox(seg(t,.2,1.6)); e.querySelectorAll(".w").forEach(w=>{w.style.opacity=1;w.style.transform="none";w.style.filter="none"}); e.style.transform=`scale(${1.35-u*.35})`; e.style.filter=`blur(${(1-u)*26}px)`; e.style.opacity=Math.min(1,u*1.6); if(t>=.2&&!done.has("ifocus")){done.add("ifocus");log(.2,"rise",1.4)} },
+ stack(t){ const I=EP.intro, e=introCommon(t,I,60); e.querySelectorAll(".hl").forEach((h,j)=>{ const u=ox(seg(t,.3+j*.38,.3+j*.38+.7)), d=j%2?1:-1; h.style.transform=`translateX(${(1-u)*d*420}px)`; h.style.opacity=u; h.style.filter=`blur(${(1-u)*14}px)`; if(t>=.3+j*.38&&!done.has("ist"+j)){done.add("ist"+j);log(.3+j*.38,"hit",j)} }); e.querySelectorAll(".w").forEach(w=>{w.style.opacity=1;w.style.transform="none";w.style.filter="none"}) },
+ counter(t){ const I=EP.intro; let n=TXT.get("num"); if(!n){ n=document.createElement("div"); n.id="iNum"; $("iBox").appendChild(n); TXT.set("num",n) } const u=io(seg(t,.2,1.5)); n.textContent=(I.prefix||"")+Math.round(u*I.num).toLocaleString("en-US")+(I.suffix||""); n.style.opacity=oc(seg(t,.15,.5)); n.style.transform=`scale(${.9+oc(seg(t,.15,1.5))*.1})`;
+  const e=introCommon(t,I,250); wordsIn(e,t,1.5); if(!done.has("icnt")&&t>=.2){done.add("icnt");log(.2,"count",1.3)} },
+ chip(t){ const I=EP.intro; let c=TXT.get("chip"); if(!c){ c=document.createElement("div"); c.id="iChip"; c.innerHTML=`<div class="av">${I.chip[0]}</div><div><b>${I.chip[1]}</b><span>${I.chip[2]}</span></div>`; $("iBox").appendChild(c); TXT.set("chip",c) }
+  const u=seg(t,.25,1.1), sp=u>=1?1:1-Math.exp(-6*u)*Math.cos(9*u); c.style.transform=`translateY(${(1-sp)*-160}px)`; c.style.opacity=oc(seg(t,.25,.6)); const e=introCommon(t,I,240); wordsIn(e,t,1.35); if(!done.has("ichip")&&t>=.55){done.add("ichip");log(.55,"snd",I.chipSnd||"follow-04")} },
+ split(t){ const I=EP.intro, e=introCommon(t,I,140), u=io(seg(t,.3,1.3)); $("pT").style.display=$("pB").style.display="block"; wordsIn(e,t,.75,.06); $("pT").style.transform=`translateY(${-u*100}%)`; $("pB").style.transform=`translateY(${u*100}%)`;
+  const ln=1-seg(t,.9,1.3); $("iBar").style.cssText=`left:140px;top:${959}px;width:800px;height:2px;opacity:${ln*oc(seg(t,0,.3))}`; if(!done.has("isplit")&&t>=.3){done.add("isplit");log(.3,"swipe",1.0)} },
+ rise(t){ const I=EP.intro, e=introCommon(t,I,160); e.querySelectorAll(".w").forEach((w,i)=>{ const u=ox(seg(t,.25+i*.11,.25+i*.11+.75)); w.style.opacity=u; w.style.transform=`translateY(${(1-u)*120}px) rotateX(${(1-u)*-70}deg)`; w.style.filter=`blur(${(1-u)*8}px)` }); e.style.perspective="800px"; if(!done.has("irise")&&t>=.25){done.add("irise");log(.25,"rise",1.2)} }
+});
+// ---------- النتيجة داخل بث تجريبي ----------
+const BK=Array.from({length:26},(_,i)=>{const r=rnd(500+i);return{x:r()*630,y:r()*1120,r:30+r()*90,c:["#ffcf8a","#8ab4ff","#ff9ec7","#a7f3d0","#fde68a"][i%5],s:.2+r()*.6,ph:r()*6}});
+function game(t){ const x=$("game").getContext("2d"), W=1000, H=563, hz=250; let g=x.createLinearGradient(0,0,0,hz); g.addColorStop(0,"#0b1030"); g.addColorStop(1,"#3a1f5c"); x.fillStyle=g; x.fillRect(0,0,W,hz);
+ x.fillStyle="#ff8a3d"; x.globalAlpha=.85; x.beginPath(); x.arc(W/2,hz-10,90,Math.PI,0); x.fill(); x.globalAlpha=1;
+ x.fillStyle="#120a24"; x.beginPath(); x.moveTo(0,hz); for(let i=0;i<=20;i++) x.lineTo(i*50,hz-30-Math.abs(Math.sin(i*1.7))*70); x.lineTo(W,hz); x.fill();
+ g=x.createLinearGradient(0,hz,0,H); g.addColorStop(0,"#1a0f2e"); g.addColorStop(1,"#07040f"); x.fillStyle=g; x.fillRect(0,hz,W,H-hz);
+ x.strokeStyle="rgba(77,141,255,.55)"; x.lineWidth=2; for(let i=-12;i<=12;i++){ x.beginPath(); x.moveTo(W/2+i*18,hz); x.lineTo(W/2+i*160,H); x.stroke() }
+ for(let k=0;k<14;k++){ const z=((k+t*1.6)%14)/14, y=hz+Math.pow(z,2.2)*(H-hz); x.globalAlpha=z; x.beginPath(); x.moveTo(0,y); x.lineTo(W,y); x.stroke() } x.globalAlpha=1;
+ x.fillStyle="#e8ecff"; x.beginPath(); const cx=W/2+Math.sin(t*1.3)*60; x.moveTo(cx-60,H-40); x.lineTo(cx+60,H-40); x.lineTo(cx+44,H-80); x.lineTo(cx-44,H-80); x.fill(); x.fillStyle="#ff3d6e"; x.fillRect(cx-56,H-46,22,8); x.fillRect(cx+34,H-46,22,8) }
+function liveLayer(t){ if(!EP.live){ $("Llive").style.visibility="hidden"; return } const L=EP.live; const on=seg(t,L[0],L[0]+.9), off=seg(t,L[1]-.5,L[1]);
+ if(EP.liveMode==="desk"){ $("Llive").style.visibility=t>=L[0]-.01&&t<L[1]?"visible":"hidden"; $("phone").style.display="none"; $("desk").style.display="block"; if(t<L[0]-.01||t>=L[1]) return;
+  const e=ox(on), z=io(seg(t,L[0]+3.2,L[0]+4.6))*(1-io(seg(t,L[1]-2.2,L[1]-1.2))); $("desk").style.transform=`translateY(${(1-e)*160}px) scale(${(.94+e*.06)*(1+z*.7)})`; $("desk").style.opacity=Math.min(1,e*1.5)*(1-off); $("desk").style.filter=`blur(${(1-e)*10+off*12}px)`; game(t); return }
+ $("Llive").style.visibility=t>=L[0]-.01&&t<L[1]?"visible":"hidden"; if(t<L[0]-.01||t>=L[1]) return;
+ const e=ox(on); $("phone").style.transform=`translateY(${(1-e)*180}px) scale(${.92+e*.08-off*.04})`; $("phone").style.opacity=Math.min(1,e*1.5)*(1-off); $("phone").style.filter=`blur(${(1-e)*10+off*12}px)`;
+ const x=$("cam").getContext("2d"); const g=x.createLinearGradient(0,0,0,1120); g.addColorStop(0,"#151a2c");g.addColorStop(.6,"#22192a");g.addColorStop(1,"#0c0f19"); x.fillStyle=g; x.fillRect(0,0,630,1120);
+ x.globalCompositeOperation="lighter"; for(const b of BK){ const a=.10+.07*Math.sin(t*b.s*2+b.ph); const rg=x.createRadialGradient(b.x+Math.sin(t*b.s+b.ph)*14,b.y,0,b.x,b.y,b.r); rg.addColorStop(0,b.c);rg.addColorStop(1,"transparent"); x.globalAlpha=a; x.fillStyle=rg; x.beginPath(); x.arc(b.x,b.y,b.r,0,7); x.fill() } x.globalAlpha=1; x.globalCompositeOperation="source-over";
+ $("vw").textContent="👁 "+Math.round(312+seg(t,L[0],L[1])*214);
+ const BA=EP.ba; if(BA){ const w=io(seg(t,BA[1],BA[1]+.8)); $("ovl").style.clipPath=`inset(0 0 0 ${(1-w)*100}%)`; $("baBar").style.cssText=`left:${(1-w)*630}px;opacity:${w>0&&w<1?1:0}`;
+  $("baL").textContent=t<BA[1]+.4?"قبل":"بعد"; $("baL").style.opacity=oc(seg(t,BA[0],BA[0]+.4))*(1-seg(t,BA[2]-.4,BA[2])); if(t>=BA[1]&&!done.has("ba")){done.add("ba");log(BA[1],"swipe",.8)} }
+ else { $("baL").style.opacity=0; $("baBar").style.opacity=0 } }
+// ---------- الخاتمة الموحّدة ----------
+function outro(t){ const t0=EP.out; $("Lout").style.visibility=t>=t0?"visible":"hidden"; if(t<t0) return; const T=t-t0;
+ const lu=ox(seg(T,.1,1.2)); $("oLogo").style.opacity=lu; $("oLogo").style.transform=`scale(${1.1-lu*.1})`; $("oLogo").style.filter=`blur(${(1-lu)*16}px)`;
+ const w=oc(seg(T,.6,1.3)); $("o1").style.opacity=w; $("o1").style.letterSpacing=(.2-w*.2)+"em";
+ animLine(lineEl($("o2"),"o2","كل أدوات بثك في *مكان واحد.*","xs"),T,1.4,0,.06);
+ animLine(lineEl($("o3"),"o3","*أول شهر* مجاني.",""),T,2.4,0,.08);
+ animLine(lineEl($("o4"),"o4","بثك على *مستوى ثاني.*","sm"),T,3.4,0,.07);
+ const c=ox(seg(T,4.3,5.0)); $("o5").style.opacity=c; $("o5").style.transform=`translateY(${(1-c)*24}px) scale(${.94+c*.06})`;
+ $("o7").style.opacity=oc(seg(T,4.8,5.4)); $("o6").style.opacity=oc(seg(T,5.2,5.8));
+ for(const [k,tt] of [["o1",.6],["o2",1.4],["o3",2.4],["o4",3.4],["o5",4.3]]) if(T>=tt&&!done.has(k)){done.add(k);log(t0+tt,"otext",k)} }
+// ---------- الإطار ----------
+window.__setup=async(ep)=>{ EP=ep; const f=$("app"); f.src=ep.appUrl; await new Promise(r=>f.onload=r); AF=f.contentWindow; AD=f.contentDocument;
+ const st=AD.createElement("style"); st.textContent="::-webkit-scrollbar{width:0;height:0}"+(ep.appCss||""); AD.head.appendChild(st);
+ // تمويه أي رابط محلي/توكن يظهر في الواجهة (لا نعرض روابط اختبار أو توكنات)
+ const hide=root=>{ const w=AD.createTreeWalker(root,NodeFilter.SHOW_TEXT); let n; while(n=w.nextNode()){ if(/127\.0\.0\.1|overlay\?d=|[?&]d=ey/.test(n.nodeValue)&&n.parentElement) n.parentElement.style.filter="blur(5px)" }
+  (root.querySelectorAll?root.querySelectorAll("input,textarea"):[]).forEach(i=>{ if(/127\.0\.0\.1|overlay\?d=/.test(i.value)) i.style.filter="blur(5px)" }) };
+ new AF.MutationObserver(ms=>{ for(const m of ms) for(const x of m.addedNodes) if(x.nodeType===1) hide(x); else if(x.nodeType===3&&x.parentElement) hide(x.parentElement) }).observe(AD.body,{childList:true,subtree:true}); hide(AD.body); return true };
+window.__overlay=async(url)=>{ const o=$("ovl"); o.src=url; await new Promise(r=>o.onload=r); OF=o.contentWindow; const st=o.contentDocument.createElement("style"); st.textContent="html,body{background:transparent!important}"; o.contentDocument.head.appendChild(st); return true };
+const unscroll=()=>{ for(const e of [document.documentElement,document.body,$("persp"),$("Lapp"),$("win"),$("Llive"),$("phone"),$("cap")]){e.scrollTop=0;e.scrollLeft=0} };
+window.__float=async(url)=>{ const o=$("flt"); o.src=url; await new Promise(r=>o.onload=r); const st=o.contentDocument.createElement("style"); st.textContent="html,body{background:transparent!important}.mobnav,.side{display:none!important}::-webkit-scrollbar{width:0}"; o.contentDocument.head.appendChild(st); return true };
+window.__frame=(t,f)=>{ try{ return frame(t,f) }catch(e){ return 'ERR '+e.message+' @'+(e.stack||'').split('\n')[1] } };
+function frame(t,f){ unscroll(); $("scrim").style.opacity=0; bg(t,f); const iv=t<EP.intro.end, rv=EP.intro.style==="reveal"; $("Lintro").style.visibility=iv&&rv?"visible":"hidden"; $("Lin2").style.visibility=iv&&!rv?"visible":"hidden"; if(iv) INTROS[EP.intro.style](t);
+ act(t); unscroll(); appLayer(t); liveLayer(t); caps(t); outro(t); unscroll(); return LOG.length }
+window.__log=()=>LOG;
+</script></body></html>

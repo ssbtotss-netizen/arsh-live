@@ -6,17 +6,17 @@ const { chromium } = require('/opt/npm-tools/node_modules/playwright');
  const p=await ctx.newPage(); const errs=[]; p.on('pageerror',e=>errs.push(e.message));
  await p.goto('file:///home/claude/najd/demo/index.html'); await p.evaluate(()=>localStorage.clear()); await p.goto('file:///home/claude/najd/demo/index.html');
  const n=await p.evaluate(()=>({all:FA_DESIGNS.length,lib:FA_DESIGNS.filter(d=>d.grp!=="duck").length,duck:FA_DESIGNS.filter(d=>d.grp==="duck").length,artsUnique:new Set(FA_DESIGNS.filter(d=>d.art).map(d=>d.art)).size,en:Object.keys(FA_ENTER).length,ex:Object.keys(FA_EXIT).length}));
- ok(n.lib===80&&n.duck===10&&n.artsUnique===80,'80 library designs (each with unique artwork) + 10 duck versions');
+ ok(n.lib===80&&n.duck===10&&n.artsUnique===80,'80 library designs (each with unique artwork) + 10 B6O6 signature versions');
  ok(n.en===30&&n.ex===20,'30 enter + 20 exit animations');
  const q=await p.evaluate(()=>{ const Q={}, o={qMax:30,mergeAt:3}, r=[]; for(const id of ["a","b","a","c","d","e"]) r.push(faQueuePush(Q,{id,name:id},o)); return {r,len:Q.q.length,last:Q.q[Q.q.length-1]} });
  ok(q.r[2]==="dup"&&q.len===3&&q.last.merged&&q.last.count===3,'queue: dedupe + merge ('+JSON.stringify(q.r)+')');
  ok(await p.evaluate(()=>faFill("يا {username} من {platform}",{username:"سارة",platform:"TikTok"}))==="يا سارة من TikTok",'message variables');
  await p.click('.nav [data-go="falerts"]'); await p.click('[data-faadd]'); await p.waitForTimeout(400);
  // البطة مرسومة SVG بأجزاء (ليست إيموجي) وتمشي ثم تلوّح
- await p.waitForSelector('#fa-pv .fa-char svg .armR',{timeout:3000});
+ await p.waitForSelector('#fa-pv .fa-char svg.b6-emblem',{timeout:3000});
  const ph=[]; for(const ms of [200,1300,2600]){ await p.waitForTimeout(ms-(ph.length?[200,1300][ph.length-1]:0)); ph.push(await p.evaluate(()=>{ const c=document.querySelector('#fa-pv .fa-char'); return c?c.className:"" })) }
- ok(/fa-walk/.test(ph[0])&&/fa-act-wave/.test(ph[1]),'duck walks in then waves: '+ph.join(' → '));
- ok(await p.evaluate(()=>!/🦆/.test(document.querySelector('#fa-pv .fa-char').innerHTML)),'duck is a drawn SVG character, not an emoji');
+ ok(!ph.some(c=>/fa-walk|fa-act-wave|fa-act-dance|fa-act-jump/.test(c))&&/fa-act-float/.test(ph[1]),'emblem enters calmly (no walk/wave/dance): '+ph.join(' → '));
+ ok(await p.evaluate(()=>{ const h=document.querySelector('#fa-pv .fa-char').innerHTML; return !/🦆|armR|beak/.test(h)&&/b6-emblem/.test(h) }),'no duck: official B6O6 emblem SVG');
  const txt=await p.evaluate(()=>document.querySelector('#fa-pv .fa-l1').textContent); ok(txt==='❤️ شكراً على الفولو يا متابع تجريبي','thank-you message: '+txt);
  await p.screenshot({path:'/tmp/fa-duck.png'});
  await p.waitForTimeout(5200); ok(await p.evaluate(()=>!document.querySelector('#fa-pv .fa-root')),'after exit the area is fully transparent');

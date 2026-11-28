@@ -1,29 +1,30 @@
-// ====== استوديو تنبيهات المتابعين V2: 10 نسخ لبطة بطوط + 80 تصميماً + 30 حركة دخول + 20 خروج + طابور بلا تداخل ======
+// ====== استوديو تنبيهات المتابعين V3: هوية B6O6 الرسمية (بدون شخصيات) + 90 تصميماً + 30 حركة دخول + 20 خروج + طابور بلا تداخل ======
 import { View } from "./view.js";
 import { esc, avatar } from "./defs.js";
 import { LE_DESIGNS, LE_PALETTES, leDesignOf, ensureLeCSS } from "./leview.js";
-import { FA_CHARS, DUCK_VARIANTS, FA_CHAR_CSS, duckSVG } from "./fachars.js";
+import { FA_CHARS, FA_LEGACY_CHARS, DUCK_VARIANTS, FA_CHAR_CSS, duckSVG } from "./fachars.js";
 
-export const FA_GROUPS={duck:"بطة بطوط الحصرية",royal:"الملكية",hearts:"القلوب والغيوم",gaming:"الألعاب والنيون",saudi:"السعودية",mascots:"الشخصيات والأفاتارات",crystal:"الزجاج والكريستال",cinema:"السينمائية",mini:"الصغيرة والشفافة"};
+export const FA_GROUPS={duck:"توقيع B6O6",royal:"الملكية",hearts:"القلوب والغيوم",gaming:"الألعاب والنيون",saudi:"السعودية",mascots:"البسيطة الأنيقة",crystal:"الزجاج والكريستال",cinema:"السينمائية",mini:"الصغيرة والشفافة"};
 // كل مجموعة من الثمانين تستخدم عمل فني فريد من مكتبة آخر التفاعلات (80 رسمة مختلفة — لا تكرار)
 const FA_ART_GROUP={royal:"royal",hearts:"nature",gaming:"gaming",saudi:"saudi",mascots:"space",crystal:"crystal",cinema:"fire",mini:"b6o6"};
 const N={royal:["Royal Golden Crown","Diamond King","Golden Throne","Luxury Black Gold","Silver Royal","Royal Wings","Platinum Welcome","Golden Sparkle","Royal Medal","B6O6 Royal Follow"],
  hearts:["Pink Cloud","Crystal Heart","Floating Hearts","Angel Wings","Pink Halo","Love Bubble","Rose Bloom","Dream Cloud","Heart Explosion","White Angel Follow"],
  gaming:["Gaming HUD","Cyber Neon","RGB Gamer","Level Up Follow","XP Welcome","Hologram Follow","Electric Pulse","Neon Portal","Digital Glitch","B6O6 Esports Follow"],
  saudi:["Saudi Palm","Golden Dallah","Saudi Falcon","Najdi Welcome","Desert Gold","Saudi Crown","Arabic Lantern","Saudi Coffee","Diriyah Style","B6O6 Saudi Welcome"],
- mascots:["Dancing Duck","Royal Duck","Gaming Duck","Robot Welcome","Cute Cat","Mini Dragon","Floating Ghost","Pixel Character","Space Astronaut","B6O6 Signature Mascot"],
+ mascots:["Minimal Line","Clean Card","Soft Glass","Monogram Badge","Thin Frame","Quiet Glow","Pure Text","Floating Label","Edge Light","B6O6 Minimal Signature"],
  crystal:["Liquid Glass","Crystal Bubble","Diamond Frame","Ice Glass","Mirror Chrome","Floating Crystal","Holographic Glass","Pearl White","Glass Wings","B6O6 Crystal Follow"],
  cinema:["Cinematic Light","Golden Reveal","Smoke Reveal","Magic Portal","Starfall","Lightning Reveal","Fire Reveal","Space Warp","Premium Spotlight","Ultimate Follow Reveal"],
  mini:["Mini Glass Follow","Mini Neon Follow","Mini Royal Follow","Mini Heart Follow","Mini Crystal Follow","Mini Floating Follow","Mini Gaming Follow","Mini Saudi Follow","Mini Avatar Follow","B6O6 Ultimate Mini Follow"]};
 const SKIN={royal:"gold",hearts:"pink",gaming:"neon",saudi:"saudi",mascots:"glass",crystal:"crystal",cinema:"dark",mini:"clear"};
-const MASCOT_CHAR=["duck:dancing","duck:royal","duck:gaming","robot","cat","dragon","ghost","pixel","astro","duck:legendary"];
-const GROUP_ENTER={royal:"crownDrop",hearts:"heartBurst",gaming:"neonTrace",saudi:"goldenReveal",mascots:"floatUp",crystal:"crystalAssemble",cinema:"lightSweep",mini:"slideRight"};
-const GROUP_EXIT={royal:"goldenDust",hearts:"heartDissolve",gaming:"neonFade",saudi:"fadeOut",mascots:"floatAway",crystal:"crystalShatter",cinema:"portalClose",mini:"slideRight"};
+const MASCOT_CHAR=["","","","emblem:classic","","","","","","emblem:legendary"];
+const GROUP_ENTER={royal:"crownDrop",hearts:"heartBurst",gaming:"neonTrace",saudi:"goldenReveal",mascots:"softFade",crystal:"crystalAssemble",cinema:"lightSweep",mini:"slideRight"};
+const GROUP_EXIT={royal:"goldenDust",hearts:"heartDissolve",gaming:"neonFade",saudi:"fadeOut",mascots:"fadeOut",crystal:"crystalShatter",cinema:"portalClose",mini:"slideRight"};
 export const FA_DESIGNS=[];
-const DUCKS=[["classic","Classic B6O6 Duck","البطة الكلاسيكية","clear","duckJump"],["royal","Royal Duck","البطة بالتاج الذهبي","gold","crownDrop"],["gaming","Gaming Duck","البطة بسماعة الألعاب","neon","pixelBuild"],["neon","Neon Duck","البطة بإضاءة نيون","neon","neonTrace"],["diamond","Diamond Duck","البطة بإطار ألماسي","crystal","diamondReveal"],["saudi","Saudi Duck","البطة بلمسات سعودية","saudi","goldenReveal"],["mini","Mini Duck","بطة صغيرة للبث العمودي","clear","smoothZoom"],["dancing","Dancing Duck","البطة ترقص عند المتابعة","pink","heartBurst"],["flying","Flying Duck","البطة تدخل بطيران قصير","glass","rocketLanding"],["legendary","Legendary Duck","دخولية أسطورية بهالة ذهبية","gold","ultimate"]];
-DUCKS.forEach(([v,name,ar,skin,en],i)=>FA_DESIGNS.push({id:"duck_"+v,n:i+1,grp:"duck",name,ar,art:"",skin,char:"duck",duck:v,act:v==="dancing"?"dance":v==="flying"?"fly":"wave",enter:en,exit:v==="flying"?"floatAway":"b6o6Exit",charScale:v==="mini"?.6:1}));
+const DUCKS=[["classic","B6O6 Signature","التوقيع الأزرق","clear","smoothZoom"],["royal","Signature Gold","التوقيع الذهبي","gold","goldenReveal"],["gaming","Signature Esports","توقيع الرياضات الإلكترونية","neon","neonTrace"],["neon","Signature Neon","توقيع النيون","neon","hologram"],["diamond","Signature Diamond","التوقيع الماسي","crystal","diamondReveal"],["saudi","Signature Emerald","التوقيع الزمردي","saudi","lightSweep"],["mini","Signature Mini","التوقيع الصغير","clear","slideRight"],["dancing","Signature Silver","التوقيع الفضي","glass","glassReveal"],["flying","Signature Black","التوقيع الأسود الفاخر","dark","premiumFlip"],["legendary","Signature Legendary","التوقيع الأسطوري","gold","ultimate"]];
+DUCKS.forEach(([v,name,ar,skin,en],i)=>FA_DESIGNS.push({id:"duck_"+v,n:i+1,grp:"duck",name,ar,art:"",skin,char:"emblem",duck:v,act:"float",enter:en,exit:"softBlur",charScale:v==="mini"?.6:1}));
 let n=11; for(const g of Object.keys(N)){ const arts=LE_DESIGNS.filter(d=>d.cat===FA_ART_GROUP[g]).map(d=>d.id);
- N[g].forEach((name,i)=>{ const mc=g==="mascots"?MASCOT_CHAR[i]:""; FA_DESIGNS.push({id:"fa_"+g+"_"+(i+1),n:n++,grp:g,name,ar:FA_GROUPS[g],art:arts[i]||"",skin:SKIN[g],char:mc.split(":")[0]||"",duck:mc.split(":")[1]||"",act:mc==="duck:dancing"?"dance":"wave",enter:GROUP_ENTER[g],exit:GROUP_EXIT[g],mini:g==="mini"}) }) }
+ N[g].forEach((name,i)=>{ const mc=g==="mascots"?MASCOT_CHAR[i]:""; FA_DESIGNS.push({id:"fa_"+g+"_"+(i+1),n:n++,grp:g,name,ar:FA_GROUPS[g],art:arts[i]||"",skin:SKIN[g],char:mc.split(":")[0]||"",duck:mc.split(":")[1]||"",act:"float",enter:GROUP_ENTER[g],exit:GROUP_EXIT[g],mini:g==="mini"}) }) }
+const FA_ACT_OK={float:1,pulse:1,idle:1};
 export const faDesignOf=id=>FA_DESIGNS.find(d=>d.id===id)||FA_DESIGNS[0];
 
 // ---------- 30 حركة دخول و20 خروج (Web Animations) ----------
@@ -43,8 +44,8 @@ export const FA_ENTER={
  floatUp:["طفو للأعلى",[{...o0,transform:"translateY(30%)"},{...o1,transform:"none"}]],lightSweep:["مسح ضوئي",[{...o0,clipPath:"inset(0 100% 0 0)"},{...o1,clipPath:"inset(0 0 0 0)"}]],
  pixelBuild:["بناء بكسل",[{opacity:0,filter:"blur(6px) contrast(3)"},{opacity:1,filter:"none"}]],hologram:["تجسّد هولوغرام",[{opacity:0,transform:"scaleY(.02)",filter:"hue-rotate(90deg) brightness(2)"},{opacity:.7,transform:"scaleY(1)",offset:.5},{opacity:1,filter:"none"}]],
  crystalAssemble:["تجمّع كريستال",[{...o0,transform:"scale(1.4) rotate(12deg)",filter:"blur(4px)"},{...o1,transform:"none",filter:"none"}]],starfall:["تساقط نجوم",[{...o0,transform:"translate(30%,-60%) rotate(20deg)"},{...o1,transform:"none"}]],
- magicSparkle:["بريق سحري",[{opacity:0,filter:"brightness(3) saturate(0)"},{opacity:1,filter:"none"}]],robotEntrance:["دخول روبوت",[{...o0,transform:"translateX(40%)"},{opacity:1,transform:"translateX(-4%)",offset:.5},{opacity:1,transform:"translateX(2%)",offset:.75},{...o1,transform:"none"}]],
- duckJump:["قفزة البطة",[{...o0,transform:"translateY(40%) scale(.9)"},{opacity:1,transform:"translateY(-12%)",offset:.55},{...o1,transform:"none"}]],rocketLanding:["هبوط صاروخ",[{...o0,transform:"translateY(-120%)"},{opacity:1,transform:"translateY(5%)",offset:.8},{...o1,transform:"none"}]],
+ magicSparkle:["بريق سحري",[{opacity:0,filter:"brightness(3) saturate(0)"},{opacity:1,filter:"none"}]],robotEntrance:["دخول متدرّج",[{...o0,transform:"translateX(24%)"},{...o1,transform:"none"}]],
+ duckJump:["صعود ناعم",[{...o0,transform:"translateY(14%)"},{...o1,transform:"none"}]],rocketLanding:["هبوط ناعم",[{...o0,transform:"translateY(-30%)"},{...o1,transform:"none"}]],
  liquidMorph:["تشكّل سائل",[{...o0,borderRadius:"50%",transform:"scale(.3)"},{...o1,transform:"none"}]],circularReveal:["كشف دائري",[{clipPath:"circle(0% at 50% 50%)"},{clipPath:"circle(80% at 50% 50%)"}]],
  premiumFlip:["قلب فاخر",[{...o0,transform:"perspective(600px) rotateY(90deg)"},{...o1,transform:"none"}]],b6o6Entrance:["دخول B6O6 الحصري",[{...o0,transform:"scale(.5) rotate(-6deg)",filter:"hue-rotate(60deg)"},{opacity:1,transform:"scale(1.06)",offset:.65},{...o1,transform:"none",filter:"none"}]],
  ultimate:["الدخول السينمائي الأسطوري",[{...o0,transform:"scale(2)",filter:"blur(10px) brightness(3)"},{opacity:1,transform:"scale(.96)",filter:"none",offset:.7},{...o1,transform:"none"}]]};
@@ -56,7 +57,7 @@ export const FA_EXIT={fadeOut:["تلاشي",[o1,o0]],slideRight:["إلى الي�
  floatAway:["طفو بعيداً",[o1,{...o0,transform:"translateY(-40%)"}]],lightSweepExit:["مسح ضوئي",[{clipPath:"inset(0 0 0 0)"},{clipPath:"inset(0 0 0 100%)"}]],miniSpin:["دوران صغير",[o1,{...o0,transform:"rotate(180deg) scale(.3)"}]],
  softBlur:["تمويه ناعم",[o1,{...o0,filter:"blur(8px)"}]],b6o6Exit:["خروج B6O6",[o1,{opacity:1,transform:"scale(1.05)",offset:.3},{...o0,transform:"scale(.4) rotate(6deg)",filter:"hue-rotate(60deg)"}]]};
 
-export const FA_MSGS=["❤️ شكراً على الفولو يا {username}","👑 نورتنا يا {username}","🔥 يا هلا والله بـ {username}","💎 أسطورة جديدة انضمت لنا!","🦆 بطة بطوط ترحب فيك يا {username}"];
+export const FA_MSGS=["❤️ شكراً على الفولو يا {username}","👑 نورتنا يا {username}","🔥 يا هلا والله بـ {username}","💎 أسطورة جديدة انضمت لنا!","✨ أهلاً فيك يا {username}"];
 export function faFill(t,v){ return String(t||"").replace(/\{(username|display_name|platform|follower_count|stream_name)\}/g,(_,k)=>v[k]!=null&&v[k]!==""?String(v[k]):"") }
 export function faDefaults(){ return {design:"duck_classic",char:"",duck:"",act:"",side:"right",charScale:1,msgs:FA_MSGS.slice(0,1).join("\n"),msgRandom:false,sub:"نورتنا يا أسطورة 👑",showSub:true,showAv:true,
  enter:"",exit:"",enterMs:700,holdMs:3700,exitMs:600,avScale:1,nameScale:1,frameColor:"",bgMode:"premium",qMax:30,mergeAt:6,sound:"",soundVol:.8,customChar:"",streamName:"",reduceFx:false,w:.5,h:.34} }
@@ -110,7 +111,7 @@ Object.assign(View.prototype,{
  },
  /** الشخصية: من التصميم أو اختيار المستخدم، أو ملف مرفوع (GIF/WebP/WebM/PNG) */
  faCharHTML(d){ const w=this.w, c=w.char||d.char; if(w.customChar){ const u=esc(w.customChar); return /^data:video\//.test(w.customChar)?`<video src="${u}" autoplay loop muted playsinline></video>`:`<img src="${u}" alt="">` }
-  if(!c||c==="none"||!FA_CHARS[c]) return ""; return c==="duck"?duckSVG(DUCK_VARIANTS[w.duck||d.duck||"classic"]||{}):FA_CHARS[c][1]() },
+  if(!c||c==="none") return ""; if(!FA_CHARS[c]&&!FA_LEGACY_CHARS.has(c)) return ""; return duckSVG(DUCK_VARIANTS[w.duck||d.duck||"classic"]||{}) },
  faRender(it,still){ const w=this.w, d=faDesignOf(w.design), A=d.art?leDesignOf(d.art):null, ch=this.faCharHTML(d), src=this.opts.data?this.opts.data():{};
   const vars={username:it.name,display_name:it.name,platform:"TikTok",follower_count:(src.C&&src.C.followers&&src.C.followers.tiktok&&src.C.followers.tiktok.value)||"",stream_name:w.streamName||""};
   const msgs=String(w.msgs||FA_MSGS[0]).split("\n").map(s=>s.trim()).filter(Boolean), tpl=it.merged?`🔥 ${it.count} متابع جديد — شكراً لكم!`:msgs[w.msgRandom?Math.floor(Math.random()*msgs.length):0]||FA_MSGS[0];
@@ -128,14 +129,14 @@ Object.assign(View.prototype,{
   const enMs=Math.max(200,+w.enterMs||700)/sp, hold=Math.max(1200,+w.holdMs||3700), exMs=Math.max(200,+w.exitMs||600)/sp;
   const r=this.faRender(it,false), card=r.querySelector(".fa-card"), ch=r.querySelector(".fa-char"), av=r.querySelector(".fa-av"), l1=r.querySelector(".fa-l1"), sh=r.querySelector(".fa-shine");
   this.faSound(it);
-  const side=(w.side||"right")==="right"?1:-1, act=w.act||d.act||"wave";
-  if(ch){ ch.classList.add("fa-walk"); if(!still) await ch.animate([{transform:`translateX(${side*160}%)`},{transform:"none"}],{duration:enMs*1.4,easing:"ease-out",fill:"both"}).finished.catch(()=>{}); ch.classList.remove("fa-walk"); ch.classList.add("fa-act-"+act) }
+  const act=FA_ACT_OK[w.act||d.act]?(w.act||d.act):"float";
+  if(ch){ if(!still) await ch.animate([{opacity:0,transform:"scale(.86)",filter:"blur(6px)"},{opacity:1,transform:"none",filter:"none"}],{duration:enMs,easing:"cubic-bezier(.2,.9,.3,1)",fill:"both"}).finished.catch(()=>{}); ch.classList.add("fa-act-"+act) }
   const en=(FA_ENTER[w.enter||d.enter]||FA_ENTER.slideRight)[1]; if(!still) card.animate(en,{duration:enMs,easing:"cubic-bezier(.2,.9,.3,1)",fill:"backwards"}); if(av) av.classList.add("zoom");
   await wait(still?50:enMs*.6); l1.classList.add("type"); await wait(450); if(sh&&!still) sh.classList.add("go"); card.classList.add("pulse");
   await wait(hold);
-  if(ch){ ch.className="fa-char fa-act-wave"; await wait(500); }
+
   const ex=(FA_EXIT[w.exit||d.exit]||FA_EXIT.fadeOut)[1]; const a1=card.animate(ex,{duration:exMs,easing:"ease-in",fill:"forwards"});
-  if(ch){ ch.className="fa-char fa-walk"; ch.animate([{transform:"none"},{transform:`translateX(${side*170}%)`}],{duration:exMs*1.6,easing:"ease-in",fill:"forwards"}); await wait(exMs*1.6) } else await a1.finished.catch(()=>{});
+  if(ch){ ch.animate([{opacity:1},{opacity:0,transform:"scale(.92)"}],{duration:exMs,easing:"ease-in",fill:"forwards"}) } await a1.finished.catch(()=>{});
   r.remove(); if(this.opts.editor&&!this.el.querySelector(".fa-root")) this.faRender({name:"اسم المتابع",av:"",sample:true},true) },
  /** الصوت المرفوع يُشغَّل في OBS فقط (لا في لوحة التحكم) حتى لا يتكرر — القارئ الصوتي يُدار مرة واحدة من مركز البوتات */
  faSound(it){ const w=this.w; if(!w.sound||this.opts.editor||this.opts.mute||it.sample) return; try{ const a=new Audio(w.sound); a.volume=Math.max(0,Math.min(1,+w.soundVol||.8)); a.play().catch(()=>{}) }catch(e){} },

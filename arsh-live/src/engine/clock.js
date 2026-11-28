@@ -27,6 +27,8 @@ export function newSubathon(o={}){
 }
 export function remaining(s,now){ return s.status==="running"?Math.max(0,s.endsAt-now):Math.max(0,s.remainingMs) }
 
+/** إنجاز: كل ما تجاوز مجموع الوقت المضاف مضاعفات «milestoneMs» (افتراضياً ساعة) */
+function saMilestone(s,now,out){ const step=+s.milestoneMs||HOUR; if(step<=0) return; const k=Math.floor((s.totalAddedMs||0)/step); if(k>(s.msK||0)){ s.msK=k; out.push(log(s,now,0,0,`إنجاز: +${Math.round(k*step/MIN)} دقيقة مضافة`,"system",null,{sa:"milestone",milestone:k})) } }
 function setRemaining(s,ms,now){ if(s.status==="running") s.endsAt=now+ms; else s.remainingMs=ms }
 function log(s,now,deltaMs,requestedMs,reason,source,eventId,x){ s.seq=(s.seq||0)+1; return Object.assign({subathonId:s.id,seq:s.seq,deltaMs,requestedMs,reason,source,eventId:eventId||null,at:now,remainingMs:remaining(s,now)},x||{}) }
 
@@ -37,17 +39,17 @@ export function subathonOp(s,op,now){
   case "start":
    if(s.status==="running") break;
    if(s.status==="ended"){ s.remainingMs=s.initialMs; s.totalAddedMs=0; s.likeAcc=0; s.rules.goal.reached=false }
-   if(s.status==="paused"){ s.endsAt=now+s.remainingMs; s.status="running"; s.autoPaused=false; out.push(log(s,now,0,0,"استكمال","control")); break }
+   if(s.status==="paused"){ s.endsAt=now+s.remainingMs; s.status="running"; s.autoPaused=false; out.push(log(s,now,0,0,"استكمال","control",null,{sa:"resume"})); break }
    s.status="running"; s.startedAt=now; s.endsAt=now+s.remainingMs; s.endedAt=null; s.autoPaused=false;
-   out.push(log(s,now,0,0,"بدء السبثون","control")); break;
+   out.push(log(s,now,0,0,"بدء السبثون","control",null,{sa:"start"})); s.nearFired=false; break;
   case "pause":
    if(s.status!=="running") break;
    s.remainingMs=remaining(s,now); s.endsAt=null; s.status="paused"; s.autoPaused=!!op.auto;
-   out.push(log(s,now,0,0,op.auto?"إيقاف تلقائي (انقطاع البث)":"إيقاف مؤقت","control")); break;
+   out.push(log(s,now,0,0,op.auto?"إيقاف تلقائي (انقطاع البث)":"إيقاف مؤقت","control",null,{sa:"pause"})); break;
   case "resume":
    if(s.status!=="paused") break;
    s.endsAt=now+s.remainingMs; s.status="running"; s.autoPaused=false;
-   out.push(log(s,now,0,0,op.auto?"استكمال تلقائي (عودة البث)":"استكمال","control")); break;
+   out.push(log(s,now,0,0,op.auto?"استكمال تلقائي (عودة البث)":"استكمال","control",null,{sa:"resume"})); break;
   case "add": {
    if(s.status==="ended") break;
    const manual=op.source==="manual";
@@ -63,21 +65,27 @@ export function subathonOp(s,op,now){
    const applied=next-cur; if(!applied&&req>0){ out.push(log(s,now,0,req,(op.reason||"إضافة")+" (وصل الحد الأقصى)",op.source||"manual",op.eventId,op.x)); break }
    setRemaining(s,next,now); if(applied>0) s.totalAddedMs+=applied;
    out.push(log(s,now,applied,req,op.reason||(req>0?"إضافة يدوية":"خصم يدوي"),op.source||"manual",op.eventId,op.x));
-   if(s.status==="running"&&next===0){ s.status="ended"; s.endedAt=now; s.remainingMs=0; s.endsAt=null; out.push(log(s,now,0,0,"انتهى السبثون","system")) }
+   if(s.status==="running"&&next===0){ s.status="ended"; s.endedAt=now; s.remainingMs=0; s.endsAt=null; out.push(log(s,now,0,0,"انتهى السبثون","system",null,{sa:"end"})) }
+   saMilestone(s,now,out); if(remaining(s,now)>(+s.nearEndMs||5*MIN)) s.nearFired=false;
    break }
   case "reset":
-   s.status="idle"; s.remainingMs=s.initialMs; s.endsAt=null; s.startedAt=null; s.endedAt=null; s.totalAddedMs=0; s.likeAcc=0; s.rules.goal.reached=false; s.autoPaused=false;
+   s.status="idle"; s.msK=0; s.nearFired=false; s.remainingMs=s.initialMs; s.endsAt=null; s.startedAt=null; s.endedAt=null; s.totalAddedMs=0; s.likeAcc=0; s.rules.goal.reached=false; s.autoPaused=false;
    out.push(log(s,now,0,0,"إعادة ضبط","control")); break;
   case "end":
    if(s.status==="ended") break;
    s.status="ended"; s.endedAt=now; s.remainingMs=0; s.endsAt=null;
-   out.push(log(s,now,0,0,"إنهاء السبثون","control")); break;
+   out.push(log(s,now,0,0,"إنهاء السبثون","control",null,{sa:"end"})); break;
   case "config": { // تعديل الإعدادات (لا يغيّر الوقت الجاري إلا initialMs عند الخمول)
    const c=op.config||{};
-   for(const k of ["name","desc","minMs","maxMs","maxTotalMs","pauseOnDisconnect","countWhilePaused","scheduledAt"]) if(c[k]!==undefined) s[k]=c[k];
+   for(const k of ["name","desc","minMs","maxMs","maxTotalMs","pauseOnDisconnect","countWhilePaused","scheduledAt","nearEndMs","milestoneMs","soundsOff"]) if(c[k]!==undefined) s[k]=k==="nearEndMs"||k==="milestoneMs"?Math.max(0,+c[k]||0):k==="soundsOff"?c[k]===true||c[k]==="true"||c[k]==="on":c[k];
    if(c.initialMs!==undefined){ s.initialMs=Math.max(MIN,+c.initialMs); if(s.status==="idle") s.remainingMs=s.initialMs }
-   if(c.rules) for(const r in c.rules){ if(r==="list"&&Array.isArray(c.rules.list)) s.rules.list=c.rules.list.map(x=>Object.assign(newRule(x.kind||"gift"),x)); else if(typeof c.rules[r]!=="object"||c.rules[r]===null) s.rules[r]=c.rules[r]; else s.rules[r]=Object.assign(s.rules[r]||{},c.rules[r]) }
+   if(c.rules) for(const r in c.rules){ if(r==="list"&&Array.isArray(c.rules.list)){ const before=s.rules.list||[]; s.rules.list=cleanRuleList(c.rules.list); s.rules.rev=(+s.rules.rev||0)+1;
+     // القوانين المحذوفة تُسجّل حتى لا يعيدها أي مصدر قديم، والجدول القديم يُطابق القائمة دائماً
+     const keep=new Set(s.rules.list.map(x=>x.id)), gone=before.filter(x=>!keep.has(x.id)&&x.kind==="gift").map(legacyKey);
+     s.rules.deletedKeys=[...new Set([...(s.rules.deletedKeys||[]).filter(k=>!s.rules.list.some(x=>x.kind==="gift"&&legacyKey(x)===k)),...gone])].slice(-300);
+     if(s.rules.gifts) s.rules.gifts.table=s.rules.list.filter(x=>x.kind==="gift"&&x.giftId!=="*").map(x=>({giftId:x.giftId??null,name:x.giftName||"",minDiamonds:x.minDiamonds||0,sec:Math.round(x.ms/1000)})) } else if(typeof c.rules[r]!=="object"||c.rules[r]===null) s.rules[r]=c.rules[r]; else s.rules[r]=Object.assign(s.rules[r]||{},c.rules[r]) }
    if(c.rules&&Array.isArray(s.rules.list)) syncLegacy(s,c.rules);
+   if(c.rules&&Array.isArray(s.rules.list)&&s.rules.gifts) s.rules.gifts.table=s.rules.list.filter(x=>x.kind==="gift"&&x.giftId!=="*"&&!isEmptyRule(x)).map(x=>({giftId:x.giftId??null,name:x.giftName||"",minDiamonds:x.minDiamonds||0,sec:Math.round(x.ms/1000)}));
    break }
  }
  return out;
@@ -101,8 +109,23 @@ const rid=()=>"r_"+Math.random().toString(36).slice(2,9);
 export function newRule(kind="gift",o={}){
  return Object.assign({id:rid(),kind,enabled:true,dir:1,ms:60000,every:1,giftId:null,giftName:"",emoji:"",img:"",minDiamonds:0,perDiamondMs:0,
   keyword:"",cooldownMs:0,userCooldownMs:0,perMin:0,maxMs:0,sound:true,show:true,label:"",coins:100,mode:"rate",
-  currency:"SAR",unit:1,addMs:120000,subMs:60000,addWords:"زيد,زود,+",subWords:"نقص,انقص,-",defaultAction:"add",minAmount:0},o);
+  currency:"SAR",unit:1,addMs:120000,subMs:60000,addWords:"زيد,زود,+",subWords:"نقص,انقص,-",defaultAction:"add",minAmount:0,
+  color:"",timeColor:"",fs:0,anim:"",soundId:"",soundVol:1},o);
 }
+const legacyKey=x=>x.giftId!=null&&x.giftId!==""?String(x.giftId):"n:"+String(x.giftName||"").trim().toLowerCase();
+const ruleKey=r=>r.kind+":"+(r.kind==="gift"?(r.giftId!=null&&r.giftId!==""?String(r.giftId):"n:"+String(r.giftName||"").trim().toLowerCase()+":"+(+r.minDiamonds||0)):r.kind==="comment"?String(r.keyword||"").trim()+":"+r.dir:r.kind==="coins"?r.mode+":"+r.coins+":"+r.dir:r.kind)+":"+(+r.every||1);
+/** تنظيف قائمة القوانين: معرّف فريد لكل قانون، بدون عناصر تالفة، وحقول بأنواع صحيحة */
+export function cleanRuleList(list){ const out=[], ids=new Set();
+ for(const x of list||[]){ if(!x||typeof x!=="object"||!RULE_KINDS[x.kind||"gift"]) continue;
+  const r=Object.assign(newRule(x.kind||"gift"),x); if(!r.id||ids.has(r.id)) r.id=rid(); ids.add(r.id);
+  r.enabled=r.enabled!==false&&r.enabled!=="false"; r.show=r.show!==false&&r.show!=="false"; r.dir=+r.dir<0?-1:1; r.ms=Math.max(0,+r.ms||0); r.every=Math.max(1,+r.every||1);
+  r.fs=Math.max(0,Math.min(3,+r.fs||0)); r.soundVol=Math.max(0,Math.min(1,r.soundVol==null?1:+r.soundVol));
+  for(const k of ["color","timeColor"]) if(r[k]&&!/^#[0-9a-f]{3,8}$/i.test(r[k])) r[k]="";
+  r.label=String(r.label||"").slice(0,60); out.push(r) }
+ return out }
+/** قوانين مكررة فعلياً (نفس الهدية/الحدث بنفس الإعداد) — تنبيه في الواجهة فقط */
+export function duplicateRules(list){ const seen={}, d=[]; for(const r of list||[]){ const k=ruleKey(r); if(seen[k]) d.push(r.id); else seen[k]=1 } return d }
+export const isEmptyRule=r=>(r.kind==="gift"&&(r.giftId==null||r.giftId==="")&&!String(r.giftName||"").trim()&&!(+r.minDiamonds>0))||(r.kind==="comment"&&!String(r.keyword||"").trim());
 /** القيم الافتراضية من المواصفات — قابلة للتعديل بالكامل */
 export function defaultRuleList(){ return [
  newRule("follow",{ms:60000,emoji:"💚"}),
@@ -136,8 +159,11 @@ export function migrateRules(s){
 function syncLegacy(s,c){ const L=s.rules.list;
  for(const k of ["follow","subscribe"]) if(c[k]) for(const r of L.filter(x=>x.kind===k)){ if(c[k].enabled!==undefined) r.enabled=!!c[k].enabled; if(c[k].sec!==undefined) r.ms=c[k].sec*1000 }
  if(c.likes) for(const r of L.filter(x=>x.kind==="likes")){ if(c.likes.enabled!==undefined) r.enabled=!!c.likes.enabled; if(c.likes.every!==undefined) r.every=c.likes.every; if(c.likes.sec!==undefined) r.ms=c.likes.sec*1000 }
- if(c.gifts){ if(c.gifts.table){ const keep=L.filter(x=>x.kind!=="gift"); const g=s.rules.gifts; const add=c.gifts.table.map(r=>newRule("gift",{giftId:r.giftId??null,giftName:r.name||"",minDiamonds:r.minDiamonds||0,ms:(r.sec||0)*1000,enabled:g.enabled!==false,emoji:"🎁"})); s.rules.list=L.splice(0,L.length,...keep,...add)&&[...keep,...add] }
-  if(c.gifts.enabled!==undefined) for(const r of s.rules.list.filter(x=>x.kind==="gift")) r.enabled=!!c.gifts.enabled }
+ // الجدول القديم (gifts.table) لا يعيد بناء قائمة القواعد أبداً: كان يُرجع القوانين المحذوفة ويكررها.
+ // صف جديد بالصيغة القديمة يُضاف كقاعدة واحدة فقط إن لم يكن موجوداً.
+ if(c.gifts){ if(Array.isArray(c.gifts.table)&&!Array.isArray(c.list)){ for(const r of c.gifts.table){ if(!String(r.name||r.giftId||"").trim()) continue; const key=legacyKey({giftId:r.giftId,giftName:r.name});
+   if(!L.some(x=>x.kind==="gift"&&legacyKey(x)===key)&&!(s.rules.deletedKeys||[]).includes(key)) L.push(newRule("gift",{giftId:r.giftId??null,giftName:r.name||"",minDiamonds:r.minDiamonds||0,ms:(r.sec||0)*1000,emoji:"🎁"})) } }
+ if(c.gifts.enabled!==undefined) for(const r of s.rules.list.filter(x=>x.kind==="gift")) r.enabled=!!c.gifts.enabled }
 }
 /** نص القاعدة كما يظهر للمشاهد — يُقرأ دائماً من الإعدادات الحالية */
 export function fmtDur(ms,short){ const a=Math.abs(ms), s=Math.round(a/1000);
@@ -150,7 +176,7 @@ const signed=ms=>{ const p=durParts(ms); return `\u2066${ms<0?"-":"+"}${p.n}\u20
 const CUR_AR={SAR:"ريال",AED:"درهم",KWD:"دينار",USD:"دولار",EUR:"يورو",QAR:"ريال قطري",BHD:"دينار بحريني",OMR:"ريال عماني"};
 export function ruleView(r){
  const k=RULE_KINDS[r.kind]||RULE_KINDS.gift, sg=r.dir<0?"-":"+";
- const icon=r.emoji||k.icon, img=r.img||"";
+ const icon=r.emoji||k.icon, img=/^(https:\/\/|data:image\/|\/)/.test(r.img||"")?r.img:"", st={kind:r.kind,color:r.color||"",timeColor:r.timeColor||"",fs:+r.fs||0,anim:r.anim||"",giftId:r.giftId??null};
  let what="", ms=r.ms*(r.dir<0?-1:1), rows=null;
  switch(r.kind){
   case "follow": what="فولو"; break;
@@ -158,15 +184,16 @@ export function ruleView(r){
   case "likes": what=`${(+r.every||1).toLocaleString("en-US")} لايك`; break;
   case "share": what=(+r.every>1?`${r.every} مشاركات`:"مشاركة"); break;
   case "comment": what=`اكتب «${r.keyword}»`; break;
+  case "coins": what=r.mode==="tier"?`هدية ≥ ${(+r.coins||0).toLocaleString("en-US")} كوين`:`كل ${(+r.coins||0).toLocaleString("en-US")} كوين`; break;
   case "gift": what=(r.giftId==="*"?"أي هدية":r.giftName||("هدية "+(r.giftId??"")))+(+r.every>1?` ×${r.every}`:"")+(r.minDiamonds>0&&r.giftId==null?` (${r.minDiamonds}💎+)`:""); if(r.perDiamondMs&&!r.ms){ ms=r.perDiamondMs; what+=" لكل 💎" } break;
   case "donation": { const u=`${r.unit||1} ${CUR_AR[r.currency]||r.currency}`; rows=[];
    if(r.addMs>0) rows.push({icon,what:`دونيشن ${u} + زيد`,ms:r.addMs,text:signed(r.addMs),short:`+${fmtDur(r.addMs,1)}`});
    if(r.subMs>0) rows.push({icon,what:`دونيشن ${u} + نقص`,ms:-r.subMs,text:signed(-r.subMs),short:`-${fmtDur(r.subMs,1)}`});
-   return rows.map((x,i)=>({...x,id:r.id+"_"+i,img,label:r.label||""})) }
+   return rows.map((x,i)=>({...x,id:r.id+"_"+i,rid:r.id,img,label:r.label||"",...st})) }
  }
- return [{id:r.id,icon,img,what:r.label||what,ms,text:signed(ms),short:`${ms<0?"-":"+"}${fmtDur(ms,1)}`}];
+ return [{id:r.id,rid:r.id,icon,img,what:r.label||what,ms,text:signed(ms),short:`${ms<0?"-":"+"}${fmtDur(ms,1)}`,...st}];
 }
-export function rulesForBoard(s,opt={}){ const L=(s&&s.rules&&s.rules.list)||[]; const out=[]; for(const r of L){ if(!r.enabled||r.show===false) continue; if(r.kind==="share"&&opt.noShare) continue; out.push(...ruleView(r)) } return out }
+export function rulesForBoard(s,opt={}){ const L=(s&&s.rules&&s.rules.list)||[]; const out=[], seen=new Set(); for(const r of L){ if(!r.enabled||r.show===false||isEmptyRule(r)||seen.has(r.id)) continue; seen.add(r.id); if(r.kind==="share"&&opt.noShare) continue; out.push(...ruleView(r)) } return out }
 const words=v=>String(v||"").split(/[,،]/).map(x=>x.trim().toLowerCase()).filter(Boolean);
 const norm=t=>String(t||"").trim().toLowerCase().replace(/[ً-ْ]/g,"");
 /** هل الرسالة تحتوي الكلمة ككلمة مستقلة (أو رمز +/-) */
@@ -262,7 +289,8 @@ export function subathonOnDonation(s,ev,now){
 export function subathonTick(s,now){
  const out=[];
  if(s.status==="idle"&&s.scheduledAt&&now>=s.scheduledAt){ s.scheduledAt=null; out.push(...subathonOp(s,{op:"start"},now)) }
- if(s.status==="running"&&s.endsAt<=now){ s.status="ended"; s.endedAt=s.endsAt; s.remainingMs=0; s.endsAt=null; out.push(log(s,now,0,0,"انتهى السبثون","system")) }
+ if(s.status==="running"&&!s.nearFired&&s.endsAt-now<=(+s.nearEndMs||5*MIN)&&s.endsAt>now){ s.nearFired=true; out.push(log(s,now,0,0,"اقترب انتهاء السبثون","system",null,{sa:"near"})) }
+ if(s.status==="running"&&s.endsAt<=now){ s.status="ended"; s.endedAt=s.endsAt; s.remainingMs=0; s.endsAt=null; out.push(log(s,now,0,0,"انتهى السبثون","system",null,{sa:"end"})) }
  return out;
 }
 

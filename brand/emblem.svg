@@ -1,0 +1,10 @@
+<svg width="512" height="512" class="b6-emblem" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg" aria-label="B6O6"><defs>
+ <linearGradient id="emb1g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#9fd0ff"/><stop offset=".55" stop-color="#4d8dff"/><stop offset="1" stop-color="#1546c9"/></linearGradient>
+ <linearGradient id="emb1f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0a1226"/><stop offset="1" stop-color="#050914"/></linearGradient></defs>
+ 
+ <path d="M60 8 103 33v54L60 112 17 87V33Z" fill="url(#emb1f)" stroke="url(#emb1g)" stroke-width="5" stroke-linejoin="round"/>
+ <path d="M60 19 94 39v42L60 101 26 81V39Z" fill="none" stroke="#4d8dff" stroke-opacity=".22" stroke-width="1.5" stroke-linejoin="round"/>
+ <path d="M50 42v36l29-18Z" fill="url(#emb1g)" stroke="url(#emb1g)" stroke-width="3" stroke-linejoin="round"/>
+ <path class="emb-w1" d="M84 44a22 22 0 0 1 0 32" fill="none" stroke="#9fd0ff" stroke-width="4" stroke-linecap="round"/>
+ <path class="emb-w2" d="M36 44a22 22 0 0 0 0 32" fill="none" stroke="#9fd0ff" stroke-opacity=".55" stroke-width="4" stroke-linecap="round"/>
+ </svg>

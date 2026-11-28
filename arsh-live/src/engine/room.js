@@ -94,9 +94,9 @@ function roomAutoMod(R,ev,now,out){ if(ev.type!=="comment"||ev.test) return; con
 /* ===== مكتبة الأصوات: القرار هنا (مصدر واحد) — رابط OBS يشغّل فقط ===== */
 function roomSoundCfg(R){ const raw=R.botCfg&&R.botCfg.sounds; if(!raw) return null; if(R.SNDraw!==raw){ R.SNDraw=raw; R.SNDc=sndCfg(raw) } R.SND=R.SND||sndNewState(); return R.SNDc }
 function roomSoundGoals(R){ const L=R.botCtx&&R.botCtx.layout, v=R.D&&R.D.tot?R.D.tot.likes:0; return (L&&Array.isArray(L.widgets)?L.widgets:[]).filter(w=>w&&w.type==="goal"&&+w.target>0).map(w=>({id:"lk:"+w.id+":"+w.target,kind:"likes",target:+w.target,value:v})) }
-function roomSounds(R,ev,logs,now,out){ const c=roomSoundCfg(R); if(!c||!c.on) return; try{
+function roomSounds(R,ev,logs,now,out){ const c0=roomSoundCfg(R), c=c0&&c0.on?c0:null; R.SND=R.SND||sndNewState(); if(!c&&!(logs&&logs.length)) return; try{
   const ac=roomAlertCfg(R), ctx={totalLikes:R.D&&R.D.tot?R.D.tot.likes:0,goals:roomSoundGoals(R),explore:!!R.explore,rates:ac&&ac.don&&ac.don.rates};
-  const items=[...(ev?sndOnEvent(c,R.SND,ev,now,ctx):[]),...sndOnLogs(c,R.SND,logs||[],now)]; if(items.length) out.push({t:"snd",items}) }catch(e){} }
+  const items=[...(ev&&c?sndOnEvent(c,R.SND,ev,now,ctx):[]),...sndOnLogs(c,R.SND,logs||[],now,{rules:R.C&&R.C.subathon&&R.C.subathon.rules&&R.C.subathon.rules.list,soundsOff:R.C&&R.C.subathon&&R.C.subathon.soundsOff})]; if(items.length) out.push({t:"snd",items}) }catch(e){} }
 function roomAlerts(R,ev,logs,now,out){ const c=roomAlertCfg(R); if(!c) return; try{ const items=[...(ev?alertsOnEvent(c,R.AL,ev,now,{totalLikes:R.D&&R.D.tot?R.D.tot.likes:0}):[]),...alertsOnLogs(c,R.AL,logs||[],now)]; if(!items.length) return; out.push({t:"alert",items});
   // القارئ الصوتي (اختياري لكل قاعدة): يمر عبر مركز البوتات — مفتاح خدمة الصوت يبقى على الخادم
   const say=items.map(it=>{ const r=c.rules.find(x=>x.id===it.ruleId); if(!r||!r.over.tts||!r.over.ttsText) return null; const text=alFill(r.over.ttsText,it.vars).slice(0,200); return text?{id:"al_tts_"+it.id,kind:"reply",bot:"alerts",text,speech:text,show:false,say:true,user:{name:it.vars.display_name||""},at:now,test:!!it.test}:null }).filter(Boolean); if(say.length) out.push({t:"bot",items:say}) }catch(e){} }
@@ -200,6 +200,7 @@ export function roomTick(R,now){
  for(const t of R.C.timers) if(timerTick(t,now)) changed=true;
  if(R.C.battle&&battleTick(R.C.battle,now)) changed=true; if(R.btDirty){ R.btDirty=false; changed=true }
  if(rep) bo.push({t:"report",report:rep});
+ if(logs.length){ const so=[]; roomSounds(R,null,logs,now,so); bo.push(...so) }
  return changed?{out:[{t:"clock",C:R.C,now,logs},...bo],logs}:{out:bo,logs:[]};
 }
 /** حالة الاتصال بالبث: إيقاف/استكمال السبثون تلقائياً حسب الإعداد، وتشغيل مؤقت مدة البث */

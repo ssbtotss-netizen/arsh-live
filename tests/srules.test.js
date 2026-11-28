@@ -8,7 +8,7 @@ const url='file:///home/claude/najd/demo/index.html';
  const A=()=>p.evaluate(()=>{const s=window.__arsh.R().C.subathon; return {st:s.status,rem:s.status==="running"?s.endsAt-Date.now():s.remainingMs,list:s.rules.list}});
  await p.click('.nav [data-go="subathon"]'); await p.evaluate(()=>document.querySelectorAll('details[data-sadet]').forEach(d=>d.open=true)); await p.waitForTimeout(60); await p.waitForTimeout(300);
  const a0=await A(); ok(a0.list.length===11,'default rules list (11 incl. TikTok coins rate)');
- ok(await p.locator('[data-rule]').count()===11,'editor shows each rule once (coins + gift catalog + other rules)');
+ ok(await p.locator('[data-rule]:not(.rmg-row)').count()===11,'editor shows each rule once (coins + gift catalog + other rules)');
  await p.click('[data-sa-op="start"]'); await p.waitForTimeout(200);
  // تعديل المتابعة: 2 دقيقة
  const fid=a0.list.find(r=>r.kind==='follow').id;
@@ -22,7 +22,7 @@ const url='file:///home/claude/najd/demo/index.html';
  const txt=await p.evaluate(id=>document.querySelector(`#stage .wd[data-id="${id}"]`).innerText,rbId);
  ok(txt.includes('فولو')&&txt.includes('+2')&&txt.includes('أسد'),'board reads the rules automatically (follow now +2)');
  const before=(await A()).rem;
- await p.evaluate(()=>window.__arsh.SIM.follow()); await p.waitForTimeout(250);
+ await p.evaluate(()=>window.__arsh.SIM.follow()); await p.waitForTimeout(450); // التفاعل يُجمّع ~260ms ثم يضيء القانون
  const after=(await A()).rem; ok(after-before>110000&&after-before<125000,'follow event adds 2 minutes ('+Math.round((after-before)/1000)+'s)');
  ok(await p.evaluate(id=>!!document.querySelector(`#stage .wd[data-id="${id}"] .rb-row.hit`),rbId),'the fired rule flashes on the board');
  const logs=await p.evaluate(()=>window.__arsh.R().logs.slice(0,1)); ok(logs[0].ruleId===fid&&logs[0].test===true,'log has rule id + test mark');
@@ -51,9 +51,9 @@ const url='file:///home/claude/najd/demo/index.html';
  ok((await o.evaluate(()=>document.querySelector('.wd').innerText)).includes('+3'),'OBS board updates live when the rule changes');
  // المكتبة
  await p.click('.nav [data-go="library"]'); await p.click('[data-libtab="rules"]'); await p.waitForTimeout(500);
- ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc').length)===10,'rules library: 10 designs with live previews');
- await p.click('#lib .libc[data-pick="neonBlueRules"] .meta'); await p.waitForTimeout(200);
- ok(await p.evaluate(id=>window.__arsh.L().widgets.find(w=>w.id===id).design,rbId)==='neonBlueRules','apply rules design');
+ ok(await p.evaluate(()=>document.querySelectorAll('#lib .libc').length)===50,'rules library: 50 designs with live previews');
+ await p.click('#lib .libc[data-pick="neonUnderline"] .meta'); await p.waitForTimeout(200);
+ ok(await p.evaluate(id=>window.__arsh.L().widgets.find(w=>w.id===id).design,rbId)==='neonUnderline','apply rules design');
  await p.screenshot({path:'shots/rb-library.png'});
  await p.click('.nav [data-go="subathon"]'); await p.evaluate(()=>document.querySelectorAll('details[data-sadet]').forEach(d=>d.open=true)); await p.waitForTimeout(60); await p.waitForTimeout(300); await p.screenshot({path:'shots/rb-editor.png',fullPage:true});
  ok(errs.length===0,'no page errors '+errs.join(' | '));

@@ -1,0 +1,102 @@
+<!doctype html>
+<html dir="rtl" lang="ar"><head><meta charset="utf-8">
+<style>
+/* محرك حلقات «أكاديمية بطوط ستريم»: كل إطار = دالة في الزمن t (ثوانٍ) — يُرسم بدقة ثابتة 1080×1920 */
+*{box-sizing:border-box;margin:0;padding:0}html,body{width:1080px;height:1920px;overflow:hidden;background:#05060d;font-family:system-ui,"Segoe UI",Tahoma,sans-serif;color:#fff}
+#stage{position:absolute;inset:0;overflow:hidden}
+.bg{position:absolute;inset:-200px;background:radial-gradient(ellipse at 30% 20%,#3b1f8f 0,transparent 55%),radial-gradient(ellipse at 80% 85%,#0e5fa8 0,transparent 50%),#05060d}
+.grid{position:absolute;inset:-400px;background-image:linear-gradient(rgba(139,92,246,.18) 2px,transparent 2px),linear-gradient(90deg,rgba(139,92,246,.18) 2px,transparent 2px);background-size:120px 120px;transform-origin:50% 50%}
+.scene{position:absolute;inset:0;opacity:0}
+.big{position:absolute;left:60px;right:60px;text-align:center;font-weight:900;line-height:1.15;text-shadow:0 0 30px rgba(139,92,246,.8),0 6px 0 rgba(0,0,0,.4)}
+.neon{color:#fff;-webkit-text-stroke:2px #a78bfa}
+.chip{display:inline-block;padding:14px 30px;border-radius:999px;background:linear-gradient(135deg,#8b5cf6,#3b82f6);font-weight:800;font-size:44px;box-shadow:0 0 40px rgba(139,92,246,.7)}
+.win{position:absolute;width:520px;height:330px;border-radius:26px;background:#111827;border:3px solid rgba(255,255,255,.15);box-shadow:0 30px 60px rgba(0,0,0,.6);overflow:hidden}
+.win .tb{height:54px;background:#1f2937;display:flex;align-items:center;gap:10px;padding:0 18px;font-size:26px;font-weight:700}
+.win .tb i{width:16px;height:16px;border-radius:50%;background:#ef4444}.win .tb i+i{background:#f59e0b}.win .tb i+i+i{background:#10b981}
+.win .bd{display:grid;place-items:center;height:276px;font-size:110px}
+.x{position:absolute;inset:0;display:grid;place-items:center;font-size:220px;color:#ef4444;font-weight:900;text-shadow:0 0 30px #ef4444}
+.phone{position:absolute;left:50%;top:50%;width:900px;height:1600px;margin:-800px 0 0 -450px;border-radius:70px;border:14px solid #0b0b10;box-shadow:0 0 0 4px #333,0 40px 120px rgba(0,0,0,.7),0 0 80px rgba(139,92,246,.4);overflow:hidden;background:#0b1020}
+.shot{position:absolute;inset:0;overflow:hidden}.shot img{position:absolute;left:0;top:0;transform-origin:0 0;max-width:none}
+.hl{position:absolute;border:6px solid #facc15;border-radius:24px;box-shadow:0 0 0 4000px rgba(0,0,0,.45),0 0 40px #facc15}
+.tap{position:absolute;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:8px solid #fff;box-shadow:0 0 30px #fff}
+.cap{position:absolute;left:50px;right:50px;bottom:150px;text-align:center;font-size:58px;font-weight:900;line-height:1.3;padding:22px 26px;border-radius:28px;background:rgba(0,0,0,.62);border:2px solid rgba(255,255,255,.12);backdrop-filter:blur(6px)}
+.cap b{color:#facc15}
+.logo{position:absolute;left:50%;width:420px;height:420px;margin-left:-210px;border-radius:50%;box-shadow:0 0 120px rgba(139,92,246,.9)}
+.slash{position:absolute;left:-30%;width:160%;height:420px;transform-origin:50% 50%}
+.ep{position:absolute;top:70px;right:60px;font-size:34px;font-weight:800;padding:10px 22px;border-radius:14px;background:rgba(0,0,0,.45);border:2px solid rgba(167,139,250,.6)}
+.brand{position:absolute;top:70px;left:60px;display:flex;align-items:center;gap:14px;font-size:34px;font-weight:900}.brand img{width:64px;height:64px;border-radius:50%}
+.livebg{position:absolute;inset:0;background:conic-gradient(from 200deg at 50% 60%,#0f3d2e,#1e3a8a,#4c1d95,#0f3d2e)}
+.livebg::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(0deg,rgba(255,255,255,.03) 0 4px,transparent 4px 8px)}
+.livetag{position:absolute;top:40px;left:40px;background:#ef4444;font-weight:900;font-size:34px;padding:6px 18px;border-radius:10px}
+.cm{position:absolute;left:40px;right:300px;display:flex;gap:14px;align-items:center;font-size:34px;font-weight:700;padding:12px 18px;border-radius:20px;background:rgba(0,0,0,.45)}
+.cm .a{width:58px;height:58px;border-radius:50%;display:grid;place-items:center;font-weight:900}
+.gift{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);text-align:center;font-size:56px;font-weight:900;padding:30px 50px;border-radius:34px;background:linear-gradient(135deg,rgba(236,72,153,.9),rgba(139,92,246,.9));box-shadow:0 0 80px rgba(236,72,153,.7)}
+.feat{position:absolute;left:70px;right:70px;display:flex;align-items:center;gap:26px;padding:26px 34px;border-radius:30px;background:rgba(17,24,39,.85);border:2px solid rgba(167,139,250,.45);font-size:46px;font-weight:800}
+.feat i{font-style:normal;font-size:64px}
+.flash{position:absolute;inset:0;background:#fff;pointer-events:none;opacity:0}
+.vign{position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at 50% 50%,transparent 55%,rgba(0,0,0,.55))}
+</style></head><body><div id="stage"></div>
+<script>
+// أدوات حركة: منحنيات + مفاتيح زمنية
+const E={o3:x=>1-Math.pow(1-x,3),io:x=>x<.5?4*x*x*x:1-Math.pow(-2*x+2,3)/2,back:x=>{const c=1.7;return 1+(c+1)*Math.pow(x-1,3)+c*Math.pow(x-1,2)},el:x=>x===0||x===1?x:Math.pow(2,-10*x)*Math.sin((x*10-.75)*2*Math.PI/3)+1};
+const cl=(v,a=0,b=1)=>Math.max(a,Math.min(b,v)); const k=(t,a,b)=>cl((t-a)/(b-a)); const lerp=(a,b,x)=>a+(b-a)*x;
+let EP=null, BUILT=false;
+function el(tag,cls,html,parent){ const e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; (parent||document.getElementById("stage")).appendChild(e); return e }
+function build(ep){ EP=ep; const S=document.getElementById("stage"); S.innerHTML="";
+ EP._bg=el("div","bg"); EP._grid=el("div","grid");
+ for(const sc of EP.scenes){ sc.root=el("div","scene"); BUILDERS[sc.type](sc) }
+ EP._cap=el("div","cap"); EP._brand=el("div","brand",`<img src="${EP.logo}"><span>بطوط ستريم</span>`); EP._ep=el("div","ep",EP.epLabel);
+ EP._vign=el("div","vign"); EP._flash=el("div","flash"); BUILT=true }
+const BUILDERS={
+ hook(sc){ sc.l1=el("div","big",sc.l1,sc.root); sc.l1.style.cssText="top:560px;font-size:96px"; sc.l2=el("div","big neon",sc.l2,sc.root); sc.l2.style.cssText="top:820px;font-size:150px;color:#facc15";
+   sc.ic=el("div","big",sc.icon||"🎮",sc.root); sc.ic.style.cssText="top:1150px;font-size:220px" },
+ problem(sc){ sc.wins=sc.apps.map((a,i)=>{ const w=el("div","win",`<div class="tb"><i></i><i></i><i></i><span>${a[1]}</span></div><div class="bd">${a[0]}</div><div class="x">✕</div>`,sc.root); return w });
+   sc.t=el("div","big",sc.title,sc.root); sc.t.style.cssText="top:250px;font-size:84px" },
+ logo(sc){ sc.slashA=el("div","slash",null,sc.root); sc.slashA.style.cssText+="top:620px;background:linear-gradient(90deg,#8b5cf6,#ec4899)"; sc.slashB=el("div","slash",null,sc.root); sc.slashB.style.cssText+="top:820px;background:linear-gradient(90deg,#3b82f6,#22d3ee)";
+   sc.lg=el("img","logo",null,sc.root); sc.lg.src=EP.logo; sc.lg.style.top="430px"; sc.name=el("div","big neon","بطوط ستريم",sc.root); sc.name.style.cssText="top:900px;font-size:140px";
+   sc.tag=el("div","big",sc.tagline,sc.root); sc.tag.style.cssText="top:1100px;font-size:64px;color:#c4b5fd" },
+ ui(sc){ sc.ph=el("div","phone",null,sc.root); sc.sh=el("div","shot",null,sc.ph); sc.img=el("img",null,null,sc.sh); sc.img.src=sc.src; sc.hl=el("div","hl",null,sc.ph); sc.tp=el("div","tap",null,sc.ph);
+   sc.lab=el("div","big",`<span class="chip">${sc.label}</span>`,sc.root); sc.lab.style.cssText="top:110px;font-size:44px" },
+ feats(sc){ sc.items=sc.list.map((f,i)=>{ const e=el("div","feat",`<i>${f[0]}</i><span>${f[1]}</span>`,sc.root); e.style.top=(470+i*190)+"px"; return e }); sc.t=el("div","big",sc.title,sc.root); sc.t.style.cssText="top:250px;font-size:80px" },
+ live(sc){ sc.ph=el("div","phone",null,sc.root); el("div","livebg",null,sc.ph); el("div","livetag","LIVE ●",sc.ph); sc.ov=el("img",null,null,sc.ph); sc.ov.src=sc.overlay; sc.ov.style.cssText="position:absolute;inset:0;width:100%;height:100%";
+   sc.cms=sc.chat.map((c,i)=>{ const e=el("div","cm",`<span class="a" style="background:${c[2]}">${c[0][0]}</span><span>${c[0]}: ${c[1]}</span>`,sc.ph); e.style.top=(980+i*110)+"px"; return e });
+   sc.gf=el("div","gift",sc.gift,sc.ph) },
+ cta(sc){ sc.lg=el("img","logo",null,sc.root); sc.lg.src=EP.logo; sc.lg.style.top="330px"; sc.l1=el("div","big neon",sc.l1,sc.root); sc.l1.style.cssText="top:830px;font-size:110px;color:#facc15";
+   sc.l2=el("div","big",sc.l2,sc.root); sc.l2.style.cssText="top:1040px;font-size:60px;color:#e9d5ff"; sc.url=el("div","big",`<span class="chip">${sc.url}</span>`,sc.root); sc.url.style.cssText="top:1230px;font-size:40px";
+   sc.l3=el("div","big",sc.l3,sc.root); sc.l3.style.cssText="top:1420px;font-size:52px;color:#93c5fd" } };
+// رسم مشهد عند زمن محلي u (0..d)
+const DRAW={
+ hook(sc,u,d){ const a=E.back(k(u,0,.45)), b=E.back(k(u,.6,1.1)); sc.l1.style.transform=`translateY(${(1-a)*-200}px) scale(${lerp(1.6,1,a)})`; sc.l1.style.opacity=k(u,0,.2);
+   sc.l2.style.transform=`scale(${lerp(3,1,b)}) rotate(${(1-b)*-8}deg)`; sc.l2.style.opacity=k(u,.6,.75); const s=1+.06*Math.sin(u*9); sc.ic.style.transform=`scale(${E.el(k(u,1.2,2))*s}) rotate(${Math.sin(u*3)*8}deg)` },
+ problem(sc,u,d){ const pos=[[60,520],[500,700],[90,1000],[480,1260],[140,1480]]; sc.wins.forEach((w,i)=>{ const a=E.back(k(u,.25+i*.45,.65+i*.45)); const [x,y]=pos[i%pos.length];
+   w.style.transform=`translate(${-x+lerp(-900,0,a)}px,${y}px) rotate(${(i%2?4:-5)*a}deg) scale(${lerp(.6,1,a)})`; w.style.left="0";w.style.right="auto"; w.style.left=(x)+"px"; w.style.transform=`translate(${lerp(i%2?1200:-1200,0,a)}px,${y}px) rotate(${(i%2?4:-5)}deg) scale(${lerp(.6,1,a)})`;
+   w.querySelector(".x").style.opacity=k(u,3.6+i*.12,3.8+i*.12); w.querySelector(".x").style.transform=`scale(${lerp(2.5,1,E.o3(k(u,3.6+i*.12,3.9+i*.12)))})` });
+   sc.t.style.opacity=k(u,0,.3); sc.t.style.transform=`translateY(${(1-E.o3(k(u,0,.4)))*-60}px)` },
+ logo(sc,u,d){ const a=E.o3(k(u,0,.5)); sc.slashA.style.transform=`translateX(${lerp(-120,0,a)}%) rotate(-12deg)`; sc.slashB.style.transform=`translateX(${lerp(120,0,a)}%) rotate(-12deg)`; sc.slashA.style.opacity=sc.slashB.style.opacity=.85-.6*k(u,1.2,2);
+   const b=E.el(k(u,.3,1.4)); sc.lg.style.transform=`scale(${b}) rotate(${(1-k(u,.3,1.2))*-180}deg)`; sc.name.style.opacity=k(u,.9,1.2); sc.name.style.transform=`scale(${lerp(1.5,1,E.back(k(u,.9,1.4)))})`; sc.name.style.letterSpacing=lerp(30,0,E.o3(k(u,.9,1.6)))+"px";
+   sc.tag.style.opacity=k(u,1.7,2.1); sc.tag.style.transform=`translateY(${(1-E.o3(k(u,1.7,2.2)))*50}px)`; const p=1+.03*Math.sin(u*2.2); sc.lg.style.boxShadow=`0 0 ${120*p}px rgba(139,92,246,.9)` },
+ ui(sc,u,d){ // كاميرا: مفاتيح (وقت، x، y، تكبير) بإحداثيات الصورة الأصلية
+   const K=sc.cam, W=sc.w; let i=0; while(i<K.length-2&&u>K[i+1][0]) i++; const A=K[i], B=K[i+1]||A, x=E.io(k(u,A[0],B[0]));
+   const zx=lerp(A[1],B[1],x), zy=lerp(A[2],B[2],x), z=lerp(A[3],B[3],x); const s=872/W*z; // عرض الشاشة الداخلي 872
+   sc.img.style.width=W+"px"; sc.img.style.transform=`translate(${436-zx*s}px,${786-zy*s}px) scale(${s})`;
+   const ph=E.back(k(u,0,.5)); sc.ph.style.transform=`perspective(2400px) rotateY(${lerp(25,0,ph)+Math.sin(u*.8)*2}deg) rotateX(${Math.sin(u*.6)*2}deg) scale(${lerp(.7,1,ph)})`; sc.ph.style.opacity=k(u,0,.2);
+   const H=(sc.hls||[]).find(h=>u>=h[0]&&u<=h[1]); if(H){ const [,,hx,hy,hw,hh]=H; sc.hl.style.cssText=`left:${436+(hx-zx)*s}px;top:${786+(hy-zy)*s}px;width:${hw*s}px;height:${hh*s}px;opacity:${k(u,H[0],H[0]+.25)*(1-k(u,H[1]-.2,H[1]))}` } else sc.hl.style.opacity=0;
+   const T=(sc.taps||[]).find(h=>u>=h[0]&&u<=h[0]+.6); if(T){ const q=k(u,T[0],T[0]+.6); sc.tp.style.cssText=`left:${436+(T[1]-zx)*s}px;top:${786+(T[2]-zy)*s}px;opacity:${1-q};transform:scale(${lerp(.3,1.6,E.o3(q))})` } else sc.tp.style.opacity=0;
+   sc.lab.style.opacity=k(u,.2,.5); sc.lab.style.transform=`translateY(${(1-E.back(k(u,.2,.6)))*-80}px)` },
+ feats(sc,u,d){ sc.t.style.opacity=k(u,0,.3); sc.items.forEach((e,i)=>{ const a=E.back(k(u,.3+i*.55,.75+i*.55)); e.style.opacity=k(u,.3+i*.55,.5+i*.55); e.style.transform=`translateX(${lerp(i%2?-700:700,0,a)}px) scale(${lerp(.8,1,a)})` }) },
+ live(sc,u,d){ const a=E.o3(k(u,0,.6)); sc.ph.style.transform=`scale(${lerp(1.25,1,a)}) rotate(${(1-a)*4}deg)`; sc.ph.style.opacity=k(u,0,.25);
+   sc.cms.forEach((e,i)=>{ const b=E.back(k(u,1+i*.9,1.4+i*.9)); e.style.opacity=k(u,1+i*.9,1.2+i*.9); e.style.transform=`translateX(${lerp(-500,0,b)}px)` });
+   const g=k(u,4.5,5.1), go=1-k(u,8,8.6); sc.gf.style.opacity=k(u,4.5,4.7)*go; sc.gf.style.transform=`translate(-50%,-50%) scale(${E.el(g)}) rotate(${Math.sin(u*6)*3*g}deg)` },
+ cta(sc,u,d){ sc.lg.style.transform=`scale(${E.el(k(u,0,1))})`; [sc.l1,sc.l2,sc.url,sc.l3].forEach((e,i)=>{ const a=E.back(k(u,.4+i*.45,.85+i*.45)); e.style.opacity=k(u,.4+i*.45,.6+i*.45); e.style.transform=`translateY(${(1-a)*80}px) scale(${lerp(.8,1,a)})` });
+   const p=1+.04*Math.sin(u*5); sc.l1.style.transform+=` scale(${p})` } };
+function render(t){ if(!BUILT) return; const cuts=[];
+ EP._grid.style.transform=`perspective(900px) rotateX(58deg) translateY(${(t*120)%120}px) scale(1.6)`; EP._bg.style.transform=`rotate(${t*3}deg) scale(1.2)`;
+ for(const sc of EP.scenes){ const u=t-sc.t0, d=sc.t1-sc.t0; const vis=u>=-.25&&u<=d+.25; sc.root.style.display=vis?"block":"none"; if(!vis) continue;
+  // انتقال: تكبير + ضبابية حركة عند الدخول/الخروج
+  const tin=k(u,-.25,.15), tout=k(u,d-.15,d+.25); sc.root.style.opacity=Math.min(tin,1-tout); const blur=(1-tin)*18+tout*18; const zin=lerp(1.35,1,E.o3(tin))*lerp(1,.85,tout);
+  sc.root.style.filter=blur>.5?`blur(${blur}px)`:"none"; sc.root.style.transform=`scale(${zin}) rotate(${(1-tin)*-3+tout*3}deg)`; DRAW[sc.type](sc,Math.max(0,u),d); cuts.push(sc.t0) }
+ let f=0; for(const sc of EP.scenes){ const x=Math.abs(t-sc.t0); if(x<.12&&sc.t0>0) f=Math.max(f,(1-x/.12)*.55) } EP._flash.style.opacity=f;
+ const C=EP.captions.find(c=>t>=c[0]&&t<c[1]); EP._cap.style.opacity=C?Math.min(1,k(t,C[0],C[0]+.12)*(1-k(t,C[1]-.1,C[1]))):0; if(C&&EP._cap.dataset.k!==String(C[0])){ EP._cap.dataset.k=String(C[0]); EP._cap.innerHTML=C[2] }
+ EP._cap.style.transform=C?`scale(${lerp(.92,1,E.back(k(t,C[0],C[0]+.25)))})`:"none" }
+window.__build=build; window.__render=render;
+</script></body></html>

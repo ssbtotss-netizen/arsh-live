@@ -19,7 +19,15 @@ export const SND_EVENTS = {
   join: { label: "دخول مشاهد", icon: "👋", hint: "تشغيل عند دخول مشاهد", prio: 5, low: true },
   taps: { label: "التكبيس", icon: "👆", hint: "حدد عدد التكبيسات (مرة واحدة لكل بث)", prio: 45 },
   goal: { label: "تحقيق هدف", icon: "🎯", hint: "تشغيل عند اكتمال هدف الإعجابات أو هدف السبثون", prio: 70 },
-  subathon: { label: "السابثون", icon: "⏱️", hint: "تشغيل عند زيادة أو نقص الوقت", prio: 30 },
+  subathon: { label: "السابثون: زيادة/نقص الوقت", icon: "⏱️", hint: "تشغيل عند زيادة أو نقص الوقت", prio: 30, grp: "sa" },
+  sa_start: { label: "السابثون: البدء", icon: "▶️", hint: "عند بدء السابثون", prio: 75, grp: "sa" },
+  sa_pause: { label: "السابثون: الإيقاف المؤقت", icon: "⏸️", hint: "عند إيقاف العداد مؤقتاً", prio: 74, grp: "sa" },
+  sa_resume: { label: "السابثون: الاستكمال", icon: "⏯️", hint: "عند استكمال العداد", prio: 74, grp: "sa" },
+  sa_gift: { label: "السابثون: هدية محددة", icon: "🎁", hint: "هدية بعينها أضافت أو خصمت وقتاً", prio: 52, grp: "sa" },
+  sa_donation: { label: "السابثون: دونيشن", icon: "💵", hint: "دونيشن غيّر الوقت", prio: 88, grp: "sa" },
+  sa_near: { label: "السابثون: اقتراب النهاية", icon: "⏳", hint: "عند بقاء أقل من الحد المحدد (افتراضياً 5 دقائق)", prio: 78, grp: "sa" },
+  sa_end: { label: "السابثون: النهاية", icon: "🏁", hint: "عند انتهاء السابثون", prio: 95, grp: "sa" },
+  sa_milestone: { label: "السابثون: إنجاز", icon: "🏆", hint: "كل ساعة مضافة (قابل للتعديل)", prio: 72, grp: "sa" },
   manual: { label: "تشغيل يدوي", icon: "🎛️", hint: "يُضاف للوحة التشغيل السريع — تشغّله متى أردت", prio: 80 },
 };
 export const SND_MODES = { fixed: "صوت ثابت (الأول)", random: "عشوائي", seq: "بالترتيب", norepeat: "عشوائي بدون تكرار متتالٍ" };
@@ -38,9 +46,10 @@ export function sndRef(x) {
 export function sndRule(r) {
   r = r && typeof r === "object" ? r : {}; const ev = SND_EVENTS[r.ev] ? r.ev : ""; const c = r.cond && typeof r.cond === "object" ? r.cond : {};
   const cond = {};
-  if (ev === "gift") { cond.any = !!c.any; cond.giftId = c.giftId == null || c.giftId === "" ? "" : sndStr(c.giftId, 20); cond.name = sndStr(c.name, 60).trim(); cond.image = /^https:\/\//.test(c.image || "") ? sndStr(c.image, 400) : ""; }
+  if (ev === "gift" || ev === "sa_gift") { cond.any = !!c.any; cond.giftId = c.giftId == null || c.giftId === "" ? "" : sndStr(c.giftId, 20); cond.name = sndStr(c.name, 60).trim(); cond.image = /^https:\/\//.test(c.image || "") ? sndStr(c.image, 400) : ""; }
   if (ev === "donation") { cond.min = Math.max(0, sndNum(c.min)); cond.cur = /^[A-Z]{3}$/.test(c.cur || "") ? c.cur : "USD"; }
   if (ev === "taps") cond.n = Math.max(1, Math.round(sndNum(c.n, 1000)));
+  if (ev === "sa_donation") cond.dir = ["add", "sub", "any"].includes(c.dir) ? c.dir : "any";
   if (ev === "subathon") cond.dir = ["add", "sub", "any"].includes(c.dir) ? c.dir : "add";
   if (ev === "goal") cond.kind = ["any", "likes", "subathon"].includes(c.kind) ? c.kind : "any";
   const sounds = (Array.isArray(r.sounds) ? r.sounds : []).map(sndRef).filter(s => s.src).slice(0, SND_LIMITS.sounds);
@@ -106,12 +115,28 @@ export function sndOnEvent(cfg, st, ev, now, ctx = {}) {
   return out;
 }
 /** سجلات السبثون (زيادة/نقص الوقت) وأهداف السبثون */
-export function sndOnLogs(cfg, st, logs, now) {
-  if (!cfg || !cfg.on || !logs || !logs.length) return []; const out = [], R = cfg.rules.filter(r => r.on && r.sounds.length);
+export function sndOnLogs(cfg, st, logs, now, sa = {}) {
+  if (!logs || !logs.length) return []; const out = [], on = !!(cfg && cfg.on), R = on ? cfg.rules.filter(r => r.on && r.sounds.length) : [], SR = Array.isArray(sa.rules) ? sa.rules : [];
   for (const l of logs) {
     const id = "log" + (l.subathonId || "") + ":" + (l.seq || now); if (st.ids[id]) continue; st.ids[id] = 1;
-    const d = +l.deltaMs || 0; if (d) { const r = R.find(x => x.ev === "subathon" && (x.cond.dir === "any" || (x.cond.dir === "add") === d > 0)); if (r) { const it = sndEmit(cfg, st, r, { id, type: "subathon", test: !!l.test }, now, {}, { deltaMs: d }); if (it) out.push(it); } }
-    if (l.kind === "goal" || l.goal || /^تحقيق الهدف/.test(String(l.reason || ""))) { const gid = "sub:" + (l.subathonId || ""); if (!st.goals[gid]) { st.goals[gid] = 1; const r = R.find(x => x.ev === "goal" && (x.cond.kind === "any" || x.cond.kind === "subathon")); if (r) { const it = sndEmit(cfg, st, r, { id: id + ":g", type: "goal" }, now, {}, {}); if (it) out.push(it); } } }
+    const ev = { id, type: "subathon", test: !!l.test }, d = +l.deltaMs || 0;
+    // صوت واحد فقط لكل تغيير وقت: صوت القانون ← هدية/دونيشن السابثون ← الصوت العام للزيادة/النقص (لا تشغيل مزدوج)
+    if (d && !sa.soundsOff) {
+      const rule = l.ruleId && SR.find(x => x.id === l.ruleId); let it = null;
+      if (rule && rule.soundId === "none") { /* «بدون صوت» لهذا القانون */ }
+      else if (rule && rule.soundId) { const giftAlert = rule.kind === "gift" && !rule.soundDouble && R.some(x => x.ev === "gift" && (x.cond.any || String(x.cond.giftId) === String(rule.giftId)));
+        if (!giftAlert) { const s = sndRef({ src: rule.soundId, vol: Math.round((rule.soundVol == null ? 1 : +rule.soundVol) * 100) }); if (s.src) { const key = "rule:" + rule.id, cool = 350;
+          if (now - (st.last[key] || 0) < cool) st.sup[key] = (st.sup[key] || 0) + 1; else { const merged = st.sup[key] || 0; st.sup[key] = 0; st.last[key] = now; it = { id: id + ":" + rule.id, rule: "sa:" + rule.id, ev: "subathon", s, prio: 40, at: now, merged, test: !!l.test, low: false }; } } }
+        else it = false; }
+      else if (on) { let r = null;
+        if (rule && rule.kind === "gift") r = R.find(x => x.ev === "sa_gift" && (x.cond.any || String(x.cond.giftId) === String(rule.giftId)));
+        if (!r && rule && rule.kind === "donation") r = R.find(x => x.ev === "sa_donation" && (x.cond.dir === "any" || (x.cond.dir === "add") === d > 0));
+        if (!r) r = R.find(x => x.ev === "subathon" && (x.cond.dir === "any" || (x.cond.dir === "add") === d > 0));
+        if (r) it = sndEmit(cfg, st, r, ev, now, {}, { deltaMs: d }); }
+      if (it) out.push(it);
+    }
+    if (on && l.sa && !sa.soundsOff) { const r = R.find(x => x.ev === "sa_" + l.sa); if (r) { const it = sndEmit(cfg, st, r, { id: id + ":" + l.sa, type: "subathon", test: !!l.test }, now, {}, {}); if (it) out.push(it); } }
+    if (on && (l.kind === "goal" || l.goal || /^تحقيق الهدف/.test(String(l.reason || "")))) { const gid = "sub:" + (l.subathonId || ""); if (!st.goals[gid]) { st.goals[gid] = 1; const r = R.find(x => x.ev === "goal" && (x.cond.kind === "any" || x.cond.kind === "subathon")); if (r) { const it = sndEmit(cfg, st, r, { id: id + ":g" }, now, {}, {}); if (it) out.push(it); } } }
   }
   return out;
 }

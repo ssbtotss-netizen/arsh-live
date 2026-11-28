@@ -1,0 +1,439 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })();(()=>{const l={id:'l_acad',name:'نتيجة الأكاديمية',canvas:L().canvas,widgets:[]};let z=1;l.widgets.push(newWidget(\"recentFollows\",Object.assign({z:z++},{\"x\": 0.1, \"y\": 0.3, \"w\": 0.8, \"h\": 0.3, \"title\": \"آخر المتابعين\"})));l.widgets.push(newWidget(\"sndplayer\",Object.assign({z:z++},{\"x\": 0.1, \"y\": 0.64, \"w\": 0.8, \"h\": 0.12})));S.layouts.push(l);save()})()",
+ "intro": {
+  "end": 4.0,
+  "style": "counter",
+  "num": 308,
+  "hook": "خلّ كل فولو|*له صوت مختلف!*",
+  "sub": "مكتبة الأصوات"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 8.0,
+   "f": [
+    640,
+    330
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 9.8,
+   "f": [
+    640,
+    330
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 10.8,
+   "f": [
+    600,
+    420
+   ],
+   "z": 1.15,
+   "ry": 3
+  },
+  {
+   "t": 16.4,
+   "f": "[data-snd=\"prev\"][data-s=\"lib:follow-02\"]",
+   "z": 1.9
+  },
+  {
+   "t": 19.6,
+   "f": "[data-snd=\"prev\"][data-s=\"lib:follow-02\"]",
+   "z": 1.8
+  },
+  {
+   "t": 20.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 21.4,
+   "f": "[data-sndf=\"q\"]",
+   "z": 1.9,
+   "dy": 0
+  },
+  {
+   "t": 23.6,
+   "f": "[data-snd=\"prev\"][data-s=\"lib:follow-01\"]",
+   "z": 1.8
+  },
+  {
+   "t": 25.2,
+   "f": "[data-snd=\"use\"][data-s=\"lib:follow-01\"]",
+   "z": 1.7
+  },
+  {
+   "t": 27.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1.3
+  },
+  {
+   "t": 30.2,
+   "f": [
+    640,
+    380
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 31.6,
+   "f": "[data-snd=\"uev\"][data-k=\"follow\"]",
+   "z": 1.8
+  },
+  {
+   "t": 33.8,
+   "f": "[data-snd=\"usesave\"]",
+   "z": 2.0
+  },
+  {
+   "t": 36.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.1
+  },
+  {
+   "t": 37.6,
+   "f": "[data-snd=\"addplayer\"]",
+   "z": 2.0
+  },
+  {
+   "t": 41.2,
+   "f": "[data-snd=\"addplayer\"]",
+   "z": 1.9
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"sounds\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 10.4,
+   "move": "[data-k=\"cat:hype\"]",
+   "d": 0.8
+  },
+  {
+   "t": 11.3,
+   "click": 1
+  },
+  {
+   "t": 12.6,
+   "move": "[data-k=\"cat:comedy\"]",
+   "d": 0.7
+  },
+  {
+   "t": 13.399999999999999,
+   "click": 1
+  },
+  {
+   "t": 13.6,
+   "move": [
+    560,
+    520
+   ],
+   "d": 0.8
+  },
+  {
+   "t": 15.0,
+   "move": "[data-k=\"all\"]",
+   "d": 0.7
+  },
+  {
+   "t": 15.799999999999999,
+   "click": 1
+  },
+  {
+   "t": 16.2,
+   "move": "[data-snd=\"prev\"][data-s=\"lib:follow-02\"]",
+   "d": 0.8
+  },
+  {
+   "t": 17.1,
+   "click": 1,
+   "snd": "follow-02"
+  },
+  {
+   "t": 20.6,
+   "move": "[data-sndf=\"q\"]",
+   "d": 0.8
+  },
+  {
+   "t": 21.500000000000004,
+   "click": 1
+  },
+  {
+   "t": 21.8,
+   "type": "فولو",
+   "sel": "[data-sndf=\"q\"]",
+   "cps": 6
+  },
+  {
+   "t": 23.2,
+   "move": "[data-snd=\"prev\"][data-s=\"lib:follow-01\"]",
+   "d": 0.8
+  },
+  {
+   "t": 24.1,
+   "click": 1,
+   "snd": "follow-01"
+  },
+  {
+   "t": 25.8,
+   "move": "[data-snd=\"use\"][data-s=\"lib:follow-01\"]",
+   "d": 0.8
+  },
+  {
+   "t": 26.700000000000003,
+   "click": 1
+  },
+  {
+   "t": 25.9,
+   "ring": "[data-snd=\"use\"][data-s=\"lib:follow-01\"]",
+   "d": 0.8
+  },
+  {
+   "t": 27.6,
+   "move": "[data-snd=\"uev\"][data-k=\"follow\"]",
+   "d": 1.2
+  },
+  {
+   "t": 31.2,
+   "click": 1
+  },
+  {
+   "t": 31.3,
+   "ring": "[data-snd=\"uev\"][data-k=\"follow\"]",
+   "d": 2.0
+  },
+  {
+   "t": 33.6,
+   "move": "[data-snd=\"usesave\"]",
+   "d": 0.9
+  },
+  {
+   "t": 34.6,
+   "click": 1
+  },
+  {
+   "t": 36.4,
+   "js": "(q=>{q.value='';q.dispatchEvent(new Event('input',{bubbles:true}))})(document.querySelector('[data-sndf=\"q\"]'))"
+  },
+  {
+   "t": 36.6,
+   "scroll": 0,
+   "d": 0.8
+  },
+  {
+   "t": 37.2,
+   "move": "[data-snd=\"addplayer\"]",
+   "d": 0.9
+  },
+  {
+   "t": 38.2,
+   "click": 1
+  },
+  {
+   "t": 37.4,
+   "ring": "[data-snd=\"addplayer\"]",
+   "d": 2.4
+  },
+  {
+   "t": 43.0,
+   "sim": {
+    "type": "follow",
+    "id": "F7_43.0",
+    "platform": "tiktok",
+    "user": {
+     "id": "nf2",
+     "name": "سلطان"
+    }
+   },
+   "snd": "follow-01"
+  },
+  {
+   "t": 46.0,
+   "sim": {
+    "type": "follow",
+    "id": "F7_46.0",
+    "platform": "tiktok",
+    "user": {
+     "id": "nf4",
+     "name": "لمى"
+    }
+   },
+   "snd": "follow-01"
+  },
+  {
+   "t": 49.0,
+   "sim": {
+    "type": "follow",
+    "id": "F7_49.0",
+    "platform": "tiktok",
+    "user": {
+     "id": "nf5",
+     "name": "تركي"
+    }
+   },
+   "snd": "follow-01"
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "*+300* صوت أصلي"
+  ],
+  [
+   7.1,
+   9.8,
+   "لكل *تفاعل* في بثك"
+  ],
+  [
+   10.4,
+   14.6,
+   "تنبيهات · *حماس* · كوميدي",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   15.0,
+   19.8,
+   "*جرّبه* قبل تستخدمه"
+  ],
+  [
+   20.4,
+   25.3,
+   "ابحث عن *الصوت*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "اضغط *استخدام الصوت*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "اختر *متى يشتغل*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "أضف *المشغّل لـ OBS*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "كل فولو *له صوته*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · مكتبة الأصوات"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "ovl": "overlayURL(S.layouts.find(l=>l.id==='l_acad'))"
+}

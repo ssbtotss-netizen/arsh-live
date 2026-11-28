@@ -139,8 +139,8 @@ function b6o6Cup(id){ const cup="M54 40H166Q166 120 128 146Q110 156 92 146Q54 12
  <g class="vg-crown" transform="translate(88 0)"><path d="M2 28 5 8l9 9L22 0l8 17 9-9 3 20z" fill="#7fb2ff" stroke="#1e3a8a"/></g>
  ${spark([[30,24,8,"#bfdbfe"],[196,140,7],[24,170,6,"#7fb2ff"]])}</svg>` }
 
-// ---------- 10. البطة الذهبية B6O6 ----------
-function goldenDuck(id){ const duck="M64 196Q30 190 30 158Q30 128 62 118Q52 100 56 82Q62 52 96 50Q128 50 134 80Q138 98 128 112Q162 112 182 96Q192 120 180 150Q166 194 120 198Z";
+// ---------- 10. الشعار الذهبي B6O6 ----------
+ function goldenDuck(id){ const duck="M110 22 186 66v96L110 206 34 162V66Z";
  return `<svg class="vg-svg" viewBox="0 0 220 230"><defs>${LG(id,"g",GOLD)}${LG(id,"l",["#fff1a8","#f5c542","#b7791f"],1)}<clipPath id="c${id}"><path d="${duck}"/></clipPath></defs>
  ${halo(110,128,98,"#f5c542")}
  <g class="vg-duck"><path d="${duck}" fill="#1c1408"/>
@@ -151,7 +151,7 @@ function goldenDuck(id){ const duck="M64 196Q30 190 30 158Q30 128 62 118Q52 100 
  <path d="M132 76Q160 72 170 82Q160 94 132 92Z" fill="#fb923c" stroke="#9a3412" stroke-width="1.5"/><circle cx="108" cy="74" r="6" fill="#1a1206"/><circle cx="110" cy="72" r="2" fill="#fff"/>
  <path class="vg-wing" d="M78 150Q100 128 132 144Q118 168 86 164Z" fill="none" stroke="url(#g${id})" stroke-width="3"/></g>
  <g class="vg-crown" transform="translate(78 14)"><path d="M2 30 5 8l10 10L24 0l9 18 10-10 3 22z" fill="url(#g${id})" stroke="#7a4e0e"/></g>
- <g class="vg-quack"><rect x="150" y="20" width="60" height="28" rx="14" fill="#fff"/><path d="M160 46l-8 10 16-10z" fill="#fff"/><text x="180" y="40" text-anchor="middle" font-family="Changa,sans-serif" font-weight="900" font-size="14" fill="#a16207">كواك!</text></g>
+ <g class="vg-quack"><rect x="146" y="18" width="66" height="28" rx="14" fill="#fff"/><text x="179" y="38" text-anchor="middle" font-family="sans-serif" font-size="15" font-weight="800" fill="#1c1408">100%</text></g>
  ${spark([[30,60,8],[196,110,7,"#fde68a"],[40,210,6]])}</svg>` }
 
 const BASE_FC=`.vgw .vg-fc{fill-opacity:calc(.12 + var(--on,0)*.88);stroke-opacity:calc(.35 + var(--on,0)*.5);transition:fill-opacity .6s,stroke-opacity .6s,filter .6s;transform-box:fill-box;transform-origin:center}
@@ -218,7 +218,7 @@ vgRegister([
 .vgd-b6o6Cup .vg-bub{animation:vg-bub 2.4s ease-in infinite;opacity:0}.vgd-b6o6Cup .b2{animation-delay:-1.1s}
 .vgd-b6o6Cup .vg-bolt{animation:vg-zap .4s steps(2) infinite}.vgd-b6o6Cup.vst-2 .vg-crown,.vgd-b6o6Cup.vst-3 .vg-crown,.vgd-b6o6Cup.vst-4 .vg-crown,.vgd-b6o6Cup.done .vg-crown{opacity:1}
 .vgd-b6o6Cup .vg-crown{animation:vg-bob3 2.6s ease-in-out infinite}@keyframes vg-bob3{50%{transform:translate(88px,-6px)}}`},
- {id:"goldenDuck",n:71,name:"البطة الذهبية B6O6",cat:"b6o6",fill:"liquidUp",fx:"goldSweep",desc:"بطة بطوط تمتلئ ذهباً، يظهر التاج عند 50٪ وتقول «كواك!» عند الاكتمال",art:goldenDuck,css:`
+ {id:"goldenDuck",n:71,name:"الشعار الذهبي B6O6",cat:"b6o6",fill:"liquidUp",fx:"goldSweep",desc:"شعار B6O6 السداسي يمتلئ بالذهب السائل مع تاج عند الاكتمال",art:goldenDuck,css:`
 .vgd-goldenDuck{--acc:#fde68a}.vgd-goldenDuck .vg-liq{transition:transform 1.2s cubic-bezier(.2,.8,.2,1)}.vgd-goldenDuck .vg-wave{animation:vg-wave 3s linear infinite}
 .vgd-goldenDuck .vg-bub{animation:vg-bub 2.6s ease-in infinite;opacity:0}.vgd-goldenDuck .b2{animation-delay:-.9s}.vgd-goldenDuck .b3{animation-delay:-1.7s}
 .vgd-goldenDuck.vst-2 .vg-crown,.vgd-goldenDuck.vst-3 .vg-crown,.vgd-goldenDuck.vst-4 .vg-crown,.vgd-goldenDuck.done .vg-crown{opacity:1}

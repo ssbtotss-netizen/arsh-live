@@ -1,0 +1,760 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })();(()=>{const l={id:'l_acad',name:'نتيجة الأكاديمية',canvas:L().canvas,widgets:[]};let z=1;l.widgets.push(newWidget(\"goal\",Object.assign({z:z++},{\"x\": 0.1, \"y\": 0.18, \"w\": 0.8, \"h\": 0.12, \"target\": 5000, \"title\": \"تحدي التكبيس\"})));l.widgets.push(newWidget(\"lb\",Object.assign({z:z++},{\"topN\": 3, \"x\": 0.08, \"y\": 0.36, \"w\": 0.84, \"h\": 0.38, \"source\": \"likes\", \"design\": \"fireCircle\", \"title\": \"أبطال التكبيس\", \"icon\": \"❤️\"})));S.layouts.push(l);save()})()",
+ "intro": {
+  "end": 4.0,
+  "style": "focus",
+  "hook": "تحدّى جمهورك|*بالتكبيس!*",
+  "sub": "تحديات التكبيس"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 7.6,
+   "f": [
+    640,
+    300
+   ],
+   "z": 1.3
+  },
+  {
+   "t": 9.8,
+   "f": [
+    640,
+    300
+   ],
+   "z": 1.3
+  },
+  {
+   "t": 10.8,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.05,
+   "ry": 3
+  },
+  {
+   "t": 15.4,
+   "f": [
+    640,
+    440
+   ],
+   "z": 1.1,
+   "ry": -3
+  },
+  {
+   "t": 19.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.05
+  },
+  {
+   "t": 21.0,
+   "f": "[data-lycat=\"likes\"]",
+   "z": 1.9
+  },
+  {
+   "t": 23.0,
+   "f": [
+    640,
+    480
+   ],
+   "z": 1.1
+  },
+  {
+   "t": 25.8,
+   "f": "[data-lyuse=\"off_likes\"]",
+   "z": 2.0
+  },
+  {
+   "t": 27.6,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1.05
+  },
+  {
+   "t": 28.4,
+   "f": "[data-lt=\"likes\"]",
+   "z": 1.5
+  },
+  {
+   "t": 30.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.05
+  },
+  {
+   "t": 31.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 33.2,
+   "f": "[data-lsadd=\"goal\"]",
+   "z": 2.0
+  },
+  {
+   "t": 36.0,
+   "f": [
+    300,
+    560
+   ],
+   "z": 1.4
+  },
+  {
+   "t": 36.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 37.8,
+   "f": "[data-sessnew]",
+   "z": 1.9
+  },
+  {
+   "t": 39.6,
+   "f": "[data-ok]",
+   "z": 1.9
+  },
+  {
+   "t": 41.2,
+   "f": [
+    700,
+    300
+   ],
+   "z": 1.4
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"layouts\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 10.4,
+   "move": "[data-lycat=\"gaming\"]",
+   "d": 0.8
+  },
+  {
+   "t": 11.3,
+   "click": 1
+  },
+  {
+   "t": 12.4,
+   "move": "[data-lycat=\"subathon\"]",
+   "d": 0.8
+  },
+  {
+   "t": 13.3,
+   "click": 1
+  },
+  {
+   "t": 13.6,
+   "move": [
+    560,
+    560
+   ],
+   "d": 0.8
+  },
+  {
+   "t": 15.0,
+   "move": "[data-lyshape=\"vertical\"]",
+   "d": 0.8
+  },
+  {
+   "t": 15.9,
+   "click": 1
+  },
+  {
+   "t": 17.2,
+   "move": "[data-lyshape=\"\"]",
+   "d": 0.7
+  },
+  {
+   "t": 18.0,
+   "click": 1
+  },
+  {
+   "t": 20.6,
+   "move": "[data-lycat=\"likes\"]",
+   "d": 0.9
+  },
+  {
+   "t": 21.6,
+   "click": 1
+  },
+  {
+   "t": 23.6,
+   "move": "[data-lyuse=\"off_likes\"]",
+   "d": 1.0
+  },
+  {
+   "t": 25.6,
+   "ring": "[data-lyuse=\"off_likes\"]",
+   "d": 2.0
+  },
+  {
+   "t": 26.8,
+   "click": 1
+  },
+  {
+   "t": 27.4,
+   "move": "[data-lt=\"likes\"]",
+   "d": 0.7
+  },
+  {
+   "t": 28.2,
+   "click": 1
+  },
+  {
+   "t": 29.0,
+   "move": "[data-li=\"use\"]",
+   "d": 0.8
+  },
+  {
+   "t": 29.900000000000002,
+   "click": 1
+  },
+  {
+   "t": 31.0,
+   "move": ".nav [data-go=\"likes\"]",
+   "d": 0.8
+  },
+  {
+   "t": 31.900000000000002,
+   "click": 1
+  },
+  {
+   "t": 32.8,
+   "move": "[data-lsadd=\"goal\"]",
+   "d": 0.9
+  },
+  {
+   "t": 33.8,
+   "click": 1
+  },
+  {
+   "t": 36.4,
+   "scroll": 0,
+   "d": 0.8
+  },
+  {
+   "t": 37.4,
+   "move": "[data-sessnew]",
+   "d": 1.0
+  },
+  {
+   "t": 38.5,
+   "click": 1
+  },
+  {
+   "t": 37.6,
+   "ring": "[data-sessnew]",
+   "d": 1.4
+  },
+  {
+   "t": 39.2,
+   "move": "[data-ok]",
+   "d": 0.7
+  },
+  {
+   "t": 40.00000000000001,
+   "click": 1
+  },
+  {
+   "t": 42.5,
+   "sim": {
+    "type": "like",
+    "id": "L10_0",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 150
+   }
+  },
+  {
+   "t": 42.84,
+   "sim": {
+    "type": "like",
+    "id": "L10_1",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 203
+   }
+  },
+  {
+   "t": 43.18,
+   "sim": {
+    "type": "like",
+    "id": "L10_2",
+    "platform": "tiktok",
+    "user": {
+     "id": "c2",
+     "name": "فيصل"
+    },
+    "count": 256
+   }
+  },
+  {
+   "t": 43.52,
+   "sim": {
+    "type": "like",
+    "id": "L10_3",
+    "platform": "tiktok",
+    "user": {
+     "id": "c3",
+     "name": "سارة"
+    },
+    "count": 189
+   }
+  },
+  {
+   "t": 43.86,
+   "sim": {
+    "type": "like",
+    "id": "L10_4",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 242
+   }
+  },
+  {
+   "t": 44.2,
+   "sim": {
+    "type": "like",
+    "id": "L10_5",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 175
+   }
+  },
+  {
+   "t": 44.54,
+   "sim": {
+    "type": "like",
+    "id": "L10_6",
+    "platform": "tiktok",
+    "user": {
+     "id": "c2",
+     "name": "فيصل"
+    },
+    "count": 228
+   }
+  },
+  {
+   "t": 44.88,
+   "sim": {
+    "type": "like",
+    "id": "L10_7",
+    "platform": "tiktok",
+    "user": {
+     "id": "c3",
+     "name": "سارة"
+    },
+    "count": 161
+   }
+  },
+  {
+   "t": 45.22,
+   "sim": {
+    "type": "like",
+    "id": "L10_8",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 214
+   }
+  },
+  {
+   "t": 45.56,
+   "sim": {
+    "type": "like",
+    "id": "L10_9",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 267
+   }
+  },
+  {
+   "t": 45.9,
+   "sim": {
+    "type": "like",
+    "id": "L10_10",
+    "platform": "tiktok",
+    "user": {
+     "id": "c2",
+     "name": "فيصل"
+    },
+    "count": 200
+   }
+  },
+  {
+   "t": 46.24,
+   "sim": {
+    "type": "like",
+    "id": "L10_11",
+    "platform": "tiktok",
+    "user": {
+     "id": "c3",
+     "name": "سارة"
+    },
+    "count": 253
+   }
+  },
+  {
+   "t": 46.58,
+   "sim": {
+    "type": "like",
+    "id": "L10_12",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 186
+   }
+  },
+  {
+   "t": 46.92,
+   "sim": {
+    "type": "like",
+    "id": "L10_13",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 239
+   }
+  },
+  {
+   "t": 47.26,
+   "sim": {
+    "type": "like",
+    "id": "L10_14",
+    "platform": "tiktok",
+    "user": {
+     "id": "c2",
+     "name": "فيصل"
+    },
+    "count": 172
+   }
+  },
+  {
+   "t": 47.6,
+   "sim": {
+    "type": "like",
+    "id": "L10_15",
+    "platform": "tiktok",
+    "user": {
+     "id": "c3",
+     "name": "سارة"
+    },
+    "count": 225
+   }
+  },
+  {
+   "t": 47.94,
+   "sim": {
+    "type": "like",
+    "id": "L10_16",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 158
+   }
+  },
+  {
+   "t": 48.28,
+   "sim": {
+    "type": "like",
+    "id": "L10_17",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 211
+   }
+  },
+  {
+   "t": 48.62,
+   "sim": {
+    "type": "like",
+    "id": "L10_18",
+    "platform": "tiktok",
+    "user": {
+     "id": "c2",
+     "name": "فيصل"
+    },
+    "count": 264
+   }
+  },
+  {
+   "t": 48.96,
+   "sim": {
+    "type": "like",
+    "id": "L10_19",
+    "platform": "tiktok",
+    "user": {
+     "id": "c3",
+     "name": "سارة"
+    },
+    "count": 197
+   }
+  },
+  {
+   "t": 49.3,
+   "sim": {
+    "type": "like",
+    "id": "L10_20",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 250
+   }
+  },
+  {
+   "t": 49.64,
+   "sim": {
+    "type": "like",
+    "id": "L10_21",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 183
+   }
+  },
+  {
+   "t": 49.980000000000004,
+   "sim": {
+    "type": "like",
+    "id": "L10_22",
+    "platform": "tiktok",
+    "user": {
+     "id": "c2",
+     "name": "فيصل"
+    },
+    "count": 236
+   }
+  },
+  {
+   "t": 50.32,
+   "sim": {
+    "type": "like",
+    "id": "L10_23",
+    "platform": "tiktok",
+    "user": {
+     "id": "c3",
+     "name": "سارة"
+    },
+    "count": 169
+   }
+  },
+  {
+   "t": 50.66,
+   "sim": {
+    "type": "like",
+    "id": "L10_24",
+    "platform": "tiktok",
+    "user": {
+     "id": "c0",
+     "name": "خالد"
+    },
+    "count": 222
+   }
+  },
+  {
+   "t": 51.0,
+   "sim": {
+    "type": "like",
+    "id": "L10_25",
+    "platform": "tiktok",
+    "user": {
+     "id": "c1",
+     "name": "هيا"
+    },
+    "count": 155
+   }
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "تصاميم *تحديات* جاهزة"
+  ],
+  [
+   7.1,
+   9.8,
+   "*بضغطة* تستخدمها"
+  ],
+  [
+   10.4,
+   14.6,
+   "ألعاب · شاتينق · *سابثون*"
+  ],
+  [
+   15.0,
+   19.8,
+   "*عمودي* وأفقي"
+  ],
+  [
+   20.4,
+   25.3,
+   "اختر *تحديات التكبيس*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "اضغط *استخدام*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "أضف *هدف الإعجابات*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "ابدأ *جلسة جديدة*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "التحدي *يشتعل لحظياً*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · مكتبة تصاميم البث"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "ovl": "overlayURL(S.layouts.find(l=>l.id==='l_acad'))"
+}

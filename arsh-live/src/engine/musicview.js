@@ -22,7 +22,7 @@ export const NP_DESIGNS=[
  {id:"gold",name:"Gold Plate",ar:"لوحة ذهبية",desc:"ذهب لامع ونص داكن"},
  {id:"ice",name:"Ice Glass",ar:"زجاج جليدي",desc:"أزرق فاتح شفاف"},
  {id:"saudi",name:"Saudi Green",ar:"أخضر سعودي",desc:"أخضر وذهبي وزخرفة سفلية"},
- {id:"duck",name:"B6O6 Duck",ar:"بطة B6O6",desc:"أبيض وبرتقالي مع 🦆"},
+ {id:"duck",name:"B6O6 Light",ar:"B6O6 فاتح",desc:"أبيض نظيف بحافة زرقاء"},
  {id:"wave",name:"Sound Wave",ar:"موجة صوت",desc:"خط موجة متحرك أسفل البطاقة"},
  {id:"polaroid",name:"Polaroid",ar:"صورة فورية",desc:"غلاف كبير بإطار أبيض"},
  {id:"hud",name:"Game HUD",ar:"واجهة لعبة",desc:"أقواس زوايا وخط Orbitron"},
@@ -110,7 +110,7 @@ ${[...Array(9)].map((_,i)=>`.npw .np-eq i:nth-child(${i+1}){animation-duration:$
 .npd-gold .np-in{background:linear-gradient(180deg,#fde68a,#d4a017 55%,#b8860b);border-radius:calc(var(--nfs)*.4);color:#1c1206}.npd-gold .np-by{color:#5a3a06}.npd-gold .np-pr{background:#0003}.npd-gold .np-pr i{background:#3b2506}
 .npd-ice .np-in{background:linear-gradient(135deg,#e0f2fe55,#38bdf826);border:1px solid #e0f2fe;border-radius:calc(var(--nfs)*.5);backdrop-filter:blur(8px)}
 .npd-saudi .np-in{background:linear-gradient(90deg,#005430dd,#002818cc);border:calc(var(--nfs)*.06) solid #c9a227;border-radius:calc(var(--nfs)*.5)}.npd-saudi .np-pr i{background:#c9a227}.npd-saudi .np-by{color:#fde68a}
-.npd-duck .np-in{background:#ffffffee;color:#111827;border:calc(var(--nfs)*.08) solid #ff9f1a;border-radius:calc(var(--nfs)*1)}.npd-duck .np-in::after{content:"🦆";position:absolute;left:calc(var(--nfs)*.4);top:calc(var(--nfs)*-.4);font-size:var(--nfs)}.npd-duck .np-by{color:#c2410c}.npd-duck .np-pr{background:#0002}.npd-duck .np-pr i{background:#ff9f1a}
+.npd-duck .np-in{background:#ffffffee;color:#111827;border:calc(var(--nfs)*.08) solid #2f7bff;border-radius:calc(var(--nfs)*1)}.npd-duck .np-by{color:#c2410c}.npd-duck .np-pr{background:#0002}.npd-duck .np-pr i{background:#2f7bff}
 .npd-wave .np-in{background:#0b1020cc;border-radius:calc(var(--nfs)*.6);overflow:hidden}.npd-wave .np-in::after{content:"";position:absolute;inset:auto 0 0 0;height:30%;background:repeating-linear-gradient(90deg,transparent 0 4px,var(--nac,#7cc4ff) 4px 6px);-webkit-mask:linear-gradient(0deg,#000,transparent);opacity:.4;animation:np-wv 1.2s linear infinite}@keyframes np-wv{to{background-position:20px 0}}
 .npd-polaroid .np-art{background:#fff;padding:6%;box-shadow:0 6px 14px #0009;transform:rotate(-4deg)}.npd-polaroid .np-cv{inset:6% 6% 18% 6%;border-radius:0}.npd-polaroid .np-in{text-shadow:0 2px 6px #000}
 .npd-hud .np-in{background:#000f19cc;background-image:linear-gradient(var(--nac,#22d3ee),var(--nac,#22d3ee)),linear-gradient(var(--nac,#22d3ee),var(--nac,#22d3ee)),linear-gradient(var(--nac,#22d3ee),var(--nac,#22d3ee)),linear-gradient(var(--nac,#22d3ee),var(--nac,#22d3ee));background-size:14px 2px,2px 14px,14px 2px,2px 14px;background-position:0 0,0 0,100% 100%,100% 100%;background-repeat:no-repeat}.npd-hud .np-tm{font-family:Orbitron,monospace}

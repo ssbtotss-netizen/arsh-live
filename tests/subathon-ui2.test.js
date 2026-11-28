@@ -7,8 +7,8 @@ let pass=0,fail=0; const ok=(c,m)=>{ c?pass++:(fail++,console.log('FAIL',m)) };
  await p.click('.nav [data-go="subathon"]'); await p.waitForTimeout(500);
  const R=()=>p.evaluate(()=>window.__arsh.R().C.subathon);
  // ترتيب الأقسام: التحكم في الأعلى
- const order=await p.$$eval('.sa2-sec',e=>e.map(x=>x.id)); ok(order.join()==="sa-s1,sa-s2,sa-s3,sa-s4,sa-s5,sa-s6",'section order: '+order.join());
- ok(await p.$$eval('.sa2-nav [data-sajump]',e=>e.length)===6,'quick-jump nav');
+ const order=await p.$$eval('.sa2-sec',e=>e.map(x=>x.id)); ok(order.join()==="sa-s1,sa-s2,sa-s3,sa-s3b,sa-s3c,sa-s4,sa-s5,sa-s6",'section order: '+order.join());
+ ok(await p.$$eval('.sa2-nav [data-sajump]',e=>e.length)===8,'quick-jump nav (8 sections incl. rules manager + sounds)');
  // القسم 1
  const hero=await p.textContent('#sa-s1');
  for(const k of ["الوقت المتبقي","الوقت المضاف أثناء البث","العملات المحتسبة","الهدايا المستقبلة","TikTok LIVE","بدء السبثون","إيقاف مؤقت","استكمال","إنهاء","إضافة وقت","خصم وقت"]) ok(hero.includes(k),'hero has: '+k);
@@ -69,7 +69,7 @@ let pass=0,fail=0; const ok=(c,m)=>{ c?pass++:(fail++,console.log('FAIL',m)) };
  const heads=await p.$$eval('#sa-s5 th',e=>e.map(x=>x.textContent)); ok(["الوقت","الهدية","المرسل","العدد في السلسلة","المحتسب","العملات","الوقت المضاف","الحالة"].every(h=>heads.includes(h)),'log columns: '+heads.join(','));
  const kpi=(await p.innerText('[data-sastats]')).replace(/\s+/g," "); ok(/العملات المحتسبة ?30 كوين/.test(kpi)&&/الهدايا المستقبلة ?30/.test(kpi),'hero totals update live: '+kpi);
  // القفز بين الأقسام
- await p.click('[data-sajump="sa-s5"]'); await p.waitForTimeout(700); ok(await p.$eval('#sa-s5',e=>Math.abs(e.getBoundingClientRect().top)<200),'quick-jump scrolls to section');
+ await p.click('[data-sajump="sa-s5"]'); await p.waitForTimeout(1600); ok(await p.$eval('#sa-s5',e=>Math.abs(e.getBoundingClientRect().top)<200),'quick-jump scrolls to section');
  // إنهاء بتأكيد
  await p.click('#sa-s1 [data-sa-end]'); await p.waitForTimeout(250); ok((await R()).status==="running"&&!!(await p.$('.modal [data-ok]')),'end asks for confirmation first'); await p.click('.modal [data-ok]'); await p.waitForTimeout(400); ok((await R()).status==="ended",'end after confirmation');
  // الجوال: بدون تمرير أفقي

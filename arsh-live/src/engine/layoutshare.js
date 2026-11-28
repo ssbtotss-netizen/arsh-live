@@ -6,7 +6,7 @@ export const LS_MAX_WIDGETS=120, LS_MAX_BYTES=1.5*1024*1024, LS_MAX_IMG=400*1024
 /** حقول شخصية لا تُنسخ أبداً (حسابات، أهداف، إحصائيات، قوائم حظر…) — تُعاد لقيمها الافتراضية عند المستورد */
 export const LS_PRIVATE_KEYS=["accountId","acc","handle","goalId","streamName","banned","since","base","timerId","sound","importantWords","source","platform"];
 const SECRET_RE=/(token|secret|password|passwd|api_?key|apikey|webhook|bearer|session|cookie|jwt|private|email|phone)/i;
-export const LS_CATS={gaming:"🎮 ألعاب",chatting:"🎙️ شاتينق",support:"🎁 بثوث دعم",likes:"❤️ تحديات التكبيس",subathon:"⏱️ سابثون",contests:"🏆 مسابقات",royal:"💎 ملكي",girly:"🦋 بناتي",youth:"🔥 شبابي",transparent:"✨ شفاف",saudi:"🇸🇦 سعودي",b6o6:"🦆 B6O6 حصري"};
+export const LS_CATS={gaming:"🎮 ألعاب",chatting:"🎙️ شاتينق",support:"🎁 بثوث دعم",likes:"❤️ تحديات التكبيس",subathon:"⏱️ سابثون",contests:"🏆 مسابقات",royal:"💎 ملكي",girly:"🦋 بناتي",youth:"🔥 شبابي",transparent:"✨ شفاف",saudi:"🇸🇦 سعودي",b6o6:"✦ B6O6 حصري"};
 export const LS_SHAPES={horizontal:"🖥️ أفقي",vertical:"📱 عمودي",square:"🟦 مربع"};
 export function lsShape(canvas,cw,ch){ const c=CANVASES[canvas]; const w=c?c.w:+cw||1080, h=c?c.h:+ch||1920; return Math.abs(w-h)<w*.05?"square":w>h?"horizontal":"vertical" }
 

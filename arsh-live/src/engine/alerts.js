@@ -30,7 +30,7 @@ export const AL_EVENTS={
 export const AL_OPS={eq:"يساوي",gt:"أكبر من",gte:"أكبر أو يساوي",lt:"أقل من",lte:"أقل أو يساوي",between:"بين",every:"كل",any:"أي قيمة"};
 export const AL_KINDS={video:"فيديو (MP4/WebM)",gif:"GIF متحرك",image:"صورة (PNG/JPG/WebP)",lottie:"Lottie (JSON)",audio:"صوت فقط",template:"قالب جاهز من المنصة"};
 /** طابع التصميم (مستقل عن نوع الحدث): Follow + Enemy = «Enemy Follow Alert» */
-export const AL_STYLES={enemy:"👾 Enemy",money:"💰 Money",fire:"🔥 Fire",diamond:"💎 Diamond",royal:"👑 Royal",butterfly:"🦋 Butterfly",flowers:"🌸 Flowers",lightning:"⚡ Lightning",ice:"❄️ Ice",gaming:"🎮 Gaming",robot:"🤖 Robot",galaxy:"🌌 Galaxy",hearts:"❤️ Hearts",animals:"🦁 Animals",saudi:"🇸🇦 Saudi",stars:"✨ Stars",anime:"🎭 Anime",funny:"😂 Funny",cinematic:"🎬 Cinematic",minimal:"🫧 Minimal",b6o6:"🦆 B6O6 Exclusive"};
+export const AL_STYLES={enemy:"⚔️ Enemy",money:"💰 Money",fire:"🔥 Fire",diamond:"💎 Diamond",royal:"👑 Royal",butterfly:"🦋 Butterfly",flowers:"🌸 Flowers",lightning:"⚡ Lightning",ice:"❄️ Ice",gaming:"🎮 Gaming",robot:"🤖 Robot",galaxy:"🌌 Galaxy",hearts:"❤️ Hearts",animals:"🦁 Animals",saudi:"🇸🇦 Saudi",stars:"✨ Stars",anime:"🎭 Anime",funny:"😂 Funny",cinematic:"🎬 Cinematic",minimal:"🫧 Minimal",b6o6:"✦ B6O6 Exclusive"};
 /** مجموعات نوع الحدث للمكتبة */
 export const AL_EVENT_GROUPS={love:["❤️ أحبني",["love"]],likes:["👆 التكبيس",["like_total","like_user"]],donations:["💵 الدونيشن",["donation"]],gifts:["🎁 الهدايا",["gift","gift_value","first_gift"]]}; // مكتبة الدعم فقط: لا متابعة ولا تعليقات ولا دخول
 export function alEventGroup(ev){ for(const [k,[,list]] of Object.entries(AL_EVENT_GROUPS)) if(list.includes(ev)) return k; return "" }

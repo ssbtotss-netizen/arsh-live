@@ -1,0 +1,518 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })();(()=>{const l={id:'l_acad',name:'نتيجة الأكاديمية',canvas:L().canvas,widgets:[]};let z=1;l.widgets.push(newWidget(\"levent\",Object.assign({z:z++},{\"kind\": \"follow\", \"design\": \"butterfly\", \"x\": 0.08, \"y\": 0.22, \"w\": 0.84, \"h\": 0.17})));l.widgets.push(newWidget(\"levent\",Object.assign({z:z++},{\"kind\": \"gift\", \"design\": \"crown\", \"x\": 0.08, \"y\": 0.42, \"w\": 0.84, \"h\": 0.17})));l.widgets.push(newWidget(\"levent\",Object.assign({z:z++},{\"kind\": \"like\", \"design\": \"fire\", \"x\": 0.08, \"y\": 0.62, \"w\": 0.84, \"h\": 0.17})));S.layouts.push(l);save()})()",
+ "intro": {
+  "end": 4.0,
+  "style": "rise",
+  "hook": "آخر داعم وآخر متابع|*قدام الكل*",
+  "sub": "آخر التفاعلات"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 7.6,
+   "f": "[data-leall]",
+   "z": 1.7
+  },
+  {
+   "t": 9.8,
+   "f": "[data-leall]",
+   "z": 1.7
+  },
+  {
+   "t": 10.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 12.6,
+   "f": [
+    600,
+    430
+   ],
+   "z": 1.15,
+   "ry": 3
+  },
+  {
+   "t": 16.2,
+   "f": [
+    560,
+    430
+   ],
+   "z": 1.25,
+   "ry": -3
+  },
+  {
+   "t": 19.6,
+   "f": [
+    560,
+    430
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 20.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 22.2,
+   "f": [
+    400,
+    470
+   ],
+   "z": 1.6
+  },
+  {
+   "t": 25.0,
+   "f": [
+    400,
+    470
+   ],
+   "z": 1.6
+  },
+  {
+   "t": 26.2,
+   "f": [
+    800,
+    500
+   ],
+   "z": 1.6
+  },
+  {
+   "t": 30.4,
+   "f": [
+    820,
+    560
+   ],
+   "z": 1.35
+  },
+  {
+   "t": 31.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 31.8,
+   "f": "[data-levoice=\"follow\"]",
+   "z": 2.0
+  },
+  {
+   "t": 36.0,
+   "f": "[data-levoice=\"follow\"]",
+   "z": 1.9
+  },
+  {
+   "t": 36.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 37.6,
+   "f": "[data-leall]",
+   "z": 2.0
+  },
+  {
+   "t": 41.2,
+   "f": "[data-leall]",
+   "z": 1.9
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"latest\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 10.4,
+   "move": "[data-libtab=\"levent\"]",
+   "d": 0.9
+  },
+  {
+   "t": 11.4,
+   "click": 1
+  },
+  {
+   "t": 12.4,
+   "scroll": 700,
+   "d": 1.8
+  },
+  {
+   "t": 15.0,
+   "scroll": 1500,
+   "d": 2.0
+  },
+  {
+   "t": 15.4,
+   "move": [
+    520,
+    480
+   ],
+   "d": 1.2
+  },
+  {
+   "t": 20.2,
+   "move": ".nav [data-go=\"latest\"]",
+   "d": 0.8
+  },
+  {
+   "t": 21.1,
+   "click": 1
+  },
+  {
+   "t": 21.8,
+   "move": "[data-letest=\"follow\"]",
+   "d": 0.9
+  },
+  {
+   "t": 22.8,
+   "click": 1,
+   "snd": "follow-06"
+  },
+  {
+   "t": 25.8,
+   "move": "[data-letest=\"like\"]",
+   "d": 0.8
+  },
+  {
+   "t": 26.700000000000003,
+   "click": 1
+  },
+  {
+   "t": 28.2,
+   "move": "[data-letest=\"donation\"]",
+   "d": 0.8
+  },
+  {
+   "t": 29.1,
+   "click": 1
+  },
+  {
+   "t": 31.4,
+   "move": "[data-levoice=\"follow\"]",
+   "d": 0.9
+  },
+  {
+   "t": 32.4,
+   "click": 1
+  },
+  {
+   "t": 37.2,
+   "move": "[data-leall]",
+   "d": 1.0
+  },
+  {
+   "t": 38.300000000000004,
+   "click": 1
+  },
+  {
+   "t": 37.4,
+   "ring": "[data-leall]",
+   "d": 2.4
+  },
+  {
+   "t": 43.0,
+   "sim": {
+    "type": "follow",
+    "id": "F13_43.0",
+    "platform": "tiktok",
+    "user": {
+     "id": "nf9",
+     "name": "هيا"
+    }
+   },
+   "snd": "follow-05"
+  },
+  {
+   "t": 45.0,
+   "sim": {
+    "type": "gift",
+    "id": "G13_45.0",
+    "platform": "tiktok",
+    "user": {
+     "id": "r4",
+     "name": "خالد"
+    },
+    "gift": "Rose",
+    "giftId": 5655,
+    "diamonds": 1,
+    "value": 99,
+    "count": 1
+   },
+   "snd": "gift-04"
+  },
+  {
+   "t": 46.0,
+   "sim": {
+    "type": "like",
+    "id": "L13_0",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 80
+   }
+  },
+  {
+   "t": 46.3,
+   "sim": {
+    "type": "like",
+    "id": "L13_1",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 93
+   }
+  },
+  {
+   "t": 46.6,
+   "sim": {
+    "type": "like",
+    "id": "L13_2",
+    "platform": "tiktok",
+    "user": {
+     "id": "r2",
+     "name": "سلطان"
+    },
+    "count": 106
+   }
+  },
+  {
+   "t": 46.9,
+   "sim": {
+    "type": "like",
+    "id": "L13_3",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 119
+   }
+  },
+  {
+   "t": 47.2,
+   "sim": {
+    "type": "like",
+    "id": "L13_4",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 132
+   }
+  },
+  {
+   "t": 47.5,
+   "sim": {
+    "type": "like",
+    "id": "L13_5",
+    "platform": "tiktok",
+    "user": {
+     "id": "r2",
+     "name": "سلطان"
+    },
+    "count": 145
+   }
+  },
+  {
+   "t": 47.8,
+   "sim": {
+    "type": "like",
+    "id": "L13_6",
+    "platform": "tiktok",
+    "user": {
+     "id": "r0",
+     "name": "أبو فهد"
+    },
+    "count": 88
+   }
+  },
+  {
+   "t": 48.1,
+   "sim": {
+    "type": "like",
+    "id": "L13_7",
+    "platform": "tiktok",
+    "user": {
+     "id": "r1",
+     "name": "نورة"
+    },
+    "count": 101
+   }
+  },
+  {
+   "t": 49.0,
+   "sim": {
+    "type": "follow",
+    "id": "F13_49.0",
+    "platform": "tiktok",
+    "user": {
+     "id": "nf2",
+     "name": "سلطان"
+    }
+   },
+   "snd": "follow-02"
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "كرّم *جمهورك* لحظياً"
+  ],
+  [
+   7.1,
+   9.8,
+   "*خمسة أنواع* بضغطة"
+  ],
+  [
+   10.4,
+   14.6,
+   "*110* نمط حركة"
+  ],
+  [
+   15.0,
+   19.8,
+   "فراشات · تيجان · *نجوم*"
+  ],
+  [
+   20.4,
+   25.3,
+   "افتح *آخر التفاعلات*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "*جرّب* قبل تضيف",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "شغّل أو أوقف *الصوت*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "ضع *الخمسة* في المشهد",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "تتحدّث *لحظة بلحظة*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · آخر التفاعلات"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "ovl": "overlayURL(S.layouts.find(l=>l.id==='l_acad'))"
+}

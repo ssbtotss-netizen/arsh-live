@@ -171,7 +171,7 @@ body.ov .stage{background:transparent!important}
 
 /* ===== Fonts ===== */
 .wd.f-mono .ck-time,.wd.f-mono .ck-vert,.wd.f-mono .vl{font-family:ui-monospace,"SF Mono",Consolas,monospace}
-.wd .wt,.wd .ck-t,.wd .gtx{font-family:"Changa","Readex Pro",Tahoma,sans-serif}
+.wd .wt,.wd .ck-t,.wd .gtx{font-family:"Alexandria","Changa","Readex Pro",Tahoma,sans-serif}
 .wd .ck-time,.wd .ck-vert b,.wd .tfx{font-family:"Orbitron","Changa",ui-monospace,monospace;letter-spacing:.04em}
 .wd.f-default .ck-time,.wd.f-default .ck-vert b{font-family:"Orbitron","Changa",ui-monospace,monospace}
 .wd.f-changa,.wd.f-changa .ck-time,.wd.f-changa .ck-vert b{font-family:"Changa","Readex Pro",sans-serif;letter-spacing:0}

@@ -3,24 +3,15 @@
 import { View } from "./view.js";
 import { esc, clamp } from "./defs.js";
 import { rulesForBoard } from "./clock.js";
+import { RB50, RB_ALIASES, rb50CSS } from "./rb50.js";
+import { rbmRun, rbmExit, rbmCSS, rbAE, RBM_BY_ID } from "./rbmotion.js";
 
-export const RB_MODES=[["list","القائمة الكاملة"],["rotate","قانون واحد بالتناوب"],["ticker","شريط متحرك"],["cards","بطاقات منفصلة"],["compact","مختصرة"]];
+export const RB_MODES=[["list","الكل"],["rotate","واحد تلو الآخر"],["page3","ثلاثة ثلاثة"],["ticker","شريط متحرك (أفقي/عمودي)"],["cards","بطاقات منفصلة"],["compact","مختصرة"],["lastGift","قانون آخر هدية فقط"]];
 export const RB_ANIMS=[["slideUp","انزلاق للأعلى"],["slideSide","انزلاق جانبي"],["fade","تلاشي"],["zoom","تكبير"],["flip","قلب ثلاثي الأبعاد"],["blur","ضبابية ناعمة"]];
 export const RB_ORDERS=[["custom","حسب ترتيب الإعدادات"],["addFirst","الزيادة أولاً"],["subFirst","النقصان أولاً"],["big","الأكبر تأثيراً أولاً"]];
 export const RB_CATS={royal:"ملكية",neon:"نيون",glass:"زجاجية",motion:"متحركة",mini:"صغيرة"};
-export const RB_DESIGNS=[
- {id:"royalRules",n:1,name:"Royal Rules",cat:"royal",desc:"مخمل بنفسجي وإطار ذهبي مزدوج وتاج"},
- {id:"goldenRules",n:2,name:"Golden Rules",cat:"royal",desc:"شريط عنوان ذهبي وصفوف بحواف ذهبية"},
- {id:"diamondRules",n:3,name:"Diamond Rules",cat:"royal",desc:"لوحة ماسية الحواف ونقاط ألماسية تلمع"},
- {id:"silverRules",n:4,name:"Silver Rules",cat:"royal",desc:"لوحة فضية كرومية"},
- {id:"crownRules",n:5,name:"Crown Rules",cat:"royal",desc:"تاج كبير عائم وصفوف في المنتصف"},
- {id:"luxuryBlackRules",n:6,name:"Luxury Black",cat:"royal",desc:"أسود فاخر بخطوط ذهبية رفيعة"},
- {id:"platinumRules",n:7,name:"Platinum Rules",cat:"royal",desc:"زجاج بلاتيني بحافة جانبية"},
- {id:"crystalRules",n:8,name:"Crystal Rules",cat:"royal",desc:"كل قانون بطاقة كريستالية مستقلة"},
- {id:"neonBlueRules",n:9,name:"Neon Blue Rules",cat:"neon",desc:"إطار نيون أزرق يرمش وخطوط مضيئة"},
- {id:"b6o6Rules",n:40,name:"B6O6 Signature Rules",cat:"mini",desc:"هوية المنصة: أسود وأزرق وفضي"},
-];
-export const rbDesignOf=id=>RB_DESIGNS.find(d=>d.id===id)||RB_DESIGNS[0];
+export const RB_DESIGNS=RB50;
+export const rbDesignOf=id=>RB_DESIGNS.find(d=>d.id===(RB_ALIASES[id]||id))||RB_DESIGNS.find(d=>d.id==="royalGold");
 const CROWN='<svg viewBox="0 0 64 44"><path fill="currentColor" d="M3 38 7 9l14 15L32 2l11 22L57 9l4 29z"/><rect x="5" y="38" width="54" height="6" rx="2" fill="currentColor"/></svg>';
 
 /** القوانين المعروضة حسب إعدادات العنصر */
@@ -34,21 +25,31 @@ export function rbItems(w,s){
  return L;
 }
 const icoHTML=(it,w)=>it.img&&w.showImg!==false?`<img class="rb-img" src="${esc(it.img)}" alt="">`:`<span class="rb-emo">${esc(it.icon)}</span>`;
-function rowHTML(it,w){
- return `<div class="rb-row ${it.ms<0?"neg":"pos"}" data-rid="${esc(it.id)}"><span class="rb-ic">${icoHTML(it,w)}</span>${w.showWhat!==false?`<span class="rb-what">${esc(it.what)}</span>`:""}${w.showTime!==false?`<span class="rb-val">${esc(w.mode==="compact"?it.short:it.text)}</span>`:""}<i class="rb-swp"></i></div>`;
+/** الرقم مع الإشارة دائماً بالاتجاه الصحيح (+1 وليس 1+) */
+function rbValHTML(t){ const m=/^\u2066([^\u2069]*)\u2069\s*(.*)$/.exec(String(t||"")); return m?`<bdi dir="ltr" class="rb-n">${esc(m[1])}</bdi> ${esc(m[2])}`:`<bdi dir="ltr" class="rb-n">${esc(t)}</bdi>` }
+const rbCol=c=>/^#[0-9a-f]{3,8}$/i.test(c||"")?c:"";
+function rowHTML(it,w){ const c=rbCol(it.color), t=rbCol(it.timeColor), st=(c?`--rc:${c};`:"")+(t?`--rt:${t};`:"");
+ return `<div class="rb-row ${it.ms<0?"neg":"pos"}" data-rid="${esc(it.id)}"${c?' data-c="1"':""}${t?' data-t="1"':""}${it.fs?` data-f="${+it.fs}"`:""}${st?` style="${st}"`:""}>${w.showImg!==false?`<span class="rb-ic">${icoHTML(it,w)}</span>`:""}${w.showWhat!==false?`<span class="rb-what">${esc(it.what)}</span>`:""}${w.showTime!==false?`<span class="rb-val">${rbValHTML(w.mode==="compact"?it.short:it.text)}</span>`:""}<i class="rb-ln"><b></b></i><i class="rb-swp"></i></div>`;
 }
+/** الحركة الرئيسية لقانون: حركة القانون الخاصة (إن سُمح بالتخصيص) وإلا حركة التصميم */
+function rbMotionFor(w,it){ const d=rbDesignOf(w.design); if(w.ruleMotion!=="design"&&it&&it.anim&&RBM_BY_ID[it.anim]) return it.anim; return (w.motion&&RBM_BY_ID[w.motion])?w.motion:d.motion }
 
 let rbCss=false;
-function ensureRbCSS(){ if(rbCss||typeof document==="undefined") return; rbCss=true; const st=document.createElement("style"); st.id="b6o6-rb-designs"; st.textContent=rbDesignCSS(); document.head.appendChild(st) }
+function ensureRbCSS(){ if(rbCss||typeof document==="undefined") return; rbCss=true; const st=document.createElement("style"); st.id="b6o6-rb-designs"; st.textContent=rbDesignCSS()+rb50CSS()+rbmCSS(); document.head.appendChild(st) }
 const rbReduced=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches }catch(e){ return false } };
 
 Object.assign(View.prototype,{
  applyRules(w,W,Hh,pad,gap){
   ensureRbCSS(); const e=this.el, d=rbDesignOf(w.design), ed=this.opts.editor;
   const lite=!!(w.lowPerf||this.opts.lowPerf);
-  e.className=`wd rbw rbd-${d.id} rbm-${w.mode||"list"}${w.tickerDir==="v"?" rbv":""} rba-${w.anim||"slideUp"}${w.animOn===false?" rb-still":""}${lite?" rb-lite":""} f-${w.font||"default"}${w.effects&&this.opts.globalFx!==false?"":" no-fx"}${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
+  const ae=rbAE(w), lay=w.layout||d.layout||"list", lt=w.hideLine?"none":(w.lineType||d.line||"static"), off=w.animOn===false||ae.off;
+  e.className=`wd rbw rb50 rbd-${d.id} rbm-${w.mode||"list"} rblay-${lay} rbl-${lt}${ae.idle&&ae.idle!=="none"&&!off?" rbi-"+ae.idle:""}${w.hideBg?" rb-hbg":""}${w.hideFrame?" rb-hfr":""}${w.hideDeco?" rb-hdc":""}${(w.dirMode||ae.dir)==="ltr"?" rb-ltr":""}${w.tickerDir==="v"?" rbv":""} rba-${w.anim||"slideUp"}${off?" rb-still":""}${lite?" rb-lite":""} f-${w.font||"default"}${w.effects&&this.opts.globalFx!==false?"":" no-fx"}${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
   const S=e.style; S.setProperty("--pos",w.posColor||"#22c55e"); S.setProperty("--neg",w.negColor||"#ef4444"); S.setProperty("--bo",String(w.rowOpacity??1)); S.setProperty("--as",String(w.animSpeed||1));
   if(w.acc) S.setProperty("--acc",w.acc); else S.removeProperty("--acc"); if(w.tx) S.setProperty("--tx2",w.tx);
+  const sv=(k,v)=>v!=null&&v!==""?S.setProperty(k,v):S.removeProperty(k);
+  sv("--nc",rbCol(w.nameColor)); sv("--tc",rbCol(w.timeColor)); sv("--lnc",rbCol(w.lineColor)); sv("--lnl",w.lineLen>0?Math.min(100,+w.lineLen)+"%":""); sv("--lnt",w.lineThick>0?Math.min(12,+w.lineThick)+"px":"");
+  sv("--lno",w.lineOp!=null&&w.lineOp!==""?String(Math.max(0,Math.min(1,+w.lineOp))):""); sv("--lns",w.lineSpeed>0?String(+w.lineSpeed):""); sv("--gcols",lay==="columns"?String(Math.max(2,Math.min(4,+w.cols||3))):"");
+  S.letterSpacing=w.spacing?(+w.spacing)+"em":"";
   this.rbG={W,H:Hh,pad,gap}; this.rbSig=null; this.rbIdx=-1; this.sig="rb";
   if(this.opts.data) this.refreshRules(this.opts.data(),true);
  },
@@ -68,37 +69,42 @@ Object.assign(View.prototype,{
   const items=rbItems(w,s), mode=w.mode||"list";
   const sig=JSON.stringify([items,mode,w.showTitle,w.title,w.showWhat,w.showTime,w.showImg,w.tickerDir,this.rbG.W,this.rbG.H]);
   if(sig!==this.rbSig){ this.rbSig=sig; this.rbItems=items; this.buildRules(items,silent) }
-  if(mode==="rotate"&&items.length){ const per=Math.max(1500,(w.interval||4)*1000), now=Date.now()+(src.skew||0), idx=Math.floor(now/per)%items.length; if(idx!==this.rbIdx) this.rbShow(idx,silent) }
+  if((mode==="rotate"||mode==="page3")&&items.length){ const per=Math.max(1500,(w.interval||4)*1000), now=Date.now()+(src.skew||0), pages=mode==="page3"?Math.ceil(items.length/3):items.length, idx=Math.floor(now/per)%pages; if(idx!==this.rbIdx) this.rbShow(idx,silent) }
+  if(mode==="lastGift"&&items.length&&this.rbIdx<0) this.rbShow(Math.max(0,items.findIndex(x=>x.rid===this.rbLast)),true)
  },
- buildRules(items,silent){
+ buildRules(items,silent,force){
   const w=this.w, d=rbDesignOf(w.design), mode=w.mode||"list", ed=this.opts.editor?'<div class="rh"></div><div class="lockb">🔒</div>':"";
-  const n=mode==="rotate"?1:Math.max(1,items.length); this.rbLayout(n);
+  const one=mode==="rotate"||mode==="lastGift"||mode==="page3"; const n=mode==="page3"?Math.min(3,Math.max(1,items.length)):one?1:Math.max(1,items.length); this.rbLayout(n);
   const title=w.showTitle&&mode!=="ticker"&&mode!=="compact"?`<div class="rb-t"><span class="rb-crw">${CROWN}</span><span class="tx">${esc(w.title||"")}</span></div>`:"";
   let body;
   if(!items.length) body=`<div class="rb-empty">لا توجد قوانين مفعّلة</div>`;
-  else if(mode==="rotate") body=`<div class="rb-stage"></div>`;
+  else if(one) body=`<div class="rb-stage${mode==="page3"?" rb-p3":""}"></div>`;
   else if(mode==="ticker"){ const inner=(w.showTitle?`<div class="rb-row rb-tt"><span class="rb-what">${esc(w.title||"")}</span></div>`:"")+items.map(it=>rowHTML(it,w)).join(""); body=`<div class="rb-track ${w.tickerDir==="v"?"v":"h"}"><div class="rb-run">${inner}${inner}</div></div>` }
   else body=`<div class="rb-list">${items.map(it=>rowHTML(it,w)).join("")}</div>`;
   this.el.innerHTML=`<div class="rb-panel"><i class="rb-sweep"></i>${title}<div class="rb-body">${body}</div></div>`+ed;
   this.rbIdx=-1;
   if(mode==="ticker"&&items.length) requestAnimationFrame(()=>{ const run=this.el.querySelector(".rb-run"); if(!run) return; const v=w.tickerDir==="v", len=(v?run.scrollHeight:run.scrollWidth)/2, sp=Math.max(10,w.speed||70); run.style.setProperty("--len",len+"px"); run.style.animationDuration=(len/sp)+"s" });
-  if(!silent&&!rbReduced()&&mode!=="rotate"&&mode!=="ticker") this.el.querySelectorAll(".rb-list .rb-row").forEach((r,i)=>r.animate([{opacity:0,transform:"translateY(14px)"},{opacity:1,transform:"none"}],{duration:420,delay:i*70,fill:"backwards",easing:"cubic-bezier(.2,.8,.2,1)"}));
+  const ek=[w.design,mode,w.layout,w.motion,JSON.stringify(w.ae||{})].join("|"), first=force||this.rbEntered!==ek; this.rbEntered=ek; // حركة الدخول عند الظهور أو تغيير التصميم فقط — تعديل البيانات لا يعيد تشغيلها
+  if(!silent&&first&&!rbReduced()&&!one&&mode!=="ticker"&&!this.el.classList.contains("rb-still")){ const ae=rbAE(w), lite=this.el.classList.contains("rb-lite");
+   this.el.querySelectorAll(".rb-list .rb-row").forEach((r,i)=>{ const it=items[i]; r.style.opacity="0"; setTimeout(()=>{ r.style.opacity=""; rbmRun(r,rbMotionFor(w,it),rbAE(w,it&&it.ae?{ae:it.ae}:null),{lite}) },Math.min(i,10)*110) }) }
  },
- rbShow(idx,silent){
-  const st=this.el.querySelector(".rb-stage"); if(!st) return; this.rbIdx=idx; const it=this.rbItems[idx]; if(!it) return;
-  const w=this.w, red=rbReduced()||this.el.classList.contains("rb-still"), ms=Math.round(520/(w.animSpeed||1));
-  const K={slideUp:[[{opacity:0,transform:"translateY(60%)"},{opacity:1,transform:"none"}],[{opacity:1,transform:"none"},{opacity:0,transform:"translateY(-60%)"}]],
-   slideSide:[[{opacity:0,transform:"translateX(-40%)"},{opacity:1,transform:"none"}],[{opacity:1,transform:"none"},{opacity:0,transform:"translateX(40%)"}]],
-   fade:[[{opacity:0},{opacity:1}],[{opacity:1},{opacity:0}]],zoom:[[{opacity:0,transform:"scale(.6)"},{opacity:1,transform:"none"}],[{opacity:1,transform:"none"},{opacity:0,transform:"scale(1.3)"}]],
-   flip:[[{opacity:0,transform:"perspective(600px) rotateX(-90deg)"},{opacity:1,transform:"none"}],[{opacity:1,transform:"none"},{opacity:0,transform:"perspective(600px) rotateX(90deg)"}]],
-   blur:[[{opacity:0,filter:"blur(8px)"},{opacity:1,filter:"blur(0)"}],[{opacity:1,filter:"blur(0)"},{opacity:0,filter:"blur(8px)"}]]}[w.anim||"slideUp"]||[];
-  const old=st.firstElementChild; const el=document.createElement("div"); el.innerHTML=rowHTML(it,w); const row=el.firstElementChild; row.classList.add("rb-one"); st.appendChild(row);
-  if(old){ if(silent||red) old.remove(); else { const a=old.animate(K[1],{duration:ms,easing:"ease-in",fill:"forwards"}); a.onfinish=()=>old.remove() } }
-  if(!silent&&!red) row.animate(K[0],{duration:ms,delay:old?ms*.6:0,easing:"cubic-bezier(.2,.8,.2,1)",fill:"backwards"});
- },
- /** وميض القانون الذي نُفّذ للتو */
- ruleHit(l){ if(!l||!l.ruleId||rbReduced()) return; const id=l.kind==="donation"?(l.ruleId+(l.action==="sub"?"_1":"_0")):l.ruleId;
-  this.el.querySelectorAll(`[data-rid="${CSS.escape(id)}"]`).forEach(r=>{ r.classList.remove("hit"); void r.offsetWidth; r.classList.add("hit"); setTimeout(()=>r.classList.remove("hit"),1400) }) },
+ rbShow(idx,silent){ const st=this.el.querySelector(".rb-stage"); if(!st) return; this.rbIdx=idx; if(!this.rbItems||!this.rbItems.length) return; this.rbShowM(st,idx,silent) },
+ /** عرض بحركة التصميم (واحد/ثلاثة/آخر هدية): الخروج ثم دخول الجديد بالحركة الرئيسية */
+ rbShowM(st,idx,silent){ const w=this.w, ae=rbAE(w), p3=st.classList.contains("rb-p3"), list=p3?this.rbItems.slice(idx*3,idx*3+3):[this.rbItems[idx]], still=silent||rbReduced()||this.el.classList.contains("rb-still");
+  const old=[...st.children]; for(const o of old){ if(still) o.remove(); else { const a=rbmExit(o,ae); if(a) a.onfinish=()=>o.remove(); else o.remove() } }
+  const box=document.createElement("div"); box.className=p3?"rb-list rb-pg":"rb-onebox"; box.innerHTML=list.map(it=>rowHTML(it,w)).join(""); if(!p3) box.firstElementChild&&box.firstElementChild.classList.add("rb-one"); st.appendChild(box);
+  if(!still){ const lite=this.el.classList.contains("rb-lite"); box.style.opacity="0"; setTimeout(()=>{ box.style.opacity=""; [...box.querySelectorAll(".rb-row")].forEach((r,i)=>setTimeout(()=>rbmRun(r,rbMotionFor(w,list[i]),rbAE(w,list[i]&&list[i].ae?{ae:list[i].ae}:null),{lite}),i*120)) },old.length?Math.round(500/(+ae.speed||1)):0) } },
+ /** تفاعل وصول الهدية: إضاءة القانون + حركة الخط + الوقت المضاف/المخصوم + عودة للوضع الطبيعي.
+  *  التجميع: الهدايا المتتالية لنفس القانون تُجمع في مؤثر واحد مع العدد (لا تراكم ولا فقدان للعد) — الوقت نفسه يُحدَّث من الخادم مستقلاً عن الحركة. */
+ ruleHit(l){ if(!l||!l.ruleId||!l.deltaMs) return; const w=this.w; if(w.hitOn===false) return; const id=l.kind==="donation"?(l.ruleId+(l.deltaMs<0?"_1":"_0")):l.ruleId;
+  if(w.mode==="lastGift"&&this.rbItems){ const i=this.rbItems.findIndex(x=>x.id===id||x.rid===l.ruleId); this.rbLast=l.ruleId; if(i>=0&&i!==this.rbIdx) this.rbShow(i,false) }
+  const H=this.rbHits||(this.rbHits={}), g=H[id]||(H[id]={n:0,ms:0,t:0}); g.n++; g.ms+=+l.deltaMs||0; if(g.t) return;
+  g.t=setTimeout(()=>{ const n=g.n, ms=g.ms; delete H[id]; if(rbReduced()||this.el.classList.contains("rb-still")) return;
+   const rows=this.el.querySelectorAll(`[data-rid="${CSS.escape(id)}"]`), ae=rbAE(w), it=this.rbItems&&this.rbItems.find(x=>x.id===id), lite=this.el.classList.contains("rb-lite");
+   rows.forEach(r=>{ r.classList.remove("hit"); void r.offsetWidth; r.classList.add("hit"); setTimeout(()=>r.classList.remove("hit"),1400);
+    if(!ae.off) rbmRun(r,ae.hit&&RBM_BY_ID[ae.hit]?ae.hit:rbMotionFor(w,it),rbAE(w,it&&it.ae?{ae:it.ae}:null),{hit:true,lite});
+    if(w.hitDelta!==false){ const b=document.createElement("i"); b.className="rb-delta "+(ms<0?"neg":"pos"); const s=Math.round(Math.abs(ms)/1000); b.textContent=(ms<0?"−":"+")+(s>=3600?(+(s/3600).toFixed(1))+"h":s>=60?(+(s/60).toFixed(1))+"m":s+"s")+(n>1?` ×${n}`:"");
+     r.appendChild(b); b.animate([{opacity:0,transform:"translateY(40%)"},{opacity:1,transform:"translateY(-60%)",offset:.25},{opacity:1,transform:"translateY(-80%)",offset:.75},{opacity:0,transform:"translateY(-120%)"}],{duration:1500,easing:"ease-out"}).onfinish=()=>b.remove() } }) },Math.max(120,+w.hitGroupMs||260)) },
 });
 
 /** CSS: الأساس + التصاميم. كل الحركات transform/opacity */

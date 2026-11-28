@@ -1,0 +1,780 @@
+{
+ "dur": 59,
+ "seed": "(()=>{const N=[\"أبو فهد\", \"نورة\", \"سلطان\", \"ريم\", \"خالد\", \"سارة\", \"فيصل\", \"لمى\", \"تركي\", \"هيا\"];const s=e=>__arsh.send({t:'sim',ev:e});\nfor(let i=0;i<40;i++){const u={id:'u'+(i%10),name:N[i%10]};s({type:'like',id:'l'+i,platform:'tiktok',user:u,count:15+(i%7)*20});\n if(i%4==0)s({type:'gift',id:'g'+i,platform:'tiktok',user:u,gift:'Rose',giftId:5655,diamonds:1,value:[1,30,99,500][i%4],count:1});\n if(i%3==0)s({type:'comment',id:'c'+i,platform:['tiktok','youtube','kick','twitch'][i%4],user:u,text:['هلا والله 🔥','بث أسطوري','كمل كمل 💪','وش اسم اللعبة؟'][i%4]})}})();\n(()=>{ go('subathon'); const a=document.querySelector('[data-sa-op=\"start\"]'); if(a) a.click(); go('duration'); const b=document.querySelector('[data-duop=\"durStart\"]'); if(b) b.click(); go('home'); })();(()=>{const l={id:'l_acad',name:'نتيجة الأكاديمية',canvas:L().canvas,widgets:[]};let z=1;l.widgets.push(newWidget(\"lb\",Object.assign({z:z++},{\"topN\": 5, \"x\": 0.08, \"y\": 0.24, \"w\": 0.84, \"h\": 0.46, \"source\": \"likes\", \"design\": \"roseAura\", \"title\": \"أفضل المكبسين\", \"icon\": \"❤️\"})));S.layouts.push(l);save()})()",
+ "intro": {
+  "end": 4.0,
+  "style": "stack",
+  "hook": "حوّل تكبيسات جمهورك|*لمنافسة!*",
+  "sub": "قوائم التكبيس"
+ },
+ "app": [
+  4.0,
+  42.0
+ ],
+ "live": [
+  42.0,
+  52.0
+ ],
+ "out": 52.0,
+ "cam": [
+  {
+   "t": 4.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1,
+   "ry": -9,
+   "rx": 4
+  },
+  {
+   "t": 6.0,
+   "f": [
+    640,
+    400
+   ],
+   "z": 1
+  },
+  {
+   "t": 8.0,
+   "f": [
+    640,
+    330
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 9.8,
+   "f": [
+    640,
+    330
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 10.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 13.2,
+   "f": [
+    520,
+    420
+   ],
+   "z": 1.15,
+   "ry": 4
+  },
+  {
+   "t": 16.0,
+   "f": [
+    600,
+    420
+   ],
+   "z": 1.25,
+   "ry": -4
+  },
+  {
+   "t": 19.6,
+   "f": [
+    600,
+    420
+   ],
+   "z": 1.25
+  },
+  {
+   "t": 20.4,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 22.2,
+   "f": "[data-sessnew]",
+   "z": 1.8
+  },
+  {
+   "t": 25.0,
+   "f": "[data-sessnew]",
+   "z": 1.8
+  },
+  {
+   "t": 26.2,
+   "f": "[data-lsadd=\"likes\"]",
+   "z": 2.0
+  },
+  {
+   "t": 29.0,
+   "f": [
+    300,
+    600
+   ],
+   "z": 1.4
+  },
+  {
+   "t": 31.4,
+   "f": "[data-lssec=\"gallery\"]",
+   "z": 1.8
+  },
+  {
+   "t": 33.2,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 34.8,
+   "f": "[data-galuse]",
+   "z": 1.6
+  },
+  {
+   "t": 36.6,
+   "f": [
+    640,
+    420
+   ],
+   "z": 1.0
+  },
+  {
+   "t": 38.8,
+   "f": "[data-lscopy]",
+   "z": 2.0
+  },
+  {
+   "t": 41.2,
+   "f": "[data-lscopy]",
+   "z": 1.9
+  },
+  {
+   "t": 42.0,
+   "f": [
+    640,
+    420
+   ],
+   "z": 0.95
+  }
+ ],
+ "acts": [
+  {
+   "t": 4.0,
+   "move": [
+    700,
+    380
+   ],
+   "d": 0.1
+  },
+  {
+   "t": 4.5,
+   "move": ".nav [data-go=\"likes\"]",
+   "d": 0.8
+  },
+  {
+   "t": 5.3999999999999995,
+   "click": 1
+  },
+  {
+   "t": 10.0,
+   "move": ".nav [data-go=\"library\"]",
+   "d": 0.8
+  },
+  {
+   "t": 10.9,
+   "click": 1
+  },
+  {
+   "t": 11.4,
+   "move": "[data-libtab=\"pro\"]",
+   "d": 0.7
+  },
+  {
+   "t": 12.2,
+   "click": 1
+  },
+  {
+   "t": 12.6,
+   "scroll": 900,
+   "d": 2.0
+  },
+  {
+   "t": 12.4,
+   "move": [
+    560,
+    480
+   ],
+   "d": 1.0
+  },
+  {
+   "t": 15.0,
+   "scroll": 1900,
+   "d": 2.2
+  },
+  {
+   "t": 20.2,
+   "move": ".nav [data-go=\"likes\"]",
+   "d": 0.8
+  },
+  {
+   "t": 21.1,
+   "click": 1
+  },
+  {
+   "t": 21.6,
+   "move": "[data-sessnew]",
+   "d": 0.9
+  },
+  {
+   "t": 22.0,
+   "ring": "[data-sessnew]",
+   "d": 2.6
+  },
+  {
+   "t": 25.8,
+   "move": "[data-lsadd=\"likes\"]",
+   "d": 0.9
+  },
+  {
+   "t": 26.8,
+   "click": 1
+  },
+  {
+   "t": 31.0,
+   "move": "[data-lssec=\"gallery\"]",
+   "d": 0.9
+  },
+  {
+   "t": 32.0,
+   "click": 1
+  },
+  {
+   "t": 33.6,
+   "move": "[data-galuse]",
+   "d": 1.0
+  },
+  {
+   "t": 34.6,
+   "move": "[data-galuse]",
+   "d": 0.2
+  },
+  {
+   "t": 34.900000000000006,
+   "click": 1
+  },
+  {
+   "t": 36.6,
+   "move": ".nav [data-go=\"likes\"]",
+   "d": 0.8
+  },
+  {
+   "t": 37.5,
+   "click": 1
+  },
+  {
+   "t": 38.4,
+   "move": "[data-lscopy]",
+   "d": 0.9
+  },
+  {
+   "t": 39.4,
+   "click": 1
+  },
+  {
+   "t": 38.6,
+   "ring": "[data-lscopy]",
+   "d": 2.2
+  },
+  {
+   "t": 42.5,
+   "sim": {
+    "type": "like",
+    "id": "L4_0",
+    "platform": "tiktok",
+    "user": {
+     "id": "z0",
+     "name": "أبو فهد"
+    },
+    "count": 60
+   }
+  },
+  {
+   "t": 42.8,
+   "sim": {
+    "type": "like",
+    "id": "L4_1",
+    "platform": "tiktok",
+    "user": {
+     "id": "z1",
+     "name": "نورة"
+    },
+    "count": 97
+   }
+  },
+  {
+   "t": 43.1,
+   "sim": {
+    "type": "like",
+    "id": "L4_2",
+    "platform": "tiktok",
+    "user": {
+     "id": "z2",
+     "name": "سلطان"
+    },
+    "count": 134
+   }
+  },
+  {
+   "t": 43.4,
+   "sim": {
+    "type": "like",
+    "id": "L4_3",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 81
+   }
+  },
+  {
+   "t": 43.7,
+   "sim": {
+    "type": "like",
+    "id": "L4_4",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 118
+   }
+  },
+  {
+   "t": 44.0,
+   "sim": {
+    "type": "like",
+    "id": "L4_5",
+    "platform": "tiktok",
+    "user": {
+     "id": "z2",
+     "name": "سلطان"
+    },
+    "count": 65
+   }
+  },
+  {
+   "t": 44.3,
+   "sim": {
+    "type": "like",
+    "id": "L4_6",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 102
+   }
+  },
+  {
+   "t": 44.6,
+   "sim": {
+    "type": "like",
+    "id": "L4_7",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 139
+   }
+  },
+  {
+   "t": 44.9,
+   "sim": {
+    "type": "like",
+    "id": "L4_8",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 86
+   }
+  },
+  {
+   "t": 45.2,
+   "sim": {
+    "type": "like",
+    "id": "L4_9",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 123
+   }
+  },
+  {
+   "t": 45.5,
+   "sim": {
+    "type": "like",
+    "id": "L4_10",
+    "platform": "tiktok",
+    "user": {
+     "id": "z0",
+     "name": "أبو فهد"
+    },
+    "count": 70
+   }
+  },
+  {
+   "t": 45.8,
+   "sim": {
+    "type": "like",
+    "id": "L4_11",
+    "platform": "tiktok",
+    "user": {
+     "id": "z1",
+     "name": "نورة"
+    },
+    "count": 107
+   }
+  },
+  {
+   "t": 46.1,
+   "sim": {
+    "type": "like",
+    "id": "L4_12",
+    "platform": "tiktok",
+    "user": {
+     "id": "z2",
+     "name": "سلطان"
+    },
+    "count": 144
+   }
+  },
+  {
+   "t": 46.4,
+   "sim": {
+    "type": "like",
+    "id": "L4_13",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 91
+   }
+  },
+  {
+   "t": 46.7,
+   "sim": {
+    "type": "like",
+    "id": "L4_14",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 128
+   }
+  },
+  {
+   "t": 47.0,
+   "sim": {
+    "type": "like",
+    "id": "L4_15",
+    "platform": "tiktok",
+    "user": {
+     "id": "z2",
+     "name": "سلطان"
+    },
+    "count": 75
+   }
+  },
+  {
+   "t": 47.3,
+   "sim": {
+    "type": "like",
+    "id": "L4_16",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 112
+   }
+  },
+  {
+   "t": 47.6,
+   "sim": {
+    "type": "like",
+    "id": "L4_17",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 149
+   }
+  },
+  {
+   "t": 47.9,
+   "sim": {
+    "type": "like",
+    "id": "L4_18",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 96
+   }
+  },
+  {
+   "t": 48.2,
+   "sim": {
+    "type": "like",
+    "id": "L4_19",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 133
+   }
+  },
+  {
+   "t": 48.5,
+   "sim": {
+    "type": "like",
+    "id": "L4_20",
+    "platform": "tiktok",
+    "user": {
+     "id": "z0",
+     "name": "أبو فهد"
+    },
+    "count": 80
+   }
+  },
+  {
+   "t": 48.8,
+   "sim": {
+    "type": "like",
+    "id": "L4_21",
+    "platform": "tiktok",
+    "user": {
+     "id": "z1",
+     "name": "نورة"
+    },
+    "count": 117
+   }
+  },
+  {
+   "t": 49.1,
+   "sim": {
+    "type": "like",
+    "id": "L4_22",
+    "platform": "tiktok",
+    "user": {
+     "id": "z2",
+     "name": "سلطان"
+    },
+    "count": 64
+   }
+  },
+  {
+   "t": 49.4,
+   "sim": {
+    "type": "like",
+    "id": "L4_23",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 101
+   }
+  },
+  {
+   "t": 49.7,
+   "sim": {
+    "type": "like",
+    "id": "L4_24",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 138
+   }
+  },
+  {
+   "t": 50.0,
+   "sim": {
+    "type": "like",
+    "id": "L4_25",
+    "platform": "tiktok",
+    "user": {
+     "id": "z2",
+     "name": "سلطان"
+    },
+    "count": 85
+   }
+  },
+  {
+   "t": 50.3,
+   "sim": {
+    "type": "like",
+    "id": "L4_26",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 122
+   }
+  },
+  {
+   "t": 50.6,
+   "sim": {
+    "type": "like",
+    "id": "L4_27",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 69
+   }
+  },
+  {
+   "t": 50.9,
+   "sim": {
+    "type": "like",
+    "id": "L4_28",
+    "platform": "tiktok",
+    "user": {
+     "id": "z4",
+     "name": "خالد"
+    },
+    "count": 106
+   }
+  },
+  {
+   "t": 51.2,
+   "sim": {
+    "type": "like",
+    "id": "L4_29",
+    "platform": "tiktok",
+    "user": {
+     "id": "z3",
+     "name": "ريم"
+    },
+    "count": 143
+   }
+  }
+ ],
+ "texts": [
+  [
+   4.4,
+   6.9,
+   "كل تكبيسة *تنحسب*"
+  ],
+  [
+   7.1,
+   9.8,
+   "وجمهورك *يتنافس*"
+  ],
+  [
+   10.4,
+   14.6,
+   "*+260* تصميم للقوائم"
+  ],
+  [
+   15.0,
+   19.8,
+   "صور دائرية *وتتويج*"
+  ],
+  [
+   20.4,
+   25.3,
+   "افتح *التكبيس والإعجابات*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   25.6,
+   30.6,
+   "أضف *قائمة التكبيس*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   31.0,
+   36.1,
+   "اختر *التصميم*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   36.5,
+   41.6,
+   "انسخ *رابط القائمة*",
+   {
+    "sm": 1
+   }
+  ],
+  [
+   42.3,
+   44.9,
+   "والنتيجة؟"
+  ],
+  [
+   45.1,
+   51.6,
+   "الترتيب *يتغيّر لحظياً*"
+  ]
+ ],
+ "kicks": [
+  [
+   10.4,
+   19.9,
+   "<b>B6O6</b> · مكتبة التصاميم"
+  ],
+  [
+   20.4,
+   25.3,
+   "الخطوة <b>1</b> من 4"
+  ],
+  [
+   25.6,
+   30.6,
+   "الخطوة <b>2</b> من 4"
+  ],
+  [
+   31.0,
+   36.1,
+   "الخطوة <b>3</b> من 4"
+  ],
+  [
+   36.5,
+   41.6,
+   "الخطوة <b>4</b> من 4"
+  ],
+  [
+   45.1,
+   51.6,
+   "بث تجريبي · أحداث حقيقية من المحرك"
+  ]
+ ],
+ "ovl": "overlayURL(S.layouts.find(l=>l.id==='l_acad'))"
+}

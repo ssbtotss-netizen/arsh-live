@@ -4,7 +4,7 @@
 const SND_TABS=[["all","🎧 الكل"],["top","🔥 الأكثر استخداماً"],["new","🆕 الجديدة"],["meme_sa","🇸🇦 الميمز السعودية"],["meme_ar","🌍 الميمز العربية"],["cat:alerts","🔔 أصوات التنبيهات"],["cat:comedy","😂 كوميدي"],["cat:hype","🔥 حماس وفخامة"],["cat:games","🎮 ألعاب"],["cat:support","💰 دعم ودونيشن"],["cat:arabic","🎶 لمسة عربية"],["fav","⭐ المفضلة"],["used","📌 الأصوات المستخدمة"],["mine","🎵 أصواتي الخاصة"],["community","🌐 أصوات المجتمع"],["board","🎛️ لوحة التشغيل السريع"],["settings","⚙️ الإعدادات ورابط OBS"]];
 const SND_UCATS={mine:"🎵 خاص",meme_sa:"🇸🇦 ميمز سعودية",meme_ar:"🌍 ميمز عربية",comedy:"😂 كوميدي",alerts:"🔔 تنبيهات",hype:"🔥 حماس",games:"🎮 ألعاب",support:"💰 دعم"};
 const SND_SHARE_STYLE={meme_sa:"saudi",meme_ar:"funny",comedy:"funny",alerts:"minimal",hype:"cinematic",games:"gaming",support:"money",mine:"minimal"};
-const SND_ICONS=["🔊","😂","🔥","👏","💰","🎉","👑","🎮","⚡","💥","😱","🤣","❤️","🏆","🥁","📢","🎺","🦆"];
+const SND_ICONS=["🔊","😂","🔥","👏","💰","🎉","👑","🎮","⚡","💥","😱","🤣","❤️","🏆","🥁","📢","🎺","🎵"];
 const SND_COLORS=["#8b5cf6","#ec4899","#f59e0b","#10b981","#3b82f6","#ef4444","#14b8a6","#a3e635","#f97316","#64748b"];
 let SNDX=null, SNDXp=null;
 function sndBaseUrl(){ return location.protocol==="file:"?"../arsh-live/public/sounds/lib/":"/sounds/lib/" }
