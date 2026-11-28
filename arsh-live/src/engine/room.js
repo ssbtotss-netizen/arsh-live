@@ -157,6 +157,11 @@ export function roomBots(R,cfg,ctx){ R.botCfg=cfg||null; R.botCtx=ctx||{}; R.B=R
 export function roomClockOp(R,m,now){
  let logs=[];
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
+ // القوائم المتناوبة: إيقاف/استئناف/تثبيت/التالي/السابق — تُحفظ في حالة الغرفة وتصل لكل الروابط فوراً
+ if(m.target==="rot"){ const id=String(m.wid||"").slice(0,40); if(!/^[\w-]{2,40}$/.test(id)) return {out:[],logs:[]}; R.C.rot=R.C.rot||{}; const c=R.C.rot[id]=R.C.rot[id]||{paused:false,pin:"",seq:0};
+  const op=m.op; if(op==="pause") c.paused=true; else if(op==="resume"){ c.paused=false; c.pin="" } else if(op==="pin") c.pin=String(m.item||"").slice(0,40); else if(op==="unpin") c.pin=""; else if(op==="next"||op==="prev"){ c.pin=""; c.cmd=op } else if(op==="toggle"){ c.paused=!c.paused; if(!c.paused) c.pin="" } else return {out:[],logs:[]};
+  c.seq=(+c.seq||0)+1; c.at=now; const ks=Object.keys(R.C.rot); if(ks.length>60) delete R.C.rot[ks[0]];
+  return {out:[{t:"clock",C:R.C,now,logs:[],rot:id}],logs:[]} }
  if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
  if(m.target==="chatmod"){ // إدارة الشات من اللوحة / الشات العائم

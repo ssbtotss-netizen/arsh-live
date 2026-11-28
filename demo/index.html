@@ -628,6 +628,21 @@ body.flc-pip{margin:0}body.flc-pip .flc-root{height:100vh;border-radius:0}
 .rlib-b{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px 12px}
 .rbpvm-m .mbox{max-width:1000px;width:96vw}.rbpvm-stage{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:repeating-conic-gradient(#141a26 0 25%,#0d121c 0 50%) 0 0/26px 26px}
 .rblab{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}.rblab-c{display:flex;flex-direction:column;gap:3px}.rblab-c .rlib-pv{border-radius:12px}
+/* ===== القوائم المتناوبة ===== */
+.rot-tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.rot-tpl{border:1px solid var(--line,#1f2a44);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:4px}.rot-tpl .btn{align-self:flex-start;margin-top:4px}
+.rot-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;margin:14px 0}@media(max-width:1100px){.rot-grid{grid-template-columns:1fr}}
+.rot-pv{position:relative;height:360px;border-radius:14px;overflow:hidden;background:repeating-conic-gradient(#141a26 0 25%,#0d121c 0 50%) 0 0/24px 24px}
+.rot-pvb{gap:6px;flex-wrap:wrap;margin-top:8px}
+.rot-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.rot-it{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--line,#1f2a44);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.02)}
+.rot-it.hid{opacity:.5}.rot-it.pin{border-color:#f6c94a}.rot-it.miss{border-color:#ef4444}
+.rot-it select.inp{width:auto;min-width:0}.rot-grip{cursor:grab;color:var(--mut);font-size:18px}.rot-n{color:var(--mut);font-size:12px;min-width:14px}
+.rot-lbl{flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rot-acts{display:flex;gap:4px;margin-inline-start:auto}
+.rot-add{gap:8px;flex-wrap:wrap}.rot-add select{max-width:320px}
+.rot-smart{display:flex;flex-direction:column;gap:6px;margin:10px 0}.rot-sr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.rot-sr select.inp{width:auto}
+.rot-code{font-size:11px;direction:ltr;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
+.rot-key{direction:ltr;text-align:center;cursor:pointer}
 
 /* ============ OVERLAY WIDGETS (shared by editor, previews and OBS) ============ */
 body.ov{background:transparent!important;overflow:hidden}
@@ -1678,6 +1693,8 @@ const TYPES={
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
  battle:{label:"تحدي الفريقين",icon:"⚔️",title:"تحدي الفريقين",listens:[],board:false,bt:true},
+ rotator:{label:"القوائم المتناوبة",icon:"🔁",title:"",listens:[],board:false,rot:true,tick:true},
+ rcard:{label:"نص / شعار / إعلان",icon:"🪧",title:"",listens:[],board:false,rc:true},
 };
 /** «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» */
 const DC_DEFAULTS={lcBadge:"آخر دعم",lcThx:"شكراً على دعمك",lcShowBadge:true,lcShowName:true,lcShowSym:true,lcShowThx:true,
@@ -1752,6 +1769,8 @@ function newWidget(type,o={}){
  const base={id:"w_"+uid(),type,name:t.label,title:t.title,showTitle:true,design:"b6o6",x:.05,y:.3,w:.4,h:.3,z:1,visible:true,locked:false,opacity:1,
   topN:5,fontScale:1,avatarScale:1,gap:10,acc:"",tx:"#ffffff",anim:"slide",effects:true,sortBy:"value",pos:"custom",target:10000,font:"default",sound:true,timerId:"stream",showSub:true};
  if(type==="timer"){Object.assign(base,{w:.42,h:.07,design:"glass"})}
+ if(type==="rotator"){Object.assign(base,{name:"مجموعة متناوبة",items:[],dur:10,tr:"elegantScale",trMode:"fixed",trDur:900,trSpeed:1,trPower:1,trDir:"rtl",skipEmpty:true,fallback:"transparent",fbText:"",fbLogo:"",indicator:"bar",indColor:"#4d8dff",indSize:1,indOp:.9,smart:{on:false,cooldown:8,rules:[]},w:.44,h:.42,x:.05,y:.06})}
+ if(type==="rcard"){Object.assign(base,{rcMode:"text",rcText:"أهلاً بكم في البث",rcSub:"",rcSrc:"",rcFit:"contain",rcColor:"#ffffff",rcBg:true,w:.4,h:.14})}
  if(type==="subathon"){Object.assign(base,{w:.6,h:.11,design:"b6o6"})}
  if(type==="goal"){Object.assign(base,{w:.6,h:.09,design:"neon"})}
  if(type==="lb"){Object.assign(base,{design:"pinkCloud",source:"gifts",giftKey:"",giftEmoji:"",topN:5,w:.46,h:.36,title:"أفضل الداعمين",rankColors:null,rowOpacity:1,avShape:"circle",sweepOn:true,lowPerf:false,period:"session",currency:"",hideAnon:false,icon:""})}
@@ -3299,6 +3318,11 @@ function roomBots(R,cfg,ctx){ R.botCfg=cfg||null; R.botCtx=ctx||{}; R.B=R.B||new
 function roomClockOp(R,m,now){
  let logs=[];
  if(m.target==="music"){ R.C.music=R.C.music||newMusicState(); if(m.op==="lib"){ roomMusicSetLib(R,m.lib); return {out:[],logs:[]} } if(!musicOp(R.C.music,m,now,roomMusicCfg(R),roomMusicLib(R))) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],mu:m.op}],logs:[]} }
+ // القوائم المتناوبة: إيقاف/استئناف/تثبيت/التالي/السابق — تُحفظ في حالة الغرفة وتصل لكل الروابط فوراً
+ if(m.target==="rot"){ const id=String(m.wid||"").slice(0,40); if(!/^[\w-]{2,40}$/.test(id)) return {out:[],logs:[]}; R.C.rot=R.C.rot||{}; const c=R.C.rot[id]=R.C.rot[id]||{paused:false,pin:"",seq:0};
+  const op=m.op; if(op==="pause") c.paused=true; else if(op==="resume"){ c.paused=false; c.pin="" } else if(op==="pin") c.pin=String(m.item||"").slice(0,40); else if(op==="unpin") c.pin=""; else if(op==="next"||op==="prev"){ c.pin=""; c.cmd=op } else if(op==="toggle"){ c.paused=!c.paused; if(!c.paused) c.pin="" } else return {out:[],logs:[]};
+  c.seq=(+c.seq||0)+1; c.at=now; const ks=Object.keys(R.C.rot); if(ks.length>60) delete R.C.rot[ks[0]];
+  return {out:[{t:"clock",C:R.C,now,logs:[],rot:id}],logs:[]} }
  if(m.target==="battle"){ R.C.battle=R.C.battle||newBattle(); if(!battleOp(R.C.battle,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],bt:1}],logs:[]} }
  if(m.target==="followers"){ R.C.followers=R.C.followers||{}; if(!followersOp(R.C.followers,m,now)) return {out:[],logs:[]}; return {out:[{t:"clock",C:R.C,now,logs:[],fc:m.platform}],logs:[]} }
  if(m.target==="chatmod"){ // إدارة الشات من اللوحة / الشات العائم
@@ -5861,6 +5885,8 @@ class View{
   const gap=w.gap*(this.opts.refW||cv.w)/1080, pad=gap*1.1, N=Math.max(1,w.topN);
   const S=e.style, set=(k,v)=>S.setProperty(k,v+"px");
   set("--gap",gap);set("--pad",pad);
+  if(T.rot){ this.applyRot(w,W,Hh); return }
+  if(T.rc){ this.applyRc(w,W,Hh); return }
   if(T.pro){ this.applyPro(w,W,Hh,pad,gap); return }
   if(T.rules){ this.applyRules(w,W,Hh,pad,gap); return }
   if(T.bot){ this.applyBot(w,W,Hh,pad,gap); return }
@@ -5926,6 +5952,8 @@ class View{
  }
  refresh(src,silent){
   const w=this.w, t=TYPES[w.type]||TYPES.likes;
+  if(t.rot){ this.rotGoalCheck&&this.rotGoalCheck(src); this.rotStep&&this.rotStep(); if(this.rotKids) for(const k of this.rotKids.values()){ const kt=TYPES[k.v.w.type]||{}; if(kt.tick) k.v.refresh(src) } return }
+  if(t.rc) return;
   if(t.pro) return this.refreshPro(src,silent);
   if(t.rules) return this.refreshRules(src,silent);
   if(t.bot) return;
@@ -6205,6 +6233,9 @@ function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden)
  const arm=()=>{ rqW=0; if(typeof requestAnimationFrame==="function") rqF=requestAnimationFrame(rqFlush); rqT=setTimeout(rqFlush,50) };
  if(wait>16) rqW=setTimeout(arm,wait); else arm() }
 function deliver(views,msg,src){
+ views=[...views];
+ // القوائم المتناوبة: كل الرسائل تصل لكل القوائم داخل المجموعة (حتى المخفية) — البيانات لا تتوقف ولا تُصفَّر
+ for(const v of views) if(v.rotKids&&v.rotKids.size){ deliver([...v.rotKids.values()].map(k=>k.v),msg,src); if(msg.t==="event") v.rotEvent(msg.ev); else if(msg.t==="clock"&&!msg.cm) v.rotClockLogs(msg.logs) }
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
  else if(msg.t==="clock"&&msg.cm){ for(const v of views) if(v.ucRoot&&v.ucRender){ v.ucRender(false); v.ucPinRender&&v.ucPinRender() } return } // إدارة الشات: إخفاء فوري + بطاقة التثبيت
@@ -11831,6 +11862,280 @@ const AC_CSS=`
 @keyframes ac-out{to{opacity:0;transform:scale(.9)}}
 `;
 
+/* ---- engine/rotator.js ---- */
+// ====== القوائم المتناوبة — B6O6 Fantastic Smart Rotation V1 ======
+// عنصر واحد (رابط واحد في OBS/TikTok LIVE Studio) يعرض عدة قوائم وطبقات في نفس المكان ويبدّل بينها.
+// - كل قائمة تحتفظ بتصميمها وإعداداتها (نسخة مرجعية من عنصرها في التخطيط تُحدَّث تلقائياً من لوحة التحكم).
+// - استقبال البيانات منفصل عن العرض: كل القوائم تبقى مُركّبة وتستقبل الأحداث وهي مخفية، فتظهر بأحدث الأرقام بلا تصفير.
+// - التحكم المباشر (إيقاف/تثبيت/التالي/السابق) محفوظ في حالة الغرفة C.rot[id] ويصل لكل الروابط فوراً.
+
+
+
+
+
+
+const ROT_DURS=[[3,"3 ثوانٍ"],[5,"5 ثوانٍ"],[10,"10 ثوانٍ"],[15,"15 ثانية"],[20,"20 ثانية"],[30,"30 ثانية"],[45,"45 ثانية"],[60,"دقيقة"],[120,"دقيقتان"],[300,"5 دقائق"]];
+const ROT_INDICATORS={none:"بدون مؤشرات",bar:"خط زمني أسفل القائمة",ring:"دائرة تقدم صغيرة",count:"عداد تنازلي",dots:"نقاط بعدد القوائم",next:"اسم القائمة التالية"};
+const ROT_SMART={bigGift:"دعم قوي (هدية كبيرة)",likes:"ارتفاع التكبيس",follow:"متابع جديد",subNear:"اقتراب نهاية السابثون",goal:"تحقيق هدف",gift:"هدية معيّنة",donation:"دونيشن"};
+const ROT_FALLBACK={transparent:"شفافة بالكامل",text:"نص احتياطي",logo:"شعار"};
+const rotR=(a,b)=>a+Math.random()*(b-a);
+const RT_EZ="cubic-bezier(.2,.85,.25,1)", RT_IO="cubic-bezier(.65,0,.35,1)", RT_BK="cubic-bezier(.34,1.56,.64,1)";
+function rtA(el,kf,o){ if(!el||!el.animate) return null; try{ return el.animate(kf,Object.assign({fill:"backwards"},o)) }catch(e){ return null } }
+let RT_LIVE=0, RT_NOCAP=false;
+function rtFx(host,c,cls,css,life){ if(c.lite||(!RT_NOCAP&&RT_LIVE>60)) return null; const e=document.createElement("i"); e.className="rtx "+cls; if(css) e.style.cssText=css; host.appendChild(e); RT_LIVE++; setTimeout(()=>{ e.remove(); RT_LIVE=Math.max(0,RT_LIVE-1) },life||c.d*1.6); return e }
+function rtSvg(host,c,cls,inner,vb,life){ const e=rtFx(host,c,cls,"",life); if(!e) return null; e.innerHTML=`<svg viewBox="${vb||"0 0 100 100"}" preserveAspectRatio="none">${inner}</svg>`; return e.firstChild }
+
+/** 40 مؤثر انتقال — run(out,in,fx,c): out/in = العنصران، fx = طبقة المؤثرات الشفافة، c={d,p,dir,lite} */
+const RT_TRANS=[
+{id:"smoothFade",n:1,name:"Smooth Fade",run(o,i,f,c){ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d*.5,fill:"forwards"}); rtA(i,[{opacity:0},{opacity:1}],{duration:c.d*.5,delay:c.d*.5}) }},
+{id:"crossfade",n:2,name:"Crossfade",run(o,i,f,c){ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d,fill:"forwards",easing:"linear"}); rtA(i,[{opacity:0},{opacity:1}],{duration:c.d,easing:"linear"}) }},
+{id:"slideRight",n:3,name:"Slide Right",run(o,i,f,c){ rtA(o,[{transform:"none"},{transform:"translateX(100%)"}],{duration:c.d,fill:"forwards",easing:RT_IO}); rtA(i,[{transform:"translateX(-100%)"},{transform:"none"}],{duration:c.d,easing:RT_IO}) }},
+{id:"slideLeft",n:4,name:"Slide Left",run(o,i,f,c){ rtA(o,[{transform:"none"},{transform:"translateX(-100%)"}],{duration:c.d,fill:"forwards",easing:RT_IO}); rtA(i,[{transform:"translateX(100%)"},{transform:"none"}],{duration:c.d,easing:RT_IO}) }},
+{id:"slideUp",n:5,name:"Slide Up",run(o,i,f,c){ rtA(o,[{transform:"none"},{transform:"translateY(-100%)"}],{duration:c.d,fill:"forwards",easing:RT_IO}); rtA(i,[{transform:"translateY(100%)"},{transform:"none"}],{duration:c.d,easing:RT_IO}) }},
+{id:"slideDown",n:6,name:"Slide Down",run(o,i,f,c){ rtA(o,[{transform:"none"},{transform:"translateY(100%)"}],{duration:c.d,fill:"forwards",easing:RT_IO}); rtA(i,[{transform:"translateY(-100%)"},{transform:"none"}],{duration:c.d,easing:RT_IO}) }},
+{id:"cinematicZoom",n:7,name:"Cinematic Zoom",run(o,i,f,c){ rtA(o,[{transform:"scale(1)",filter:"blur(0)",opacity:1},{transform:`scale(${1+.35*c.p})`,filter:"blur(8px)",opacity:0}],{duration:c.d*.7,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:"scale(.78)",opacity:0},{transform:"none",opacity:1}],{duration:c.d*.8,delay:c.d*.35,easing:RT_EZ}) }},
+{id:"glassReveal",n:8,name:"Glass Reveal",run(o,i,f,c){ const g=rtFx(f,c,"rtx-glass"); rtA(g,[{transform:"translateX(110%) skewX(-12deg)",opacity:0},{transform:"translateX(0) skewX(-12deg)",opacity:1,offset:.5},{transform:"translateX(-110%) skewX(-12deg)",opacity:0}],{duration:c.d*1.2,easing:RT_IO});
+ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d*.6,fill:"forwards"}); rtA(i,[{clipPath:"inset(0 0 0 100%)"},{clipPath:"inset(0 0 0 0)"}],{duration:c.d*.7,delay:c.d*.45,easing:RT_EZ}) }},
+{id:"goldenSweep",n:9,name:"Golden Sweep",run(o,i,f,c){ const b=rtFx(f,c,"rtx-gold"); rtA(b,[{left:"-30%"},{left:"110%"}],{duration:c.d,easing:"cubic-bezier(.5,0,.5,1)"});
+ rtA(o,[{clipPath:"inset(0 0 0 0)"},{clipPath:"inset(0 0 0 100%)"}],{duration:c.d,fill:"forwards",easing:"cubic-bezier(.5,0,.5,1)"}); rtA(i,[{clipPath:"inset(0 100% 0 0)"},{clipPath:"inset(0 0 0 0)"}],{duration:c.d,easing:"cubic-bezier(.5,0,.5,1)"}) }},
+{id:"neonWave",n:10,name:"Neon Wave",run(o,i,f,c){ const s=rtSvg(f,c,"rtx-neon",`<path d="M0 50 Q12.5 20 25 50 T50 50 T75 50 T100 50" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" pathLength="100" stroke-dasharray="100"/>`); if(s) rtA(s.firstChild,[{strokeDashoffset:100},{strokeDashoffset:0,offset:.5},{strokeDashoffset:-100}],{duration:c.d});
+ rtA(o,[{clipPath:"polygon(0 0,100% 0,100% 100%,0 100%)"},{clipPath:"polygon(0 0,100% 0,100% 0%,0 30%)"}],{duration:c.d*.6,fill:"forwards"}); rtA(i,[{clipPath:"polygon(0 70%,100% 100%,100% 100%,0 100%)"},{clipPath:"polygon(0 0,100% 0,100% 100%,0 100%)"}],{duration:c.d*.7,delay:c.d*.35,easing:RT_EZ}) }},
+{id:"digitalScan",n:11,name:"Digital Scan",run(o,i,f,c){ const s=rtFx(f,c,"rtx-scan"); rtA(s,[{top:"-4%"},{top:"104%"}],{duration:c.d,easing:"linear"});
+ rtA(o,[{clipPath:"inset(0 0 0 0)"},{clipPath:"inset(100% 0 0 0)"}],{duration:c.d,fill:"forwards",easing:"linear"}); rtA(i,[{clipPath:"inset(0 0 100% 0)"},{clipPath:"inset(0 0 0 0)"}],{duration:c.d,easing:"linear"}) }},
+{id:"holographic",n:12,name:"Holographic Transition",run(o,i,f,c){ rtFx(f,c,"rtx-holo");
+ rtA(o,[{opacity:1,filter:"hue-rotate(0)"},{opacity:.4,filter:"hue-rotate(90deg)",offset:.3},{opacity:.8,offset:.5},{opacity:0,filter:"hue-rotate(180deg)"}],{duration:c.d*.6,fill:"forwards",easing:"steps(6)"});
+ rtA(i,[{opacity:0,transform:"skewX(10deg)",filter:"hue-rotate(-120deg) brightness(1.6)"},{opacity:.6,offset:.4},{opacity:.3,offset:.55},{opacity:1,transform:"none",filter:"none"}],{duration:c.d*.8,delay:c.d*.3}) }},
+{id:"liquidMorph",n:13,name:"Liquid Morph",run(o,i,f,c){ rtA(o,[{borderRadius:"0%",transform:"scale(1)",opacity:1},{borderRadius:"50%",transform:"scale(.3)",opacity:0}],{duration:c.d*.6,fill:"forwards",easing:"ease-in"});
+ rtA(i,[{clipPath:"circle(0% at 50% 50%)",filter:"blur(10px)"},{clipPath:"circle(40% at 55% 45%)",filter:"blur(4px)",offset:.5},{clipPath:"circle(75% at 50% 50%)",filter:"blur(0)"}],{duration:c.d,delay:c.d*.3,easing:RT_EZ}) }},
+{id:"diamondReveal",n:14,name:"Diamond Reveal",run(o,i,f,c){ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d*.5,fill:"forwards",delay:c.d*.3});
+ rtA(i,[{clipPath:"polygon(50% 50%,50% 50%,50% 50%,50% 50%)"},{clipPath:"polygon(50% -60%,160% 50%,50% 160%,-60% 50%)"}],{duration:c.d,easing:RT_EZ}) }},
+{id:"crystalReflection",n:15,name:"Crystal Reflection",run(o,i,f,c){ ["polygon(0 0,35% 0,15% 100%,0 100%)","polygon(40% 0,60% 0,45% 100%,25% 100%)","polygon(65% 0,100% 0,100% 100%,50% 100%)"].forEach((p,k)=>{ const e=rtFx(f,c,"rtx-facet",`clip-path:${p}`); rtA(e,[{opacity:0},{opacity:.8,offset:.4},{opacity:0}],{duration:c.d*.6,delay:k*c.d*.15}) });
+ rtA(o,[{opacity:1,filter:"brightness(1)"},{opacity:0,filter:"brightness(2.2)"}],{duration:c.d*.5,fill:"forwards"}); rtA(i,[{opacity:0,filter:"brightness(2.2) saturate(.3)"},{opacity:1,filter:"none"}],{duration:c.d*.7,delay:c.d*.35}) }},
+{id:"pixelTransition",n:16,name:"Pixel Transition",run(o,i,f,c){ const C=10,R=6; for(let y=0;y<R;y++) for(let x=0;x<C;x++){ const e=rtFx(f,c,"rtx-px",`left:${x*10}%;top:${y/R*100}%;width:10.4%;height:${100/R+.6}%`); rtA(e,[{opacity:0},{opacity:1,offset:.5},{opacity:0}],{duration:c.d*.9,delay:rotR(0,c.d*.25),easing:"steps(2)"}) }
+ rtA(o,[{opacity:1},{opacity:0}],{duration:1,delay:c.d*.45,fill:"forwards"}); rtA(i,[{opacity:0},{opacity:1}],{duration:1,delay:c.d*.45}) }},
+{id:"flip3D",n:17,name:"3D Flip",run(o,i,f,c){ rtA(o,[{transform:"perspective(900px) rotateY(0)"},{transform:`perspective(900px) rotateY(${90*c.dir}deg)`}],{duration:c.d*.5,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:`perspective(900px) rotateY(${-90*c.dir}deg)`},{transform:"perspective(900px) rotateY(0)"}],{duration:c.d*.5,delay:c.d*.5,easing:"ease-out"}) }},
+{id:"cardRotation",n:18,name:"Card Rotation",run(o,i,f,c){ rtA(o,[{transform:"none",opacity:1},{transform:`translateX(${-55*c.dir}%) rotate(${-14*c.dir}deg)`,opacity:0}],{duration:c.d*.7,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:`translateX(${55*c.dir}%) rotate(${14*c.dir}deg)`,opacity:0},{transform:"none",opacity:1}],{duration:c.d*.8,delay:c.d*.2,easing:RT_EZ}) }},
+{id:"curtainReveal",n:19,name:"Curtain Reveal",run(o,i,f,c){ const a=rtFx(f,c,"rtx-cur rtx-cur-a"), b=rtFx(f,c,"rtx-cur rtx-cur-b"); rtA(a,[{transform:"translateX(-100%)"},{transform:"none",offset:.45},{transform:"none",offset:.55},{transform:"translateX(-100%)"}],{duration:c.d*1.2,easing:RT_IO}); rtA(b,[{transform:"translateX(100%)"},{transform:"none",offset:.45},{transform:"none",offset:.55},{transform:"translateX(100%)"}],{duration:c.d*1.2,easing:RT_IO});
+ rtA(o,[{opacity:1},{opacity:0}],{duration:1,delay:c.d*.55,fill:"forwards"}); rtA(i,[{opacity:0},{opacity:1}],{duration:1,delay:c.d*.6}) }},
+{id:"lightTunnel",n:20,name:"Light Tunnel",run(o,i,f,c){ for(let k=0;k<4;k++){ const r=rtFx(f,c,"rtx-ring"); rtA(r,[{transform:"translate(-50%,-50%) scale(2.6)",opacity:0},{opacity:.8,offset:.4},{transform:"translate(-50%,-50%) scale(0)",opacity:0}],{duration:c.d*.8,delay:k*c.d*.1,easing:"ease-in"}) }
+ rtA(o,[{transform:"scale(1)",opacity:1},{transform:"scale(0)",opacity:0}],{duration:c.d*.55,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:"scale(2.4)",opacity:0},{transform:"none",opacity:1}],{duration:c.d*.6,delay:c.d*.45,easing:"ease-out"}) }},
+{id:"magnetic",n:21,name:"Magnetic Transition",run(o,i,f,c){ rtA(o,[{transform:"none"},{transform:`translateX(${8*c.dir}%) scaleX(1.05)`,offset:.3},{transform:`translateX(${-120*c.dir}%) scaleX(.6)`}],{duration:c.d*.7,fill:"forwards",easing:"cubic-bezier(.7,0,.9,.4)"}); rtA(i,[{transform:`translateX(${120*c.dir}%) scaleX(.6)`},{transform:`translateX(${-6*c.dir}%) scaleX(1.04)`,offset:.75},{transform:"none"}],{duration:c.d*.8,delay:c.d*.3,easing:"cubic-bezier(.2,.6,.3,1.3)"}) }},
+{id:"motionBlur",n:22,name:"Motion Blur",run(o,i,f,c){ rtA(o,[{transform:"none",filter:"blur(0)"},{transform:`translateX(${-60*c.dir}%)`,filter:"blur(16px)",opacity:0}],{duration:c.d*.45,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:`translateX(${60*c.dir}%)`,filter:"blur(16px)",opacity:0},{transform:"none",filter:"blur(0)",opacity:1}],{duration:c.d*.55,delay:c.d*.35,easing:"ease-out"}) }},
+{id:"softDissolve",n:23,name:"Soft Dissolve",run(o,i,f,c){ rtA(o,[{opacity:1,filter:"contrast(1) blur(0)"},{opacity:0,filter:"contrast(.2) blur(3px)"}],{duration:c.d,fill:"forwards"}); rtA(i,[{opacity:0,filter:"contrast(.2) blur(3px)"},{opacity:1,filter:"contrast(1) blur(0)"}],{duration:c.d,delay:c.d*.25}) }},
+{id:"gradientWipe",n:24,name:"Gradient Wipe",run(o,i,f,c){ const m="linear-gradient(90deg,#000 40%,transparent 60%)"; rtA(i,[{maskImage:m,WebkitMaskImage:m,maskSize:"300% 100%",WebkitMaskSize:"300% 100%",maskPosition:"100% 0",WebkitMaskPosition:"100% 0"},{maskImage:m,WebkitMaskImage:m,maskSize:"300% 100%",WebkitMaskSize:"300% 100%",maskPosition:"0 0",WebkitMaskPosition:"0 0"}],{duration:c.d,easing:"ease-in-out"});
+ rtA(o,[{opacity:1},{opacity:1,offset:.6},{opacity:0}],{duration:c.d,fill:"forwards"}) }},
+{id:"geometricReveal",n:25,name:"Geometric Reveal",run(o,i,f,c){ rtA(i,[{clipPath:"polygon(50% 50%,50% 50%,50% 50%,50% 50%,50% 50%,50% 50%)"},{clipPath:"polygon(50% 20%,80% 35%,80% 65%,50% 80%,20% 65%,20% 35%)",offset:.5},{clipPath:"polygon(50% -50%,150% 0%,150% 100%,50% 150%,-50% 100%,-50% 0%)"}],{duration:c.d,easing:"steps(5,end)"});
+ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d*.4,delay:c.d*.5,fill:"forwards"}) }},
+{id:"spotlight",n:26,name:"Spotlight",run(o,i,f,c){ const s=rtFx(f,c,"rtx-spot"); rtA(s,[{left:"10%",opacity:0},{left:"50%",opacity:1,offset:.5},{left:"50%",opacity:0}],{duration:c.d});
+ rtA(o,[{filter:"brightness(1)"},{filter:"brightness(.15)",opacity:0}],{duration:c.d*.5,fill:"forwards"}); rtA(i,[{clipPath:"circle(0% at 50% 50%)"},{clipPath:"circle(18% at 50% 50%)",offset:.4},{clipPath:"circle(80% at 50% 50%)"}],{duration:c.d,delay:c.d*.2,easing:RT_EZ}) }},
+{id:"laserSweep",n:27,name:"Laser Sweep",run(o,i,f,c){ const l=rtFx(f,c,"rtx-laser"); rtA(l,[{left:c.dir>0?"102%":"-2%"},{left:c.dir>0?"-2%":"102%"}],{duration:c.d*.9,easing:"linear"});
+ rtA(i,[{clipPath:c.dir>0?"inset(0 0 0 100%)":"inset(0 100% 0 0)"},{clipPath:"inset(0 0 0 0)"}],{duration:c.d*.9,easing:"linear"}); rtA(o,[{clipPath:"inset(0 0 0 0)"},{clipPath:c.dir>0?"inset(0 100% 0 0)":"inset(0 0 0 100%)"}],{duration:c.d*.9,fill:"forwards",easing:"linear",composite:"replace"}) }},
+{id:"electricPulse",n:28,name:"Electric Pulse",run(o,i,f,c){ const s=rtSvg(f,c,"rtx-bolt",`<polyline fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" points="0,50 100,50"/>`); if(s){ const pl=s.firstChild, t0=performance.now(); const st=()=>{ if(!pl.isConnected) return; let p="0,50"; for(let x=5;x<=100;x+=5) p+=` ${x},${50+rotR(-30,30)*c.p}`; pl.setAttribute("points",p); if(performance.now()-t0<c.d) setTimeout(st,60) }; st() }
+ rtA(o,[{filter:"brightness(1)",opacity:1},{filter:"brightness(3)",opacity:1,offset:.3},{filter:"brightness(1)",opacity:0}],{duration:c.d*.5,fill:"forwards"}); rtA(i,[{transform:"translateX(-2%)",opacity:0},{transform:"translateX(2%)",opacity:1,offset:.3},{transform:"translateX(-1%)",offset:.6},{transform:"none"}],{duration:c.d*.6,delay:c.d*.4,easing:"steps(6)"}) }},
+{id:"waveDistortion",n:29,name:"Wave Distortion",run(o,i,f,c){ rtA(o,[{transform:"none",opacity:1},{transform:"skewX(12deg) scaleY(.9)",offset:.33},{transform:"skewX(-12deg) scaleY(1.05)",offset:.66},{transform:"skewX(8deg) scaleY(.6)",opacity:0}],{duration:c.d*.6,fill:"forwards"}); rtA(i,[{transform:"skewX(-10deg) scaleY(.6)",opacity:0},{transform:"skewX(8deg) scaleY(1.05)",opacity:1,offset:.4},{transform:"skewX(-4deg)",offset:.7},{transform:"none"}],{duration:c.d*.8,delay:c.d*.35}) }},
+{id:"foldingPanels",n:30,name:"Folding Panels",run(o,i,f,c){ rtA(o,[{transform:"perspective(900px) rotateX(0)",transformOrigin:"50% 100%"},{transform:"perspective(900px) rotateX(-90deg)",transformOrigin:"50% 100%"}],{duration:c.d*.5,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:"perspective(900px) rotateX(90deg)",transformOrigin:"50% 0"},{transform:"perspective(900px) rotateX(-12deg)",transformOrigin:"50% 0",offset:.7},{transform:"perspective(900px) rotateX(0)",transformOrigin:"50% 0"}],{duration:c.d*.6,delay:c.d*.4}); const k=rtFx(f,c,"rtx-crease"); rtA(k,[{opacity:.8},{opacity:0}],{duration:c.d}) }},
+{id:"verticalSplit",n:31,name:"Vertical Split",run(o,i,f,c){ rtA(o,[{clipPath:"inset(0 0 0 0)"},{clipPath:"inset(0 50% 0 50%)"}],{duration:c.d*.55,fill:"forwards",easing:"ease-in"}); rtA(i,[{clipPath:"inset(0 50% 0 50%)"},{clipPath:"inset(0 0 0 0)"}],{duration:c.d*.55,delay:c.d*.45,easing:"ease-out"}) }},
+{id:"horizontalSplit",n:32,name:"Horizontal Split",run(o,i,f,c){ rtA(o,[{clipPath:"inset(0 0 0 0)"},{clipPath:"inset(50% 0 50% 0)"}],{duration:c.d*.55,fill:"forwards",easing:"ease-in"}); rtA(i,[{clipPath:"inset(50% 0 50% 0)"},{clipPath:"inset(0 0 0 0)"}],{duration:c.d*.55,delay:c.d*.45,easing:"ease-out"}) }},
+{id:"particleReveal",n:33,name:"Particle Reveal",run(o,i,f,c){ for(let k=0;k<26;k++){ const e=rtFx(f,c,"rtx-pt",`left:${rotR(5,95)}%;top:${rotR(10,90)}%`); rtA(e,[{transform:`translate(${rotR(-140,140)}px,${rotR(-90,90)}px) scale(.3)`,opacity:0},{transform:"none",opacity:1,offset:.6},{transform:"scale(0)",opacity:0}],{duration:c.d,delay:rotR(0,c.d*.2),easing:RT_EZ}) }
+ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d*.4,fill:"forwards"}); rtA(i,[{opacity:0,filter:"blur(4px)"},{opacity:1,filter:"blur(0)"}],{duration:c.d*.5,delay:c.d*.55}) }},
+{id:"elegantScale",n:34,name:"Elegant Scale",run(o,i,f,c){ rtA(o,[{transform:"scale(1)",opacity:1},{transform:"scale(.92)",opacity:0}],{duration:c.d*.6,fill:"forwards",easing:"cubic-bezier(.4,0,.2,1)"}); rtA(i,[{transform:"scale(1.06)",opacity:0},{transform:"scale(1)",opacity:1}],{duration:c.d*.8,delay:c.d*.3,easing:"cubic-bezier(.16,1,.3,1)"}) }},
+{id:"aurora",n:35,name:"Aurora Transition",run(o,i,f,c){ ["#22e1ff","#7c3aed","#22c55e"].forEach((col,k)=>{ const e=rtFx(f,c,"rtx-aur",`background:radial-gradient(closest-side,${col},transparent);left:${20+k*30}%`,c.d*1.6); rtA(e,[{transform:"translate(-50%,-50%) scale(.3)",opacity:0},{transform:`translate(-50%,-50%) scale(1.4) translateX(${(k-1)*20}px)`,opacity:.6,offset:.5},{opacity:0}],{duration:c.d*1.3,delay:k*80}) });
+ rtA(o,[{opacity:1,filter:"hue-rotate(0)"},{opacity:0,filter:"hue-rotate(80deg)"}],{duration:c.d*.6,fill:"forwards"}); rtA(i,[{opacity:0,filter:"hue-rotate(-80deg)"},{opacity:1,filter:"hue-rotate(0)"}],{duration:c.d*.8,delay:c.d*.4}) }},
+{id:"metallicReflection",n:36,name:"Metallic Reflection",run(o,i,f,c){ const m=rtFx(f,c,"rtx-metal"); rtA(m,[{backgroundPosition:"200% 0"},{backgroundPosition:"-100% 0"}],{duration:c.d,easing:RT_IO});
+ rtA(o,[{filter:"grayscale(0)",opacity:1},{filter:"grayscale(1) brightness(1.6)",opacity:0}],{duration:c.d*.5,fill:"forwards"}); rtA(i,[{filter:"grayscale(1) brightness(1.6)",opacity:0},{filter:"grayscale(0)",opacity:1}],{duration:c.d*.6,delay:c.d*.45}) }},
+{id:"digitalGrid",n:37,name:"Digital Grid",run(o,i,f,c){ const g=rtFx(f,c,"rtx-grid"); rtA(g,[{opacity:0,backgroundSize:"40px 40px"},{opacity:.9,backgroundSize:"20px 20px",offset:.5},{opacity:0,backgroundSize:"10px 10px"}],{duration:c.d});
+ rtA(o,[{opacity:1},{opacity:0}],{duration:c.d*.5,fill:"forwards",easing:"steps(5)"}); rtA(i,[{opacity:0,transform:"scale(.97)"},{opacity:1,transform:"none"}],{duration:c.d*.5,delay:c.d*.5,easing:"steps(5)"}) }},
+{id:"orbit",n:38,name:"Orbit Transition",run(o,i,f,c){ rtA(o,[{transform:"rotate(0) translateX(0) rotate(0)",opacity:1},{transform:`rotate(${-60*c.dir}deg) translateX(${40*c.dir}%) rotate(${60*c.dir}deg) scale(.5)`,opacity:0}],{duration:c.d*.7,fill:"forwards",easing:"ease-in"}); rtA(i,[{transform:`rotate(${60*c.dir}deg) translateX(${-40*c.dir}%) rotate(${-60*c.dir}deg) scale(.5)`,opacity:0},{transform:"none",opacity:1}],{duration:c.d*.8,delay:c.d*.3,easing:RT_EZ}) }},
+{id:"fantasticMotion",n:39,name:"Fantastic Motion",run(o,i,f,c){ const s=rtSvg(f,c,"rtx-hex",`<path d="M50 4 92 27v46L50 96 8 73V27Z" fill="none" stroke="url(#rtsg)" stroke-width="3" vector-effect="non-scaling-stroke" pathLength="100" stroke-dasharray="100"/><defs><linearGradient id="rtsg"><stop offset="0" stop-color="#4d8dff"/><stop offset="1" stop-color="#f6c94a"/></linearGradient></defs>`); if(s) rtA(s.firstChild,[{strokeDashoffset:100},{strokeDashoffset:0,offset:.5},{strokeDashoffset:0,opacity:1,offset:.8},{opacity:0}],{duration:c.d*1.2});
+ const st=rtFx(f,c,"rtx-streak"); rtA(st,[{transform:"translateX(110%) scaleX(.3)",opacity:0},{transform:"translateX(0) scaleX(1)",opacity:1,offset:.5},{transform:"translateX(-110%) scaleX(.3)",opacity:0}],{duration:c.d,easing:RT_IO});
+ rtA(o,[{transform:"none",opacity:1},{transform:"scale(.9) translateY(4%)",opacity:0}],{duration:c.d*.5,fill:"forwards"}); rtA(i,[{clipPath:"polygon(50% 50%,50% 50%,50% 50%,50% 50%,50% 50%,50% 50%)",transform:"scale(1.08)"},{clipPath:"polygon(50% -40%,140% 10%,140% 90%,50% 140%,-40% 90%,-40% 10%)",transform:"none"}],{duration:c.d*.8,delay:c.d*.35,easing:RT_EZ}) }},
+{id:"instant",n:40,name:"Instant Switch",run(){ /* تبديل فوري بلا حركة */ }},
+];
+const RT_BY_ID=Object.fromEntries(RT_TRANS.map(t=>[t.id,t]));
+/** بصمة فعلية لمؤثر انتقال (لا تعتمد على الاسم): الأدوار + الخصائص + شكل الإطارات + التأخير + المؤثرات المنشأة */
+function rtTrace(o,i,f,id){ const T=[], orig=Element.prototype.animate, origAp=Element.prototype.appendChild;
+ const role=el=>el===o?"out":el===i?"in":el.closest&&el.closest(".rtx")?"fx:"+el.closest(".rtx").className.split(" ").slice(1).join("."):"x";
+ const shape=v=>String(v).replace(/#[0-9a-f]{3,8}|rgba?\([^)]*\)|url\([^)]*\)/gi,"C").replace(/-?\d+(\.\d+)?/g,m=>+m===0?"0":+m<0?"-n":"n");
+ Element.prototype.animate=function(kf,op){ const k=Array.isArray(kf)?kf:[]; T.push("A:"+role(this)+":"+k.length+":"+k.map(x=>Object.keys(x).filter(p=>p!=="offset"&&p!=="easing").sort().map(p=>p+"="+shape(x[p])).join(",")).join("|")+":"+(op&&op.delay?"D":"")+(op&&/steps/.test(op.easing||"")?"S":"")); return orig.call(this,kf,op) };
+ Element.prototype.appendChild=function(n){ if(n&&n.classList&&n.classList.contains("rtx")) T.push("F:"+n.className); return origAp.call(this,n) };
+ RT_NOCAP=true; try{ RT_BY_ID[id].run(o,i,f,{d:800,p:1,dir:1,lite:false}) } finally { RT_NOCAP=false; Element.prototype.animate=orig; Element.prototype.appendChild=origAp }
+ return T }
+
+/** هل القائمة فارغة الآن؟ (لتجاوز القوائم الفارغة) — يعتمد على البيانات الحقيقية فقط */
+function rotEmpty(w,src){ if(!w||!src) return false; const T=TYPES[w.type]||{};
+ try{
+  if(T.board) return !entries(w,src.D,src.H).length;
+  if(w.type==="lb") return !lbEntries(w,src).length;
+  if(T.le){ const L=src.C&&src.C.latest||{}; return !L[w.kind] }
+  if(T.rules){ const s=src.C&&src.C.subathon; return !s||s.status==="idle"||s.status==="ended"||!rulesForBoard(s).length }
+  if(w.type==="subathon"){ const s=src.C&&src.C.subathon; return !s||s.status==="idle"||s.status==="ended" }
+  if(["donLatest","donCard","donText","donLast5","donBoard","donTop","donTicker"].includes(w.type)) return !recentDonations(src.DN||{list:[]},src.DC||{},{limit:1}).length;
+  if(T.soc) return !((src.SO&&src.SO.accounts)||[]).some(a=>a.enabled!==false);
+  if(w.type==="rcard") return w.rcMode==="media"&&!w.rcSrc;
+ }catch(e){ return false }
+ return false }
+/** وصف قصير لعنصر (للوحة التحكم والمؤشر «التالي») */
+function rotLabel(cfg){ return (cfg&&(cfg.name||cfg.title||(TYPES[cfg.type]||{}).label))||"قائمة" }
+
+/* ================= عنصر «نص / شعار / إعلان» (rcard) ================= */
+const RC_MODES={text:"نص مخصص / رسالة ترحيبية",logo:"شعار صانع المحتوى",media:"صورة أو مقطع إعلاني"};
+
+/* ================= العرض ================= */
+let rotCss=false;
+function ensureRotCSS(){ if(rotCss||typeof document==="undefined") return; rotCss=true; const st=document.createElement("style"); st.id="b6o6-rot"; st.textContent=ROT_CSS; document.head.appendChild(st) }
+const rotReduced=()=>{ try{ return matchMedia("(prefers-reduced-motion: reduce)").matches }catch(e){ return false } };
+
+Object.assign(View.prototype,{
+ applyRc(w,W,H){ ensureRotCSS(); const e=this.el; e.className=`wd rcw rcm-${w.rcMode||"text"}${this.opts.editor?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
+  e.style.setProperty("--rcc",w.rcColor||"#ffffff"); e.style.setProperty("--rcfs",Math.min(H*.42,W*.09)*(+w.fontScale||1)+"px");
+  const sig=[w.rcMode,w.rcText,w.rcSub,w.rcSrc,w.rcFit,w.rcBg].join("|"); if(sig===this.rcSig) return; this.rcSig=sig; const ed=this.opts.editor?'<div class="rh"></div><div class="lockb">🔒</div>':"";
+  const src=String(w.rcSrc||""), safe=/^(https:\/\/|data:image\/|data:video\/|\/)/.test(src)?src:"", vid=/^data:video\/|\.(mp4|webm)(\?|$)/i.test(safe);
+  e.innerHTML=(w.rcMode==="text"||!w.rcMode)?`<div class="rc-in${w.rcBg?" rc-bg":""}"><b class="rc-t">${esc(w.rcText||"أهلاً بكم في البث")}</b>${w.rcSub?`<span class="rc-s">${esc(w.rcSub)}</span>`:""}</div>${ed}`
+   :safe?(vid?`<video class="rc-m" src="${esc(safe)}" autoplay muted loop playsinline style="object-fit:${w.rcFit||"contain"}"></video>`:`<img class="rc-m" src="${esc(safe)}" alt="" style="object-fit:${w.rcFit||"contain"}">`)+ed
+   :`<div class="rc-in rc-empty">${this.opts.editor?"اختر صورة أو مقطعاً":""}</div>${ed}` },
+
+ /** المجموعة المتناوبة */
+ applyRot(w,W,H){ ensureRotCSS(); const e=this.el, ed=this.opts.editor;
+  e.className=`wd rotw rti-${w.indicator||"none"}${ed?(" "+(w.locked?"locked":"")+(w.visible?"":" hid")+(this.opts.sel===w.id?" sel":"")):""}`;
+  const S=e.style; S.setProperty("--ric",w.indColor||"#4d8dff"); S.setProperty("--ris",String(Math.max(.4,Math.min(2.5,+w.indSize||1)))); S.setProperty("--rio",String(w.indOp??.9));
+  this.rotWH={W,H};
+  if(!this.rotStage){ e.innerHTML=`<div class="rot-stage"></div><i class="rot-fx"></i><div class="rot-ind"></div>${ed?'<div class="rh"></div><div class="lockb">🔒</div>':""}`; this.rotStage=e.querySelector(".rot-stage"); this.rotFxL=e.querySelector(".rot-fx"); this.rotInd=e.querySelector(".rot-ind"); this.rotKids=new Map(); this.rs={i:-1,since:0,cyc:0,lastTr:""} }
+  else if(ed&&!e.querySelector(".rh")) e.insertAdjacentHTML("beforeend",'<div class="rh"></div><div class="lockb">🔒</div>');
+  // القوائم: كل قائمة View مستقل مُركّب دائماً (يستقبل البيانات وهو مخفي)
+  const items=(w.items||[]).filter(x=>x&&x.cfg&&TYPES[x.cfg.type]&&x.cfg.type!=="rotator"), seen=new Set();
+  for(const it of items){ seen.add(it.id); const f=it.fit||{}, fx=+f.x||0, fy=+f.y||0, fw=+f.w||1, fh=+f.h||1;
+   const cfg={...it.cfg,id:"rk_"+w.id+"_"+it.id,x:fx,y:fy,w:fw,h:fh,visible:true,locked:true,z:1};
+   let k=this.rotKids.get(it.id);
+   if(!k){ const box=document.createElement("div"); box.className="rot-item"; box.dataset.item=it.id; const v=new View(cfg,{w:W,h:H},{data:this.opts.data,refW:this.opts.refW||W,globalFx:this.opts.globalFx,lowPerf:this.opts.lowPerf,mute:true}); box.appendChild(v.el); this.rotStage.appendChild(box); k={box,v,sig:""}; this.rotKids.set(it.id,k); try{ if(this.opts.data) v.refresh(this.opts.data(),true) }catch(_){} }
+   const sig=JSON.stringify(cfg)+W+"x"+H; if(sig!==k.sig){ k.sig=sig; k.v.cv={w:W,h:H}; try{ k.v.apply(cfg); if(this.opts.data) k.v.refresh(this.opts.data(),true) }catch(_){} }
+   k.it=it }
+  for(const [id,k] of this.rotKids) if(!seen.has(id)){ k.box.remove(); this.rotKids.delete(id) }
+  this.rotItems=items;
+  if(!this.rotT){ this.rotT=setInterval(()=>{ if(!this.el.isConnected){ clearInterval(this.rotT); this.rotT=0; return } this.rotStep() },200) }
+  this.rotStep(true) },
+ /** القوائم الصالحة للعرض الآن */
+ rotPool(){ const w=this.w, src=this.opts.data?this.opts.data():null; return (this.rotItems||[]).filter(it=>!it.hidden&&!(w.skipEmpty&&!this.opts.editor&&rotEmpty(it.cfg,src))) },
+ rotCtl(){ if(this.opts.localCtl) return this.opts.localCtl; const src=this.opts.data?this.opts.data():null; return (src&&src.C&&src.C.rot&&src.C.rot[this.w.id])||{} },
+ rotStep(force){ const w=this.w, now=Date.now(), rs=this.rs, ctl=this.rotCtl(), all=this.rotItems||[]; if(!all.length){ this.rotShow(null); return }
+  // أوامر مباشرة (التالي/السابق) من لوحة التحكم أو Stream Deck
+  if(ctl.seq&&ctl.seq!==rs.seq){ const first=rs.seq===undefined; rs.seq=ctl.seq; if(!first&&now-(ctl.at||0)<15000&&(ctl.cmd==="next"||ctl.cmd==="prev")){ rs.ev=null; return this.rotGo(ctl.cmd==="next"?1:-1) } }
+  // تثبيت قائمة
+  const pin=ctl.pin&&all.find(x=>x.id===ctl.pin); if(pin){ if(rs.cur!==pin.id) this.rotShow(pin); this.rotIndicator(pin,0,1,true); return }
+  // حدث ذكي جارٍ
+  if(rs.ev){ if(now<rs.ev.until){ const it=all.find(x=>x.id===rs.ev.item); if(it){ if(rs.cur!==it.id) this.rotShow(it); this.rotIndicator(it,now-rs.ev.at,rs.ev.until-rs.ev.at); return } } rs.ev=null; rs.cool=now+Math.max(0,(+((w.smart||{}).cooldown)||8))*1000; rs.since=now; if(rs.base) { const b=all.find(x=>x.id===rs.base); if(b&&this.rotPool().includes(b)){ this.rotShow(b); return } } }
+  const pool=this.rotPool(); if(!pool.length){ this.rotShow(null); return }
+  let cur=pool.find(x=>x.id===rs.cur);
+  if(!cur){ const prevI=all.findIndex(x=>x.id===rs.cur); cur=prevI>=0?(all.slice(prevI+1).concat(all.slice(0,prevI+1)).find(x=>pool.includes(x))||pool[0]):pool[0]; rs.since=now; this.rotShow(cur); return }
+  const dur=Math.max(1,+cur.dur||+w.dur||10)*1000, paused=!!ctl.paused;
+  if(paused){ if(!rs.pausedAt) rs.pausedAt=now; this.rotIndicator(cur,rs.pausedAt-rs.since,dur,true); return }
+  if(rs.pausedAt){ rs.since+=now-rs.pausedAt; rs.pausedAt=0 }
+  const el=now-rs.since; if(el>=dur&&pool.length>1) return this.rotGo(1);
+  if(el>=dur) rs.since=now; // قائمة واحدة فقط: تبقى
+  this.rotIndicator(cur,el,dur) },
+ rotGo(dir){ const all=this.rotItems||[], pool=this.rotPool(); if(!pool.length) return this.rotShow(null); const rs=this.rs; let i=all.findIndex(x=>x.id===rs.cur), n=all.length, nx=null;
+  for(let k=1;k<=n;k++){ const c=all[((i+dir*k)%n+n)%n]; if(pool.includes(c)){ nx=c; break } }
+  if(!nx) nx=pool[0]; if(nx.id===rs.cur&&pool.length>1) return; const idx=all.indexOf(nx); if(dir>0&&idx<=i) rs.cyc++; rs.since=Date.now(); this.rotShow(nx) },
+ /** عرض قائمة بانتقال */
+ rotShow(it){ const rs=this.rs, w=this.w; if((it?it.id:null)===rs.cur) return; const prev=rs.cur&&this.rotKids.get(rs.cur), next=it&&this.rotKids.get(it.id);
+  rs.cur=it?it.id:null; if(!rs.ev&&it) rs.base=it.id;
+  for(const [id,k] of this.rotKids) if(k!==prev&&k!==next){ k.box.getAnimations&&k.box.getAnimations().forEach(a=>a.cancel()); k.box.classList.remove("on","leaving") }
+  this.rotFallback(!it);
+  if(!next){ if(prev){ prev.box.classList.remove("on") } return }
+  clearTimeout(next.box._offT); next.box.classList.remove("leaving"); next.box.classList.add("on"); try{ if(this.opts.data) next.v.refresh(this.opts.data(),true) }catch(_){} // تظهر بأحدث الأرقام
+  // إعادة تشغيل حركة الظهور الخاصة بالقائمة (إن وجدت) بدون تصفير بياناتها
+  const still=rotReduced()||this.opts.editor&&this.opts.still;
+  if(!prev||still){ if(prev) prev.box.classList.remove("on"); return }
+  const tr=this.rotTrans(prev.it,it), ex=typeof window!=="undefined"&&!!window.__arshExplore, T=RT_BY_ID[ex&&tr!=="instant"?"crossfade":tr]||RT_BY_ID.smoothFade;
+  const tw=it.trDur||w.trDur||900, c={d:Math.max(150,Math.min(4000,+tw/(+w.trSpeed||1))),p:Math.max(.3,Math.min(1.6,+w.trPower||1)),dir:w.trDir==="ltr"?-1:1,lite:!!(ex||w.lowPerf||this.opts.lowPerf)};
+  prev.box.getAnimations&&prev.box.getAnimations().forEach(a=>a.cancel()); next.box.getAnimations&&next.box.getAnimations().forEach(a=>a.cancel());
+  prev.box.classList.add("on","leaving"); rs.lastTr=T.id;
+  try{ T.run(prev.box,next.box,this.rotFxL,c) }catch(_){}
+  const p=prev; clearTimeout(p.box._offT); p.box._offT=setTimeout(()=>{ if(this.rs.cur!==p.it.id){ p.box.classList.remove("on","leaving"); p.box.getAnimations&&p.box.getAnimations().forEach(a=>a.cancel()) } },c.d*1.4+60) },
+ /** الانتقال بين قائمتين: انتقال القائمة الخاصة ← انتقال المجموعة ← عشوائي بدون تكرار متتالٍ */
+ rotTrans(from,to){ const w=this.w; let t=(to&&to.tr)||"";
+  if(!t||t==="group") t=w.trMode==="random"?"random":(w.tr||"elegantScale");
+  if(t==="random"){ const ids=RT_TRANS.filter(x=>x.id!=="instant"&&x.id!==this.rs.lastTr).map(x=>x.id); t=ids[Math.floor(Math.random()*ids.length)] }
+  return RT_BY_ID[t]?t:"elegantScale" },
+ rotFallback(on){ const w=this.w; let fb=this.el.querySelector(".rot-fb");
+  if(!on||!w.fallback||w.fallback==="transparent"){ if(fb) fb.remove(); return }
+  const html=w.fallback==="logo"?`<img src="${esc(w.fbLogo||"/logo-160.png")}" alt="">`:`<b>${esc(w.fbText||"")}</b>`;
+  if(!fb){ fb=document.createElement("div"); fb.className="rot-fb"; this.el.insertBefore(fb,this.rotInd) } if(fb.innerHTML!==html) fb.innerHTML=html },
+ rotIndicator(it,el,dur,frozen){ const w=this.w, I=this.rotInd; if(!I) return; const k=w.indicator||"none"; if(k==="none"||!it){ if(I.innerHTML) I.innerHTML=""; return }
+  const p=Math.max(0,Math.min(1,el/dur)), all=(this.rotItems||[]).filter(x=>!x.hidden), left=Math.max(0,Math.ceil((dur-el)/1000));
+  if(k==="bar"){ if(!I.firstChild||!I.querySelector(".ri-bar")) I.innerHTML='<i class="ri-bar"><b></b></i>'; I.querySelector(".ri-bar b").style.transform=`scaleX(${frozen&&!dur?1:p})` }
+  else if(k==="ring"){ if(!I.querySelector(".ri-ring")) I.innerHTML='<svg class="ri-ring" viewBox="0 0 36 36"><circle cx="18" cy="18" r="15" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="3"/><circle class="rr" cx="18" cy="18" r="15" fill="none" stroke="currentColor" stroke-width="3" pathLength="100" stroke-dasharray="100" transform="rotate(-90 18 18)"/></svg>'; I.querySelector(".rr").style.strokeDashoffset=String(100-p*100) }
+  else if(k==="count"){ const t=frozen?"⏸":left+"s"; if(I.textContent!==t) I.innerHTML=`<span class="ri-count">${t}</span>` }
+  else if(k==="dots"){ const h=all.map(x=>`<i class="${x.id===it.id?"on":""}"></i>`).join(""); if(I.dataset.h!==h){ I.dataset.h=h; I.innerHTML=`<span class="ri-dots">${h}</span>` } }
+  else if(k==="next"){ const i=all.findIndex(x=>x.id===it.id), nx=all[(i+1)%all.length]; const t=nx&&nx.id!==it.id?`التالي: ${rotLabel(nx.cfg)}${frozen?"":" · "+left+"s"}`:""; if(I.textContent!==t) I.innerHTML=t?`<span class="ri-next">${esc(t)}</span>`:"" } },
+ /** التبديل الذكي حسب أحداث البث */
+ rotEvent(ev){ const w=this.w, sm=w.smart||{}; if(!sm.on||!ev||this.opts.editor&&!this.opts.smartPreview) return; const now=Date.now(), rs=this.rs; if(!rs) return;
+  const rules=Array.isArray(sm.rules)?sm.rules:[]; let hit=null;
+  for(const r of rules){ if(!r||!r.item||!(this.rotItems||[]).some(x=>x.id===r.item)) continue; let m=false;
+   if(r.ev==="bigGift"&&ev.type==="gift") m=(+ev.value||((+ev.diamonds||0)*(+ev.count||1)))>=(+r.min||1000);
+   else if(r.ev==="gift"&&ev.type==="gift") m=String(ev.giftId)===String(r.giftId)||(!!r.giftName&&String(ev.gift||"").toLowerCase()===String(r.giftName).toLowerCase());
+   else if(r.ev==="follow") m=ev.type==="follow";
+   else if(r.ev==="donation") m=ev.type==="donation"&&(+ev.amount||0)>=(+r.min||0);
+   else if(r.ev==="likes"&&ev.type==="like"){ const L=rs.lk||(rs.lk=[]); L.push([now,+ev.count||1]); while(L.length&&now-L[0][0]>10000) L.shift(); m=L.reduce((a,x)=>a+x[1],0)>=(+r.min||500) }
+   if(m&&(!hit||(+r.prio||0)>(+hit.prio||0))) hit=r }
+  if(hit) this.rotInterrupt(hit,now) },
+ rotClockLogs(logs){ const sm=(this.w.smart||{}); if(!sm.on) return; const now=Date.now();
+  for(const l of logs||[]){ for(const r of sm.rules||[]){ if(r.ev==="subNear"&&l.sa==="near") this.rotInterrupt(r,now); if(r.ev==="goal"&&(l.kind==="goal"||/^تحقيق الهدف/.test(String(l.reason||"")))) this.rotInterrupt(r,now) } } },
+ rotGoalCheck(src){ const sm=this.w.smart||{}; if(!sm.on||!src) return; const rs=this.rs; rs.goals=rs.goals||{};
+  for(const r of sm.rules||[]){ if(r.ev!=="goal") continue; const it=(this.rotItems||[]).find(x=>x.id===r.item); if(!it) continue; const c=it.cfg; let done=false;
+   try{ if(c.type==="goal") done=+c.target>0&&((src.D&&src.D.tot&&src.D.tot.likes)||0)>=+c.target; else if(c.type==="donGoal"){ const DC=src.DC||{}, gl=(DC.goals||[]).find(x=>x.id===c.goalId)||(DC.goals||[])[0]; if(gl){ const g=goalProgress(gl,src.DN||{list:[]},Date.now(),DC.fx); done=g.pct>=100 } } }catch(e){}
+   if(done&&!rs.goals[r.id]){ rs.goals[r.id]=1; if(rs.goalsInit) this.rotInterrupt(r,Date.now()) } }
+  rs.goalsInit=true },
+ rotInterrupt(r,now){ const rs=this.rs; if(!rs) return; if(rs.ev&&(+rs.ev.prio||0)>(+r.prio||0)&&now<rs.ev.until) return; if(!rs.ev&&rs.cool&&now<rs.cool) return;
+  const it=(this.rotItems||[]).find(x=>x.id===r.item); if(!it||it.hidden) return; const d=Math.max(2,+r.dur||10)*1000;
+  if(rs.ev&&rs.ev.item===it.id){ rs.ev.until=Math.max(rs.ev.until,now+d); return } // نفس الحدث يتكرر: نمدد بدل إعادة الانتقال (لا تبديل مزعج)
+  rs.ev={item:it.id,at:now,until:now+d,prio:+r.prio||0}; this.rotShow(it) },
+ /** للمعاينة والاختبارات */
+ rotState(){ const rs=this.rs||{}; return {cur:rs.cur,ev:rs.ev?rs.ev.item:null,cyc:rs.cyc,lastTr:rs.lastTr} },
+});
+
+const ROT_CSS=`
+.rotw{overflow:visible}
+.rotw .rot-stage{position:absolute;inset:0}
+.rotw .rot-item{position:absolute;inset:0;visibility:hidden;pointer-events:none}
+.rotw .rot-item.on{visibility:visible}
+.rotw .rot-item:not(.on) *{animation-play-state:paused!important}
+.rotw .rot-item>.wd{pointer-events:none}
+.rotw .rot-fx{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:5}
+.rotw .rot-fb{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font:800 calc(var(--rfs,28px))/1.2 "Alexandria","IBM Plex Sans Arabic",sans-serif;text-shadow:0 2px 8px #000}.rotw .rot-fb img{max-width:40%;max-height:70%;object-fit:contain}
+.rotw .rot-ind{position:absolute;inset:auto 0 0 0;z-index:6;pointer-events:none;color:var(--ric);opacity:var(--rio)}
+.rti-bar .ri-bar{display:block;position:absolute;inset:auto 0 0 0;height:calc(3px*var(--ris));background:color-mix(in srgb,var(--ric) 25%,transparent);border-radius:9px;overflow:hidden}.rti-bar .ri-bar b{position:absolute;inset:0;background:var(--ric);transform-origin:100% 50%;transition:transform .2s linear;box-shadow:0 0 8px var(--ric)}
+.rti-ring .rot-ind{inset:6px 6px auto auto;width:calc(22px*var(--ris));height:calc(22px*var(--ris))}.ri-ring{width:100%;height:100%;display:block}.ri-ring .rr{transition:stroke-dashoffset .2s linear}
+.rti-count .rot-ind,.rti-next .rot-ind{inset:auto 8px 6px auto;font:700 calc(13px*var(--ris))/1 "Alexandria","IBM Plex Sans Arabic",sans-serif;text-shadow:0 1px 4px #000}
+.ri-count,.ri-next{background:rgba(0,0,0,.35);padding:.25em .6em;border-radius:99px;white-space:nowrap}
+.rti-dots .rot-ind{display:flex;justify-content:center;bottom:6px}.ri-dots{display:flex;gap:calc(5px*var(--ris))}.ri-dots i{width:calc(7px*var(--ris));height:calc(7px*var(--ris));border-radius:50%;background:currentColor;opacity:.35;transition:opacity .3s,transform .3s}.ri-dots i.on{opacity:1;transform:scale(1.25)}
+.rtx{position:absolute;display:block;pointer-events:none;color:#9fd0ff}
+.rtx svg{width:100%;height:100%;display:block;overflow:visible}
+.rtx-glass{top:-10%;bottom:-10%;left:20%;width:60%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.35),rgba(255,255,255,.08),transparent);backdrop-filter:blur(6px)}
+.rtx-gold{top:0;bottom:0;width:16%;background:linear-gradient(90deg,transparent,#f6c94a,#fff1b8,#f6c94a,transparent);box-shadow:0 0 30px #f6c94a;filter:blur(1px)}
+.rtx-neon{inset:0;color:#22e1ff;filter:drop-shadow(0 0 6px #22e1ff)}
+.rtx-scan{left:0;right:0;height:3px;background:#22e1ff;box-shadow:0 0 14px #22e1ff,0 0 30px #22e1ff88}
+.rtx-holo{inset:0;background:repeating-linear-gradient(0deg,rgba(120,240,255,.25) 0 2px,transparent 2px 5px);mix-blend-mode:screen;animation:rtx-fade .8s forwards}@keyframes rtx-fade{to{opacity:0}}
+.rtx-facet{inset:0;background:linear-gradient(160deg,rgba(255,255,255,.7),rgba(170,220,255,.2) 50%,transparent)}
+.rtx-px{background:#4d8dff}
+.rtx-cur{top:0;bottom:0;width:50.5%;background:linear-gradient(90deg,#0a1226,#13234a)}.rtx-cur-a{left:0}.rtx-cur-b{right:0;background:linear-gradient(270deg,#0a1226,#13234a)}
+.rtx-ring{left:50%;top:50%;width:60%;aspect-ratio:1;border-radius:50%;border:2px solid rgba(160,210,255,.8);box-shadow:0 0 20px rgba(120,190,255,.6)}
+.rtx-spot{top:50%;width:70%;aspect-ratio:1;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(closest-side,rgba(255,250,230,.4),transparent)}
+.rtx-laser{top:-5%;bottom:-5%;width:3px;background:#ff3355;box-shadow:0 0 10px #ff3355,0 0 26px #ff335588}
+.rtx-bolt{left:0;right:0;top:35%;height:30%;color:#9fd0ff;filter:drop-shadow(0 0 6px #9fd0ff)}
+.rtx-crease{left:0;right:0;top:50%;height:1px;background:rgba(255,255,255,.7)}
+.rtx-pt{width:6px;height:6px;border-radius:50%;background:#bfe6ff;box-shadow:0 0 8px #9fd0ff}
+.rtx-aur{top:50%;width:55%;height:140%;border-radius:50%;filter:blur(18px);mix-blend-mode:screen}
+.rtx-metal{inset:0;background:linear-gradient(115deg,transparent 30%,#f2f5f9 45%,#9aa6b5 50%,#fff 55%,transparent 70%) 200% 0/250% 100% no-repeat;mix-blend-mode:screen}
+.rtx-grid{inset:0;background-image:linear-gradient(rgba(77,141,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(77,141,255,.6) 1px,transparent 1px)}
+.rtx-hex{left:50%;top:50%;height:80%;aspect-ratio:1;transform:translate(-50%,-50%)}
+.rtx-streak{left:0;right:0;top:48%;height:3px;background:linear-gradient(90deg,transparent,#4d8dff,#f6c94a,transparent)}
+.rcw{display:grid;place-items:center}.rcw .rc-in{text-align:center;color:var(--rcc);display:flex;flex-direction:column;gap:.2em;padding:.3em .8em}
+.rcw .rc-bg{background:rgba(6,10,20,.6);border:1px solid rgba(255,255,255,.12);border-radius:16px;backdrop-filter:blur(6px)}
+.rcw .rc-t{font:800 var(--rcfs)/1.25 "Alexandria","IBM Plex Sans Arabic",sans-serif;text-shadow:0 2px 10px rgba(0,0,0,.7)}.rcw .rc-s{font:500 calc(var(--rcfs)*.5)/1.3 "IBM Plex Sans Arabic",sans-serif;opacity:.85;text-shadow:0 1px 6px rgba(0,0,0,.7)}
+.rcw .rc-m{position:absolute;inset:0;width:100%;height:100%}
+.rcw .rc-empty{opacity:.5;font-size:14px}
+`;
+
 const LOGO="data:image/svg+xml;base64,PHN2ZyBjbGFzcz0iYjYtZW1ibGVtIiB2aWV3Qm94PSIwIDAgMTIwIDEyMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIiBhcmlhLWxhYmVsPSJCNk82Ij48ZGVmcz4KIDxsaW5lYXJHcmFkaWVudCBpZD0iZW1iMWciIHgxPSIwIiB5MT0iMCIgeDI9IjEiIHkyPSIxIj48c3RvcCBvZmZzZXQ9IjAiIHN0b3AtY29sb3I9IiM5ZmQwZmYiLz48c3RvcCBvZmZzZXQ9Ii41NSIgc3RvcC1jb2xvcj0iIzRkOGRmZiIvPjxzdG9wIG9mZnNldD0iMSIgc3RvcC1jb2xvcj0iIzE1NDZjOSIvPjwvbGluZWFyR3JhZGllbnQ+CiA8bGluZWFyR3JhZGllbnQgaWQ9ImVtYjFmIiB4MT0iMCIgeTE9IjAiIHgyPSIwIiB5Mj0iMSI+PHN0b3Agb2Zmc2V0PSIwIiBzdG9wLWNvbG9yPSIjMGExMjI2Ii8+PHN0b3Agb2Zmc2V0PSIxIiBzdG9wLWNvbG9yPSIjMDUwOTE0Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+CiAKIDxwYXRoIGQ9Ik02MCA4IDEwMyAzM3Y1NEw2MCAxMTIgMTcgODdWMzNaIiBmaWxsPSJ1cmwoI2VtYjFmKSIgc3Ryb2tlPSJ1cmwoI2VtYjFnKSIgc3Ryb2tlLXdpZHRoPSI1IiBzdHJva2UtbGluZWpvaW49InJvdW5kIi8+CiA8cGF0aCBkPSJNNjAgMTkgOTQgMzl2NDJMNjAgMTAxIDI2IDgxVjM5WiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjNGQ4ZGZmIiBzdHJva2Utb3BhY2l0eT0iLjIyIiBzdHJva2Utd2lkdGg9IjEuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogPHBhdGggZD0iTTUwIDQydjM2bDI5LTE4WiIgZmlsbD0idXJsKCNlbWIxZykiIHN0cm9rZT0idXJsKCNlbWIxZykiIHN0cm9rZS13aWR0aD0iMyIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCIvPgogPHBhdGggY2xhc3M9ImVtYi13MSIgZD0iTTg0IDQ0YTIyIDIyIDAgMCAxIDAgMzIiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzlmZDBmZiIgc3Ryb2tlLXdpZHRoPSI0IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KIDxwYXRoIGNsYXNzPSJlbWItdzIiIGQ9Ik0zNiA0NGEyMiAyMiAwIDAgMCAwIDMyIiBmaWxsPSJub25lIiBzdHJva2U9IiM5ZmQwZmYiIHN0cm9rZS1vcGFjaXR5PSIuNTUiIHN0cm9rZS13aWR0aD0iNCIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIi8+CiA8L3N2Zz4=";
 /* ================= النقل: نفس المتصفح (BroadcastChannel) أو الخادم (WebSocket) ================= */
 const bus=("BroadcastChannel" in window)?new BroadcastChannel("b6o6-live-v2"):null;
@@ -11930,7 +12235,7 @@ let saveRT, saveFirst=0; function saveRoom(){ const now=Date.now(); if(!saveRT) 
 addEventListener("pagehide",()=>{ if(!CFG) ls("arsh.app",{layouts:S.layouts,active:S.active,settings:S.settings,profile:S.profile,socials:S.socials,donCfg:S.donCfg,bots:S.bots}); saveRoomNow()});
 function toast(t){const e=document.getElementById("toast");e.textContent=t;e.classList.add("show");clearTimeout(e._t);e._t=setTimeout(()=>e.classList.remove("show"),1600)}
 function flash(t){const e=document.getElementById("savedot");if(e){e.textContent="✓ "+t;e.style.opacity=1;clearTimeout(e._t);e._t=setTimeout(()=>e.style.opacity=.5,900)}}
-function pushLayout(){ const l={...L(),socials:S.socials,donCfg:S.donCfg,bots:S.bots}; if(bus) bus.postMessage({t:"layout",layout:l}); if(wsReady) ws.send(JSON.stringify({t:"layout",room:S.settings.room,layout:l})) }
+function pushLayout(){ if(typeof rotSyncAll==="function") rotSyncAll(); const l={...L(),socials:S.socials,donCfg:S.donCfg,bots:S.bots}; if(bus) bus.postMessage({t:"layout",layout:l}); if(wsReady) ws.send(JSON.stringify({t:"layout",room:S.settings.room,layout:l})) }
 
 const views=new Map(), liveViews=new Set();
 const allViews=()=>[...views.values(),...liveViews];
@@ -12038,7 +12343,7 @@ function overlayURL(l,only,acc){ if(CFG) return CFG.overlayURL(l.id,only,acc); c
 function copy(t){ (navigator.clipboard?navigator.clipboard.writeText(t):Promise.reject()).then(()=>toast("تم النسخ")).catch(()=>{const a=document.createElement("textarea");a.value=t;document.body.appendChild(a);a.select();try{document.execCommand("copy");toast("تم النسخ")}catch(e){toast("انسخ يدوياً")}a.remove()}) }
 
 /* ---- الهيكل ---- */
-const PAGES=[["home","الرئيسية","🏠"],["academy","أكاديمية بطوط ستريم","🎓"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["livechat","الشات المباشر والإدارة","💬"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","✦"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
+const PAGES=[["home","الرئيسية","🏠"],["academy","أكاديمية بطوط ستريم","🎓"],["live","الاتصال بالبث المباشر","📡"],["perf","مراقبة أداء البث","📈"],["sounds","مكتبة الأصوات","🔊"],["livechat","الشات المباشر والإدارة","💬"],["connections","مركز ربط البثوث","🔌"],["music","طلبات الأغاني","🎵"],["actions","الإجراءات التلقائية","⚡"],["community","المجتمعات والإشعارات","📣"],["bio","رابط البايو","🔗"],["poststats","إحصائيات نهاية البث","📊"],["billing","الاشتراك","💎"],["falerts","تنبيهات المتابعين","✦"],["alerts","إشعارات الدعم","🔔"],["donalerts","الدونيشن والآيرتات","💸"],["layouts","مكتبة تصاميم البث","🎨"],["dondiag","فحص اتصال الدونيشن","🩺"],["boards","قوائم الترتيب","🏆"],["likes","التكبيس والإعجابات","❤️"],["gifts","الدعم والهدايا","🎁"],["comments","التعليقات والتفاعلات","💬"],["bots","مركز البوتات والصوت","🤖"],["followers","عداد المتابعين","👥"],["rotations","القوائم المتناوبة","🔁"],["layers","الطبقات","🧩"],["latest","آخر التفاعلات","✨"],["library","مكتبة التصاميم","🎨"],["subathon","نظام السبثون","⏳"],["timers","مؤقتات البث","⏱️"],["duration","مدة البث","⏲️"],["chatcfg","إعدادات الشات","💬"],["donations","الدونيشن والتبرعات","💰"],["socials","حساباتي","🌐"],["stats","الإحصائيات والتقارير","📊"],["studio","استوديو البث","🎬"],["obs","روابط OBS","🔗"],["settings","الإعدادات","⚙️"],["account","حسابي","👤"]];
 const ROADMAP=[["المرحلة 3","قوانين البث + مكتبة تصاميمها"],["المرحلة 4","التنبيهات، الأهداف الموسعة، التعليقات المباشرة، القارئ الصوتي"],["المرحلة 5","بوت الشات، التصويت، مشغل الموسيقى، التقارير"],["المرحلة 6","بطاقات الشكر، تيليجرام، الباقات، لوحة الإدارة"],["المرحلة 7","استكمال 50 تصميماً للقوائم وتحسين الأداء"]];
 function shell(){
  document.getElementById("root").innerHTML=`<div class="mobnav" id="mobnav">${PAGES.map(p=>`<button data-go="${p[0]}">${p[2]} ${p[1]}</button>`).join("")}</div>
@@ -12202,6 +12507,7 @@ function renderPage(soft){
  else if(p==="sounds"){ h=sndHTML() }
  else if(p==="academy"){ h=acHTML() }
  else if(p==="rlib"){ h=rlibHTML() }
+ else if(p==="rotations"){ h=rotHTML() }
  else if(p==="rblab"){ h=rblabHTML() }
  else if(p==="livechat"){ h=flcHTML() }
  else if(p==="bots"){ h=botsHTML() }
@@ -12271,7 +12577,7 @@ function renderPage(soft){
  if(p==="layouts") lyAfter();
  if(p==="socials") mountSocials();
  if(p==="donations") mountDonations();
- if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount(); if(p==="academy") acMount(); if(p==="rlib") rlibMount(); if(p==="rblab") rblabMount(); if(p==="subathon") setTimeout(rbFillImgs,300); acInject(p); if(p==="livechat"){ const L=document.getElementById("flc-list"); if(L&&!FLCV().pause) L.scrollTop=L.scrollHeight; if(!S.connsAt&&CFG){ S.connsAt=Date.now(); connLoad() } }
+ if(p==="duration") duMount(); if(p==="chatcfg") ccMount(); if(p==="sounds") sndMount(); if(p==="academy") acMount(); if(p==="rlib") rlibMount(); if(p==="rotations") rotMount(); if(p==="rblab") rblabMount(); if(p==="subathon") setTimeout(rbFillImgs,300); acInject(p); if(p==="livechat"){ const L=document.getElementById("flc-list"); if(L&&!FLCV().pause) L.scrollTop=L.scrollHeight; if(!S.connsAt&&CFG){ S.connsAt=Date.now(); connLoad() } }
  if(p==="subathon"){ const sw=l.widgets.find(w=>w.type==="subathon"&&w.id===S.saW)||l.widgets.find(w=>w.type==="subathon"); if(sw) mountClockPreview("sa-pv",sw) }
  setConn();
 }
@@ -16207,6 +16513,205 @@ document.addEventListener("drop",e=>{ const r=e.target.closest&&e.target.closest
 /** صور الهدايا المفقودة: تُكمل تلقائياً من صور TikTok الحقيقية عند وصولها (لا صور تخمينية) */
 function rbFillImgs(){ const cat=(S.catalog||[]).filter(g=>/^https:\/\//.test(g.image||"")); if(!cat.length) return; const need=R.C.subathon.rules.list.filter(r=>r.kind==="gift"&&!r.img&&r.giftId!=null&&r.giftId!=="*"&&cat.some(g=>String(g.id)===String(r.giftId)));
  if(!need.length) return; setRules(Lx=>{ for(const r of Lx) if(r.kind==="gift"&&!r.img){ const g=cat.find(x=>String(x.id)===String(r.giftId)); if(g) r.img=g.image } }) }
+
+/* ===================== 🔁 القوائم المتناوبة — B6O6 Fantastic Smart Rotation V1 ===================== */
+/* المجموعة = عنصر «rotator» في التخطيط برابط OBS مستقل. القوائم داخلها مراجع لعناصر التخطيط (نفس التصميم والإعدادات). */
+
+const ROT_CAT=[
+ ["likes","❤️ أقوى المكبسين",{type:"lb",source:"likes",title:"أقوى المكبسين",design:"b6o6Halo"}],
+ ["gifts","🎁 أقوى الداعمين",{type:"lb",source:"gifts",title:"أقوى الداعمين",design:"goldenHalo"}],
+ ["last5","🧾 آخر خمسة داعمين",{type:"donLast5"}],
+ ["day","📅 داعمو اليوم",{type:"lb",source:"giftsDay",title:"داعمو اليوم",design:"diamondRing"}],
+ ["week","🗓 داعمو الأسبوع",{type:"lb",source:"giftsWeek",title:"داعمو الأسبوع",design:"royalCrown"}],
+ ["month","🏆 داعمو الشهر",{type:"lb",source:"giftsMonth",title:"داعمو الشهر",design:"platinumCrown"}],
+ ["lastFollow","➕ آخر متابع",{type:"levent",kind:"follow",mode:"sticky",title:"آخر متابع",design:"goldenRose"}],
+ ["lastDon","💵 آخر داعم",{type:"levent",kind:"donation",mode:"sticky",title:"آخر داعم"}],
+ ["lastGift","🎁 آخر مرسل هدية",{type:"levent",kind:"gift",mode:"sticky",title:"آخر هدية"}],
+ ["lastLike","👆 آخر مكبس",{type:"levent",kind:"like",mode:"sticky",title:"آخر مكبس"}],
+ ["fcount","👥 عداد المتابعين",{type:"fcount"}],
+ ["donGoal","🎯 أهداف الدعم",{type:"donGoal"}],
+ ["likeGoal","❤️ هدف التكبيس",{type:"goal"}],
+ ["likeChallenge","🔥 تحدي التكبيس",{type:"sgoal",source:"likes",title:"تحدي التكبيس",target:10000,giftEmoji:"❤️"}],
+ ["srules","📜 قوانين السابثون",{type:"srules"}],
+ ["subathon","⏳ عداد السابثون",{type:"subathon"}],
+ ["duration","⏲️ مدة البث",{type:"duration"}],
+ ["stats","📊 إحصائيات البث",{type:"chatstats"}],
+ ["welcome","👋 رسالة ترحيبية",{type:"rcard",rcMode:"text",rcText:"أهلاً وسهلاً فيكم في البث",rcSub:"لا تنسى المتابعة وتفعيل الجرس"}],
+ ["text","✍️ نص مخصص",{type:"rcard",rcMode:"text",rcText:"نص مخصص",rcSub:""}],
+ ["social","🌐 حسابات التواصل",{type:"social"}],
+ ["logo","✦ شعار صانع المحتوى",{type:"rcard",rcMode:"logo",rcSrc:"/logo-160.png",rcBg:false}],
+ ["media","🖼️ صورة أو مقطع إعلاني",{type:"rcard",rcMode:"media",rcSrc:"",rcBg:false}],
+];
+const ROT_FITS=[["full","المساحة كاملة",{x:0,y:0,w:1,h:1}],["c90","وسط 90%",{x:.05,y:.05,w:.9,h:.9}],["top","النصف العلوي",{x:0,y:0,w:1,h:.5}],["bottom","النصف السفلي",{x:0,y:.5,w:1,h:.5}],["right","النصف الأيمن",{x:.5,y:0,w:.5,h:1}],["left","النصف الأيسر",{x:0,y:0,w:.5,h:1}],["c70","وسط 70%",{x:.15,y:.15,w:.7,h:.7}]];
+const rotUid=()=>"i"+Math.random().toString(36).slice(2,8);
+const rotGroups=()=>L().widgets.filter(w=>w.type==="rotator");
+const rotCur=()=>{ const G=rotGroups(); return G.find(w=>w.id===S.rotSel)||G[0]||null };
+/** إنشاء عنصر جديد مخفي في التخطيط ليُستخدم داخل مجموعة (لا يظهر في البث خارج المجموعة) */
+function rotNewWidget(o,grpName){ const w=newWidget(o.type,{...o,name:"↻ "+(o.title||(TYPES[o.type]||{}).label||"قائمة")+(grpName?" — "+grpName:""),visible:false,z:1}); L().widgets.push(w); return w }
+function rotItemFor(w,extra){ return {id:rotUid(),ref:w.id,dur:10,tr:"",hidden:false,fit:{x:0,y:0,w:1,h:1},...(extra||{}),cfg:JSON.parse(JSON.stringify(w))} }
+/** المزامنة: كل قائمة داخل المجموعة تحمل نسخة محدثة من عنصرها (يُستدعى قبل كل إرسال للتخطيط) */
+function rotSyncAll(){ try{ const l=L(); const by=Object.fromEntries(l.widgets.map(w=>[w.id,w]));
+ for(const g of l.widgets) if(g.type==="rotator"){ g.items=(g.items||[]).filter(it=>it&&it.ref); for(const it of g.items){ const src=by[it.ref]; if(src&&src.type!=="rotator") it.cfg=JSON.parse(JSON.stringify(src)); it.missing=!src } } }catch(e){} }
+function rotCtl(g,op,item){ clockOp("rot",op,{wid:g.id,item:item||""}) }
+const rotLive=g=>((R.C&&R.C.rot&&R.C.rot[g.id])||{});
+
+/* ---------------- القوالب الجاهزة (15) ---------------- */
+const ROT_TPL=[
+ {k:"gaming",n:"Gaming Rotation",d:"التكبيس ← الداعمين ← قوانين السابثون",tr:"digitalScan",ind:"bar",c:"#22e1ff",items:[["likes",15,{design:"rgbGamer"}],["gifts",20,{design:"esportsChampion"}],["srules",10,{design:"gamingHUD"}]],smart:[["bigGift","gifts",12,3,1000],["likes","likes",10,2,800]]},
+ {k:"luxury",n:"Luxury Rotation",d:"الداعمين ← آخر داعم ← أهداف الدعم",tr:"goldenSweep",ind:"ring",c:"#f6c94a",items:[["gifts",20,{design:"luxuryBlackGold"}],["lastDon",10,{design:"blackGold"}],["donGoal",15]],smart:[["donation","lastDon",10,3,1]]},
+ {k:"support",n:"Support Rotation",d:"أقوى الداعمين ← آخر خمسة ← داعمو اليوم",tr:"crossfade",ind:"dots",c:"#22c55e",items:[["gifts",20,{design:"diamondEmperor"}],["last5",15],["day",15]],smart:[["bigGift","gifts",12,3,500]]},
+ {k:"tiktok",n:"TikTok Rotation",d:"التكبيس ← آخر متابع ← عداد المتابعين",tr:"slideUp",ind:"bar",c:"#ff2d55",items:[["likes",15],["lastFollow",8],["fcount",10]],smart:[["follow","lastFollow",6,1],["likes","likes",10,2,1000]]},
+ {k:"subathon",n:"Subathon Rotation",d:"عداد السابثون ← القوانين ← أقوى الداعمين",tr:"fantasticMotion",ind:"next",c:"#4d8dff",items:[["subathon",15],["srules",15,{design:"fantasticSignature"}],["gifts",15]],smart:[["subNear","subathon",20,5]]},
+ {k:"minimal",n:"Minimal Transparent",d:"نصوص شفافة بانتقالات هادئة",tr:"smoothFade",ind:"none",c:"#ffffff",items:[["srules",12,{design:"pureText"}],["lastFollow",8],["welcome",8,{rcBg:false}]]},
+ {k:"royal",n:"Royal Rotation",d:"داعمو الأسبوع ← الشهر ← اليوم",tr:"curtainReveal",ind:"ring",c:"#d4a73c",items:[["week",15,{design:"royalThrone"}],["month",15,{design:"goldenPalace"}],["day",15,{design:"royalCrown"}]]},
+ {k:"fantastic",n:"Fantastic Rotation",d:"توقيع B6O6: انتقال عشوائي فاخر بلا تكرار",tr:"fantasticMotion",mode:"random",ind:"dots",c:"#4d8dff",items:[["gifts",15,{design:"b6o6Royal"}],["likes",15,{design:"b6o6Halo"}],["srules",10,{design:"fantasticSignature"}],["fcount",10]]},
+ {k:"multi",n:"Multi-Platform Rotation",d:"الحسابات ← الإحصائيات ← مدة البث",tr:"cardRotation",ind:"bar",c:"#a78bfa",items:[["social",12],["stats",12],["duration",8]]},
+ {k:"full",n:"Full Stream Rotation",d:"كل شيء في مساحة واحدة",tr:"elegantScale",mode:"random",ind:"next",c:"#4d8dff",items:[["likes",12],["gifts",15],["lastFollow",8],["donGoal",10],["srules",10],["stats",10]],smart:[["bigGift","gifts",12,3,1000],["follow","lastFollow",6,1]]},
+ {k:"chat",n:"Chatting Rotation",d:"ترحيب ← آخر متابع ← نص مخصص",tr:"softDissolve",ind:"none",c:"#ffffff",items:[["welcome",10],["lastFollow",8],["text",8,{rcText:"شاركونا آراءكم في الشات"}]]},
+ {k:"charity",n:"Goal Rotation",d:"أهداف الدعم ← تحدي التكبيس ← آخر داعم",tr:"diamondReveal",ind:"ring",c:"#22c55e",items:[["donGoal",15],["likeChallenge",12],["lastDon",8]],smart:[["goal","donGoal",15,5]]},
+ {k:"esports",n:"Esports Rotation",d:"قوانين HUD ← أقوى المكبسين ← الإحصائيات",tr:"laserSweep",ind:"count",c:"#facc15",items:[["srules",12,{design:"esports"}],["likes",12,{design:"b6o6Esports"}],["stats",10]]},
+ {k:"saudi",n:"Saudi Rotation",d:"أخضر وذهبي: الداعمين ← القوانين",tr:"metallicReflection",ind:"bar",c:"#d4a73c",items:[["gifts",15,{design:"emeraldKing"}],["srules",12,{design:"saudiLuxury"}],["welcome",8,{rcText:"حياكم الله"}]]},
+ {k:"calm",n:"Night Calm Rotation",d:"انتقالات ناعمة لبثوث الليل",tr:"aurora",ind:"dots",c:"#818cf8",items:[["lastFollow",10],["likes",15],["text",8,{rcText:"شكراً لوجودكم الليلة"}]]},
+];
+function rotFromTemplate(t){ const l=L(), g=newWidget("rotator",{name:t.n,tr:t.tr,trMode:t.mode||"fixed",indicator:t.ind,indColor:t.c,z:Math.max(0,...l.widgets.map(x=>x.z))+1}); const map={};
+ for(const [k,dur,extra] of t.items){ const c=ROT_CAT.find(x=>x[0]===k); if(!c) continue; const w=rotNewWidget({...c[2],...(extra||{})},t.n); const it=rotItemFor(w,{dur}); g.items.push(it); map[k]=map[k]||it.id }
+ if(t.smart&&t.smart.length) g.smart={on:true,cooldown:8,rules:t.smart.filter(r=>map[r[1]]).map(([ev,k,dur,prio,min])=>({id:rotUid(),ev,item:map[k],dur,prio,min:min||0}))};
+ l.widgets.push(g); S.rotSel=g.id; save(); pushLayout(); toast("✅ أُنشئت «"+t.n+"» — انسخ رابطها إلى OBS أو TikTok LIVE Studio"); return g }
+
+/* ---------------- الصفحة ---------------- */
+function rotHTML(){ const G=rotGroups(), g=rotCur(); rotSyncAll();
+ const head0=head("🔁 القوائم المتناوبة","اعرض عدة قوائم وطبقات في نفس المكان برابط واحد — تتبدل تلقائياً بتوقيتك وانتقالاتك، والبيانات تستمر في الخلفية بدون تصفير");
+ const tabs=`<div class="card rot-groups"><div class="row" style="gap:6px;flex-wrap:wrap;align-items:center">${G.map(x=>`<button class="btn sm ${g&&g.id===x.id?"on":""}" data-rotx="sel" data-id="${x.id}">🔁 ${esc(x.name||"مجموعة")} <span class="tag">${(x.items||[]).length}</span></button>`).join("")}
+  <button class="btn sm pri" data-rotx="new">＋ مجموعة جديدة</button><button class="btn sm" data-rotx="tpls">📦 القوالب الجاهزة (${ROT_TPL.length})</button></div></div>`;
+ const tpls=S.rotTpl||!G.length?`<div class="card"><h3>📦 قوالب جاهزة قابلة للتعديل</h3><div class="rot-tpls">${ROT_TPL.map(t=>`<div class="rot-tpl"><b>${esc(t.n)}</b><span class="mut small">${esc(t.d)}</span><span class="tag">⚡ ${esc((RT_BY_ID[t.tr]||{}).name||"")}${t.mode==="random"?" · عشوائي":""}</span><button class="btn xs pri" data-rotx="tpl" data-k="${t.k}">استخدام</button></div>`).join("")}</div></div>`:"";
+ if(!g) return head0+tabs+tpls+`<div class="sa2-empty">لا توجد مجموعات بعد. أنشئ مجموعة جديدة أو ابدأ من قالب جاهز.</div>`;
+ const live=rotLive(g), items=g.items||[], byId=Object.fromEntries(L().widgets.map(w=>[w.id,w]));
+ const trOpts=(v,withGroup)=>`${withGroup?`<option value="" ${!v?"selected":""}>انتقال المجموعة</option>`:""}<option value="random" ${v==="random"?"selected":""}>🎲 عشوائي (بدون تكرار متتالٍ)</option>${RT_TRANS.map(t=>`<option value="${t.id}" ${v===t.id?"selected":""}>${t.n}. ${esc(t.name)}</option>`).join("")}`;
+ const durSel=(it)=>{ const pre=ROT_DURS.some(([v])=>v===+it.dur); return `<select class="inp" data-rotf="dur" data-i="${it.id}">${ROT_DURS.map(([v,t])=>`<option value="${v}" ${+it.dur===v?"selected":""}>${t}</option>`).join("")}<option value="custom" ${pre?"":"selected"}>مدة مخصصة…</option></select>${pre?"":`<input class="inp" type="number" min="1" max="3600" value="${+it.dur||10}" data-rotf="durc" data-i="${it.id}" style="width:80px" title="بالثواني">`}` };
+ const row=(it,i)=>{ const src=byId[it.ref], c=src||it.cfg||{}, pinned=live.pin===it.id;
+  return `<div class="rot-it ${it.hidden?"hid":""} ${pinned?"pin":""} ${it.missing?"miss":""}" draggable="true" data-rotdrag="${it.id}">
+   <span class="rot-grip">⠿</span><span class="rot-n">${i+1}</span><span class="rot-ic">${(TYPES[c.type]||{}).icon||"▫"}</span><b class="rot-lbl" title="${esc(rotLabel(c))}">${esc(rotLabel(c))}</b>${it.missing?`<span class="tag warn">العنصر محذوف</span>`:""}
+   ${durSel(it)}<select class="inp" data-rotf="tr" data-i="${it.id}" title="الانتقال إلى هذه القائمة">${trOpts(it.tr||"",true)}</select>
+   <select class="inp" data-rotf="fit" data-i="${it.id}" title="الحجم والموقع داخل المساحة">${ROT_FITS.map(([k,t,f])=>`<option value="${k}" ${JSON.stringify(f)===JSON.stringify(it.fit||ROT_FITS[0][2])?"selected":""}>${t}</option>`).join("")}</select>
+   <span class="rot-acts"><button class="btn xs ${it.hidden?"":"on"}" data-rotx="hide" data-i="${it.id}" title="إخفاء مؤقت من الدورة">${it.hidden?"🙈":"👁"}</button><button class="btn xs ${pinned?"on":""}" data-rotx="pin" data-i="${it.id}" title="تثبيت هذه القائمة الآن في البث">📌</button><button class="btn xs" data-rotx="dup" data-i="${it.id}" title="تكرار داخل الدورة">⧉</button><button class="btn xs" data-rotx="edit" data-ref="${it.ref}" title="تعديل التصميم">🎨</button><button class="btn xs dng" data-rotx="rm" data-i="${it.id}" title="إزالة من المجموعة (لا يُحذف من المنصة)">✕</button></span></div>` };
+ const others=L().widgets.filter(w=>w.type!=="rotator"&&!items.some(it=>it.ref===w.id));
+ const sm=g.smart||{on:false,rules:[]};
+ const link=overlayURL(L(),g.id), tok=(String(link).match(/\/overlay\/([^/?#]+)/)||[])[1]||"";
+ const deck=tok&&typeof location!=="undefined"&&/^https?:/.test(location.protocol)?["next","prev","toggle"].map(c=>`<div class="row small" style="gap:6px"><code class="rot-code">${esc(location.origin+"/api/rot/"+tok+"?g="+g.id+"&cmd="+c)}</code><button class="btn xs" data-rotx="copy" data-v="${esc(location.origin+"/api/rot/"+tok+"?g="+g.id+"&cmd="+c)}">نسخ</button></div>`).join(""):`<p class="mut small">روابط Stream Deck تظهر بعد تسجيل الدخول في المنصة.</p>`;
+ const K=rotKeys();
+ return head0+tabs+tpls+`
+ <div class="rot-grid">
+  <div class="card rot-pvc"><div class="row" style="justify-content:space-between"><h3>👁 المعاينة المباشرة</h3><span class="tag" data-rotinfo></span></div>
+   <div class="rot-pv" id="rot-pv" data-wid="${g.id}"></div>
+   <div class="row rot-pvb"><button class="btn sm" data-rotpv="toggle">⏯ تشغيل/إيقاف المعاينة</button><button class="btn sm" data-rotpv="prev">⏮</button><button class="btn sm" data-rotpv="next">⏭ التالي</button><button class="btn sm" data-rotpv="gift">🎁 تجربة وصول دعم</button><button class="btn sm" data-rotpv="follow">➕ تجربة متابع</button><button class="btn sm" data-rotpv="likes">👆 تجربة التكبيس</button></div>
+   <p class="mut small">أحداث المعاينة لا تغيّر بيانات البث الحقيقية.</p></div>
+  <div class="card rot-livec"><h3>🎛 التحكم أثناء البث</h3>
+   <div class="row" style="gap:6px;flex-wrap:wrap"><button class="btn" data-rotx="ctl" data-op="prev">⏮ السابقة</button>${live.paused?`<button class="btn pri" data-rotx="ctl" data-op="resume">▶ استئناف</button>`:`<button class="btn" data-rotx="ctl" data-op="pause">⏸ إيقاف مؤقت</button>`}<button class="btn" data-rotx="ctl" data-op="next">⏭ التالية</button>${live.pin?`<button class="btn pri" data-rotx="ctl" data-op="unpin">📌 إلغاء التثبيت واستئناف</button>`:""}</div>
+   <p class="small" style="margin:8px 0 2px">${live.pin?`📌 مثبّتة: <b>${esc(rotLabel((items.find(x=>x.id===live.pin)||{}).cfg))}</b>`:live.paused?"⏸ التبديل متوقف مؤقتاً":"▶ التبديل التلقائي يعمل"}</p>
+   <h4>⌨️ اختصارات الكيبورد</h4><div class="grid g3" style="gap:6px">${[["next","التالية"],["prev","السابقة"],["toggle","إيقاف/استئناف"]].map(([k,t])=>`<label class="fld" style="margin:0"><span class="small">${t}</span><input class="inp rot-key" data-rotkey="${k}" value="${esc(K[k])}" readonly placeholder="اضغط الاختصار"></label>`).join("")}</div>
+   <h4>🎚 Stream Deck</h4><p class="mut small">أضف إجراء «Website» (طلب في الخلفية) بأحد الروابط:</p>${deck}
+   <h4>🔗 رابط المجموعة (Browser Source)</h4><div class="row" style="gap:6px"><button class="btn sm pri" data-rotx="copy" data-v="${esc(link)}">نسخ رابط OBS / TikTok LIVE Studio / Streamlabs</button></div><p class="mut small">رابط واحد للمجموعة كاملة، شفاف، يدعم البث العمودي والأفقي — أي تعديل هنا يصل للبث فوراً دون تغيير الرابط.</p></div>
+ </div>
+ <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3>🗂 قوائم المجموعة <span class="tag">${items.length}</span></h3>
+   <div class="row" style="gap:6px"><input class="inp" data-rotf="name" value="${esc(g.name||"")}" style="max-width:220px" title="اسم المجموعة"><button class="btn sm dng" data-rotx="delg">حذف المجموعة</button></div></div>
+  <div class="rot-list">${items.length?items.map(row).join(""):`<div class="sa2-empty">أضف قوائم من الأسفل.</div>`}</div>
+  <div class="row rot-add"><select class="inp" data-rotf="addnew"><option value="">＋ إضافة قائمة جديدة…</option>${ROT_CAT.map(([k,t])=>`<option value="${k}">${t}</option>`).join("")}</select>
+   <select class="inp" data-rotf="addref"><option value="">＋ إضافة عنصر موجود في التخطيط…</option>${others.map(w=>`<option value="${w.id}">${(TYPES[w.type]||{}).icon||""} ${esc(rotLabel(w))}</option>`).join("")}</select></div></div>
+ <div class="grid g2">
+  <div class="card"><h3>✨ الانتقالات</h3><div class="grid g2" style="gap:8px">
+   <div class="fld" style="margin:0"><label>طريقة الانتقال</label><select class="inp" data-rotf="trMode"><option value="fixed" ${g.trMode!=="random"?"selected":""}>انتقال المجموعة (ومخصص لكل قائمة)</option><option value="random" ${g.trMode==="random"?"selected":""}>عشوائي بدون تكرار متتالٍ</option></select></div>
+   <div class="fld" style="margin:0"><label>انتقال المجموعة</label><select class="inp" data-rotf="tr">${trOpts(g.tr||"elegantScale",false)}</select></div>
+   <div class="fld" style="margin:0"><label>مدة الانتقال <b class="mut">${(+g.trDur||900)/1000}ث</b></label><input type="range" min="200" max="3000" step="100" value="${+g.trDur||900}" data-rotf="trDur"></div>
+   <div class="fld" style="margin:0"><label>السرعة <b class="mut">×${+g.trSpeed||1}</b></label><input type="range" min=".5" max="2" step=".1" value="${+g.trSpeed||1}" data-rotf="trSpeed"></div>
+   <div class="fld" style="margin:0"><label>القوة <b class="mut">${Math.round((+g.trPower||1)*100)}%</b></label><input type="range" min=".3" max="1.6" step=".1" value="${+g.trPower||1}" data-rotf="trPower"></div>
+   <div class="fld" style="margin:0"><label>الاتجاه</label><select class="inp" data-rotf="trDir"><option value="rtl" ${g.trDir!=="ltr"?"selected":""}>من اليمين</option><option value="ltr" ${g.trDir==="ltr"?"selected":""}>من اليسار</option></select></div>
+   <div class="fld" style="margin:0"><label>المدة الافتراضية لكل قائمة</label><select class="inp" data-rotf="dur">${ROT_DURS.map(([v,t])=>`<option value="${v}" ${+g.dur===v?"selected":""}>${t}</option>`).join("")}</select></div>
+   <button class="btn sm" data-rotpv="trdemo" style="align-self:end">▶ معاينة الانتقال</button></div></div>
+  <div class="card"><h3>📍 المؤشر والقوائم الفارغة</h3><div class="grid g2" style="gap:8px">
+   <div class="fld" style="margin:0"><label>مؤشر التبديل</label><select class="inp" data-rotf="indicator">${Object.entries(ROT_INDICATORS).map(([k,t])=>`<option value="${k}" ${(g.indicator||"none")===k?"selected":""}>${t}</option>`).join("")}</select></div>
+   <div class="fld" style="margin:0"><label>لون المؤشر</label><input type="color" data-rotf="indColor" value="${g.indColor||"#4d8dff"}"></div>
+   <div class="fld" style="margin:0"><label>الحجم <b class="mut">×${+g.indSize||1}</b></label><input type="range" min=".5" max="2.5" step=".1" value="${+g.indSize||1}" data-rotf="indSize"></div>
+   <div class="fld" style="margin:0"><label>الشفافية <b class="mut">${Math.round((g.indOp??.9)*100)}%</b></label><input type="range" min="0" max="1" step=".05" value="${g.indOp??.9}" data-rotf="indOp"></div>
+   <label class="row small" style="gap:6px"><input type="checkbox" data-rotf="skipEmpty" ${g.skipEmpty!==false?"checked":""}> تجاوز القوائم الفارغة</label>
+   <div class="fld" style="margin:0"><label>إذا كانت كل القوائم فارغة</label><select class="inp" data-rotf="fallback">${Object.entries(ROT_FALLBACK).map(([k,t])=>`<option value="${k}" ${(g.fallback||"transparent")===k?"selected":""}>${t}</option>`).join("")}</select></div>
+   ${g.fallback==="text"?`<div class="fld" style="margin:0;grid-column:span 2"><label>النص الاحتياطي</label><input class="inp" data-rotf="fbText" value="${esc(g.fbText||"")}" placeholder="مثلاً: حياكم الله في البث"></div>`:""}</div></div>
+ </div>
+ <div class="card"><div class="row" style="justify-content:space-between;align-items:center"><h3>⚡ التبديل الذكي حسب أحداث البث — Smart Event Rotation</h3><label class="sa2-sw"><input type="checkbox" data-rotf="smartOn" ${sm.on?"checked":""}><i></i></label></div>
+  <p class="mut small">عند الحدث تظهر القائمة المرتبطة لمدة محددة ثم تعود الدورة الأساسية. الأولوية الأعلى تتقدم، والحدث المتكرر يمدد العرض بدل التبديل المزعج.</p>
+  <div class="grid g3" style="gap:8px;max-width:560px"><div class="fld" style="margin:0"><label>الانتظار بين الأحداث (ث)</label><input class="inp" type="number" min="0" max="300" value="${+sm.cooldown||8}" data-rotf="smartCool"></div></div>
+  <div class="rot-smart">${(sm.rules||[]).map(r=>`<div class="rot-sr"><select class="inp" data-rots="ev" data-r="${r.id}">${Object.entries(ROT_SMART).map(([k,t])=>`<option value="${k}" ${r.ev===k?"selected":""}>${t}</option>`).join("")}</select><span>←</span>
+   <select class="inp" data-rots="item" data-r="${r.id}">${items.map(it=>`<option value="${it.id}" ${r.item===it.id?"selected":""}>${esc(rotLabel(it.cfg))}</option>`).join("")}</select>
+   <label class="small">المدة <input class="inp" type="number" min="2" max="300" value="${+r.dur||10}" data-rots="dur" data-r="${r.id}" style="width:64px"></label><label class="small">الأولوية <input class="inp" type="number" min="0" max="9" value="${+r.prio||0}" data-rots="prio" data-r="${r.id}" style="width:54px"></label>
+   ${["bigGift","likes","donation"].includes(r.ev)?`<label class="small">${r.ev==="likes"?"تكبيس خلال 10ث ≥":r.ev==="donation"?"مبلغ ≥":"قيمة ≥ (كوين)"} <input class="inp" type="number" min="0" value="${+r.min||0}" data-rots="min" data-r="${r.id}" style="width:80px"></label>`:""}${r.ev==="gift"?`<input class="inp" placeholder="اسم الهدية أو رقمها" value="${esc(r.giftName||r.giftId||"")}" data-rots="gift" data-r="${r.id}" style="width:150px">`:""}
+   <button class="btn xs dng" data-rotx="srdel" data-r="${r.id}">✕</button></div>`).join("")}</div>
+  <button class="btn sm" data-rotx="sradd" ${items.length?"":"disabled"}>＋ قاعدة حدث</button></div>`+testBar() }
+
+/* ---------------- المعاينة ---------------- */
+function rotMount(){ const host=document.getElementById("rot-pv"); const g=rotCur(); if(!host||!g) return; host.innerHTML="";
+ const cv=canvasOf(L()), W=Math.round(g.w*cv.w), H=Math.round(g.h*cv.h), stg=document.createElement("div"); stg.className="stage"; stg.style.cssText=`background:none;width:${W}px;height:${H}px;transform-origin:0 0`; host.appendChild(stg);
+ const fit=()=>{ const s=Math.min(host.clientWidth/W,(host.clientHeight||360)/H); stg.style.transform=`scale(${s})`; stg.style.marginInline=Math.max(0,(host.clientWidth-W*s)/2)+"px" }; fit();
+ S.rotPvCtl=S.rotPvCtl&&S.rotPvCtl.wid===g.id?S.rotPvCtl:{wid:g.id,paused:false,pin:"",seq:0};
+ const pw={...JSON.parse(JSON.stringify(g)),id:"rotpv_"+g.id,x:0,y:0,w:1,h:1,locked:true,visible:true};
+ const v=new View(pw,{w:W,h:H},{data:SRC,globalFx:true,mute:true,smartPreview:true,localCtl:S.rotPvCtl}); stg.appendChild(v.el); liveViews.add(v); S.rotPv=v;
+ clearInterval(S.rotPvT); S.rotPvT=setInterval(()=>{ const el=document.querySelector("[data-rotinfo]"); if(!el||!v.el.isConnected){ clearInterval(S.rotPvT); liveViews.delete(v); return }
+  const st=v.rotState(), its=v.rotItems||[], i=its.findIndex(x=>x.id===st.cur), cur=its[i], pool=v.rotPool(), nx=pool.length>1?(its.slice(i+1).concat(its.slice(0,i+1)).find(x=>pool.includes(x)&&x.id!==st.cur)):null;
+  const left=cur?Math.max(0,Math.ceil(((+cur.dur||10)*1000-(Date.now()-v.rs.since))/1000)):0;
+  el.textContent=cur?`الحالية: ${rotLabel(cur.cfg)}${st.ev?" (حدث)":""} · التالية: ${nx?rotLabel(nx.cfg):"—"} · ${S.rotPvCtl.paused?"⏸":left+"ث"}`:"لا توجد قائمة تُعرض (شفاف)" },300) }
+function rotPvCmd(c){ const v=S.rotPv; if(!v) return; const L0=S.rotPvCtl;
+ if(c==="toggle"){ L0.paused=!L0.paused; return }
+ if(c==="next"||c==="prev"){ L0.seq++; L0.cmd=c; L0.at=Date.now(); return }
+ const g=rotCur(), its=v.rotItems||[], find=t=>its.find(it=>it.cfg&&t(it.cfg));
+ const fake={gift:{type:"gift",giftId:6369,gift:"Lion",diamonds:29999,count:1,value:29999,user:{name:"معاينة"}},follow:{type:"follow",user:{name:"معاينة"}},likes:{type:"like",count:5000,user:{name:"معاينة"}}}[c];
+ if(fake){ const sm=g.smart||{}; if(!sm.on||!(sm.rules||[]).length){ const t=c==="gift"?find(x=>x.type==="lb"&&/gift/i.test(x.source||"")||x.type==="gifts"||/don/.test(x.type)):c==="follow"?find(x=>x.type==="levent"&&x.kind==="follow"||x.type==="fcount"||x.type==="recentFollows"):find(x=>x.type==="lb"&&x.source==="likes"||x.type==="likes"||x.type==="sgoal");
+   if(t){ v.rotInterrupt({item:t.id,dur:8,prio:9},Date.now()); return toast("معاينة: ظهرت «"+rotLabel(t.cfg)+"» (التبديل الذكي غير مفعّل في البث)") } return toast("لا توجد قائمة مناسبة لهذا الحدث في المجموعة") }
+  v.rs.cool=0; v.rotEvent(fake); toast("🧪 حدث معاينة — البيانات الحقيقية لم تتغير") } }
+const ROT_KEYS_DEF={next:"Alt+ArrowLeft",prev:"Alt+ArrowRight",toggle:"Alt+KeyP"};
+function rotKeys(){ return Object.assign({},ROT_KEYS_DEF,(S.settings&&S.settings.rotKeys)||{}) }
+const rotKeyName=e=>[e.ctrlKey&&"Ctrl",e.altKey&&"Alt",e.shiftKey&&"Shift",e.metaKey&&"Meta",e.code].filter(Boolean).join("+");
+
+/* ---------------- الأحداث ---------------- */
+function rotSave(msg){ save(); pushLayout(); if(msg) toast(msg) }
+function rotItem(id){ const g=rotCur(); return g&&(g.items||[]).find(x=>x.id===id) }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-rotx],[data-rotpv]"); if(!b) return; const d=b.dataset, g=rotCur();
+ if(d.rotpv){ if(d.rotpv==="trdemo"){ S.rotPvCtl&&(S.rotPvCtl.seq++,S.rotPvCtl.cmd="next",S.rotPvCtl.at=Date.now()); return } return rotPvCmd(d.rotpv) }
+ const a=d.rotx;
+ if(a==="sel"){ S.rotSel=d.id; S.rotTpl=false; return renderPage(true) }
+ if(a==="new"){ const l=L(), w=newWidget("rotator",{z:Math.max(0,...l.widgets.map(x=>x.z))+1,name:"مجموعة "+(rotGroups().length+1)}); l.widgets.push(w); S.rotSel=w.id; rotSave("أُنشئت مجموعة جديدة"); return renderPage(true) }
+ if(a==="tpls"){ S.rotTpl=!S.rotTpl; return renderPage(true) }
+ if(a==="tpl"){ const t=ROT_TPL.find(x=>x.k===d.k); if(t){ rotFromTemplate(t); S.rotTpl=false; renderPage(true) } return }
+ if(a==="copy") return copy(d.v);
+ if(a==="ctl"&&g){ rotCtl(g,d.op); return setTimeout(()=>renderPage(true),80) }
+ if(!g) return;
+ if(a==="delg") return ask(`حذف مجموعة «${g.name}»؟ القوائم نفسها تبقى في المنصة.`).then(ok=>{ if(!ok) return; const l=L(); l.widgets=l.widgets.filter(x=>x.id!==g.id); S.rotSel=null; rotSave("حُذفت المجموعة"); renderPage(true) });
+ if(a==="hide"){ const it=rotItem(d.i); if(it){ it.hidden=!it.hidden; rotSave(); renderPage(true) } return }
+ if(a==="pin"){ const live=rotLive(g); rotCtl(g,live.pin===d.i?"unpin":"pin",d.i); return setTimeout(()=>renderPage(true),80) }
+ if(a==="dup"){ const i=g.items.findIndex(x=>x.id===d.i); if(i>=0){ g.items.splice(i+1,0,{...JSON.parse(JSON.stringify(g.items[i])),id:rotUid()}); rotSave("كُررت القائمة داخل الدورة"); renderPage(true) } return }
+ if(a==="rm"){ g.items=g.items.filter(x=>x.id!==d.i); if(g.smart) g.smart.rules=(g.smart.rules||[]).filter(r=>r.item!==d.i); rotSave("أُزيلت من المجموعة — العنصر باقٍ في المنصة"); return renderPage(true) }
+ if(a==="edit"){ S.sel=d.ref; return go("studio") }
+ if(a==="sradd"){ g.smart=g.smart||{on:true,cooldown:8,rules:[]}; g.smart.rules.push({id:rotUid(),ev:"bigGift",item:g.items[0].id,dur:10,prio:1,min:1000}); rotSave(); return renderPage(true) }
+ if(a==="srdel"){ g.smart.rules=(g.smart.rules||[]).filter(r=>r.id!==d.r); rotSave(); return renderPage(true) }
+});
+document.addEventListener("change",e=>{ const t=e.target, d=t.dataset||{}, g=rotCur(); if(!g) return;
+ if(d.rotf){ const f=d.rotf, v=t.type==="checkbox"?t.checked:t.value, it=d.i&&rotItem(d.i);
+  if(f==="addnew"&&v){ const c=ROT_CAT.find(x=>x[0]===v); t.value=""; if(c){ const w=rotNewWidget(c[2],g.name); g.items.push(rotItemFor(w,{dur:+g.dur||10})); rotSave("أُضيفت «"+c[1]+"»"); renderPage(true) } return }
+  if(f==="addref"&&v){ const w=L().widgets.find(x=>x.id===v); t.value=""; if(w){ g.items.push(rotItemFor(w,{dur:+g.dur||10})); rotSave("أُضيفت للمجموعة"); renderPage(true) } return }
+  if(it){ if(f==="dur"){ if(v==="custom"){ it.dur=+it.dur||25 } else it.dur=+v } else if(f==="durc") it.dur=Math.max(1,Math.min(3600,+v||10)); else if(f==="tr") it.tr=v; else if(f==="fit"){ const F=ROT_FITS.find(x=>x[0]===v); if(F) it.fit={...F[2]} } rotSave(); return renderPage(true) }
+  if(f==="smartOn"){ g.smart={...(g.smart||{cooldown:8,rules:[]}),on:!!v}; rotSave(); return renderPage(true) }
+  if(f==="smartCool"){ g.smart={...(g.smart||{rules:[]}),cooldown:Math.max(0,+v||0)}; rotSave(); return }
+  if(["trDur","trSpeed","trPower","indSize","indOp","dur"].includes(f)) g[f]=+v; else g[f]=v;
+  rotSave(); return renderPage(true) }
+ if(d.rots){ const r=(g.smart&&g.smart.rules||[]).find(x=>x.id===d.r); if(!r) return; const f=d.rots, v=t.value;
+  if(f==="gift"){ if(/^\d+$/.test(v.trim())){ r.giftId=v.trim(); r.giftName="" } else { r.giftName=v.trim(); r.giftId="" } } else if(["dur","prio","min"].includes(f)) r[f]=+v||0; else r[f]=v; rotSave(); return renderPage(true) }
+});
+document.addEventListener("keydown",e=>{ const t=e.target;
+ if(t&&t.dataset&&t.dataset.rotkey){ e.preventDefault(); if(["Alt","Control","Shift","Meta"].includes(e.key)) return; const k=rotKeyName(e); S.settings.rotKeys={...rotKeys(),[t.dataset.rotkey]:k}; t.value=k; save(); toast("حُفظ الاختصار: "+k); return }
+ if(t&&(t.tagName==="INPUT"||t.tagName==="TEXTAREA"||t.tagName==="SELECT"||t.isContentEditable)) return;
+ const K=rotKeys(), name=rotKeyName(e), op=Object.keys(K).find(k=>K[k]===name); if(!op) return; const g=rotCur(); if(!g) return; e.preventDefault(); rotCtl(g,op); toast("🔁 "+({next:"التالية",prev:"السابقة",toggle:"إيقاف/استئناف"}[op]));
+});
+document.addEventListener("dragstart",e=>{ const r=e.target.closest&&e.target.closest("[data-rotdrag]"); if(!r) return; if(e.target.closest("input,select,button")){ e.preventDefault(); return } S.rotDrag=r.dataset.rotdrag; try{ e.dataTransfer.setData("text/plain",S.rotDrag) }catch(_){} });
+document.addEventListener("dragover",e=>{ const r=e.target.closest&&e.target.closest("[data-rotdrag]"); if(r&&S.rotDrag) e.preventDefault() });
+document.addEventListener("drop",e=>{ const r=e.target.closest&&e.target.closest("[data-rotdrag]"); if(!r||!S.rotDrag) return; e.preventDefault(); const g=rotCur(), from=S.rotDrag, to=r.dataset.rotdrag; S.rotDrag=null; if(!g||from===to) return;
+ const i=g.items.findIndex(x=>x.id===from), j=g.items.findIndex(x=>x.id===to); if(i<0||j<0) return; const [x]=g.items.splice(i,1); g.items.splice(j,0,x); rotSave("تم تغيير الترتيب"); renderPage(true) });
 
 </script>
 </body>

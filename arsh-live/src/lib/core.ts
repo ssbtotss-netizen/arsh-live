@@ -15,6 +15,7 @@ export * from "../engine/view.js";
 export * from "../engine/lbview.js";
 export * from "../engine/rbmotion.js";
 export * from "../engine/rb50.js";
+export * from "../engine/rotator.js";
 export * from "../engine/rboard.js";
 export * from "../engine/vgoal.js";
 export * from "../engine/vgoal80.js";

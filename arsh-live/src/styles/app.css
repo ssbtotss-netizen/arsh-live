@@ -620,3 +620,18 @@ body.flc-pip{margin:0}body.flc-pip .flc-root{height:100vh;border-radius:0}
 .rlib-b{display:flex;gap:4px;flex-wrap:wrap;padding:8px 12px 12px}
 .rbpvm-m .mbox{max-width:1000px;width:96vw}.rbpvm-stage{position:relative;aspect-ratio:16/9;border-radius:14px;overflow:hidden;background:repeating-conic-gradient(#141a26 0 25%,#0d121c 0 50%) 0 0/26px 26px}
 .rblab{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px;margin-top:12px}.rblab-c{display:flex;flex-direction:column;gap:3px}.rblab-c .rlib-pv{border-radius:12px}
+/* ===== القوائم المتناوبة ===== */
+.rot-tpls{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:8px}
+.rot-tpl{border:1px solid var(--line,#1f2a44);border-radius:14px;padding:10px;display:flex;flex-direction:column;gap:4px}.rot-tpl .btn{align-self:flex-start;margin-top:4px}
+.rot-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:14px;margin:14px 0}@media(max-width:1100px){.rot-grid{grid-template-columns:1fr}}
+.rot-pv{position:relative;height:360px;border-radius:14px;overflow:hidden;background:repeating-conic-gradient(#141a26 0 25%,#0d121c 0 50%) 0 0/24px 24px}
+.rot-pvb{gap:6px;flex-wrap:wrap;margin-top:8px}
+.rot-list{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.rot-it{display:flex;align-items:center;gap:8px;flex-wrap:wrap;border:1px solid var(--line,#1f2a44);border-radius:12px;padding:8px 10px;background:rgba(255,255,255,.02)}
+.rot-it.hid{opacity:.5}.rot-it.pin{border-color:#f6c94a}.rot-it.miss{border-color:#ef4444}
+.rot-it select.inp{width:auto;min-width:0}.rot-grip{cursor:grab;color:var(--mut);font-size:18px}.rot-n{color:var(--mut);font-size:12px;min-width:14px}
+.rot-lbl{flex:1;min-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.rot-acts{display:flex;gap:4px;margin-inline-start:auto}
+.rot-add{gap:8px;flex-wrap:wrap}.rot-add select{max-width:320px}
+.rot-smart{display:flex;flex-direction:column;gap:6px;margin:10px 0}.rot-sr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}.rot-sr select.inp{width:auto}
+.rot-code{font-size:11px;direction:ltr;background:rgba(255,255,255,.05);padding:3px 6px;border-radius:6px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:inline-block}
+.rot-key{direction:ltr;text-align:center;cursor:pointer}

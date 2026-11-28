@@ -306,5 +306,7 @@ export function createHub(wss: WebSocketServer, opt: HubOptions) {
   async function musicInfo(room: string) { const r = await getRoom(room); return { M: (r.C as any)?.music || null, cfg: roomMusicCfg(r as any) }; }
   /** أرقام المشاهدين من موصلات المنصات المصرح بها (YouTube/Twitch/Kick) */
   const liveStats = (room: string, platform: string, data: any) => { const r = rooms.get(room); if (r) commit(room, r, roomStats(r as any, platform, data, Date.now())); };
-  return { rooms, stats, liveStats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) ingest(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
+  /** القوائم المتناوبة من خارج لوحة التحكم (Stream Deck / رابط تحكم): نفس عملية لوحة التحكم */
+  async function rotCmd(room: string, wid: string, op: string, item?: string) { const r = await getRoom(room); const res = roomClockOp(r as any, { target: "rot", wid, op, item }, Date.now()); if (!res.out.length) return false; commit(room, r, res); return true; }
+  return { rotCmd, rooms, stats, liveStats, musicRequest, musicLib, musicState, musicInfo, dispatch: (room: string, ev: LiveEvent) => { const r = rooms.get(room); if (r) ingest(room, r, ev); else if (ev.type === "donation") opt.onDonationDispatch?.(room, ev, { dup: false, overlays: 0 }); } };
 }

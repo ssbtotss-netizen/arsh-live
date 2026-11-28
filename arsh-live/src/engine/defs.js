@@ -43,6 +43,8 @@ export const TYPES={
  abox:{label:"صندوق الآيرتات",icon:"🔔",title:"",listens:[],board:false,abox:true},
  goal:{label:"هدف الإعجابات",icon:"🎯",title:"هدف الإعجابات",listens:["like"],board:false},
  battle:{label:"تحدي الفريقين",icon:"⚔️",title:"تحدي الفريقين",listens:[],board:false,bt:true},
+ rotator:{label:"القوائم المتناوبة",icon:"🔁",title:"",listens:[],board:false,rot:true,tick:true},
+ rcard:{label:"نص / شعار / إعلان",icon:"🪧",title:"",listens:[],board:false,rc:true},
 };
 /** «آخر دعم» (بطاقة Basic) و«آخر 5 داعمين» */
 export const DC_DEFAULTS={lcBadge:"آخر دعم",lcThx:"شكراً على دعمك",lcShowBadge:true,lcShowName:true,lcShowSym:true,lcShowThx:true,
@@ -117,6 +119,8 @@ export function newWidget(type,o={}){
  const base={id:"w_"+uid(),type,name:t.label,title:t.title,showTitle:true,design:"b6o6",x:.05,y:.3,w:.4,h:.3,z:1,visible:true,locked:false,opacity:1,
   topN:5,fontScale:1,avatarScale:1,gap:10,acc:"",tx:"#ffffff",anim:"slide",effects:true,sortBy:"value",pos:"custom",target:10000,font:"default",sound:true,timerId:"stream",showSub:true};
  if(type==="timer"){Object.assign(base,{w:.42,h:.07,design:"glass"})}
+ if(type==="rotator"){Object.assign(base,{name:"مجموعة متناوبة",items:[],dur:10,tr:"elegantScale",trMode:"fixed",trDur:900,trSpeed:1,trPower:1,trDir:"rtl",skipEmpty:true,fallback:"transparent",fbText:"",fbLogo:"",indicator:"bar",indColor:"#4d8dff",indSize:1,indOp:.9,smart:{on:false,cooldown:8,rules:[]},w:.44,h:.42,x:.05,y:.06})}
+ if(type==="rcard"){Object.assign(base,{rcMode:"text",rcText:"أهلاً بكم في البث",rcSub:"",rcSrc:"",rcFit:"contain",rcColor:"#ffffff",rcBg:true,w:.4,h:.14})}
  if(type==="subathon"){Object.assign(base,{w:.6,h:.11,design:"b6o6"})}
  if(type==="goal"){Object.assign(base,{w:.6,h:.09,design:"neon"})}
  if(type==="lb"){Object.assign(base,{design:"pinkCloud",source:"gifts",giftKey:"",giftEmoji:"",topN:5,w:.46,h:.36,title:"أفضل الداعمين",rankColors:null,rowOpacity:1,avShape:"circle",sweepOn:true,lowPerf:false,period:"session",currency:"",hideAnon:false,icon:""})}

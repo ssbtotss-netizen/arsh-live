@@ -53,6 +53,8 @@ export class View{
   const gap=w.gap*(this.opts.refW||cv.w)/1080, pad=gap*1.1, N=Math.max(1,w.topN);
   const S=e.style, set=(k,v)=>S.setProperty(k,v+"px");
   set("--gap",gap);set("--pad",pad);
+  if(T.rot){ this.applyRot(w,W,Hh); return }
+  if(T.rc){ this.applyRc(w,W,Hh); return }
   if(T.pro){ this.applyPro(w,W,Hh,pad,gap); return }
   if(T.rules){ this.applyRules(w,W,Hh,pad,gap); return }
   if(T.bot){ this.applyBot(w,W,Hh,pad,gap); return }
@@ -118,6 +120,8 @@ export class View{
  }
  refresh(src,silent){
   const w=this.w, t=TYPES[w.type]||TYPES.likes;
+  if(t.rot){ this.rotGoalCheck&&this.rotGoalCheck(src); this.rotStep&&this.rotStep(); if(this.rotKids) for(const k of this.rotKids.values()){ const kt=TYPES[k.v.w.type]||{}; if(kt.tick) k.v.refresh(src) } return }
+  if(t.rc) return;
   if(t.pro) return this.refreshPro(src,silent);
   if(t.rules) return this.refreshRules(src,silent);
   if(t.bot) return;
@@ -397,6 +401,9 @@ function queueRefresh(v,src){ if(typeof document!=="undefined"&&document.hidden)
  const arm=()=>{ rqW=0; if(typeof requestAnimationFrame==="function") rqF=requestAnimationFrame(rqFlush); rqT=setTimeout(rqFlush,50) };
  if(wait>16) rqW=setTimeout(arm,wait); else arm() }
 export function deliver(views,msg,src){
+ views=[...views];
+ // القوائم المتناوبة: كل الرسائل تصل لكل القوائم داخل المجموعة (حتى المخفية) — البيانات لا تتوقف ولا تُصفَّر
+ for(const v of views) if(v.rotKids&&v.rotKids.size){ deliver([...v.rotKids.values()].map(k=>k.v),msg,src); if(msg.t==="event") v.rotEvent(msg.ev); else if(msg.t==="clock"&&!msg.cm) v.rotClockLogs(msg.logs) }
  rqSrc=src; // التحديث المؤجل يستخدم أحدث بيانات دائماً (لا يعيد قيمة قديمة فوق رسالة أحدث)
  if(msg.t==="event"){ const ev=msg.ev; for(const v of views){ if(TYPES[v.w.type]?.fa){ v.faPush(ev); continue } if(TYPES[v.w.type]?.le){ if(LE_KINDS[v.w.kind]?.derived) v.refreshLe(src,false); else v.lePush(ev); continue } if(TYPES[v.w.type]?.chat){ v.chatPush(ev); continue } if(!affects(v.w,ev)) continue; if(v.w.type==="donAlert"){ if(ev.type==="donation") v.alertPush(ev,src); continue } if(v.vg) v.refreshVG(src,false,ev); else queueRefresh(v,src); if(ev.type==="gift"&&ev.big&&v.w.type==="gifts") v.burst(ev) } }
  else if(msg.t==="clock"&&msg.cm){ for(const v of views) if(v.ucRoot&&v.ucRender){ v.ucRender(false); v.ucPinRender&&v.ucPinRender() } return } // إدارة الشات: إخفاء فوري + بطاقة التثبيت
